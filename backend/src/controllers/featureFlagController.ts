@@ -241,11 +241,35 @@ export const updateFeatureFlag = async (req: Request, res: Response) => {
     // Save updated feature flag
     await featureFlag.save();
 
-    return res.status(200).json({
-      success: true,
-      message: 'Feature flag updated successfully',
-      data: featureFlag,
-    });
+    // Sync all active subscriptions with the updated feature flags
+    // This ensures all subscriptions get the new features immediately
+    try {
+      const { syncAllSubscriptionFeatures } = await import('../utils/subscriptionFeatures');
+      const syncResult = await syncAllSubscriptionFeatures();
+      
+      console.log(`✅ Synced subscription features: ${syncResult.updated} updated, ${syncResult.failed} failed`);
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Feature flag updated successfully',
+        data: featureFlag,
+        syncResult: {
+          subscriptionsUpdated: syncResult.updated,
+          subscriptionsFailed: syncResult.failed,
+          totalSubscriptions: syncResult.total,
+        },
+      });
+    } catch (syncError) {
+      console.error('Error syncing subscription features:', syncError);
+      
+      // Still return success for the feature flag update
+      return res.status(200).json({
+        success: true,
+        message: 'Feature flag updated successfully, but subscription sync failed',
+        data: featureFlag,
+        warning: 'Subscriptions were not automatically updated. Run sync manually.',
+      });
+    }
   } catch (error) {
     console.error('Error updating feature flag:', error);
     return res.status(500).json({
@@ -347,12 +371,33 @@ export const toggleFeatureFlagStatus = async (req: Request, res: Response) => {
     // Save updated feature flag
     await featureFlag.save();
 
-    return res.status(200).json({
-      success: true,
-      message: `Feature flag ${featureFlag.isActive ? 'enabled' : 'disabled'
-        } successfully`,
-      data: featureFlag,
-    });
+    // Sync all active subscriptions with the updated feature flags
+    try {
+      const { syncAllSubscriptionFeatures } = await import('../utils/subscriptionFeatures');
+      const syncResult = await syncAllSubscriptionFeatures();
+      
+      console.log(`✅ Synced subscription features after toggle: ${syncResult.updated} updated`);
+      
+      return res.status(200).json({
+        success: true,
+        message: `Feature flag ${featureFlag.isActive ? 'enabled' : 'disabled'} successfully`,
+        data: featureFlag,
+        syncResult: {
+          subscriptionsUpdated: syncResult.updated,
+          subscriptionsFailed: syncResult.failed,
+          totalSubscriptions: syncResult.total,
+        },
+      });
+    } catch (syncError) {
+      console.error('Error syncing subscription features:', syncError);
+      
+      return res.status(200).json({
+        success: true,
+        message: `Feature flag ${featureFlag.isActive ? 'enabled' : 'disabled'} successfully`,
+        data: featureFlag,
+        warning: 'Subscriptions were not automatically updated.',
+      });
+    }
   } catch (error) {
     console.error('Error toggling feature flag status:', error);
     return res.status(500).json({
@@ -472,6 +517,16 @@ export const updateTierFeatures = async (req: Request, res: Response) => {
       );
     }
 
+    // Sync all active subscriptions with the updated feature flags
+    let syncResult = null;
+    try {
+      const { syncAllSubscriptionFeatures } = await import('../utils/subscriptionFeatures');
+      syncResult = await syncAllSubscriptionFeatures();
+      console.log(`✅ Synced subscription features after bulk tier update: ${syncResult.updated} updated`);
+    } catch (syncError) {
+      console.error('Error syncing subscription features:', syncError);
+    }
+
     return res.status(200).json({
       success: true,
       message: `Successfully ${action === 'add' ? 'added' : 'removed'} tier "${tier}" ${action === 'add' ? 'to' : 'from'} ${result.modifiedCount} feature(s)`,
@@ -481,6 +536,11 @@ export const updateTierFeatures = async (req: Request, res: Response) => {
         matchedCount: result.matchedCount,
         modifiedCount: result.modifiedCount,
       },
+      syncResult: syncResult ? {
+        subscriptionsUpdated: syncResult.updated,
+        subscriptionsFailed: syncResult.failed,
+        totalSubscriptions: syncResult.total,
+      } : null,
     });
   } catch (error) {
     console.error('Error updating tier features:', error);
@@ -547,6 +607,39 @@ export const updateTargetingRules = async (req: AuthRequest, res: Response) => {
     return res.status(500).json({
       success: false,
       message: 'Server error',
+      error: error instanceof Error ? error.message : String(error),
+    });
+  }
+};
+
+/**
+ * @desc    Manually sync all subscription features with current feature flags
+ * @route   POST /api/admin/feature-flags/sync-subscriptions
+ * @access  Private (Super Admin only)
+ */
+export const syncSubscriptionFeatures = async (req: Request, res: Response) => {
+  try {
+    console.log('🔄 Starting manual subscription features sync...');
+    
+    const { syncAllSubscriptionFeatures } = await import('../utils/subscriptionFeatures');
+    const syncResult = await syncAllSubscriptionFeatures();
+    
+    console.log(`✅ Manual sync completed: ${syncResult.updated} updated, ${syncResult.failed} failed`);
+    
+    return res.status(200).json({
+      success: true,
+      message: 'Subscription features synced successfully',
+      data: {
+        subscriptionsUpdated: syncResult.updated,
+        subscriptionsFailed: syncResult.failed,
+        totalSubscriptions: syncResult.total,
+      },
+    });
+  } catch (error) {
+    console.error('Error syncing subscription features:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to sync subscription features',
       error: error instanceof Error ? error.message : String(error),
     });
   }
@@ -681,6 +774,7 @@ export default {
   getFeatureFlagsByCategory,
   getFeatureFlagsByTier,
   updateTierFeatures,
+  syncSubscriptionFeatures,
   // Enhanced functionality
   updateTargetingRules,
   getFeatureFlagMetrics,

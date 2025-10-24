@@ -180,6 +180,10 @@ export class SubscriptionManagementController {
       const endDate = new Date();
       endDate.setDate(endDate.getDate() + trialDurationDays);
 
+      // Get all features for trial subscription
+      const { getSubscriptionFeatures } = await import('../utils/subscriptionFeatures');
+      const features = await getSubscriptionFeatures(trialPlan, 'free_trial');
+
       // Create trial subscription
       const subscription = new Subscription({
         workspaceId: workspaceId,
@@ -192,7 +196,7 @@ export class SubscriptionManagementController {
         priceAtPurchase: 0,
         billingInterval: 'monthly',
         autoRenew: false,
-        features: ['*'], // All features during trial
+        features: features, // All features from plan + feature flags
         limits: {
           patients: null,
           users: null,
@@ -594,6 +598,10 @@ export class SubscriptionManagementController {
       endDate.setMonth(endDate.getMonth() + 1);
     }
 
+    // Get all features for this subscription
+    const { getSubscriptionFeatures } = await import('../utils/subscriptionFeatures');
+    const features = await getSubscriptionFeatures(plan, plan.tier);
+
     // Create new subscription
     const subscription = new Subscription({
       workspaceId: workspaceId,
@@ -605,7 +613,7 @@ export class SubscriptionManagementController {
       priceAtPurchase: plan.priceNGN,
       billingInterval: billingInterval,
       autoRenew: true,
-      features: Object.keys(plan.features).filter(key => (plan.features as any)[key] === true),
+      features: features,
       limits: {
         patients: plan.features.patientLimit,
         users: plan.features.teamSize,

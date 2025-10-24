@@ -150,16 +150,31 @@ const register = async (req, res) => {
         });
         const trialEndDate = new Date();
         trialEndDate.setDate(trialEndDate.getDate() + (freeTrialPlan.trialDuration || 14));
+        const { getSubscriptionFeatures } = await Promise.resolve().then(() => __importStar(require('../utils/subscriptionFeatures')));
+        const features = await getSubscriptionFeatures(freeTrialPlan, 'free_trial');
         const subscription = await Subscription_1.default.create({
-            userId: user._id,
+            workspaceId: workplaceId || undefined,
             planId: freeTrialPlan._id,
             tier: 'free_trial',
             status: 'trial',
             startDate: new Date(),
             endDate: trialEndDate,
+            trialEndDate: trialEndDate,
             priceAtPurchase: 0,
             autoRenew: false,
-            workspaceId: workplaceId || undefined,
+            features: features,
+            customFeatures: [],
+            limits: {
+                patients: null,
+                users: null,
+                locations: null,
+                storage: null,
+                apiCalls: null,
+            },
+            usageMetrics: [],
+            paymentHistory: [],
+            webhookEvents: [],
+            renewalAttempts: [],
         });
         user.currentSubscriptionId = subscription._id;
         await user.save();
@@ -843,6 +858,8 @@ const registerWithWorkplace = async (req, res) => {
                 });
                 const trialEndDate = new Date();
                 trialEndDate.setDate(trialEndDate.getDate() + 14);
+                const { getSubscriptionFeatures } = await Promise.resolve().then(() => __importStar(require('../utils/subscriptionFeatures')));
+                const features = await getSubscriptionFeatures(freeTrialPlan, 'free_trial');
                 const subscriptionArray = await Subscription_1.default.create([
                     {
                         workspaceId: workplaceData._id,
@@ -851,8 +868,22 @@ const registerWithWorkplace = async (req, res) => {
                         status: 'trial',
                         startDate: new Date(),
                         endDate: trialEndDate,
+                        trialEndDate: trialEndDate,
                         priceAtPurchase: 0,
                         autoRenew: false,
+                        features: features,
+                        customFeatures: [],
+                        limits: {
+                            patients: null,
+                            users: null,
+                            locations: null,
+                            storage: null,
+                            apiCalls: null,
+                        },
+                        usageMetrics: [],
+                        paymentHistory: [],
+                        webhookEvents: [],
+                        renewalAttempts: [],
                     },
                 ], { session });
                 subscription = subscriptionArray[0];

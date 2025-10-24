@@ -1,9 +1,42 @@
 "use strict";
+var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    var desc = Object.getOwnPropertyDescriptor(m, k);
+    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
+      desc = { enumerable: true, get: function() { return m[k]; } };
+    }
+    Object.defineProperty(o, k2, desc);
+}) : (function(o, m, k, k2) {
+    if (k2 === undefined) k2 = k;
+    o[k2] = m[k];
+}));
+var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
+    Object.defineProperty(o, "default", { enumerable: true, value: v });
+}) : function(o, v) {
+    o["default"] = v;
+});
+var __importStar = (this && this.__importStar) || (function () {
+    var ownKeys = function(o) {
+        ownKeys = Object.getOwnPropertyNames || function (o) {
+            var ar = [];
+            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
+            return ar;
+        };
+        return ownKeys(o);
+    };
+    return function (mod) {
+        if (mod && mod.__esModule) return mod;
+        var result = {};
+        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
+        __setModuleDefault(result, mod);
+        return result;
+    };
+})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.checkAdvancedFeatureAccess = exports.getMarketingFeatures = exports.getFeatureFlagMetrics = exports.updateTargetingRules = exports.updateTierFeatures = exports.getFeatureFlagsByTier = exports.getFeatureFlagsByCategory = exports.toggleFeatureFlagStatus = exports.deleteFeatureFlag = exports.updateFeatureFlag = exports.createFeatureFlag = exports.getFeatureFlagById = exports.getAllFeatureFlags = void 0;
+exports.checkAdvancedFeatureAccess = exports.getMarketingFeatures = exports.getFeatureFlagMetrics = exports.syncSubscriptionFeatures = exports.updateTargetingRules = exports.updateTierFeatures = exports.getFeatureFlagsByTier = exports.getFeatureFlagsByCategory = exports.toggleFeatureFlagStatus = exports.deleteFeatureFlag = exports.updateFeatureFlag = exports.createFeatureFlag = exports.getFeatureFlagById = exports.getAllFeatureFlags = void 0;
 const FeatureFlag_1 = require("../models/FeatureFlag");
 const express_validator_1 = require("express-validator");
 const mongoose_1 = __importDefault(require("mongoose"));
@@ -177,11 +210,30 @@ const updateFeatureFlag = async (req, res) => {
         if (metadata)
             featureFlag.metadata = metadata;
         await featureFlag.save();
-        return res.status(200).json({
-            success: true,
-            message: 'Feature flag updated successfully',
-            data: featureFlag,
-        });
+        try {
+            const { syncAllSubscriptionFeatures } = await Promise.resolve().then(() => __importStar(require('../utils/subscriptionFeatures')));
+            const syncResult = await syncAllSubscriptionFeatures();
+            console.log(`✅ Synced subscription features: ${syncResult.updated} updated, ${syncResult.failed} failed`);
+            return res.status(200).json({
+                success: true,
+                message: 'Feature flag updated successfully',
+                data: featureFlag,
+                syncResult: {
+                    subscriptionsUpdated: syncResult.updated,
+                    subscriptionsFailed: syncResult.failed,
+                    totalSubscriptions: syncResult.total,
+                },
+            });
+        }
+        catch (syncError) {
+            console.error('Error syncing subscription features:', syncError);
+            return res.status(200).json({
+                success: true,
+                message: 'Feature flag updated successfully, but subscription sync failed',
+                data: featureFlag,
+                warning: 'Subscriptions were not automatically updated. Run sync manually.',
+            });
+        }
     }
     catch (error) {
         console.error('Error updating feature flag:', error);
@@ -255,11 +307,30 @@ const toggleFeatureFlagStatus = async (req, res) => {
         }
         featureFlag.isActive = !featureFlag.isActive;
         await featureFlag.save();
-        return res.status(200).json({
-            success: true,
-            message: `Feature flag ${featureFlag.isActive ? 'enabled' : 'disabled'} successfully`,
-            data: featureFlag,
-        });
+        try {
+            const { syncAllSubscriptionFeatures } = await Promise.resolve().then(() => __importStar(require('../utils/subscriptionFeatures')));
+            const syncResult = await syncAllSubscriptionFeatures();
+            console.log(`✅ Synced subscription features after toggle: ${syncResult.updated} updated`);
+            return res.status(200).json({
+                success: true,
+                message: `Feature flag ${featureFlag.isActive ? 'enabled' : 'disabled'} successfully`,
+                data: featureFlag,
+                syncResult: {
+                    subscriptionsUpdated: syncResult.updated,
+                    subscriptionsFailed: syncResult.failed,
+                    totalSubscriptions: syncResult.total,
+                },
+            });
+        }
+        catch (syncError) {
+            console.error('Error syncing subscription features:', syncError);
+            return res.status(200).json({
+                success: true,
+                message: `Feature flag ${featureFlag.isActive ? 'enabled' : 'disabled'} successfully`,
+                data: featureFlag,
+                warning: 'Subscriptions were not automatically updated.',
+            });
+        }
     }
     catch (error) {
         console.error('Error toggling feature flag status:', error);
@@ -344,6 +415,15 @@ const updateTierFeatures = async (req, res) => {
         else {
             result = await FeatureFlag_1.FeatureFlag.updateMany({ key: { $in: featureKeys } }, { $pull: { allowedTiers: tier } });
         }
+        let syncResult = null;
+        try {
+            const { syncAllSubscriptionFeatures } = await Promise.resolve().then(() => __importStar(require('../utils/subscriptionFeatures')));
+            syncResult = await syncAllSubscriptionFeatures();
+            console.log(`✅ Synced subscription features after bulk tier update: ${syncResult.updated} updated`);
+        }
+        catch (syncError) {
+            console.error('Error syncing subscription features:', syncError);
+        }
         return res.status(200).json({
             success: true,
             message: `Successfully ${action === 'add' ? 'added' : 'removed'} tier "${tier}" ${action === 'add' ? 'to' : 'from'} ${result.modifiedCount} feature(s)`,
@@ -353,6 +433,11 @@ const updateTierFeatures = async (req, res) => {
                 matchedCount: result.matchedCount,
                 modifiedCount: result.modifiedCount,
             },
+            syncResult: syncResult ? {
+                subscriptionsUpdated: syncResult.updated,
+                subscriptionsFailed: syncResult.failed,
+                totalSubscriptions: syncResult.total,
+            } : null,
         });
     }
     catch (error) {
@@ -411,6 +496,32 @@ const updateTargetingRules = async (req, res) => {
     }
 };
 exports.updateTargetingRules = updateTargetingRules;
+const syncSubscriptionFeatures = async (req, res) => {
+    try {
+        console.log('🔄 Starting manual subscription features sync...');
+        const { syncAllSubscriptionFeatures } = await Promise.resolve().then(() => __importStar(require('../utils/subscriptionFeatures')));
+        const syncResult = await syncAllSubscriptionFeatures();
+        console.log(`✅ Manual sync completed: ${syncResult.updated} updated, ${syncResult.failed} failed`);
+        return res.status(200).json({
+            success: true,
+            message: 'Subscription features synced successfully',
+            data: {
+                subscriptionsUpdated: syncResult.updated,
+                subscriptionsFailed: syncResult.failed,
+                totalSubscriptions: syncResult.total,
+            },
+        });
+    }
+    catch (error) {
+        console.error('Error syncing subscription features:', error);
+        return res.status(500).json({
+            success: false,
+            message: 'Failed to sync subscription features',
+            error: error instanceof Error ? error.message : String(error),
+        });
+    }
+};
+exports.syncSubscriptionFeatures = syncSubscriptionFeatures;
 const getFeatureFlagMetrics = async (req, res) => {
     try {
         const { id } = req.params;
@@ -512,6 +623,7 @@ exports.default = {
     getFeatureFlagsByCategory: exports.getFeatureFlagsByCategory,
     getFeatureFlagsByTier: exports.getFeatureFlagsByTier,
     updateTierFeatures: exports.updateTierFeatures,
+    syncSubscriptionFeatures: exports.syncSubscriptionFeatures,
     updateTargetingRules: exports.updateTargetingRules,
     getFeatureFlagMetrics: exports.getFeatureFlagMetrics,
     getMarketingFeatures: exports.getMarketingFeatures,

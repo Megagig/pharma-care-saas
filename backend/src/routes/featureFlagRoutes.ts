@@ -129,6 +129,9 @@ router.post(
   featureFlagController.updateTierFeatures
 );
 
+// Manually sync all subscription features with current feature flags
+router.post('/sync-subscriptions', featureFlagController.syncSubscriptionFeatures);
+
 // Enhanced functionality routes (Super Admin only)
 
 // Update targeting rules for a feature flag

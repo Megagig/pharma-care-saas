@@ -6,6 +6,7 @@ import { FeatureFlag } from '../models/FeatureFlag';
 import Payment from '../models/Payment';
 import { emailService } from '../utils/emailService';
 import { paystackService, PaystackService } from '../services/paystackService';
+import { getSubscriptionFeatures } from '../utils/subscriptionFeatures';
 
 interface AuthRequest extends Request {
   user?: any;
@@ -700,9 +701,17 @@ export class SubscriptionController {
         });
       }
 
-      // Cancel existing active subscriptions
+      // Ensure user has a workplaceId
+      if (!user.workplaceId) {
+        return res.status(400).json({
+          success: false,
+          message: 'User must have a workplace to activate subscription',
+        });
+      }
+
+      // Cancel existing active subscriptions for the workspace
       await Subscription.updateMany(
-        { userId: userId, status: { $in: ['active', 'trial'] } },
+        { workspaceId: user.workplaceId, status: { $in: ['active', 'trial'] } },
         { status: 'cancelled' }
       );
 
@@ -715,9 +724,12 @@ export class SubscriptionController {
         endDate.setMonth(endDate.getMonth() + 1);
       }
 
-      // Create new subscription
+      // Get all features for this subscription (plan features + feature flags)
+      const features = await getSubscriptionFeatures(plan, plan.tier);
+
+      // Create new subscription with workspaceId (not userId)
       const subscription = new Subscription({
-        userId: userId,
+        workspaceId: user.workplaceId,
         planId: planId,
         tier: plan.tier,
         status: plan.tier === 'free_trial' ? 'trial' : 'active',
@@ -726,9 +738,7 @@ export class SubscriptionController {
         priceAtPurchase: plan.priceNGN,
         autoRenew: true,
         paymentReference: paymentReference,
-        features: Object.keys(plan.features).filter(
-          (key: string) => (plan.features as any)[key] === true
-        ),
+        features: features,
       });
 
       await subscription.save();
@@ -772,8 +782,15 @@ export class SubscriptionController {
     try {
       const { reason } = req.body;
 
+      if (!req.user.workplaceId) {
+        return res.status(400).json({
+          success: false,
+          message: 'User must have a workplace',
+        });
+      }
+
       const subscription = await Subscription.findOne({
-        userId: req.user._id,
+        workspaceId: req.user.workplaceId,
         status: { $in: ['active', 'trial'] },
       });
 
@@ -827,8 +844,15 @@ export class SubscriptionController {
     try {
       const { planId, billingInterval = 'monthly' } = req.body;
 
+      if (!req.user.workplaceId) {
+        return res.status(400).json({
+          success: false,
+          message: 'User must have a workplace',
+        });
+      }
+
       const currentSubscription = await Subscription.findOne({
-        userId: req.user._id,
+        workspaceId: req.user.workplaceId,
         status: 'active',
       }).populate('planId');
 
@@ -957,8 +981,15 @@ export class SubscriptionController {
     try {
       const { planId } = req.body;
 
+      if (!req.user.workplaceId) {
+        return res.status(400).json({
+          success: false,
+          message: 'User must have a workplace',
+        });
+      }
+
       const currentSubscription = await Subscription.findOne({
-        userId: req.user._id,
+        workspaceId: req.user.workplaceId,
         status: 'active',
       }).populate('planId');
 

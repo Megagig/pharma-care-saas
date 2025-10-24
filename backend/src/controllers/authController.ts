@@ -158,16 +158,33 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       trialEndDate.getDate() + (freeTrialPlan.trialDuration || 14)
     );
 
+    // Get all features for trial subscription (plan features + feature flags)
+    const { getSubscriptionFeatures } = await import('../utils/subscriptionFeatures');
+    const features = await getSubscriptionFeatures(freeTrialPlan, 'free_trial');
+
     const subscription = await Subscription.create({
-      userId: user._id,
+      workspaceId: workplaceId || undefined, // Set workspaceId if user is joining a workspace
       planId: freeTrialPlan._id,
       tier: 'free_trial',
       status: 'trial',
       startDate: new Date(),
       endDate: trialEndDate,
+      trialEndDate: trialEndDate,
       priceAtPurchase: 0,
       autoRenew: false, // Free trial doesn't auto-renew
-      workspaceId: workplaceId || undefined, // Set workspaceId if user is joining a workspace
+      features: features, // All features from plan + feature flags
+      customFeatures: [],
+      limits: {
+        patients: null, // Unlimited during trial
+        users: null,
+        locations: null,
+        storage: null,
+        apiCalls: null,
+      },
+      usageMetrics: [],
+      paymentHistory: [],
+      webhookEvents: [],
+      renewalAttempts: [],
     });
 
     // Update user with subscription reference
@@ -1080,6 +1097,10 @@ export const registerWithWorkplace = async (
         const trialEndDate = new Date();
         trialEndDate.setDate(trialEndDate.getDate() + 14);
 
+        // Get all features for trial subscription (plan features + feature flags)
+        const { getSubscriptionFeatures } = await import('../utils/subscriptionFeatures');
+        const features = await getSubscriptionFeatures(freeTrialPlan, 'free_trial');
+
         const subscriptionArray = await Subscription.create(
           [
             {
@@ -1089,8 +1110,22 @@ export const registerWithWorkplace = async (
               status: 'trial',
               startDate: new Date(),
               endDate: trialEndDate,
+              trialEndDate: trialEndDate,
               priceAtPurchase: 0,
               autoRenew: false,
+              features: features, // All features from plan + feature flags
+              customFeatures: [],
+              limits: {
+                patients: null,
+                users: null,
+                locations: null,
+                storage: null,
+                apiCalls: null,
+              },
+              usageMetrics: [],
+              paymentHistory: [],
+              webhookEvents: [],
+              renewalAttempts: [],
             },
           ],
           { session }

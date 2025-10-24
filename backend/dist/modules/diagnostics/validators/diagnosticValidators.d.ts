@@ -190,8 +190,8 @@ export declare const patientHistoryParamsSchema: z.ZodObject<{
 export declare const diagnosticQuerySchema: z.ZodObject<{
     status: z.ZodOptional<z.ZodEnum<{
         pending: "pending";
-        completed: "completed";
         failed: "failed";
+        completed: "completed";
         cancelled: "cancelled";
         processing: "processing";
     }>>;
