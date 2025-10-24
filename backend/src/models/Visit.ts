@@ -22,6 +22,7 @@ export interface IVisit extends Document {
   workplaceId: mongoose.Types.ObjectId;
   locationId?: string; // Location ID within the workplace for multi-location support
   patientId: mongoose.Types.ObjectId;
+  appointmentId?: mongoose.Types.ObjectId; // Link to appointment if created from one
   date: Date;
   soap: ISOAPNotes;
   attachments?: IAttachment[];
@@ -124,6 +125,12 @@ const visitSchema = new Schema(
       required: true,
       index: true,
     },
+    appointmentId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Appointment',
+      index: true,
+      sparse: true, // Allow null values and don't index them
+    },
     date: {
       type: Date,
       required: true,
@@ -186,6 +193,7 @@ visitSchema.index({ workplaceId: 1, patientId: 1, date: -1 });
 visitSchema.index({ workplaceId: 1, date: -1 });
 visitSchema.index({ workplaceId: 1, isDeleted: 1 });
 visitSchema.index({ workplaceId: 1, locationId: 1 }, { sparse: true });
+visitSchema.index({ workplaceId: 1, appointmentId: 1 }, { sparse: true });
 visitSchema.index({ createdAt: -1 });
 
 // Virtual to populate patient details

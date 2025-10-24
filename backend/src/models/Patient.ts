@@ -451,6 +451,37 @@ patientSchema.virtual('dateOfBirth').set(function (this: IPatient, value: Date) 
   this.dob = value;
 });
 
+// Virtual for upcoming appointments count
+patientSchema.virtual('upcomingAppointments', {
+  ref: 'Appointment',
+  localField: '_id',
+  foreignField: 'patientId',
+  count: true,
+  match: {
+    status: { $in: ['scheduled', 'confirmed'] },
+    scheduledDate: { $gte: new Date() },
+    isDeleted: false,
+  },
+});
+
+// Virtual for last appointment date
+patientSchema.virtual('lastAppointmentDate').get(async function (this: IPatient) {
+  try {
+    const Appointment = mongoose.model('Appointment');
+    const lastAppointment = await Appointment.findOne({
+      patientId: this._id,
+      status: 'completed',
+      isDeleted: false,
+    })
+      .sort({ scheduledDate: -1 })
+      .select('scheduledDate');
+    
+    return lastAppointment?.scheduledDate;
+  } catch (error) {
+    return undefined;
+  }
+});
+
 // Instance methods
 patientSchema.methods.getAge = function (this: IPatient): number {
   if (this.dob) {
