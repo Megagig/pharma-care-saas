@@ -1,184 +1,498 @@
-import { z } from 'zod';
+import { body, param, query, ValidationChain } from 'express-validator';
+import { Request } from 'express';
+import mongoose from 'mongoose';
 
-/**
- * Follow-up Task Management Validation Schemas
- * Comprehensive Zod schemas for all Follow-up Task API endpoints
- */
-
-// Common validation patterns
-const mongoIdSchema = z
-  .string()
-  .regex(/^[0-9a-fA-F]{24}$/, 'Invalid MongoDB ObjectId');
-
-// Follow-up task types enum
-export const FOLLOWUP_TYPES = [
-  'medication_start_followup',
-  'lab_result_review',
-  'hospital_discharge_followup',
-  'medication_change_followup',
-  'chronic_disease_monitoring',
-  'adherence_check',
-  'refill_reminder',
-  'preventive_care',
-  'general_followup',
-] as const;
-
-// Priority levels enum
-export const PRIORITY_LEVELS = [
-  'low',
-  'medium',
-  'high',
-  'urgent',
-  'critical',
-] as const;
-
-// Follow-up status enum
-export const FOLLOWUP_STATUS = [
-  'pending',
-  'in_progress',
-  'completed',
-  'cancelled',
-  'overdue',
-  'converted_to_appointment',
-] as const;
-
-// Trigger types enum
-export const TRIGGER_TYPES = [
-  'manual',
-  'medication_start',
-  'lab_result',
-  'hospital_discharge',
-  'medication_change',
-  'scheduled_monitoring',
-  'missed_appointment',
-  'system_rule',
-] as const;
-
-// ===============================
-// FOLLOW-UP TASK SCHEMAS
-// ===============================
-
-export const createFollowUpSchema = z.object({
-  patientId: mongoIdSchema,
-  type: z.enum(FOLLOWUP_TYPES),
-  title: z.string().min(1).max(200).trim(),
-  description: z.string().min(1).max(2000).trim(),
-  objectives: z.array(z.string().max(200)).optional(),
-  priority: z.enum(PRIORITY_LEVELS),
-  dueDate: z.string().datetime(),
-  estimatedDuration: z.number().int().min(5).max(120).optional(),
-  assignedTo: mongoIdSchema.optional(),
-  trigger: z.object({
-    type: z.enum(TRIGGER_TYPES),
-    sourceId: mongoIdSchema.optional(),
-    sourceType: z.string().max(50).optional(),
-    triggerDate: z.string().datetime().optional(),
-    triggerDetails: z.record(z.any()).optional(),
-  }),
-  relatedRecords: z
-    .object({
-      medicationId: mongoIdSchema.optional(),
-      labResultId: mongoIdSchema.optional(),
-      clinicalInterventionId: mongoIdSchema.optional(),
-      mtrSessionId: mongoIdSchema.optional(),
-      appointmentId: mongoIdSchema.optional(),
-    })
-    .optional(),
-});
-
-export const updateFollowUpSchema = z.object({
-  title: z.string().min(1).max(200).trim().optional(),
-  description: z.string().min(1).max(2000).trim().optional(),
-  objectives: z.array(z.string().max(200)).optional(),
-  priority: z.enum(PRIORITY_LEVELS).optional(),
-  dueDate: z.string().datetime().optional(),
-  estimatedDuration: z.number().int().min(5).max(120).optional(),
-  assignedTo: mongoIdSchema.optional(),
-  status: z.enum(FOLLOWUP_STATUS).optional(),
-});
-
-export const completeFollowUpSchema = z.object({
-  outcome: z.object({
-    status: z.enum(['successful', 'partially_successful', 'unsuccessful']),
-    notes: z.string().min(1).max(2000).trim(),
-    nextActions: z.array(z.string().max(200)).optional(),
-    appointmentCreated: z.boolean().optional(),
-    appointmentId: mongoIdSchema.optional(),
-  }),
-});
-
-export const convertToAppointmentSchema = z.object({
-  scheduledDate: z.string().datetime(),
-  scheduledTime: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, 'Time must be in HH:mm format'),
-  duration: z.number().int().min(5).max(120),
-  type: z.enum([
-    'mtm_session',
-    'chronic_disease_review',
-    'new_medication_consultation',
-    'vaccination',
-    'health_check',
-    'smoking_cessation',
-    'general_followup',
-  ]),
-  description: z.string().max(1000).trim().optional(),
-});
-
-export const escalateFollowUpSchema = z.object({
-  newPriority: z.enum(PRIORITY_LEVELS),
-  reason: z.string().min(1).max(500).trim(),
-});
-
-export const followUpParamsSchema = z.object({
-  id: mongoIdSchema,
-});
-
-export const followUpQuerySchema = z.object({
-  status: z.enum(FOLLOWUP_STATUS).optional(),
-  priority: z.enum(PRIORITY_LEVELS).optional(),
-  type: z.enum(FOLLOWUP_TYPES).optional(),
-  assignedTo: mongoIdSchema.optional(),
-  patientId: mongoIdSchema.optional(),
-  startDate: z.string().datetime().optional(),
-  endDate: z.string().datetime().optional(),
-  overdue: z
-    .string()
-    .optional()
-    .transform((val) => val === 'true'),
-  limit: z
-    .string()
-    .optional()
-    .default('50')
-    .transform((val) => Math.min(100, Math.max(1, parseInt(val) || 50))),
-  cursor: z.string().optional(),
-});
-
-/**
- * Validation middleware factory
- */
-export const validateRequest = (schema: z.ZodSchema, source: 'body' | 'query' | 'params' = 'body') => {
-  return (req: any, res: any, next: any) => {
-    try {
-      const data = source === 'body' ? req.body : source === 'query' ? req.query : req.params;
-      const validated = schema.parse(data);
-      
-      // Replace the original data with validated data
-      if (source === 'body') req.body = validated;
-      else if (source === 'query') req.query = validated;
-      else req.params = validated;
-      
-      next();
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        return res.status(400).json({
-          success: false,
-          message: 'Validation error',
-          errors: error.errors.map((err) => ({
-            field: err.path.join('.'),
-            message: err.message,
-          })),
-        });
-      }
-      next(error);
-    }
-  };
+// Helper function to validate ObjectId
+const isValidObjectId = (value: string) => {
+    return mongoose.Types.ObjectId.isValid(value);
 };
+
+// Business rule validation interface
+interface BusinessRuleValidation {
+    field: string;
+    rule: (value: any, req: Request) => Promise<boolean> | boolean;
+    message: string;
+    code?: string;
+}
+
+// ===============================
+// FOLLOW-UP TASK VALIDATION SCHEMAS
+// ===============================
+
+/**
+ * Create Follow-up Task Validation
+ * Requirements: 3.1, 3.2
+ */
+export const createFollowUpSchema: ValidationChain[] = [
+    body('patientId')
+        .notEmpty()
+        .withMessage('Patient ID is required')
+        .custom(isValidObjectId)
+        .withMessage('Invalid patient ID format'),
+
+    body('type')
+        .isIn([
+            'medication_start_followup',
+            'lab_result_review',
+            'hospital_discharge_followup',
+            'medication_change_followup',
+            'chronic_disease_monitoring',
+            'adherence_check',
+            'refill_reminder',
+            'preventive_care',
+            'general_followup'
+        ])
+        .withMessage('Invalid follow-up task type'),
+
+    body('title')
+        .notEmpty()
+        .withMessage('Title is required')
+        .isLength({ min: 5, max: 200 })
+        .withMessage('Title must be between 5 and 200 characters')
+        .trim(),
+
+    body('description')
+        .notEmpty()
+        .withMessage('Description is required')
+        .isLength({ min: 10, max: 1000 })
+        .withMessage('Description must be between 10 and 1000 characters')
+        .trim(),
+
+    body('objectives')
+        .optional()
+        .isArray()
+        .withMessage('Objectives must be an array'),
+
+    body('objectives.*')
+        .optional()
+        .isString()
+        .withMessage('Each objective must be a string')
+        .isLength({ max: 200 })
+        .withMessage('Each objective cannot exceed 200 characters')
+        .trim(),
+
+    body('priority')
+        .isIn(['low', 'medium', 'high', 'urgent', 'critical'])
+        .withMessage('Invalid priority level'),
+
+    body('dueDate')
+        .notEmpty()
+        .withMessage('Due date is required')
+        .isISO8601()
+        .withMessage('Due date must be a valid date')
+        .custom((value) => {
+            const dueDate = new Date(value);
+            const now = new Date();
+            now.setHours(0, 0, 0, 0);
+            if (dueDate < now) {
+                throw new Error('Due date cannot be in the past');
+            }
+            return true;
+        }),
+
+    body('estimatedDuration')
+        .optional()
+        .isInt({ min: 5, max: 480 })
+        .withMessage('Estimated duration must be between 5 and 480 minutes'),
+
+    body('assignedTo')
+        .optional()
+        .custom(isValidObjectId)
+        .withMessage('Invalid pharmacist ID format'),
+
+    body('trigger.type')
+        .isIn([
+            'manual',
+            'medication_start',
+            'lab_result',
+            'hospital_discharge',
+            'medication_change',
+            'scheduled_monitoring',
+            'missed_appointment',
+            'system_rule'
+        ])
+        .withMessage('Invalid trigger type'),
+
+    body('trigger.sourceId')
+        .optional()
+        .custom(isValidObjectId)
+        .withMessage('Invalid source ID format'),
+
+    body('trigger.sourceType')
+        .optional()
+        .isString()
+        .withMessage('Source type must be a string'),
+
+    body('trigger.triggerDate')
+        .optional()
+        .isISO8601()
+        .withMessage('Trigger date must be a valid date'),
+
+    body('trigger.triggerDetails')
+        .optional()
+        .isObject()
+        .withMessage('Trigger details must be an object'),
+
+    body('relatedRecords.medicationId')
+        .optional()
+        .custom(isValidObjectId)
+        .withMessage('Invalid medication ID format'),
+
+    body('relatedRecords.labResultId')
+        .optional()
+        .custom(isValidObjectId)
+        .withMessage('Invalid lab result ID format'),
+
+    body('relatedRecords.clinicalInterventionId')
+        .optional()
+        .custom(isValidObjectId)
+        .withMessage('Invalid clinical intervention ID format'),
+
+    body('relatedRecords.mtrSessionId')
+        .optional()
+        .custom(isValidObjectId)
+        .withMessage('Invalid MTR session ID format'),
+
+    body('relatedRecords.appointmentId')
+        .optional()
+        .custom(isValidObjectId)
+        .withMessage('Invalid appointment ID format'),
+];
+
+/**
+ * Update Follow-up Task Validation
+ * Requirements: 3.2
+ */
+export const updateFollowUpSchema: ValidationChain[] = [
+    body('title')
+        .optional()
+        .isLength({ min: 5, max: 200 })
+        .withMessage('Title must be between 5 and 200 characters')
+        .trim(),
+
+    body('description')
+        .optional()
+        .isLength({ min: 10, max: 1000 })
+        .withMessage('Description must be between 10 and 1000 characters')
+        .trim(),
+
+    body('objectives')
+        .optional()
+        .isArray()
+        .withMessage('Objectives must be an array'),
+
+    body('priority')
+        .optional()
+        .isIn(['low', 'medium', 'high', 'urgent', 'critical'])
+        .withMessage('Invalid priority level'),
+
+    body('dueDate')
+        .optional()
+        .isISO8601()
+        .withMessage('Due date must be a valid date'),
+
+    body('estimatedDuration')
+        .optional()
+        .isInt({ min: 5, max: 480 })
+        .withMessage('Estimated duration must be between 5 and 480 minutes'),
+
+    body('assignedTo')
+        .optional()
+        .custom(isValidObjectId)
+        .withMessage('Invalid pharmacist ID format'),
+
+    body('status')
+        .optional()
+        .isIn(['pending', 'in_progress', 'completed', 'cancelled', 'overdue', 'converted_to_appointment'])
+        .withMessage('Invalid status'),
+];
+
+/**
+ * Complete Follow-up Task Validation
+ * Requirements: 3.3
+ */
+export const completeFollowUpSchema: ValidationChain[] = [
+    body('outcome.status')
+        .isIn(['successful', 'partially_successful', 'unsuccessful'])
+        .withMessage('Invalid outcome status'),
+
+    body('outcome.notes')
+        .notEmpty()
+        .withMessage('Outcome notes are required')
+        .isLength({ max: 2000 })
+        .withMessage('Outcome notes cannot exceed 2000 characters')
+        .trim(),
+
+    body('outcome.nextActions')
+        .optional()
+        .isArray()
+        .withMessage('Next actions must be an array'),
+
+    body('outcome.nextActions.*')
+        .optional()
+        .isString()
+        .withMessage('Each next action must be a string')
+        .isLength({ max: 200 })
+        .withMessage('Each next action cannot exceed 200 characters')
+        .trim(),
+
+    body('outcome.appointmentCreated')
+        .optional()
+        .isBoolean()
+        .withMessage('appointmentCreated must be a boolean'),
+
+    body('outcome.appointmentId')
+        .optional()
+        .custom(isValidObjectId)
+        .withMessage('Invalid appointment ID format'),
+];
+
+/**
+ * Convert Follow-up to Appointment Validation
+ * Requirements: 3.4
+ */
+export const convertToAppointmentSchema: ValidationChain[] = [
+    body('scheduledDate')
+        .notEmpty()
+        .withMessage('Scheduled date is required')
+        .isISO8601()
+        .withMessage('Scheduled date must be a valid date')
+        .custom((value) => {
+            const scheduledDate = new Date(value);
+            const now = new Date();
+            now.setHours(0, 0, 0, 0);
+            if (scheduledDate < now) {
+                throw new Error('Scheduled date cannot be in the past');
+            }
+            return true;
+        }),
+
+    body('scheduledTime')
+        .notEmpty()
+        .withMessage('Scheduled time is required')
+        .matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
+        .withMessage('Scheduled time must be in HH:mm format'),
+
+    body('duration')
+        .isInt({ min: 5, max: 120 })
+        .withMessage('Duration must be between 5 and 120 minutes'),
+
+    body('type')
+        .isIn([
+            'mtm_session',
+            'chronic_disease_review',
+            'new_medication_consultation',
+            'vaccination',
+            'health_check',
+            'smoking_cessation',
+            'general_followup'
+        ])
+        .withMessage('Invalid appointment type'),
+];
+
+/**
+ * Escalate Follow-up Priority Validation
+ * Requirements: 3.5, 3.6
+ */
+export const escalateFollowUpSchema: ValidationChain[] = [
+    body('newPriority')
+        .isIn(['high', 'urgent', 'critical'])
+        .withMessage('New priority must be high, urgent, or critical'),
+
+    body('reason')
+        .notEmpty()
+        .withMessage('Escalation reason is required')
+        .isLength({ max: 500 })
+        .withMessage('Reason cannot exceed 500 characters')
+        .trim(),
+];
+
+// ===============================
+// PARAMETER VALIDATION
+// ===============================
+
+export const followUpParamsSchema: ValidationChain[] = [
+    param('id')
+        .custom(isValidObjectId)
+        .withMessage('Invalid follow-up task ID format'),
+];
+
+export const patientParamsSchema: ValidationChain[] = [
+    param('patientId')
+        .custom(isValidObjectId)
+        .withMessage('Invalid patient ID format'),
+];
+
+// ===============================
+// QUERY VALIDATION
+// ===============================
+
+export const followUpQuerySchema: ValidationChain[] = [
+    query('status')
+        .optional()
+        .isIn(['pending', 'in_progress', 'completed', 'cancelled', 'overdue', 'converted_to_appointment'])
+        .withMessage('Invalid status'),
+
+    query('priority')
+        .optional()
+        .isIn(['low', 'medium', 'high', 'urgent', 'critical'])
+        .withMessage('Invalid priority'),
+
+    query('type')
+        .optional()
+        .isIn([
+            'medication_start_followup',
+            'lab_result_review',
+            'hospital_discharge_followup',
+            'medication_change_followup',
+            'chronic_disease_monitoring',
+            'adherence_check',
+            'refill_reminder',
+            'preventive_care',
+            'general_followup'
+        ])
+        .withMessage('Invalid follow-up task type'),
+
+    query('assignedTo')
+        .optional()
+        .custom(isValidObjectId)
+        .withMessage('Invalid pharmacist ID format'),
+
+    query('patientId')
+        .optional()
+        .custom(isValidObjectId)
+        .withMessage('Invalid patient ID format'),
+
+    query('dueDateFrom')
+        .optional()
+        .isISO8601()
+        .withMessage('Due date from must be a valid date'),
+
+    query('dueDateTo')
+        .optional()
+        .isISO8601()
+        .withMessage('Due date to must be a valid date'),
+
+    query('page')
+        .optional()
+        .isInt({ min: 1 })
+        .withMessage('Page must be a positive integer'),
+
+    query('limit')
+        .optional()
+        .isInt({ min: 1, max: 100 })
+        .withMessage('Limit must be between 1 and 100'),
+
+    query('sortBy')
+        .optional()
+        .isIn(['dueDate', 'priority', 'createdAt', 'status'])
+        .withMessage('Invalid sort field'),
+
+    query('sortOrder')
+        .optional()
+        .isIn(['asc', 'desc'])
+        .withMessage('Sort order must be asc or desc'),
+];
+
+export const overdueFollowUpsQuerySchema: ValidationChain[] = [
+    query('assignedTo')
+        .optional()
+        .custom(isValidObjectId)
+        .withMessage('Invalid pharmacist ID format'),
+
+    query('priority')
+        .optional()
+        .isIn(['low', 'medium', 'high', 'urgent', 'critical'])
+        .withMessage('Invalid priority'),
+];
+
+// ===============================
+// BUSINESS RULE VALIDATIONS
+// ===============================
+
+/**
+ * Business rules for follow-up task creation
+ */
+export const followUpBusinessRules: BusinessRuleValidation[] = [
+    {
+        field: 'patientId',
+        rule: async (patientId: string, req: Request) => {
+            if (!patientId) return false;
+
+            // Check if patient exists and belongs to the same workplace
+            const Patient = require('../models/Patient');
+            const patient = await Patient.findOne({
+                _id: patientId,
+                workplaceId: (req as any).user?.workplaceId,
+                isDeleted: false
+            });
+
+            return !!patient;
+        },
+        message: 'Patient not found or does not belong to your workplace',
+        code: 'PATIENT_NOT_FOUND'
+    },
+    {
+        field: 'assignedTo',
+        rule: async (assignedTo: string, req: Request) => {
+            if (!assignedTo) return true; // Optional field
+
+            // Check if pharmacist exists and belongs to the same workplace
+            const User = require('../models/User');
+            const pharmacist = await User.findOne({
+                _id: assignedTo,
+                workplaceId: (req as any).user?.workplaceId,
+                isDeleted: false
+            });
+
+            return !!pharmacist;
+        },
+        message: 'Pharmacist not found or does not belong to your workplace',
+        code: 'PHARMACIST_NOT_FOUND'
+    },
+    {
+        field: 'dueDate',
+        rule: (dueDate: string, req: Request) => {
+            if (!dueDate) return true;
+
+            const priority = req.body.priority;
+            const dueDateObj = new Date(dueDate);
+            const now = new Date();
+
+            // Critical and urgent tasks should be due within 7 days
+            if (priority === 'critical' || priority === 'urgent') {
+                const maxDueDate = new Date(now);
+                maxDueDate.setDate(maxDueDate.getDate() + 7);
+                return dueDateObj <= maxDueDate;
+            }
+
+            return true;
+        },
+        message: 'Critical and urgent tasks must be due within 7 days',
+        code: 'INVALID_DUE_DATE_FOR_PRIORITY'
+    }
+];
+
+/**
+ * Business rules for follow-up task completion
+ */
+export const completeFollowUpBusinessRules: BusinessRuleValidation[] = [
+    {
+        field: 'outcome.appointmentId',
+        rule: async (appointmentId: string, req: Request) => {
+            if (!appointmentId) return true; // Optional field
+
+            // Check if appointment exists
+            const Appointment = require('../models/Appointment');
+            const appointment = await Appointment.findOne({
+                _id: appointmentId,
+                workplaceId: (req as any).user?.workplaceId,
+                isDeleted: false
+            });
+
+            return !!appointment;
+        },
+        message: 'Appointment not found',
+        code: 'APPOINTMENT_NOT_FOUND'
+    }
+];
