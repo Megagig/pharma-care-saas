@@ -46,6 +46,11 @@ async function initializeServer() {
     try {
       await QueueService.initialize();
       console.log('✅ Queue Service initialized successfully');
+      
+      // Initialize job workers
+      const { initializeWorkers } = await import('./jobs/workers');
+      await initializeWorkers();
+      console.log('✅ Job workers initialized successfully');
     } catch (error) {
       console.error('⚠️ Queue Service initialization failed:', error);
       // Don't exit - queues are not critical for basic functionality

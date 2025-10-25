@@ -1,0 +1,66 @@
+/**
+ * Job Workers
+ * Registers job processors with their respective queues
+ */
+
+import QueueService from '../services/QueueService';
+import { QueueName } from '../config/queue';
+import {
+  processAppointmentReminder,
+  onAppointmentReminderCompleted,
+  onAppointmentReminderFailed,
+} from './appointmentReminderProcessor';
+import logger from '../utils/logger';
+
+/**
+ * Initialize all job workers
+ */
+export async function initializeWorkers(): Promise<void> {
+  try {
+    logger.info('Initializing job workers...');
+
+    // Register appointment reminder processor
+    const appointmentReminderQueue = QueueService.getQueue(QueueName.APPOINTMENT_REMINDER);
+    if (appointmentReminderQueue) {
+      appointmentReminderQueue.process(processAppointmentReminder);
+      appointmentReminderQueue.on('completed', onAppointmentReminderCompleted);
+      appointmentReminderQueue.on('failed', onAppointmentReminderFailed);
+      logger.info('Appointment reminder worker registered');
+    } else {
+      logger.warn('Appointment reminder queue not found');
+    }
+
+    // TODO: Register other job processors as they are implemented
+    // - Follow-up monitor processor
+    // - Medication reminder processor
+    // - Adherence check processor
+    // - Appointment status monitor processor
+
+    logger.info('Job workers initialized successfully');
+  } catch (error) {
+    logger.error('Failed to initialize job workers:', error);
+    throw error;
+  }
+}
+
+/**
+ * Shutdown all workers gracefully
+ */
+export async function shutdownWorkers(): Promise<void> {
+  try {
+    logger.info('Shutting down job workers...');
+
+    // Close all queues
+    await QueueService.closeAll();
+
+    logger.info('Job workers shut down successfully');
+  } catch (error) {
+    logger.error('Error shutting down job workers:', error);
+    throw error;
+  }
+}
+
+export default {
+  initializeWorkers,
+  shutdownWorkers,
+};
