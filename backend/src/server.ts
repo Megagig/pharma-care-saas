@@ -13,6 +13,7 @@ import UsageAlertCronService from './services/UsageAlertCronService';
 import { emailDeliveryCronService } from './services/EmailDeliveryCronService';
 import CommunicationSocketService from './services/communicationSocketService';
 import SocketNotificationService from './services/socketNotificationService';
+import QueueService from './services/QueueService';
 
 // Import models to ensure they are registered with Mongoose
 import './models/Medication';
@@ -40,6 +41,15 @@ async function initializeServer() {
 
     // Start performance monitoring after DB is connected
     performanceCollector.startSystemMetricsCollection();
+
+    // Initialize Queue Service
+    try {
+      await QueueService.initialize();
+      console.log('✅ Queue Service initialized successfully');
+    } catch (error) {
+      console.error('⚠️ Queue Service initialization failed:', error);
+      // Don't exit - queues are not critical for basic functionality
+    }
   } catch (error) {
     console.error('❌ Database connection failed:', error);
     process.exit(1);
@@ -163,6 +173,14 @@ const gracefulShutdown = (signal: string) => {
       server.close(() => {
         console.log('HTTP server closed');
       });
+    }
+
+    // Close queue service
+    try {
+      await QueueService.closeAll();
+      console.log('Queue Service closed');
+    } catch (error) {
+      console.error('Error closing Queue Service:', error);
     }
 
     // Close database connection

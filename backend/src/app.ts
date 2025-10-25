@@ -445,9 +445,11 @@ app.use('/api/mtr/notifications', mtrNotificationRoutes);
 import appointmentRoutes from './routes/appointmentRoutes';
 import followUpRoutes from './routes/followUpRoutes';
 import scheduleRoutes from './routes/scheduleRoutes';
+import queueMonitoringRoutes from './routes/queueMonitoringRoutes';
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/follow-ups', followUpRoutes);
 app.use('/api/schedules', scheduleRoutes);
+app.use('/api/queue-monitoring', queueMonitoringRoutes);
 
 // Clinical interventions health check (no auth required)
 app.get('/api/clinical-interventions/health', (req, res) => {

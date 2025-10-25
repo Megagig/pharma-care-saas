@@ -71,7 +71,8 @@
     "debug-subscription": "ts-node scripts/debugSubscription.ts",
     "list-users": "ts-node scripts/listUsers.ts",
     "test-subscription-api": "ts-node scripts/testSubscriptionAPI.ts",
-    "change-password": "ts-node scripts/changeUserPassword.ts"
+    "change-password": "ts-node scripts/changeUserPassword.ts",
+    "test:queue-infrastructure": "ts-node src/scripts/testQueueInfrastructure.ts"
   },
   "keywords": [
     "pharmacy",
