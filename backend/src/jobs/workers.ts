@@ -15,6 +15,11 @@ import {
   onFollowUpMonitorCompleted,
   onFollowUpMonitorFailed,
 } from './followUpMonitorProcessor';
+import {
+  processMedicationReminder,
+  onMedicationReminderCompleted,
+  onMedicationReminderFailed,
+} from './medicationReminderProcessor';
 import logger from '../utils/logger';
 
 /**
@@ -46,9 +51,19 @@ export async function initializeWorkers(): Promise<void> {
       logger.warn('Follow-up monitor queue not found');
     }
 
+    // Register medication reminder processor
+    const medicationReminderQueue = QueueService.getQueue(QueueName.MEDICATION_REMINDER);
+    if (medicationReminderQueue) {
+      medicationReminderQueue.process(processMedicationReminder);
+      medicationReminderQueue.on('completed', onMedicationReminderCompleted);
+      medicationReminderQueue.on('failed', onMedicationReminderFailed);
+      logger.info('Medication reminder worker registered');
+    } else {
+      logger.warn('Medication reminder queue not found');
+    }
+
     // TODO: Register other job processors as they are implemented
-    // - Medication reminder processor
-    // - Adherence check processor
+    // - Adherence check processor (now handled by medication reminder processor)
     // - Appointment status monitor processor
 
     logger.info('Job workers initialized successfully');
