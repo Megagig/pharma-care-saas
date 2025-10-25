@@ -8,6 +8,7 @@ import {
   getAllPharmacistSchedules,
 } from '../controllers/scheduleController';
 import { auth } from '../middlewares/auth';
+import { authWithWorkspace } from '../middlewares/authWithWorkspace';
 import { requireDynamicPermission } from '../middlewares/rbac';
 import {
   validateRequest,
@@ -21,8 +22,9 @@ import {
 
 const router = express.Router();
 
-// Apply authentication to all routes
+// Apply authentication and workspace context to all routes
 router.use(auth);
+router.use(authWithWorkspace);
 
 // ===============================
 // SCHEDULE MANAGEMENT ROUTES
@@ -34,7 +36,7 @@ router.use(auth);
  */
 router.get(
   '/capacity',
-  requireDynamicPermission('schedule.read'),
+  requireDynamicPermission('schedule.capacity_view'),
   validateRequest(capacityQuerySchema, 'query'),
   getCapacityReport
 );
@@ -78,7 +80,7 @@ router.put(
  */
 router.post(
   '/pharmacist/:pharmacistId/time-off',
-  requireDynamicPermission('schedule.create'),
+  requireDynamicPermission('schedule.time_off_request'),
   validateRequest(scheduleParamsSchema, 'params'),
   validateRequest(createTimeOffSchema, 'body'),
   requestTimeOff
@@ -90,7 +92,7 @@ router.post(
  */
 router.patch(
   '/pharmacist/:pharmacistId/time-off/:timeOffId',
-  requireDynamicPermission('schedule.update'),
+  requireDynamicPermission('schedule.time_off_approve'),
   validateRequest(timeOffParamsSchema, 'params'),
   validateRequest(updateTimeOffSchema, 'body'),
   updateTimeOffStatus

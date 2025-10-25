@@ -11,7 +11,19 @@ import {
   getPatientFollowUps,
 } from '../controllers/followUpController';
 import { auth } from '../middlewares/auth';
+import { authWithWorkspace } from '../middlewares/authWithWorkspace';
 import { requireDynamicPermission } from '../middlewares/rbac';
+import {
+  requireFollowUpRead,
+  requireFollowUpCreate,
+  requireFollowUpUpdate,
+  requireFollowUpComplete,
+  requireFollowUpEscalate,
+  requireFollowUpConvert,
+  checkFollowUpOwnership,
+  checkFollowUpFeatureAccess,
+  applyFollowUpDataFiltering,
+} from '../middlewares/followUpRBAC';
 import {
   validateRequest,
   createFollowUpSchema,
@@ -25,8 +37,12 @@ import {
 
 const router = express.Router();
 
-// Apply authentication to all routes
+// Apply authentication and workspace context to all routes
 router.use(auth);
+router.use(authWithWorkspace);
+
+// Apply feature access check to all routes
+router.use(checkFollowUpFeatureAccess);
 
 // ===============================
 // FOLLOW-UP TASK ROUTES
@@ -38,7 +54,9 @@ router.use(auth);
  */
 router.get(
   '/overdue',
+  requireFollowUpRead,
   requireDynamicPermission('followup.read'),
+  applyFollowUpDataFiltering,
   getOverdueFollowUps
 );
 
@@ -48,8 +66,10 @@ router.get(
  */
 router.get(
   '/patient/:patientId',
+  requireFollowUpRead,
   requireDynamicPermission('followup.read'),
   validateRequest(followUpParamsSchema, 'params'),
+  applyFollowUpDataFiltering,
   getPatientFollowUps
 );
 
@@ -59,6 +79,7 @@ router.get(
  */
 router.post(
   '/',
+  requireFollowUpCreate,
   requireDynamicPermission('followup.create'),
   validateRequest(createFollowUpSchema, 'body'),
   createFollowUp
@@ -70,8 +91,10 @@ router.post(
  */
 router.get(
   '/',
+  requireFollowUpRead,
   requireDynamicPermission('followup.read'),
   validateRequest(followUpQuerySchema, 'query'),
+  applyFollowUpDataFiltering,
   getFollowUps
 );
 
@@ -81,8 +104,10 @@ router.get(
  */
 router.get(
   '/:id',
+  requireFollowUpRead,
   requireDynamicPermission('followup.read'),
   validateRequest(followUpParamsSchema, 'params'),
+  checkFollowUpOwnership,
   getFollowUp
 );
 
@@ -92,9 +117,11 @@ router.get(
  */
 router.put(
   '/:id',
+  requireFollowUpUpdate,
   requireDynamicPermission('followup.update'),
   validateRequest(followUpParamsSchema, 'params'),
   validateRequest(updateFollowUpSchema, 'body'),
+  checkFollowUpOwnership,
   updateFollowUp
 );
 
@@ -104,9 +131,11 @@ router.put(
  */
 router.post(
   '/:id/complete',
-  requireDynamicPermission('followup.update'),
+  requireFollowUpComplete,
+  requireDynamicPermission('followup.complete'),
   validateRequest(followUpParamsSchema, 'params'),
   validateRequest(completeFollowUpSchema, 'body'),
+  checkFollowUpOwnership,
   completeFollowUp
 );
 
@@ -116,10 +145,12 @@ router.post(
  */
 router.post(
   '/:id/convert-to-appointment',
-  requireDynamicPermission('followup.update'),
+  requireFollowUpConvert,
+  requireDynamicPermission('followup.convert_to_appointment'),
   requireDynamicPermission('appointment.create'),
   validateRequest(followUpParamsSchema, 'params'),
   validateRequest(convertToAppointmentSchema, 'body'),
+  checkFollowUpOwnership,
   convertToAppointment
 );
 
@@ -129,9 +160,11 @@ router.post(
  */
 router.post(
   '/:id/escalate',
-  requireDynamicPermission('followup.update'),
+  requireFollowUpEscalate,
+  requireDynamicPermission('followup.escalate'),
   validateRequest(followUpParamsSchema, 'params'),
   validateRequest(escalateFollowUpSchema, 'body'),
+  checkFollowUpOwnership,
   escalateFollowUp
 );
 

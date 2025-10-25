@@ -238,6 +238,55 @@ export const PERMISSION_MATRIX: PermissionMatrix = {
         requiresActiveSubscription: true,
         allowTrialAccess: false,
     },
+    'appointment.reschedule': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['appointmentScheduling'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'appointment.cancel': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['appointmentScheduling'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'appointment.confirm': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['appointmentScheduling'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'appointment.complete': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['appointmentScheduling'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'appointment.manage': {
+        workplaceRoles: ['Owner'],
+        features: ['appointmentScheduling'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'appointment.calendar_view': {
+        workplaceRoles: ['Owner', 'Pharmacist', 'Technician', 'Assistant'],
+        features: ['appointmentScheduling'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'appointment.available_slots': {
+        workplaceRoles: ['Owner', 'Pharmacist', 'Technician', 'Assistant'],
+        features: ['appointmentScheduling'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'appointment.analytics': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['appointmentScheduling', 'advancedReports'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: false,
+    },
 
     // ========================================
     // FOLLOW-UP TASK MANAGEMENT
@@ -266,6 +315,43 @@ export const PERMISSION_MATRIX: PermissionMatrix = {
         requiresActiveSubscription: true,
         allowTrialAccess: false,
     },
+    'followup.complete': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['followUpManagement'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'followup.escalate': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['followUpManagement'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'followup.convert_to_appointment': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['followUpManagement', 'appointmentScheduling'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'followup.assign': {
+        workplaceRoles: ['Owner'],
+        features: ['followUpManagement', 'teamManagement'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'followup.manage': {
+        workplaceRoles: ['Owner'],
+        features: ['followUpManagement'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'followup.analytics': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['followUpManagement', 'advancedReports'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: false,
+    },
 
     // ========================================
     // SCHEDULE MANAGEMENT
@@ -291,6 +377,59 @@ export const PERMISSION_MATRIX: PermissionMatrix = {
     'schedule.delete': {
         workplaceRoles: ['Owner'],
         features: ['scheduleManagement'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: false,
+    },
+    'schedule.time_off_request': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['scheduleManagement'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'schedule.time_off_approve': {
+        workplaceRoles: ['Owner'],
+        features: ['scheduleManagement'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'schedule.capacity_view': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['scheduleManagement'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+
+    // ========================================
+    // REMINDER MANAGEMENT
+    // ========================================
+    'reminder.create': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['appointmentScheduling'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'reminder.read': {
+        workplaceRoles: ['Owner', 'Pharmacist', 'Technician'],
+        features: ['appointmentScheduling'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'reminder.send': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['appointmentScheduling'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'reminder.template_manage': {
+        workplaceRoles: ['Owner'],
+        features: ['appointmentScheduling'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'reminder.analytics': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['appointmentScheduling', 'advancedReports'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
         requiresActiveSubscription: true,
         allowTrialAccess: false,
     },

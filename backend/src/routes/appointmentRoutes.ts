@@ -14,7 +14,19 @@ import {
   confirmAppointment,
 } from '../controllers/appointmentController';
 import { auth } from '../middlewares/auth';
+import { authWithWorkspace } from '../middlewares/authWithWorkspace';
 import { requireDynamicPermission } from '../middlewares/rbac';
+import {
+  requireAppointmentRead,
+  requireAppointmentCreate,
+  requireAppointmentUpdate,
+  requireAppointmentDelete,
+  requireAppointmentReschedule,
+  requireAppointmentCancel,
+  requireAppointmentConfirm,
+  checkAppointmentOwnership,
+  checkAppointmentFeatureAccess,
+} from '../middlewares/appointmentRBAC';
 import {
   validateRequest,
   createAppointmentSchema,
@@ -31,8 +43,12 @@ import {
 
 const router = express.Router();
 
-// Apply authentication to all routes
+// Apply authentication and workspace context to all routes
 router.use(auth);
+router.use(authWithWorkspace);
+
+// Apply feature access check to all routes
+router.use(checkAppointmentFeatureAccess);
 
 // ===============================
 // APPOINTMENT ROUTES
@@ -44,7 +60,8 @@ router.use(auth);
  */
 router.get(
   '/calendar',
-  requireDynamicPermission('appointment.read'),
+  requireAppointmentRead,
+  requireDynamicPermission('appointment.calendar_view'),
   validateRequest(appointmentQuerySchema, 'query'),
   getCalendarAppointments
 );
@@ -55,7 +72,8 @@ router.get(
  */
 router.get(
   '/available-slots',
-  requireDynamicPermission('appointment.read'),
+  requireAppointmentRead,
+  requireDynamicPermission('appointment.available_slots'),
   validateRequest(availableSlotsQuerySchema, 'query'),
   getAvailableSlots
 );
@@ -66,6 +84,7 @@ router.get(
  */
 router.get(
   '/upcoming',
+  requireAppointmentRead,
   requireDynamicPermission('appointment.read'),
   validateRequest(upcomingAppointmentsQuerySchema, 'query'),
   getUpcomingAppointments
@@ -77,6 +96,7 @@ router.get(
  */
 router.get(
   '/patient/:patientId',
+  requireAppointmentRead,
   requireDynamicPermission('appointment.read'),
   validateRequest(appointmentParamsSchema, 'params'),
   getPatientAppointments
@@ -88,6 +108,7 @@ router.get(
  */
 router.post(
   '/',
+  requireAppointmentCreate,
   requireDynamicPermission('appointment.create'),
   validateRequest(createAppointmentSchema, 'body'),
   createAppointment
@@ -99,6 +120,7 @@ router.post(
  */
 router.get(
   '/',
+  requireAppointmentRead,
   requireDynamicPermission('appointment.read'),
   validateRequest(appointmentQuerySchema, 'query'),
   getAppointments
@@ -110,8 +132,10 @@ router.get(
  */
 router.get(
   '/:id',
+  requireAppointmentRead,
   requireDynamicPermission('appointment.read'),
   validateRequest(appointmentParamsSchema, 'params'),
+  checkAppointmentOwnership,
   getAppointment
 );
 
@@ -121,9 +145,11 @@ router.get(
  */
 router.put(
   '/:id',
+  requireAppointmentUpdate,
   requireDynamicPermission('appointment.update'),
   validateRequest(appointmentParamsSchema, 'params'),
   validateRequest(updateAppointmentSchema, 'body'),
+  checkAppointmentOwnership,
   updateAppointment
 );
 
@@ -133,9 +159,11 @@ router.put(
  */
 router.patch(
   '/:id/status',
+  requireAppointmentUpdate,
   requireDynamicPermission('appointment.update'),
   validateRequest(appointmentParamsSchema, 'params'),
   validateRequest(updateAppointmentStatusSchema, 'body'),
+  checkAppointmentOwnership,
   updateAppointmentStatus
 );
 
@@ -145,9 +173,11 @@ router.patch(
  */
 router.post(
   '/:id/reschedule',
-  requireDynamicPermission('appointment.update'),
+  requireAppointmentReschedule,
+  requireDynamicPermission('appointment.reschedule'),
   validateRequest(appointmentParamsSchema, 'params'),
   validateRequest(rescheduleAppointmentSchema, 'body'),
+  checkAppointmentOwnership,
   rescheduleAppointment
 );
 
@@ -157,9 +187,11 @@ router.post(
  */
 router.post(
   '/:id/cancel',
-  requireDynamicPermission('appointment.delete'),
+  requireAppointmentCancel,
+  requireDynamicPermission('appointment.cancel'),
   validateRequest(appointmentParamsSchema, 'params'),
   validateRequest(cancelAppointmentSchema, 'body'),
+  checkAppointmentOwnership,
   cancelAppointment
 );
 
@@ -169,9 +201,11 @@ router.post(
  */
 router.post(
   '/:id/confirm',
-  requireDynamicPermission('appointment.update'),
+  requireAppointmentConfirm,
+  requireDynamicPermission('appointment.confirm'),
   validateRequest(appointmentParamsSchema, 'params'),
   validateRequest(confirmAppointmentSchema, 'body'),
+  checkAppointmentOwnership,
   confirmAppointment
 );
 
