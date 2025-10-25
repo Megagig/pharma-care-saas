@@ -440,6 +440,15 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/billing', billingRoutes);
 app.use('/api/mtr', mtrRoutes);
 app.use('/api/mtr/notifications', mtrNotificationRoutes);
+
+// Patient Engagement & Follow-up Management routes
+import appointmentRoutes from './routes/appointmentRoutes';
+import followUpRoutes from './routes/followUpRoutes';
+import scheduleRoutes from './routes/scheduleRoutes';
+app.use('/api/appointments', appointmentRoutes);
+app.use('/api/follow-ups', followUpRoutes);
+app.use('/api/schedules', scheduleRoutes);
+
 // Clinical interventions health check (no auth required)
 app.get('/api/clinical-interventions/health', (req, res) => {
   res.json({

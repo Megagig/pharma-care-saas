@@ -212,6 +212,90 @@ export const PERMISSION_MATRIX: PermissionMatrix = {
     },
 
     // ========================================
+    // APPOINTMENT MANAGEMENT
+    // ========================================
+    'appointment.create': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['appointmentScheduling'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'appointment.read': {
+        workplaceRoles: ['Owner', 'Pharmacist', 'Technician', 'Assistant'],
+        features: ['appointmentScheduling'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'appointment.update': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['appointmentScheduling'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'appointment.delete': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['appointmentScheduling'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: false,
+    },
+
+    // ========================================
+    // FOLLOW-UP TASK MANAGEMENT
+    // ========================================
+    'followup.create': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['followUpManagement'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'followup.read': {
+        workplaceRoles: ['Owner', 'Pharmacist', 'Technician'],
+        features: ['followUpManagement'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'followup.update': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['followUpManagement'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'followup.delete': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['followUpManagement'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: false,
+    },
+
+    // ========================================
+    // SCHEDULE MANAGEMENT
+    // ========================================
+    'schedule.create': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['scheduleManagement'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'schedule.read': {
+        workplaceRoles: ['Owner', 'Pharmacist', 'Technician'],
+        features: ['scheduleManagement'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'schedule.update': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['scheduleManagement'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'schedule.delete': {
+        workplaceRoles: ['Owner'],
+        features: ['scheduleManagement'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: false,
+    },
+
+    // ========================================
     // SUBSCRIPTION MANAGEMENT
     // ========================================
     'subscription.manage': {
