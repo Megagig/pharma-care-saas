@@ -25,6 +25,11 @@ import {
   onAdherenceCheckCompleted,
   onAdherenceCheckFailed,
 } from './adherenceCheckProcessor';
+import {
+  processAppointmentStatusMonitor,
+  onAppointmentStatusMonitorCompleted,
+  onAppointmentStatusMonitorFailed,
+} from './appointmentStatusProcessor';
 import logger from '../utils/logger';
 
 /**
@@ -78,8 +83,16 @@ export async function initializeWorkers(): Promise<void> {
       logger.warn('Adherence check queue not found');
     }
 
-    // TODO: Register other job processors as they are implemented
-    // - Appointment status monitor processor
+    // Register appointment status monitor processor
+    const appointmentStatusQueue = QueueService.getQueue(QueueName.APPOINTMENT_STATUS);
+    if (appointmentStatusQueue) {
+      appointmentStatusQueue.process(processAppointmentStatusMonitor);
+      appointmentStatusQueue.on('completed', onAppointmentStatusMonitorCompleted);
+      appointmentStatusQueue.on('failed', onAppointmentStatusMonitorFailed);
+      logger.info('Appointment status monitor worker registered');
+    } else {
+      logger.warn('Appointment status monitor queue not found');
+    }
 
     logger.info('Job workers initialized successfully');
   } catch (error) {
