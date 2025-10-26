@@ -5,6 +5,7 @@ import MedicationTherapyReview from '../models/MedicationTherapyReview';
 import Visit from '../models/Visit';
 import FollowUpTask, { IFollowUpTask } from '../models/FollowUpTask';
 import ClinicalIntervention, { IClinicalIntervention } from '../models/ClinicalIntervention';
+import DiagnosticCase, { IDiagnosticCase } from '../models/DiagnosticCase';
 import logger from '../utils/logger';
 // Simple error class
 class AppError extends Error {
@@ -40,6 +41,15 @@ export interface SyncStatusData {
 
 export interface CreateFollowUpFromInterventionData {
   interventionId: mongoose.Types.ObjectId;
+  patientId: mongoose.Types.ObjectId;
+  assignedTo: mongoose.Types.ObjectId;
+  workplaceId: mongoose.Types.ObjectId;
+  locationId?: string;
+  createdBy: mongoose.Types.ObjectId;
+}
+
+export interface CreateFollowUpFromDiagnosticData {
+  diagnosticCaseId: mongoose.Types.ObjectId;
   patientId: mongoose.Types.ObjectId;
   assignedTo: mongoose.Types.ObjectId;
   workplaceId: mongoose.Types.ObjectId;
@@ -759,6 +769,353 @@ export class EngagementIntegrationService {
     const specificObjectives = categoryObjectives[intervention.category] || [];
     
     return [...baseObjectives, ...specificObjectives];
+  }
+
+  /**
+   * Create follow-up task from diagnostic case
+   */
+  async createFollowUpFromDiagnostic(data: CreateFollowUpFromDiagnosticData): Promise<{
+    followUpTask: IFollowUpTask;
+    diagnosticCase: IDiagnosticCase;
+  }> {
+    try {
+      logger.info('Creating follow-up task from diagnostic case', {
+        diagnosticCaseId: data.diagnosticCaseId,
+        patientId: data.patientId,
+      });
+
+      // Verify diagnostic case exists
+      const diagnosticCase = await DiagnosticCase.findById(data.diagnosticCaseId);
+      if (!diagnosticCase) {
+        throw new AppError('Diagnostic case not found', 404);
+      }
+
+      // Check if follow-up task already exists
+      const existingTask = await FollowUpTask.findOne({
+        'relatedRecords.diagnosticCaseId': data.diagnosticCaseId,
+        status: { $nin: ['completed', 'cancelled'] },
+      });
+
+      if (existingTask) {
+        logger.info('Follow-up task already exists for diagnostic case', {
+          diagnosticCaseId: data.diagnosticCaseId,
+          existingTaskId: existingTask._id,
+        });
+        return {
+          followUpTask: existingTask,
+          diagnosticCase,
+        };
+      }
+
+      // Set priority based on AI confidence score and red flags
+      const priority = this.calculateDiagnosticFollowUpPriority(diagnosticCase);
+
+      // Calculate due date based on priority and red flags
+      const dueDate = this.calculateDiagnosticFollowUpDueDate(diagnosticCase, priority);
+
+      // Generate follow-up task details based on diagnostic case
+      const taskTitle = this.generateDiagnosticFollowUpTitle(diagnosticCase);
+      const taskDescription = this.generateDiagnosticFollowUpDescription(diagnosticCase);
+      const objectives = this.generateDiagnosticFollowUpObjectives(diagnosticCase);
+
+      // Create follow-up task
+      const followUpTask = new FollowUpTask({
+        workplaceId: data.workplaceId,
+        locationId: data.locationId,
+        patientId: data.patientId,
+        assignedTo: data.assignedTo,
+        type: 'general_followup',
+        title: taskTitle,
+        description: taskDescription,
+        objectives,
+        priority,
+        dueDate,
+        estimatedDuration: 30, // Default 30 minutes for diagnostic follow-up
+        status: 'pending',
+        trigger: {
+          type: 'system_rule',
+          sourceId: data.diagnosticCaseId,
+          sourceType: 'DiagnosticCase',
+          triggerDate: new Date(),
+          triggerDetails: {
+            caseId: diagnosticCase.caseId,
+            confidenceScore: diagnosticCase.aiAnalysis?.confidenceScore,
+            redFlagsCount: diagnosticCase.aiAnalysis?.redFlags?.length || 0,
+            hasReferralRecommendation: diagnosticCase.aiAnalysis?.referralRecommendation?.recommended || false,
+          },
+        },
+        relatedRecords: {
+          diagnosticCaseId: data.diagnosticCaseId,
+        },
+        createdBy: data.createdBy,
+      });
+
+      await followUpTask.save();
+
+      logger.info('Follow-up task created from diagnostic case', {
+        followUpTaskId: followUpTask._id,
+        diagnosticCaseId: data.diagnosticCaseId,
+        priority: followUpTask.priority,
+        dueDate: followUpTask.dueDate,
+      });
+
+      return {
+        followUpTask,
+        diagnosticCase,
+      };
+    } catch (error) {
+      logger.error('Error creating follow-up task from diagnostic case', {
+        error: error.message,
+        diagnosticCaseId: data.diagnosticCaseId,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Get diagnostic case with linked follow-up tasks and appointments
+   */
+  async getDiagnosticWithEngagementData(diagnosticCaseId: mongoose.Types.ObjectId): Promise<{
+    diagnosticCase: IDiagnosticCase;
+    followUpTasks: IFollowUpTask[];
+    appointments: IAppointment[];
+  }> {
+    try {
+      const [diagnosticCase, followUpTasks, appointments] = await Promise.all([
+        DiagnosticCase.findById(diagnosticCaseId),
+        FollowUpTask.find({ 'relatedRecords.diagnosticCaseId': diagnosticCaseId }),
+        Appointment.find({ 'relatedRecords.diagnosticCaseId': diagnosticCaseId }),
+      ]);
+
+      if (!diagnosticCase) {
+        throw new AppError('Diagnostic case not found', 404);
+      }
+
+      return {
+        diagnosticCase,
+        followUpTasks: followUpTasks || [],
+        appointments: appointments || [],
+      };
+    } catch (error) {
+      logger.error('Error getting diagnostic case with engagement data', {
+        error: error.message,
+        diagnosticCaseId,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Calculate follow-up priority based on diagnostic case AI analysis
+   */
+  private calculateDiagnosticFollowUpPriority(diagnosticCase: IDiagnosticCase): IFollowUpTask['priority'] {
+    const aiAnalysis = diagnosticCase.aiAnalysis;
+    
+    if (!aiAnalysis) {
+      return 'medium';
+    }
+
+    // Check for critical red flags
+    const criticalRedFlags = aiAnalysis.redFlags?.filter(flag => flag.severity === 'critical') || [];
+    if (criticalRedFlags.length > 0) {
+      return 'critical';
+    }
+
+    // Check for high severity red flags
+    const highRedFlags = aiAnalysis.redFlags?.filter(flag => flag.severity === 'high') || [];
+    if (highRedFlags.length > 0) {
+      return 'urgent';
+    }
+
+    // Check for immediate referral recommendation
+    if (aiAnalysis.referralRecommendation?.recommended && 
+        aiAnalysis.referralRecommendation.urgency === 'immediate') {
+      return 'critical';
+    }
+
+    // Check for within 24h referral recommendation
+    if (aiAnalysis.referralRecommendation?.recommended && 
+        aiAnalysis.referralRecommendation.urgency === 'within_24h') {
+      return 'urgent';
+    }
+
+    // Check confidence score - low confidence needs urgent follow-up
+    if (aiAnalysis.confidenceScore < 0.6) {
+      return 'urgent';
+    }
+
+    // Check for medium severity red flags
+    const mediumRedFlags = aiAnalysis.redFlags?.filter(flag => flag.severity === 'medium') || [];
+    if (mediumRedFlags.length > 0) {
+      return 'high';
+    }
+
+    // Check for routine referral recommendation
+    if (aiAnalysis.referralRecommendation?.recommended) {
+      return 'high';
+    }
+
+    // Default based on confidence score
+    if (aiAnalysis.confidenceScore >= 0.8) {
+      return 'medium';
+    } else if (aiAnalysis.confidenceScore >= 0.7) {
+      return 'high';
+    } else {
+      return 'urgent';
+    }
+  }
+
+  /**
+   * Calculate follow-up due date based on diagnostic case priority and analysis
+   */
+  private calculateDiagnosticFollowUpDueDate(
+    diagnosticCase: IDiagnosticCase, 
+    priority: IFollowUpTask['priority']
+  ): Date {
+    const dueDate = new Date();
+    const aiAnalysis = diagnosticCase.aiAnalysis;
+
+    // Check for immediate referral or critical red flags
+    if (aiAnalysis?.referralRecommendation?.urgency === 'immediate' ||
+        aiAnalysis?.redFlags?.some(flag => flag.severity === 'critical')) {
+      dueDate.setHours(dueDate.getHours() + 2); // 2 hours for critical cases
+      return dueDate;
+    }
+
+    // Check for within 24h referral
+    if (aiAnalysis?.referralRecommendation?.urgency === 'within_24h') {
+      dueDate.setDate(dueDate.getDate() + 1); // 1 day
+      return dueDate;
+    }
+
+    // Priority-based due dates
+    const dueDateMapping: Record<IFollowUpTask['priority'], number> = {
+      'critical': 1,  // 1 day
+      'urgent': 2,    // 2 days
+      'high': 3,      // 3 days
+      'medium': 7,    // 7 days
+      'low': 14,      // 14 days
+    };
+
+    const daysToAdd = dueDateMapping[priority] || 7;
+    dueDate.setDate(dueDate.getDate() + daysToAdd);
+    
+    return dueDate;
+  }
+
+  /**
+   * Generate follow-up task title based on diagnostic case
+   */
+  private generateDiagnosticFollowUpTitle(diagnosticCase: IDiagnosticCase): string {
+    const topDiagnosis = diagnosticCase.aiAnalysis?.differentialDiagnoses?.[0];
+    
+    if (topDiagnosis) {
+      return `Diagnostic Follow-up: ${topDiagnosis.condition}`;
+    }
+    
+    return `Diagnostic Case Follow-up - ${diagnosticCase.caseId}`;
+  }
+
+  /**
+   * Generate follow-up task description based on diagnostic case
+   */
+  private generateDiagnosticFollowUpDescription(diagnosticCase: IDiagnosticCase): string {
+    const aiAnalysis = diagnosticCase.aiAnalysis;
+    const topDiagnosis = aiAnalysis?.differentialDiagnoses?.[0];
+    
+    let description = `Follow-up for diagnostic case ${diagnosticCase.caseId}\n\n`;
+    
+    if (topDiagnosis) {
+      description += `Primary Diagnosis: ${topDiagnosis.condition} (${Math.round(topDiagnosis.probability * 100)}% confidence)\n`;
+      description += `Reasoning: ${topDiagnosis.reasoning}\n\n`;
+    }
+
+    // Add symptoms summary
+    if (diagnosticCase.symptoms) {
+      description += `Original Symptoms:\n`;
+      description += `- Subjective: ${diagnosticCase.symptoms.subjective.join(', ')}\n`;
+      if (diagnosticCase.symptoms.objective?.length > 0) {
+        description += `- Objective: ${diagnosticCase.symptoms.objective.join(', ')}\n`;
+      }
+      description += `- Duration: ${diagnosticCase.symptoms.duration}\n`;
+      description += `- Severity: ${diagnosticCase.symptoms.severity}\n\n`;
+    }
+
+    // Add red flags if any
+    if (aiAnalysis?.redFlags && aiAnalysis.redFlags.length > 0) {
+      description += `Red Flags Identified:\n`;
+      aiAnalysis.redFlags.forEach((flag, index) => {
+        description += `${index + 1}. ${flag.flag} (${flag.severity}) - ${flag.action}\n`;
+      });
+      description += '\n';
+    }
+
+    // Add referral recommendation if any
+    if (aiAnalysis?.referralRecommendation?.recommended) {
+      description += `AI Referral Recommendation:\n`;
+      description += `- Specialty: ${aiAnalysis.referralRecommendation.specialty}\n`;
+      description += `- Urgency: ${aiAnalysis.referralRecommendation.urgency}\n`;
+      description += `- Reason: ${aiAnalysis.referralRecommendation.reason}\n\n`;
+    }
+
+    // Add recommended tests if any
+    if (aiAnalysis?.recommendedTests && aiAnalysis.recommendedTests.length > 0) {
+      description += `Recommended Tests:\n`;
+      aiAnalysis.recommendedTests.slice(0, 3).forEach((test, index) => {
+        description += `${index + 1}. ${test.testName} (${test.priority}) - ${test.reasoning}\n`;
+      });
+      description += '\n';
+    }
+
+    description += `Follow-up Objectives:\n`;
+    description += `- Monitor patient's condition and symptom progression\n`;
+    description += `- Assess response to any implemented interventions\n`;
+    description += `- Review any additional test results or referral outcomes\n`;
+    description += `- Determine if further action or referral is needed`;
+
+    return description;
+  }
+
+  /**
+   * Generate follow-up task objectives based on diagnostic case
+   */
+  private generateDiagnosticFollowUpObjectives(diagnosticCase: IDiagnosticCase): string[] {
+    const aiAnalysis = diagnosticCase.aiAnalysis;
+    const objectives: string[] = [
+      'Monitor patient\'s current condition and symptoms',
+      'Assess any changes since initial diagnostic assessment',
+    ];
+
+    // Add red flag monitoring if applicable
+    if (aiAnalysis?.redFlags && aiAnalysis.redFlags.length > 0) {
+      objectives.push('Monitor for red flag symptoms and complications');
+    }
+
+    // Add test result review if tests were recommended
+    if (aiAnalysis?.recommendedTests && aiAnalysis.recommendedTests.length > 0) {
+      objectives.push('Review results of recommended diagnostic tests');
+    }
+
+    // Add referral follow-up if referral was recommended
+    if (aiAnalysis?.referralRecommendation?.recommended) {
+      objectives.push('Follow up on specialist referral and recommendations');
+    }
+
+    // Add medication monitoring if therapeutic options were suggested
+    if (aiAnalysis?.therapeuticOptions && aiAnalysis.therapeuticOptions.length > 0) {
+      objectives.push('Monitor response to prescribed medications');
+      objectives.push('Assess for medication side effects or adverse reactions');
+    }
+
+    // Add confidence-based objectives
+    if (aiAnalysis?.confidenceScore && aiAnalysis.confidenceScore < 0.7) {
+      objectives.push('Reassess diagnosis with additional clinical information');
+      objectives.push('Consider alternative diagnostic approaches if needed');
+    }
+
+    objectives.push('Determine next steps and ongoing care plan');
+
+    return objectives;
   }
 
   /**

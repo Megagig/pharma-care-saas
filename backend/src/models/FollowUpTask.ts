@@ -54,6 +54,7 @@ export interface IFollowUpTask extends Document {
     clinicalInterventionId?: mongoose.Types.ObjectId;
     mtrSessionId?: mongoose.Types.ObjectId;
     appointmentId?: mongoose.Types.ObjectId;
+    diagnosticCaseId?: mongoose.Types.ObjectId;
   };
   
   // Escalation tracking
@@ -258,6 +259,10 @@ const followUpTaskSchema = new Schema(
       appointmentId: {
         type: Schema.Types.ObjectId,
         ref: 'Appointment',
+      },
+      diagnosticCaseId: {
+        type: Schema.Types.ObjectId,
+        ref: 'DiagnosticCase',
       },
     },
     escalationHistory: [

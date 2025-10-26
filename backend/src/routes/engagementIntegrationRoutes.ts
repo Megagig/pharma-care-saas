@@ -10,6 +10,8 @@ import {
   createFollowUpFromIntervention,
   updateInterventionFromFollowUp,
   getInterventionWithEngagementData,
+  createFollowUpFromDiagnostic,
+  getDiagnosticWithEngagementData,
 } from '../controllers/engagementIntegrationController';
 import { auth } from '../middlewares/auth';
 import { validateRequest } from '../middlewares/validation';
@@ -77,6 +79,16 @@ const interventionParamSchema = [
 
 const followUpTaskParamSchema = [
   param('followUpTaskId').isMongoId().withMessage('Invalid follow-up task ID'),
+];
+
+const createFollowUpFromDiagnosticSchema = [
+  param('diagnosticCaseId').isMongoId().withMessage('Invalid diagnostic case ID'),
+  body('assignedTo').optional().isMongoId().withMessage('Invalid pharmacist ID'),
+  body('locationId').optional().isString(),
+];
+
+const diagnosticCaseParamSchema = [
+  param('diagnosticCaseId').isMongoId().withMessage('Invalid diagnostic case ID'),
 ];
 
 // Routes
@@ -178,6 +190,28 @@ router.get(
   interventionParamSchema,
   validateRequest,
   getInterventionWithEngagementData
+);
+
+/**
+ * POST /api/engagement-integration/diagnostic/:diagnosticCaseId/create-followup
+ * Create follow-up task from diagnostic case
+ */
+router.post(
+  '/diagnostic/:diagnosticCaseId/create-followup',
+  createFollowUpFromDiagnosticSchema,
+  validateRequest,
+  createFollowUpFromDiagnostic
+);
+
+/**
+ * GET /api/engagement-integration/diagnostic/:diagnosticCaseId
+ * Get diagnostic case with linked follow-up tasks and appointments
+ */
+router.get(
+  '/diagnostic/:diagnosticCaseId',
+  diagnosticCaseParamSchema,
+  validateRequest,
+  getDiagnosticWithEngagementData
 );
 
 export default router;

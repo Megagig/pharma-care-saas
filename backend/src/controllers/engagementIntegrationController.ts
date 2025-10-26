@@ -285,6 +285,67 @@ export const getInterventionWithEngagementData = async (req: AuthRequest, res: R
 };
 
 /**
+ * Create follow-up task from diagnostic case
+ */
+export const createFollowUpFromDiagnostic = async (req: AuthRequest, res: Response) => {
+  try {
+    const { diagnosticCaseId } = req.params;
+    const { assignedTo, locationId } = req.body;
+
+    if (!validateAndRespond(res, diagnosticCaseId, 'Diagnostic Case ID')) return;
+
+    // Get patient ID from diagnostic case
+    const DiagnosticCase = require('../models/DiagnosticCase').default;
+    const diagnosticCase = await DiagnosticCase.findById(diagnosticCaseId);
+    if (!diagnosticCase) {
+      return sendError(res, 'NOT_FOUND', 'Diagnostic case not found', 404);
+    }
+
+    const result = await engagementIntegrationService.createFollowUpFromDiagnostic({
+      diagnosticCaseId: new mongoose.Types.ObjectId(diagnosticCaseId),
+      patientId: diagnosticCase.patientId,
+      assignedTo: assignedTo ? new mongoose.Types.ObjectId(assignedTo) : req.user.id,
+      workplaceId: req.user.workplaceId,
+      locationId,
+      createdBy: req.user.id,
+    });
+
+    sendSuccess(res, result, 'Follow-up task created from diagnostic case successfully', 201);
+  } catch (error: any) {
+    logger.error('Error creating follow-up task from diagnostic case', {
+      error: error.message,
+      diagnosticCaseId: req.params.diagnosticCaseId,
+      userId: req.user.id,
+    });
+    sendError(res, 'SERVER_ERROR', error.message, 500);
+  }
+};
+
+/**
+ * Get diagnostic case with linked engagement data
+ */
+export const getDiagnosticWithEngagementData = async (req: AuthRequest, res: Response) => {
+  try {
+    const { diagnosticCaseId } = req.params;
+
+    if (!validateAndRespond(res, diagnosticCaseId, 'Diagnostic Case ID')) return;
+
+    const result = await engagementIntegrationService.getDiagnosticWithEngagementData(
+      new mongoose.Types.ObjectId(diagnosticCaseId)
+    );
+
+    sendSuccess(res, result, 'Diagnostic case with engagement data retrieved successfully');
+  } catch (error: any) {
+    logger.error('Error getting diagnostic case with engagement data', {
+      error: error.message,
+      diagnosticCaseId: req.params.diagnosticCaseId,
+      userId: req.user.id,
+    });
+    sendError(res, 'SERVER_ERROR', error.message, 500);
+  }
+};
+
+/**
  * Create visit from completed appointment
  */
 export const createVisitFromAppointment = async (req: AuthRequest, res: Response) => {

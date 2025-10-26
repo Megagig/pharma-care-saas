@@ -159,4 +159,37 @@ export const engagementIntegrationApi = {
     );
     return response.data.data;
   },
+
+  /**
+   * Create follow-up task from diagnostic case
+   */
+  async createFollowUpFromDiagnostic(
+    diagnosticCaseId: string,
+    data: {
+      assignedTo?: string;
+      locationId?: string;
+    }
+  ): Promise<{ followUpTask: any; diagnosticCase: any }> {
+    const response = await apiClient.post(
+      `/engagement-integration/diagnostic/${diagnosticCaseId}/create-followup`,
+      data
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Get diagnostic case with linked follow-up tasks and appointments
+   */
+  async getDiagnosticWithEngagementData(
+    diagnosticCaseId: string
+  ): Promise<{
+    diagnosticCase: any;
+    followUpTasks: any[];
+    appointments: any[];
+  }> {
+    const response = await apiClient.get(
+      `/engagement-integration/diagnostic/${diagnosticCaseId}`
+    );
+    return response.data.data;
+  },
 };
