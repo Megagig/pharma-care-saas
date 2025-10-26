@@ -81,6 +81,21 @@ export interface IPatient extends Document {
             }>;
         };
     };
+    engagementMetrics?: {
+        totalAppointments: number;
+        completedAppointments: number;
+        cancelledAppointments: number;
+        noShowAppointments: number;
+        completionRate: number;
+        totalFollowUps: number;
+        completedFollowUps: number;
+        overdueFollowUps: number;
+        followUpCompletionRate: number;
+        averageResponseTime: number;
+        lastEngagementDate?: Date;
+        engagementScore: number;
+        lastUpdated?: Date;
+    };
     hasActiveDTP?: boolean;
     hasActiveInterventions?: boolean;
     isDeleted: boolean;

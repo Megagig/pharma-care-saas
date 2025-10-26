@@ -233,6 +233,21 @@ const patientSchema = new mongoose_1.Schema({
             default: 'Africa/Lagos',
         },
     },
+    engagementMetrics: {
+        totalAppointments: { type: Number, default: 0 },
+        completedAppointments: { type: Number, default: 0 },
+        cancelledAppointments: { type: Number, default: 0 },
+        noShowAppointments: { type: Number, default: 0 },
+        completionRate: { type: Number, default: 0 },
+        totalFollowUps: { type: Number, default: 0 },
+        completedFollowUps: { type: Number, default: 0 },
+        overdueFollowUps: { type: Number, default: 0 },
+        followUpCompletionRate: { type: Number, default: 0 },
+        averageResponseTime: { type: Number, default: 0 },
+        lastEngagementDate: Date,
+        engagementScore: { type: Number, default: 0 },
+        lastUpdated: Date,
+    },
     metadata: {
         sharedAccess: {
             patientId: {

@@ -99,6 +99,7 @@ const diagnosticRoutes_1 = __importDefault(require("./routes/diagnosticRoutes"))
 const communicationRoutes_1 = __importDefault(require("./routes/communicationRoutes"));
 const notificationRoutes_1 = __importDefault(require("./routes/notificationRoutes"));
 const notificationManagementRoutes_1 = __importDefault(require("./routes/notificationManagementRoutes"));
+const engagementIntegrationRoutes_1 = __importDefault(require("./routes/engagementIntegrationRoutes"));
 const analyticsRoutes_1 = __importDefault(require("./routes/analyticsRoutes"));
 const reportsRoutes_1 = __importDefault(require("./routes/reportsRoutes"));
 const lighthouseRoutes_1 = __importDefault(require("./routes/lighthouseRoutes"));
@@ -210,6 +211,9 @@ const latencyMeasurement_1 = require("./middlewares/latencyMeasurement");
 app.use('/api/', latencyMeasurement_1.latencyMeasurementMiddleware);
 const unifiedAuditMiddleware_1 = require("./middlewares/unifiedAuditMiddleware");
 app.use('/api/', unifiedAuditMiddleware_1.unifiedAuditMiddleware);
+const clinicalInterventionSync_1 = require("./middlewares/clinicalInterventionSync");
+app.use('/api/', clinicalInterventionSync_1.clinicalInterventionSyncMiddleware);
+app.use('/api/', clinicalInterventionSync_1.followUpCompletionSyncMiddleware);
 const compressionMiddleware_1 = require("./middlewares/compressionMiddleware");
 app.use('/api/', (0, compressionMiddleware_1.responseSizeMonitoringMiddleware)());
 app.get('/api/health', (req, res) => {
@@ -350,14 +354,17 @@ app.use('/api/payments', paymentRoutes_1.default);
 app.use('/api/billing', billingRoutes_1.default);
 app.use('/api/mtr', mtrRoutes_1.default);
 app.use('/api/mtr/notifications', mtrNotificationRoutes_1.default);
+app.use('/api/engagement-integration', engagementIntegrationRoutes_1.default);
 const appointmentRoutes_1 = __importDefault(require("./routes/appointmentRoutes"));
 const followUpRoutes_1 = __importDefault(require("./routes/followUpRoutes"));
 const scheduleRoutes_1 = __importDefault(require("./routes/scheduleRoutes"));
 const queueMonitoringRoutes_1 = __importDefault(require("./routes/queueMonitoringRoutes"));
+const alertRoutes_1 = __importDefault(require("./routes/alertRoutes"));
 app.use('/api/appointments', appointmentRoutes_1.default);
 app.use('/api/follow-ups', followUpRoutes_1.default);
 app.use('/api/schedules', scheduleRoutes_1.default);
 app.use('/api/queue-monitoring', queueMonitoringRoutes_1.default);
+app.use('/api/alerts', alertRoutes_1.default);
 app.get('/api/clinical-interventions/health', (req, res) => {
     res.json({
         status: 'OK',

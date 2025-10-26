@@ -201,6 +201,11 @@ const mtrFollowUpSchema = new mongoose_1.Schema({
             index: true,
         },
     ],
+    appointmentId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'Appointment',
+        index: true,
+    },
 }, {
     timestamps: true,
     toJSON: { virtuals: true },

@@ -37,7 +37,7 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { format } from 'date-fns';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { engagementIntegrationApi } from '../../services/api/engagementIntegrationApi';
-import { useSnackbar } from 'notistack';
+import { useNotification } from '../../hooks/useNotification';
 
 interface MTRLinkedAppointmentsProps {
   mtrSessionId: string;
@@ -96,7 +96,7 @@ const MTRLinkedAppointments: React.FC<MTRLinkedAppointmentsProps> = ({
     priority: 'medium' as 'high' | 'medium' | 'low',
   });
 
-  const { enqueueSnackbar } = useSnackbar();
+  const { showNotification } = useNotification();
   const queryClient = useQueryClient();
 
   // Fetch MTR session with linked appointments
@@ -115,28 +115,24 @@ const MTRLinkedAppointments: React.FC<MTRLinkedAppointmentsProps> = ({
     mutationFn: (data: any) =>
       engagementIntegrationApi.createMTRWithAppointment(mtrSessionId, data),
     onSuccess: () => {
-      enqueueSnackbar('MTR follow-up with appointment scheduled successfully', {
-        variant: 'success',
-      });
+      showNotification('MTR follow-up with appointment scheduled successfully', 'success');
       setScheduleDialogOpen(false);
       queryClient.invalidateQueries({ queryKey: ['mtr-session-appointments', mtrSessionId] });
       onAppointmentCreated?.();
     },
     onError: (error: any) => {
-      enqueueSnackbar(error.message || 'Failed to schedule MTR follow-up', {
-        variant: 'error',
-      });
+      showNotification(error.message || 'Failed to schedule MTR follow-up', 'error');
     },
   });
 
   const handleScheduleSubmit = () => {
     if (!appointmentData.description.trim()) {
-      enqueueSnackbar('Description is required', { variant: 'error' });
+      showNotification('Description is required', 'error');
       return;
     }
 
     if (appointmentData.objectives.some(obj => !obj.trim())) {
-      enqueueSnackbar('All objectives must be filled', { variant: 'error' });
+      showNotification('All objectives must be filled', 'error');
       return;
     }
 
