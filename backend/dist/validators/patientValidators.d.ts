@@ -516,8 +516,8 @@ export declare const createVisitSchema: z.ZodObject<{
     }, z.core.$strip>;
     attachments: z.ZodOptional<z.ZodArray<z.ZodObject<{
         kind: z.ZodEnum<{
-            image: "image";
             other: "other";
+            image: "image";
             lab: "lab";
             audio: "audio";
         }>;
@@ -537,8 +537,8 @@ export declare const updateVisitSchema: z.ZodObject<{
     }, z.core.$strip>>;
     attachments: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodObject<{
         kind: z.ZodEnum<{
-            image: "image";
             other: "other";
+            image: "image";
             lab: "lab";
             audio: "audio";
         }>;
@@ -554,8 +554,8 @@ export declare const visitParamsSchema: z.ZodObject<{
 }, z.core.$strip>;
 export declare const attachmentSchema: z.ZodObject<{
     kind: z.ZodEnum<{
-        image: "image";
         other: "other";
+        image: "image";
         lab: "lab";
         audio: "audio";
     }>;
