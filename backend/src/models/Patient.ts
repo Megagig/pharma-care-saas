@@ -103,6 +103,23 @@ export interface IPatient extends Document {
     };
   };
 
+  // Engagement metrics
+  engagementMetrics?: {
+    totalAppointments: number;
+    completedAppointments: number;
+    cancelledAppointments: number;
+    noShowAppointments: number;
+    completionRate: number;
+    totalFollowUps: number;
+    completedFollowUps: number;
+    overdueFollowUps: number;
+    followUpCompletionRate: number;
+    averageResponseTime: number;
+    lastEngagementDate?: Date;
+    engagementScore: number;
+    lastUpdated?: Date;
+  };
+
   // Flags
   hasActiveDTP?: boolean;
   hasActiveInterventions?: boolean;
@@ -328,6 +345,23 @@ const patientSchema = new Schema(
         type: String,
         default: 'Africa/Lagos',
       },
+    },
+
+    // Engagement metrics
+    engagementMetrics: {
+      totalAppointments: { type: Number, default: 0 },
+      completedAppointments: { type: Number, default: 0 },
+      cancelledAppointments: { type: Number, default: 0 },
+      noShowAppointments: { type: Number, default: 0 },
+      completionRate: { type: Number, default: 0 },
+      totalFollowUps: { type: Number, default: 0 },
+      completedFollowUps: { type: Number, default: 0 },
+      overdueFollowUps: { type: Number, default: 0 },
+      followUpCompletionRate: { type: Number, default: 0 },
+      averageResponseTime: { type: Number, default: 0 },
+      lastEngagementDate: Date,
+      engagementScore: { type: Number, default: 0 },
+      lastUpdated: Date,
     },
 
     // Multi-location and sharing metadata

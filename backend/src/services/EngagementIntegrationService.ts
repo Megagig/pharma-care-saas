@@ -6,6 +6,9 @@ import Visit from '../models/Visit';
 import FollowUpTask, { IFollowUpTask } from '../models/FollowUpTask';
 import ClinicalIntervention, { IClinicalIntervention } from '../models/ClinicalIntervention';
 import DiagnosticCase, { IDiagnosticCase } from '../models/DiagnosticCase';
+import LabResult, { ILabResult } from '../modules/diagnostics/models/LabResult';
+import Medication, { IMedication } from '../models/Medication';
+import Patient, { IPatient } from '../models/Patient';
 import logger from '../utils/logger';
 // Simple error class
 class AppError extends Error {
@@ -55,6 +58,39 @@ export interface CreateFollowUpFromDiagnosticData {
   workplaceId: mongoose.Types.ObjectId;
   locationId?: string;
   createdBy: mongoose.Types.ObjectId;
+}
+
+export interface CreateFollowUpFromLabResultData {
+  labResultId: mongoose.Types.ObjectId;
+  patientId: mongoose.Types.ObjectId;
+  assignedTo: mongoose.Types.ObjectId;
+  workplaceId: mongoose.Types.ObjectId;
+  locationId?: string;
+  createdBy: mongoose.Types.ObjectId;
+}
+
+export interface CreateFollowUpFromMedicationStartData {
+  medicationId: mongoose.Types.ObjectId;
+  patientId: mongoose.Types.ObjectId;
+  assignedTo: mongoose.Types.ObjectId;
+  workplaceId: mongoose.Types.ObjectId;
+  locationId?: string;
+  createdBy: mongoose.Types.ObjectId;
+}
+
+export interface PatientEngagementMetrics {
+  totalAppointments: number;
+  completedAppointments: number;
+  cancelledAppointments: number;
+  noShowAppointments: number;
+  completionRate: number;
+  totalFollowUps: number;
+  completedFollowUps: number;
+  overdueFollowUps: number;
+  followUpCompletionRate: number;
+  averageResponseTime: number; // in days
+  lastEngagementDate?: Date;
+  engagementScore: number; // 0-100
 }
 
 /**
@@ -1123,9 +1159,7 @@ export class EngagementIntegrationService {
    */
   async createVisitFromAppointment(appointmentId: mongoose.Types.ObjectId): Promise<any> {
     try {
-      const appointment = await Appointment.findById(appointmentId)
-        .populate('patientId')
-        .populate('assignedTo');
+      const appointment = await Appointment.findById(appointmentId);
 
       if (!appointment) {
         throw new AppError('Appointment not found', 404);
@@ -1143,14 +1177,10 @@ export class EngagementIntegrationService {
       const visit = new Visit({
         workplaceId: appointment.workplaceId,
         patientId: appointment.patientId,
-        visitDate: appointment.scheduledDate,
-        visitTime: appointment.scheduledTime,
-        visitType: 'follow_up',
-        chiefComplaint: appointment.description || 'MTR Follow-up Session',
-        presentingComplaint: appointment.outcome?.notes || '',
-        clinicalNotes: {
+        date: appointment.scheduledDate,
+        soap: {
           subjective: appointment.outcome?.notes || '',
-          objective: 'MTR session completed',
+          objective: 'Appointment session completed',
           assessment: appointment.outcome?.status === 'successful' ? 'Goals achieved' : 'Partial goals achieved',
           plan: appointment.outcome?.nextActions?.join('; ') || '',
         },
@@ -1181,6 +1211,677 @@ export class EngagementIntegrationService {
       });
       throw error;
     }
+  }
+
+  /**
+   * Create follow-up task from lab result when abnormal values are detected
+   */
+  async createFollowUpFromLabResult(data: CreateFollowUpFromLabResultData): Promise<{
+    followUpTask: IFollowUpTask;
+    labResult: ILabResult;
+  }> {
+    try {
+      logger.info('Creating follow-up task from lab result', {
+        labResultId: data.labResultId,
+        patientId: data.patientId,
+      });
+
+      // Verify lab result exists
+      const labResult = await LabResult.findById(data.labResultId);
+      if (!labResult) {
+        throw new AppError('Lab result not found', 404);
+      }
+
+      // Check if follow-up task already exists
+      const existingTask = await FollowUpTask.findOne({
+        'relatedRecords.labResultId': data.labResultId,
+        status: { $nin: ['completed', 'cancelled'] },
+      });
+
+      if (existingTask) {
+        logger.info('Follow-up task already exists for lab result', {
+          labResultId: data.labResultId,
+          existingTaskId: existingTask._id,
+        });
+        return {
+          followUpTask: existingTask,
+          labResult,
+        };
+      }
+
+      // Set priority based on lab result interpretation and critical value
+      const priority = this.calculateLabResultFollowUpPriority(labResult);
+
+      // Calculate due date based on priority and critical value
+      const dueDate = this.calculateLabResultFollowUpDueDate(labResult, priority);
+
+      // Generate follow-up task details based on lab result
+      const taskTitle = this.generateLabResultFollowUpTitle(labResult);
+      const taskDescription = this.generateLabResultFollowUpDescription(labResult);
+      const objectives = this.generateLabResultFollowUpObjectives(labResult);
+
+      // Create follow-up task
+      const followUpTask = new FollowUpTask({
+        workplaceId: data.workplaceId,
+        locationId: data.locationId,
+        patientId: data.patientId,
+        assignedTo: data.assignedTo,
+        type: 'lab_result_review',
+        title: taskTitle,
+        description: taskDescription,
+        objectives,
+        priority,
+        dueDate,
+        estimatedDuration: 20, // Default 20 minutes for lab result follow-up
+        status: 'pending',
+        trigger: {
+          type: 'lab_result',
+          sourceId: data.labResultId,
+          sourceType: 'LabResult',
+          triggerDate: new Date(),
+          triggerDetails: {
+            testName: labResult.testName,
+            testCode: labResult.testCode,
+            interpretation: labResult.interpretation,
+            criticalValue: labResult.criticalValue,
+            value: labResult.value,
+            unit: labResult.unit,
+          },
+        },
+        relatedRecords: {
+          labResultId: data.labResultId,
+        },
+        createdBy: data.createdBy,
+      });
+
+      await followUpTask.save();
+
+      logger.info('Follow-up task created from lab result', {
+        followUpTaskId: followUpTask._id,
+        labResultId: data.labResultId,
+        priority: followUpTask.priority,
+        dueDate: followUpTask.dueDate,
+      });
+
+      return {
+        followUpTask,
+        labResult,
+      };
+    } catch (error) {
+      logger.error('Error creating follow-up task from lab result', {
+        error: error.message,
+        labResultId: data.labResultId,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Create follow-up task when high-risk medication is started
+   */
+  async createFollowUpFromMedicationStart(data: CreateFollowUpFromMedicationStartData): Promise<{
+    followUpTask: IFollowUpTask;
+    medication: IMedication;
+  }> {
+    try {
+      logger.info('Creating follow-up task from medication start', {
+        medicationId: data.medicationId,
+        patientId: data.patientId,
+      });
+
+      // Verify medication exists
+      const medication = await Medication.findById(data.medicationId);
+      if (!medication) {
+        throw new AppError('Medication not found', 404);
+      }
+
+      // Check if medication is high-risk and requires follow-up
+      const isHighRisk = this.isHighRiskMedication(medication);
+      if (!isHighRisk) {
+        logger.info('Medication is not high-risk, no follow-up task created', {
+          medicationId: data.medicationId,
+          drugName: medication.drugName,
+        });
+        return {
+          followUpTask: null as any,
+          medication,
+        };
+      }
+
+      // Check if follow-up task already exists
+      const existingTask = await FollowUpTask.findOne({
+        'relatedRecords.medicationId': data.medicationId,
+        status: { $nin: ['completed', 'cancelled'] },
+      });
+
+      if (existingTask) {
+        logger.info('Follow-up task already exists for medication', {
+          medicationId: data.medicationId,
+          existingTaskId: existingTask._id,
+        });
+        return {
+          followUpTask: existingTask,
+          medication,
+        };
+      }
+
+      // Set priority based on medication risk level
+      const priority = this.calculateMedicationFollowUpPriority(medication);
+
+      // Calculate due date based on medication type and risk
+      const dueDate = this.calculateMedicationFollowUpDueDate(medication, priority);
+
+      // Generate follow-up task details based on medication
+      const taskTitle = this.generateMedicationFollowUpTitle(medication);
+      const taskDescription = this.generateMedicationFollowUpDescription(medication);
+      const objectives = this.generateMedicationFollowUpObjectives(medication);
+
+      // Create follow-up task
+      const followUpTask = new FollowUpTask({
+        workplaceId: data.workplaceId,
+        locationId: data.locationId,
+        patientId: data.patientId,
+        assignedTo: data.assignedTo,
+        type: 'medication_start_followup',
+        title: taskTitle,
+        description: taskDescription,
+        objectives,
+        priority,
+        dueDate,
+        estimatedDuration: 30, // Default 30 minutes for medication follow-up
+        status: 'pending',
+        trigger: {
+          type: 'medication_start',
+          sourceId: data.medicationId,
+          sourceType: 'Medication',
+          triggerDate: new Date(),
+          triggerDetails: {
+            drugName: medication.drugName,
+            genericName: medication.genericName,
+            dosageForm: medication.dosageForm,
+            indication: medication.therapy?.indication,
+            isHighRisk: true,
+          },
+        },
+        relatedRecords: {
+          medicationId: data.medicationId,
+        },
+        createdBy: data.createdBy,
+      });
+
+      await followUpTask.save();
+
+      logger.info('Follow-up task created from medication start', {
+        followUpTaskId: followUpTask._id,
+        medicationId: data.medicationId,
+        priority: followUpTask.priority,
+        dueDate: followUpTask.dueDate,
+      });
+
+      return {
+        followUpTask,
+        medication,
+      };
+    } catch (error) {
+      logger.error('Error creating follow-up task from medication start', {
+        error: error.message,
+        medicationId: data.medicationId,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Update patient engagement metrics based on appointments and follow-ups
+   */
+  async updatePatientEngagementMetrics(
+    patientId: mongoose.Types.ObjectId,
+    workplaceId: mongoose.Types.ObjectId
+  ): Promise<PatientEngagementMetrics> {
+    try {
+      logger.info('Updating patient engagement metrics', {
+        patientId,
+        workplaceId,
+      });
+
+      // Get all appointments for the patient
+      const appointments = await Appointment.find({
+        patientId,
+        workplaceId,
+        isDeleted: false,
+      });
+
+      // Get all follow-up tasks for the patient
+      const followUpTasks = await FollowUpTask.find({
+        patientId,
+        workplaceId,
+        isDeleted: false,
+      });
+
+      // Calculate appointment metrics
+      const totalAppointments = appointments.length;
+      const completedAppointments = appointments.filter(apt => apt.status === 'completed').length;
+      const cancelledAppointments = appointments.filter(apt => apt.status === 'cancelled').length;
+      const noShowAppointments = appointments.filter(apt => apt.status === 'no_show').length;
+      const completionRate = totalAppointments > 0 ? (completedAppointments / totalAppointments) * 100 : 0;
+
+      // Calculate follow-up metrics
+      const totalFollowUps = followUpTasks.length;
+      const completedFollowUps = followUpTasks.filter(task => task.status === 'completed').length;
+      const overdueFollowUps = followUpTasks.filter(task => task.status === 'overdue').length;
+      const followUpCompletionRate = totalFollowUps > 0 ? (completedFollowUps / totalFollowUps) * 100 : 0;
+
+      // Calculate average response time (days from creation to completion)
+      const completedTasks = followUpTasks.filter(task => task.status === 'completed' && task.completedAt);
+      const totalResponseTime = completedTasks.reduce((sum, task) => {
+        const responseTime = task.completedAt!.getTime() - task.createdAt.getTime();
+        return sum + (responseTime / (1000 * 60 * 60 * 24)); // Convert to days
+      }, 0);
+      const averageResponseTime = completedTasks.length > 0 ? totalResponseTime / completedTasks.length : 0;
+
+      // Find last engagement date
+      const allEngagements = [
+        ...appointments.map(apt => apt.scheduledDate),
+        ...followUpTasks.map(task => task.createdAt),
+      ].sort((a, b) => b.getTime() - a.getTime());
+      const lastEngagementDate = allEngagements.length > 0 ? allEngagements[0] : undefined;
+
+      // Calculate engagement score (0-100)
+      const engagementScore = this.calculateEngagementScore({
+        completionRate,
+        followUpCompletionRate,
+        averageResponseTime,
+        totalAppointments,
+        totalFollowUps,
+        overdueFollowUps,
+        noShowAppointments,
+        lastEngagementDate,
+      });
+
+      const metrics: PatientEngagementMetrics = {
+        totalAppointments,
+        completedAppointments,
+        cancelledAppointments,
+        noShowAppointments,
+        completionRate: Math.round(completionRate * 100) / 100,
+        totalFollowUps,
+        completedFollowUps,
+        overdueFollowUps,
+        followUpCompletionRate: Math.round(followUpCompletionRate * 100) / 100,
+        averageResponseTime: Math.round(averageResponseTime * 100) / 100,
+        lastEngagementDate,
+        engagementScore: Math.round(engagementScore),
+      };
+
+      // Update patient record with engagement metrics
+      const metricsWithTimestamp = {
+        ...metrics,
+        lastUpdated: new Date(),
+      };
+      
+      await Patient.findByIdAndUpdate(
+        patientId,
+        {
+          $set: {
+            'engagementMetrics': metricsWithTimestamp,
+          },
+        },
+        { new: true }
+      );
+
+      logger.info('Patient engagement metrics updated', {
+        patientId,
+        engagementScore: metrics.engagementScore,
+        completionRate: metrics.completionRate,
+        followUpCompletionRate: metrics.followUpCompletionRate,
+      });
+
+      return metrics;
+    } catch (error) {
+      logger.error('Error updating patient engagement metrics', {
+        error: error.message,
+        patientId,
+        workplaceId,
+      });
+      throw error;
+    }
+  }
+
+  // Helper methods for lab result follow-up
+  private calculateLabResultFollowUpPriority(labResult: ILabResult): IFollowUpTask['priority'] {
+    if (labResult.criticalValue || labResult.interpretation === 'critical') {
+      return 'critical';
+    }
+
+    if (labResult.interpretation === 'high' || labResult.interpretation === 'low') {
+      return 'high';
+    }
+
+    if (labResult.interpretation === 'abnormal') {
+      return 'medium';
+    }
+
+    return 'low';
+  }
+
+  private calculateLabResultFollowUpDueDate(
+    labResult: ILabResult,
+    priority: IFollowUpTask['priority']
+  ): Date {
+    const dueDate = new Date();
+
+    if (labResult.criticalValue) {
+      dueDate.setHours(dueDate.getHours() + 2); // 2 hours for critical values
+      return dueDate;
+    }
+
+    const dueDateMapping: Record<IFollowUpTask['priority'], number> = {
+      'critical': 1,  // 1 day
+      'urgent': 2,    // 2 days
+      'high': 3,      // 3 days
+      'medium': 7,    // 7 days
+      'low': 14,      // 14 days
+    };
+
+    const daysToAdd = dueDateMapping[priority] || 7;
+    dueDate.setDate(dueDate.getDate() + daysToAdd);
+    
+    return dueDate;
+  }
+
+  private generateLabResultFollowUpTitle(labResult: ILabResult): string {
+    if (labResult.criticalValue) {
+      return `CRITICAL Lab Result Follow-up: ${labResult.testName}`;
+    }
+
+    return `Lab Result Follow-up: ${labResult.testName} (${labResult.interpretation})`;
+  }
+
+  private generateLabResultFollowUpDescription(labResult: ILabResult): string {
+    let description = `Follow-up for ${labResult.testName} lab result\n\n`;
+    
+    description += `Test Details:\n`;
+    description += `- Test: ${labResult.testName} (${labResult.testCode})\n`;
+    description += `- Result: ${labResult.value} ${labResult.unit || ''}\n`;
+    description += `- Interpretation: ${labResult.interpretation.toUpperCase()}\n`;
+    description += `- Performed: ${labResult.performedAt.toDateString()}\n`;
+
+    if (labResult.referenceRange) {
+      if (labResult.referenceRange.low !== undefined && labResult.referenceRange.high !== undefined) {
+        description += `- Reference Range: ${labResult.referenceRange.low}-${labResult.referenceRange.high} ${labResult.referenceRange.unit || ''}\n`;
+      } else if (labResult.referenceRange.text) {
+        description += `- Reference Range: ${labResult.referenceRange.text}\n`;
+      }
+    }
+
+    if (labResult.criticalValue) {
+      description += `\n⚠️ CRITICAL VALUE - Immediate attention required\n`;
+    }
+
+    if (labResult.clinicalNotes) {
+      description += `\nClinical Notes:\n${labResult.clinicalNotes}\n`;
+    }
+
+    if (labResult.followUpInstructions) {
+      description += `\nFollow-up Instructions:\n${labResult.followUpInstructions}\n`;
+    }
+
+    description += `\nFollow-up Objectives:\n`;
+    description += `- Review lab result with patient\n`;
+    description += `- Assess clinical significance\n`;
+    description += `- Determine if additional testing is needed\n`;
+    description += `- Coordinate with prescriber if necessary`;
+
+    return description;
+  }
+
+  private generateLabResultFollowUpObjectives(labResult: ILabResult): string[] {
+    const objectives = [
+      'Review lab result with patient',
+      'Explain result interpretation and clinical significance',
+    ];
+
+    if (labResult.criticalValue) {
+      objectives.push('Address critical value immediately');
+      objectives.push('Contact prescriber if not already notified');
+    }
+
+    if (labResult.interpretation === 'high' || labResult.interpretation === 'low') {
+      objectives.push('Assess potential causes of abnormal result');
+      objectives.push('Review current medications for contributing factors');
+    }
+
+    if (labResult.followUpInstructions) {
+      objectives.push('Follow specific instructions provided with result');
+    }
+
+    objectives.push('Determine need for repeat testing or additional workup');
+    objectives.push('Document patient understanding and next steps');
+
+    return objectives;
+  }
+
+  // Helper methods for medication follow-up
+  private isHighRiskMedication(medication: IMedication): boolean {
+    const highRiskDrugs = [
+      'warfarin', 'insulin', 'heparin', 'digoxin', 'lithium', 'phenytoin',
+      'carbamazepine', 'valproic acid', 'methotrexate', 'cyclosporine',
+      'tacrolimus', 'amiodarone', 'quinidine', 'procainamide',
+    ];
+
+    const drugName = medication.drugName.toLowerCase();
+    const genericName = medication.genericName?.toLowerCase() || '';
+
+    return highRiskDrugs.some(drug => 
+      drugName.includes(drug) || genericName.includes(drug)
+    );
+  }
+
+  private calculateMedicationFollowUpPriority(medication: IMedication): IFollowUpTask['priority'] {
+    const drugName = medication.drugName.toLowerCase();
+    const genericName = medication.genericName?.toLowerCase() || '';
+
+    // Critical priority medications
+    const criticalMeds = ['insulin', 'warfarin', 'heparin'];
+    if (criticalMeds.some(med => drugName.includes(med) || genericName.includes(med))) {
+      return 'critical';
+    }
+
+    // High priority medications
+    const highPriorityMeds = ['digoxin', 'lithium', 'phenytoin', 'carbamazepine'];
+    if (highPriorityMeds.some(med => drugName.includes(med) || genericName.includes(med))) {
+      return 'urgent';
+    }
+
+    // Medium priority for other high-risk medications
+    return 'high';
+  }
+
+  private calculateMedicationFollowUpDueDate(
+    medication: IMedication,
+    priority: IFollowUpTask['priority']
+  ): Date {
+    const dueDate = new Date();
+    const drugName = medication.drugName.toLowerCase();
+
+    // Special cases for specific medications
+    if (drugName.includes('insulin')) {
+      dueDate.setDate(dueDate.getDate() + 3); // 3 days for insulin
+      return dueDate;
+    }
+
+    if (drugName.includes('warfarin')) {
+      dueDate.setDate(dueDate.getDate() + 7); // 7 days for warfarin
+      return dueDate;
+    }
+
+    // Default priority-based due dates
+    const dueDateMapping: Record<IFollowUpTask['priority'], number> = {
+      'critical': 3,  // 3 days
+      'urgent': 7,    // 7 days
+      'high': 14,     // 14 days
+      'medium': 21,   // 21 days
+      'low': 30,      // 30 days
+    };
+
+    const daysToAdd = dueDateMapping[priority] || 14;
+    dueDate.setDate(dueDate.getDate() + daysToAdd);
+    
+    return dueDate;
+  }
+
+  private generateMedicationFollowUpTitle(medication: IMedication): string {
+    return `Medication Start Follow-up: ${medication.drugName}`;
+  }
+
+  private generateMedicationFollowUpDescription(medication: IMedication): string {
+    let description = `Follow-up for newly started high-risk medication\n\n`;
+    
+    description += `Medication Details:\n`;
+    description += `- Drug: ${medication.drugName}\n`;
+    if (medication.genericName) {
+      description += `- Generic: ${medication.genericName}\n`;
+    }
+    if (medication.strength?.value && medication.strength?.unit) {
+      description += `- Strength: ${medication.strength.value}${medication.strength.unit}\n`;
+    }
+    description += `- Form: ${medication.dosageForm}\n`;
+
+    if (medication.instructions?.dosage) {
+      description += `- Dosage: ${medication.instructions.dosage}\n`;
+    }
+    if (medication.instructions?.frequency) {
+      description += `- Frequency: ${medication.instructions.frequency}\n`;
+    }
+
+    if (medication.therapy?.indication) {
+      description += `- Indication: ${medication.therapy.indication}\n`;
+    }
+
+    if (medication.interactions && medication.interactions.length > 0) {
+      description += `\nKnown Interactions:\n`;
+      medication.interactions.forEach((interaction, index) => {
+        description += `${index + 1}. ${interaction.interactingDrug} (${interaction.severity}) - ${interaction.description}\n`;
+      });
+    }
+
+    if (medication.sideEffects && medication.sideEffects.length > 0) {
+      description += `\nPotential Side Effects:\n`;
+      medication.sideEffects.forEach((effect, index) => {
+        description += `${index + 1}. ${effect}\n`;
+      });
+    }
+
+    if (medication.therapy?.monitoring && medication.therapy.monitoring.length > 0) {
+      description += `\nMonitoring Requirements:\n`;
+      medication.therapy.monitoring.forEach((monitor, index) => {
+        description += `${index + 1}. ${monitor}\n`;
+      });
+    }
+
+    description += `\nFollow-up Objectives:\n`;
+    description += `- Assess patient tolerance and adherence\n`;
+    description += `- Monitor for side effects or adverse reactions\n`;
+    description += `- Evaluate therapeutic effectiveness\n`;
+    description += `- Review proper administration technique\n`;
+    description += `- Address any patient concerns or questions`;
+
+    return description;
+  }
+
+  private generateMedicationFollowUpObjectives(medication: IMedication): string[] {
+    const objectives = [
+      'Assess patient tolerance to new medication',
+      'Monitor for side effects or adverse reactions',
+      'Evaluate medication adherence',
+      'Review proper administration technique',
+    ];
+
+    const drugName = medication.drugName.toLowerCase();
+
+    // Add drug-specific objectives
+    if (drugName.includes('insulin')) {
+      objectives.push('Review blood glucose monitoring technique');
+      objectives.push('Assess injection site rotation');
+      objectives.push('Review hypoglycemia recognition and treatment');
+    }
+
+    if (drugName.includes('warfarin')) {
+      objectives.push('Review INR monitoring schedule');
+      objectives.push('Assess for bleeding signs or symptoms');
+      objectives.push('Review drug and food interactions');
+    }
+
+    if (drugName.includes('digoxin')) {
+      objectives.push('Monitor for signs of toxicity');
+      objectives.push('Review pulse monitoring technique');
+    }
+
+    if (medication.therapy?.monitoring && medication.therapy.monitoring.length > 0) {
+      objectives.push('Review required monitoring parameters');
+    }
+
+    objectives.push('Address any patient concerns or questions');
+    objectives.push('Determine if dose adjustment is needed');
+
+    return objectives;
+  }
+
+  // Helper method to calculate engagement score
+  private calculateEngagementScore(data: {
+    completionRate: number;
+    followUpCompletionRate: number;
+    averageResponseTime: number;
+    totalAppointments: number;
+    totalFollowUps: number;
+    overdueFollowUps: number;
+    noShowAppointments: number;
+    lastEngagementDate?: Date;
+  }): number {
+    // If no engagements at all, return 0
+    if (data.totalAppointments === 0 && data.totalFollowUps === 0) {
+      return 0;
+    }
+
+    let score = 0;
+
+    // Appointment completion rate (30% of score)
+    score += (data.completionRate / 100) * 30;
+
+    // Follow-up completion rate (25% of score)
+    score += (data.followUpCompletionRate / 100) * 25;
+
+    // Response time score (20% of score) - lower is better
+    if (data.averageResponseTime > 0) {
+      const responseTimeScore = Math.max(0, 20 - (data.averageResponseTime * 2));
+      score += Math.min(20, responseTimeScore);
+    }
+
+    // Engagement frequency (15% of score)
+    const totalEngagements = data.totalAppointments + data.totalFollowUps;
+    const frequencyScore = Math.min(15, totalEngagements * 0.5);
+    score += frequencyScore;
+
+    // Recency of engagement (10% of score)
+    if (data.lastEngagementDate) {
+      const daysSinceLastEngagement = Math.floor(
+        (new Date().getTime() - data.lastEngagementDate.getTime()) / (1000 * 60 * 60 * 24)
+      );
+      const recencyScore = Math.max(0, 10 - (daysSinceLastEngagement * 0.1));
+      score += recencyScore;
+    }
+
+    // Penalties
+    // No-show penalty
+    const noShowPenalty = data.noShowAppointments * 2;
+    score -= noShowPenalty;
+
+    // Overdue follow-up penalty
+    const overduePenalty = data.overdueFollowUps * 3;
+    score -= overduePenalty;
+
+    // Ensure score is between 0 and 100
+    return Math.max(0, Math.min(100, score));
   }
 }
 
