@@ -40,6 +40,7 @@ import { format } from 'date-fns';
 
 import { Appointment } from '../../stores/appointmentTypes';
 import { useUpdateAppointmentStatus } from '../../hooks/useAppointments';
+import { useCreateVisitFromAppointment } from '../../queries/usePatientResources';
 
 // Outcome status options
 const OUTCOME_STATUS_OPTIONS = [
@@ -127,6 +128,10 @@ const CompleteAppointmentDialog: React.FC<CompleteAppointmentDialogProps> = ({
 
   // Mutations
   const updateStatusMutation = useUpdateAppointmentStatus();
+  const createVisitMutation = useCreateVisitFromAppointment();
+  
+  // Combined loading state
+  const isLoading = updateStatusMutation.isPending || createVisitMutation.isPending;
 
   // Handle form submission
   const onSubmit = async (data: FormData) => {
@@ -143,10 +148,31 @@ const CompleteAppointmentDialog: React.FC<CompleteAppointmentDialogProps> = ({
         },
       };
 
+      // Complete the appointment first
       const response = await updateStatusMutation.mutateAsync({
         appointmentId: appointment._id,
         statusData,
       });
+
+      // If visit creation was requested and appointment completion was successful
+      if (data.createVisit && response.data?.appointment) {
+        try {
+          await createVisitMutation.mutateAsync({
+            patientId: appointment.patientId,
+            appointmentId: appointment._id,
+            appointmentData: {
+              type: appointment.type,
+              notes: data.notes,
+              nextActions: data.nextActions,
+              scheduledDate: appointment.scheduledDate.toString(),
+              scheduledTime: appointment.scheduledTime,
+            },
+          });
+        } catch (visitError) {
+          console.error('Failed to create visit:', visitError);
+          // Don't fail the whole operation if visit creation fails
+        }
+      }
 
       // Reset form and close dialog
       reset();
@@ -526,17 +552,17 @@ const CompleteAppointmentDialog: React.FC<CompleteAppointmentDialogProps> = ({
         </DialogContent>
 
         <DialogActions sx={{ p: 2, gap: 1 }}>
-          <Button onClick={handleClose} disabled={isSubmitting}>
+          <Button onClick={handleClose} disabled={isSubmitting || isLoading}>
             Cancel
           </Button>
           <Button
             type="submit"
             variant="contained"
             color="success"
-            disabled={isSubmitting}
-            startIcon={isSubmitting ? <CircularProgress size={20} /> : <CheckCircleIcon />}
+            disabled={isSubmitting || isLoading}
+            startIcon={isSubmitting || isLoading ? <CircularProgress size={20} /> : <CheckCircleIcon />}
           >
-            {isSubmitting ? 'Completing...' : 'Complete Appointment'}
+            {isSubmitting || isLoading ? 'Completing...' : 'Complete Appointment'}
           </Button>
         </DialogActions>
       </form>

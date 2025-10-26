@@ -1,5 +1,5 @@
-import { body, param, query, ValidationChain } from 'express-validator';
-import { Request } from 'express';
+import { body, param, query, ValidationChain, validationResult } from 'express-validator';
+import { Request, Response, NextFunction } from 'express';
 import mongoose from 'mongoose';
 
 // Helper function to validate ObjectId
@@ -14,6 +14,80 @@ interface BusinessRuleValidation {
     message: string;
     code?: string;
 }
+
+/**
+ * Enhanced validation middleware with business rule support
+ * Supports both new format and legacy format for backward compatibility
+ */
+export const validateRequest = (
+    validations: ValidationChain[],
+    businessRulesOrLocation?: BusinessRuleValidation[] | string,
+    options: {
+        logErrors?: boolean;
+        includeStack?: boolean;
+    } = {}
+): ((req: Request, res: Response, next: NextFunction) => Promise<void>) => {
+    // Handle legacy format where second parameter is location string
+    let businessRules: BusinessRuleValidation[] = [];
+    if (typeof businessRulesOrLocation === 'string') {
+        // Legacy format - ignore location parameter for now
+        businessRules = [];
+    } else if (Array.isArray(businessRulesOrLocation)) {
+        businessRules = businessRulesOrLocation;
+    }
+    const { logErrors = true, includeStack = false } = options;
+
+    return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+        try {
+            // Run express-validator validations
+            await Promise.all(validations.map(validation => validation.run(req)));
+
+            const errors = validationResult(req);
+            if (!errors.isEmpty()) {
+                if (logErrors) {
+                    console.error('Validation errors:', errors.array());
+                }
+                res.status(400).json({
+                    success: false,
+                    message: 'Validation failed',
+                    errors: errors.array(),
+                });
+                return;
+            }
+
+            // Run business rule validations
+            if (businessRules.length > 0) {
+                for (const rule of businessRules) {
+                    const fieldValue = req.body[rule.field] || req.params[rule.field] || req.query[rule.field];
+                    const isValid = await rule.rule(fieldValue, req);
+                    
+                    if (!isValid) {
+                        if (logErrors) {
+                            console.error(`Business rule validation failed for field: ${rule.field}`);
+                        }
+                        res.status(400).json({
+                            success: false,
+                            message: rule.message,
+                            code: rule.code || 'BUSINESS_RULE_VIOLATION',
+                        });
+                        return;
+                    }
+                }
+            }
+
+            next();
+        } catch (error) {
+            if (logErrors) {
+                console.error('Validation middleware error:', error);
+            }
+            res.status(500).json({
+                success: false,
+                message: 'Internal validation error',
+                ...(includeStack && { stack: error instanceof Error ? error.stack : undefined }),
+            });
+        }
+    };
+};
 
 // ===============================
 // FOLLOW-UP TASK VALIDATION SCHEMAS

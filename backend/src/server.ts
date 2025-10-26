@@ -169,7 +169,7 @@ async function initializeServer() {
 }
 
 // Graceful shutdown function
-const gracefulShutdown = (signal: string) => {
+const gracefulShutdown = async (signal: string) => {
   console.log(`Received ${signal}. Starting graceful shutdown...`);
 
   try {

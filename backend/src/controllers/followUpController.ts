@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import mongoose from 'mongoose';
 import { AuthRequest } from '../middlewares/auth';
 import FollowUpService from '../services/FollowUpService';
 import AppointmentService from '../services/AppointmentService';
@@ -28,8 +29,11 @@ export const createFollowUp = asyncHandler(
       assignedTo: req.body.assignedTo || context.userId,
     };
 
-    const followUpService = FollowUpService.getInstance();
-    const followUpTask = await followUpService.createFollowUpTask(followUpData);
+    const followUpTask = await FollowUpService.createFollowUpTask(
+      followUpData,
+      new mongoose.Types.ObjectId(context.workplaceId),
+      context.userId
+    );
 
     sendSuccess(res, { followUpTask }, 'Follow-up task created successfully', 201);
   }
@@ -55,19 +59,22 @@ export const getFollowUps = asyncHandler(
       cursor,
     } = req.query as any;
 
-    const followUpService = FollowUpService.getInstance();
-    const result = await followUpService.getFollowUpTasks(context.workplaceId, {
-      status,
-      priority,
-      type,
-      assignedTo,
-      patientId,
-      startDate: startDate ? new Date(startDate) : undefined,
-      endDate: endDate ? new Date(endDate) : undefined,
-      overdue,
-      limit: parseInt(limit) || 50,
-      cursor,
-    });
+    const result = await FollowUpService.getFollowUpTasks(
+      {
+        status,
+        priority,
+        type,
+        assignedTo: assignedTo ? new mongoose.Types.ObjectId(assignedTo) : undefined,
+        patientId: patientId ? new mongoose.Types.ObjectId(patientId) : undefined,
+        startDate: startDate ? new Date(startDate) : undefined,
+        endDate: endDate ? new Date(endDate) : undefined,
+        overdue: overdue === 'true',
+      },
+      {
+        limit: parseInt(limit) || 50,
+      },
+      new mongoose.Types.ObjectId(context.workplaceId)
+    );
 
     // Calculate summary statistics
     const summary = {
@@ -99,14 +106,13 @@ export const getFollowUp = asyncHandler(
     const context = getRequestContext(req);
     const { id } = req.params;
 
-    const followUpService = FollowUpService.getInstance();
-    const task = await followUpService.getFollowUpTaskById(
+    const task = await FollowUpService.getFollowUpTaskById(
       id,
-      context.workplaceId
+      new mongoose.Types.ObjectId(context.workplaceId)
     );
 
     if (!task) {
-      return sendError(res, 'Follow-up task not found', 404);
+      return sendError(res, 'NOT_FOUND', 'Follow-up task not found', 404);
     }
 
     sendSuccess(res, { task }, 'Follow-up task retrieved successfully');
@@ -126,15 +132,15 @@ export const updateFollowUp = asyncHandler(
       updatedBy: context.userId,
     };
 
-    const followUpService = FollowUpService.getInstance();
-    const task = await followUpService.updateFollowUpTask(
+    const task = await FollowUpService.updateFollowUpTask(
       id,
-      context.workplaceId,
-      updateData
+      new mongoose.Types.ObjectId(context.workplaceId),
+      updateData,
+      context.userId
     );
 
     if (!task) {
-      return sendError(res, 'Follow-up task not found', 404);
+      return sendError(res, 'NOT_FOUND', 'Follow-up task not found', 404);
     }
 
     sendSuccess(res, { task }, 'Follow-up task updated successfully');
@@ -151,16 +157,15 @@ export const completeFollowUp = asyncHandler(
     const { id } = req.params;
     const { outcome } = req.body;
 
-    const followUpService = FollowUpService.getInstance();
-    const task = await followUpService.completeFollowUpTask(
-      id,
-      context.workplaceId,
+    const task = await FollowUpService.completeFollowUpTask(
+      new mongoose.Types.ObjectId(id),
+      { outcome },
       context.userId,
-      outcome
+      new mongoose.Types.ObjectId(context.workplaceId)
     );
 
     if (!task) {
-      return sendError(res, 'Follow-up task not found', 404);
+      return sendError(res, 'NOT_FOUND', 'Follow-up task not found', 404);
     }
 
     sendSuccess(res, { task }, 'Follow-up task completed successfully');
@@ -177,22 +182,21 @@ export const convertToAppointment = asyncHandler(
     const { id } = req.params;
     const { scheduledDate, scheduledTime, duration, type, description } = req.body;
 
-    const followUpService = FollowUpService.getInstance();
-    const result = await followUpService.convertToAppointment(
-      id,
-      context.workplaceId,
+    const result = await FollowUpService.convertToAppointment(
+      new mongoose.Types.ObjectId(id),
       {
         scheduledDate: new Date(scheduledDate),
         scheduledTime,
         duration,
         type,
         description,
-        createdBy: context.userId,
-      }
+      },
+      context.userId,
+      new mongoose.Types.ObjectId(context.workplaceId)
     );
 
     if (!result) {
-      return sendError(res, 'Follow-up task not found', 404);
+      return sendError(res, 'NOT_FOUND', 'Follow-up task not found', 404);
     }
 
     sendSuccess(res, result, 'Follow-up task converted to appointment successfully', 201);
@@ -208,11 +212,14 @@ export const getOverdueFollowUps = asyncHandler(
     const context = getRequestContext(req);
     const { assignedTo } = req.query as any;
 
-    const followUpService = FollowUpService.getInstance();
-    const result = await followUpService.getFollowUpTasks(context.workplaceId, {
-      status: 'overdue',
-      assignedTo,
-    });
+    const result = await FollowUpService.getFollowUpTasks(
+      {
+        status: 'overdue',
+        assignedTo: assignedTo ? new mongoose.Types.ObjectId(assignedTo) : undefined,
+      },
+      {},
+      new mongoose.Types.ObjectId(context.workplaceId)
+    );
 
     // Calculate summary by priority
     const summary = {
@@ -236,17 +243,15 @@ export const escalateFollowUp = asyncHandler(
     const { id } = req.params;
     const { newPriority, reason } = req.body;
 
-    const followUpService = FollowUpService.getInstance();
-    const task = await followUpService.escalateFollowUp(
-      id,
-      context.workplaceId,
-      newPriority,
-      reason,
-      context.userId
+    const task = await FollowUpService.escalateFollowUp(
+      new mongoose.Types.ObjectId(id),
+      { newPriority, reason },
+      context.userId,
+      new mongoose.Types.ObjectId(context.workplaceId)
     );
 
     if (!task) {
-      return sendError(res, 'Follow-up task not found', 404);
+      return sendError(res, 'NOT_FOUND', 'Follow-up task not found', 404);
     }
 
     sendSuccess(res, { task }, 'Follow-up task escalated successfully');
@@ -263,12 +268,16 @@ export const getPatientFollowUps = asyncHandler(
     const { patientId } = req.params;
     const { status, limit } = req.query as any;
 
-    const followUpService = FollowUpService.getInstance();
-    const result = await followUpService.getFollowUpTasks(context.workplaceId, {
-      patientId,
-      status,
-      limit: parseInt(limit) || 10,
-    });
+    const result = await FollowUpService.getFollowUpTasks(
+      {
+        patientId: new mongoose.Types.ObjectId(patientId),
+        status,
+      },
+      {
+        limit: parseInt(limit) || 10,
+      },
+      new mongoose.Types.ObjectId(context.workplaceId)
+    );
 
     sendSuccess(res, result, 'Patient follow-up tasks retrieved successfully');
   }

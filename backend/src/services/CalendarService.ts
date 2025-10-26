@@ -1007,3 +1007,6 @@ export class CalendarService {
     return reasons;
   }
 }
+
+// Export as default for backward compatibility
+export default CalendarService;

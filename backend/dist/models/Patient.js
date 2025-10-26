@@ -181,6 +181,58 @@ const patientSchema = new mongoose_1.Schema({
         resultNotifications: { type: Boolean, default: true },
         orderReminders: { type: Boolean, default: true },
     },
+    appointmentPreferences: {
+        preferredDays: {
+            type: [Number],
+            validate: {
+                validator: function (days) {
+                    return days.every((day) => day >= 0 && day <= 6);
+                },
+                message: 'Preferred days must be between 0 (Sunday) and 6 (Saturday)',
+            },
+        },
+        preferredTimeSlots: [
+            {
+                start: {
+                    type: String,
+                    validate: {
+                        validator: function (time) {
+                            return /^([01]\d|2[0-3]):([0-5]\d)$/.test(time);
+                        },
+                        message: 'Time must be in HH:mm format',
+                    },
+                },
+                end: {
+                    type: String,
+                    validate: {
+                        validator: function (time) {
+                            return /^([01]\d|2[0-3]):([0-5]\d)$/.test(time);
+                        },
+                        message: 'Time must be in HH:mm format',
+                    },
+                },
+            },
+        ],
+        preferredPharmacist: {
+            type: mongoose_1.Schema.Types.ObjectId,
+            ref: 'User',
+        },
+        reminderPreferences: {
+            email: { type: Boolean, default: true },
+            sms: { type: Boolean, default: false },
+            push: { type: Boolean, default: true },
+            whatsapp: { type: Boolean, default: false },
+        },
+        language: {
+            type: String,
+            enum: ['en', 'yo', 'ig', 'ha'],
+            default: 'en',
+        },
+        timezone: {
+            type: String,
+            default: 'Africa/Lagos',
+        },
+    },
     metadata: {
         sharedAccess: {
             patientId: {
@@ -264,6 +316,10 @@ patientSchema.index({ workplaceId: 1, locationId: 1 }, { sparse: true });
 patientSchema.index({ workplaceId: 1, 'metadata.sharedAccess.sharedWithLocations': 1 }, { sparse: true });
 patientSchema.index({ hasActiveDTP: 1 });
 patientSchema.index({ createdAt: -1 });
+patientSchema.virtual('name').get(function () {
+    const parts = [this.firstName, this.otherNames, this.lastName].filter(Boolean);
+    return parts.join(' ');
+});
 patientSchema.virtual('computedAge').get(function () {
     if (this.dob) {
         const now = new Date();
@@ -282,6 +338,33 @@ patientSchema.virtual('dateOfBirth').get(function () {
 });
 patientSchema.virtual('dateOfBirth').set(function (value) {
     this.dob = value;
+});
+patientSchema.virtual('upcomingAppointments', {
+    ref: 'Appointment',
+    localField: '_id',
+    foreignField: 'patientId',
+    count: true,
+    match: {
+        status: { $in: ['scheduled', 'confirmed'] },
+        scheduledDate: { $gte: new Date() },
+        isDeleted: false,
+    },
+});
+patientSchema.virtual('lastAppointmentDate').get(async function () {
+    try {
+        const Appointment = mongoose_1.default.model('Appointment');
+        const lastAppointment = await Appointment.findOne({
+            patientId: this._id,
+            status: 'completed',
+            isDeleted: false,
+        })
+            .sort({ scheduledDate: -1 })
+            .select('scheduledDate');
+        return lastAppointment?.scheduledDate;
+    }
+    catch (error) {
+        return undefined;
+    }
 });
 patientSchema.methods.getAge = function () {
     if (this.dob) {

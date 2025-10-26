@@ -256,6 +256,71 @@ export class FollowUpService {
   }
 
   /**
+   * Get single follow-up task by ID
+   * Requirement: 3.3
+   */
+  static async getFollowUpTaskById(
+    taskId: string,
+    workplaceId: mongoose.Types.ObjectId
+  ): Promise<IFollowUpTask | null> {
+    try {
+      const task = await FollowUpTask.findOne({
+        _id: new mongoose.Types.ObjectId(taskId),
+        workplaceId,
+      }).populate('patientId assignedTo');
+
+      return task;
+    } catch (error) {
+      logger.error('Error fetching follow-up task by ID', {
+        taskId,
+        workplaceId: workplaceId.toString(),
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Update follow-up task
+   * Requirement: 3.3
+   */
+  static async updateFollowUpTask(
+    taskId: string,
+    workplaceId: mongoose.Types.ObjectId,
+    updateData: Partial<CreateFollowUpTaskData>,
+    updatedBy: mongoose.Types.ObjectId
+  ): Promise<IFollowUpTask | null> {
+    try {
+      const task = await FollowUpTask.findOneAndUpdate(
+        {
+          _id: new mongoose.Types.ObjectId(taskId),
+          workplaceId,
+        },
+        {
+          ...updateData,
+          updatedBy,
+        },
+        { new: true }
+      );
+
+      if (task) {
+        logger.info('Follow-up task updated', {
+          taskId,
+          updatedBy: updatedBy.toString(),
+        });
+      }
+
+      return task;
+    } catch (error) {
+      logger.error('Error updating follow-up task', {
+        taskId,
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+      throw error;
+    }
+  }
+
+  /**
    * Get follow-up tasks with filtering and pagination
    * Requirement: 3.3
    */
@@ -895,3 +960,6 @@ export class FollowUpService {
     };
   }
 }
+
+// Export as default for backward compatibility
+export default FollowUpService;

@@ -425,6 +425,33 @@ export const useUpdateVisit = () => {
   });
 };
 
+export const useCreateVisitFromAppointment = () => {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({
+      patientId,
+      appointmentId,
+      appointmentData,
+    }: {
+      patientId: string;
+      appointmentId: string;
+      appointmentData: {
+        type: string;
+        notes?: string;
+        nextActions?: string[];
+        scheduledDate: string;
+        scheduledTime: string;
+      };
+    }) => patientService.createVisitFromAppointment(patientId, appointmentId, appointmentData),
+    onSuccess: (_, { patientId }) => {
+      queryClient.invalidateQueries({
+        queryKey: patientResourceKeys.visits(patientId),
+      });
+    },
+  });
+};
+
 // Note: Delete visit function doesn't exist in service, so omitting it
 
 // ==================== MOCK ANALYTICS & OVERVIEW ====================

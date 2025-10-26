@@ -49,6 +49,7 @@ const UsageAlertCronService_1 = __importDefault(require("./services/UsageAlertCr
 const EmailDeliveryCronService_1 = require("./services/EmailDeliveryCronService");
 const communicationSocketService_1 = __importDefault(require("./services/communicationSocketService"));
 const socketNotificationService_1 = __importDefault(require("./services/socketNotificationService"));
+const QueueService_1 = __importDefault(require("./services/QueueService"));
 require("./models/Medication");
 require("./models/Conversation");
 require("./models/Message");
@@ -65,6 +66,16 @@ async function initializeServer() {
             console.error('⚠️ Error seeding workspaces:', error);
         }
         performanceMonitoring_1.performanceCollector.startSystemMetricsCollection();
+        try {
+            await QueueService_1.default.initialize();
+            console.log('✅ Queue Service initialized successfully');
+            const { initializeWorkers } = await Promise.resolve().then(() => __importStar(require('./jobs/workers')));
+            await initializeWorkers();
+            console.log('✅ Job workers initialized successfully');
+        }
+        catch (error) {
+            console.error('⚠️ Queue Service initialization failed:', error);
+        }
     }
     catch (error) {
         console.error('❌ Database connection failed:', error);
@@ -143,13 +154,20 @@ async function initializeServer() {
     });
     return server;
 }
-const gracefulShutdown = (signal) => {
+const gracefulShutdown = async (signal) => {
     console.log(`Received ${signal}. Starting graceful shutdown...`);
     try {
         if (server) {
             server.close(() => {
                 console.log('HTTP server closed');
             });
+        }
+        try {
+            await QueueService_1.default.closeAll();
+            console.log('Queue Service closed');
+        }
+        catch (error) {
+            console.error('Error closing Queue Service:', error);
         }
         const mongoose = require('mongoose');
         mongoose.connection.close();

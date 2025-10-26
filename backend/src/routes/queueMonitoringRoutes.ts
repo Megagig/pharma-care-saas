@@ -5,14 +5,14 @@
 
 import express from 'express';
 import * as queueMonitoringController from '../controllers/queueMonitoringController';
-import { protect } from '../middlewares/auth';
-import { checkPermission } from '../middlewares/rbac';
+import { auth } from '../middlewares/auth';
+import { requirePermission } from '../middlewares/rbac';
 
 const router = express.Router();
 
 // All routes require authentication and admin permissions
-router.use(protect);
-router.use(checkPermission('system', 'manage'));
+router.use(auth);
+router.use(requirePermission('system:manage'));
 
 /**
  * @route   GET /api/queue-monitoring/dashboard

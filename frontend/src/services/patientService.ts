@@ -840,6 +840,43 @@ class PatientService {
     );
   }
 
+  /**
+   * Create visit from appointment data
+   */
+  async createVisitFromAppointment(
+    patientId: string,
+    appointmentId: string,
+    appointmentData: {
+      type: string;
+      notes?: string;
+      nextActions?: string[];
+      scheduledDate: string;
+      scheduledTime: string;
+    }
+  ): Promise<ApiResponse<{ visit: Visit }>> {
+    const visitData: CreateVisitData = {
+      date: new Date().toISOString(), // Current date/time for the visit
+      soap: {
+        subjective: '', // Will be filled by pharmacist
+        objective: '', // Will be filled by pharmacist
+        assessment: appointmentData.notes || '', // Pre-populate with appointment outcome notes
+        plan: appointmentData.nextActions?.join('; ') || '', // Pre-populate with next actions
+      },
+      attachments: [],
+    };
+
+    return this.makeRequest<ApiResponse<{ visit: Visit }>>(
+      `/patients/${patientId}/visits`,
+      {
+        method: 'POST',
+        body: JSON.stringify({
+          ...visitData,
+          appointmentId, // Link to the appointment
+        }),
+      }
+    );
+  }
+
   // =============================================
   // UTILITY METHODS
   // =============================================

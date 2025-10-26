@@ -63,6 +63,7 @@ import { format, formatDistanceToNow, isAfter, isBefore } from 'date-fns';
 
 import { Appointment, AppointmentStatus } from '../../stores/appointmentTypes';
 import { useAppointment, useUpdateAppointmentStatus, useRescheduleAppointment, useCancelAppointment } from '../../hooks/useAppointments';
+import { useCreateVisitFromAppointment } from '../../queries/usePatientResources';
 import { Patient } from '../../types/patientManagement';
 
 interface AppointmentDetailsPanelProps {
@@ -156,6 +157,7 @@ const AppointmentDetailsPanel: React.FC<AppointmentDetailsPanelProps> = ({
   const updateStatusMutation = useUpdateAppointmentStatus();
   const rescheduleAppointmentMutation = useRescheduleAppointment();
   const cancelAppointmentMutation = useCancelAppointment();
+  const createVisitMutation = useCreateVisitFromAppointment();
 
   const appointment = appointmentData?.data?.appointment;
   const patient = appointmentData?.data?.patient;
@@ -217,6 +219,27 @@ const AppointmentDetailsPanel: React.FC<AppointmentDetailsPanelProps> = ({
       onCancel?.(appointment);
     } catch (error) {
       console.error('Failed to cancel appointment:', error);
+    }
+  };
+
+  const handleCreateVisit = async () => {
+    if (!appointment) return;
+
+    try {
+      await createVisitMutation.mutateAsync({
+        patientId: appointment.patientId,
+        appointmentId: appointment._id,
+        appointmentData: {
+          type: appointment.type,
+          notes: appointment.outcome?.notes || '',
+          nextActions: appointment.outcome?.nextActions || [],
+          scheduledDate: appointment.scheduledDate.toString(),
+          scheduledTime: appointment.scheduledTime,
+        },
+      });
+      // Optionally show success message or navigate to visit
+    } catch (error) {
+      console.error('Failed to create visit:', error);
     }
   };
 
@@ -681,6 +704,19 @@ const AppointmentDetailsPanel: React.FC<AppointmentDetailsPanelProps> = ({
                     disabled={updateStatusMutation.isPending}
                   >
                     Mark Complete
+                  </Button>
+                )}
+
+                {appointment?.status === 'completed' && !appointment.outcome?.visitCreated && (
+                  <Button
+                    variant="outlined"
+                    color="primary"
+                    startIcon={<AssignmentIcon />}
+                    onClick={handleCreateVisit}
+                    fullWidth
+                    disabled={createVisitMutation.isPending}
+                  >
+                    {createVisitMutation.isPending ? 'Creating Visit...' : 'Create Visit'}
                   </Button>
                 )}
 

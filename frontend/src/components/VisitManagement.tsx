@@ -352,16 +352,33 @@ const VisitManagement: React.FC<VisitManagementProps> = ({ patientId }) => {
                       <Typography variant="h6" sx={{ fontWeight: 600 }}>
                         {formatDate(visit.date)}
                       </Typography>
-                      {visit.attachments && visit.attachments.length > 0 && (
-                        <Chip
-                          label={`${visit.attachments.length} attachment${
-                            visit.attachments.length > 1 ? 's' : ''
-                          }`}
-                          size="small"
-                          icon={<AttachFileIcon />}
-                          variant="outlined"
-                          sx={{ mt: 0.5 }}
-                        />
+                      <Box sx={{ display: 'flex', gap: 1, mt: 0.5, flexWrap: 'wrap' }}>
+                        {visit.appointmentId && (
+                          <Chip
+                            label="From Appointment"
+                            size="small"
+                            icon={<CalendarTodayIcon />}
+                            color="primary"
+                            variant="outlined"
+                          />
+                        )}
+                        {visit.attachments && visit.attachments.length > 0 && (
+                          <Chip
+                            label={`${visit.attachments.length} attachment${
+                              visit.attachments.length > 1 ? 's' : ''
+                            }`}
+                            size="small"
+                            icon={<AttachFileIcon />}
+                            variant="outlined"
+                          />
+                        )}
+                      </Box>
+                      {visit.appointmentId && (
+                        <Box sx={{ mt: 1, p: 1, bgcolor: 'primary.50', borderRadius: 1 }}>
+                          <Typography variant="caption" color="primary.main" sx={{ fontWeight: 600 }}>
+                            Linked Appointment: {visit.appointmentId}
+                          </Typography>
+                        </Box>
                       )}
                     </Box>
                     <Stack direction="row" spacing={1}>

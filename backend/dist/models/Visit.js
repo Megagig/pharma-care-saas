@@ -118,6 +118,12 @@ const visitSchema = new mongoose_1.Schema({
         required: true,
         index: true,
     },
+    appointmentId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'Appointment',
+        index: true,
+        sparse: true,
+    },
     date: {
         type: Date,
         required: true,
@@ -166,6 +172,7 @@ visitSchema.index({ workplaceId: 1, patientId: 1, date: -1 });
 visitSchema.index({ workplaceId: 1, date: -1 });
 visitSchema.index({ workplaceId: 1, isDeleted: 1 });
 visitSchema.index({ workplaceId: 1, locationId: 1 }, { sparse: true });
+visitSchema.index({ workplaceId: 1, appointmentId: 1 }, { sparse: true });
 visitSchema.index({ createdAt: -1 });
 visitSchema.virtual('patient', {
     ref: 'Patient',

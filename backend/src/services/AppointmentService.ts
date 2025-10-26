@@ -9,6 +9,7 @@ import Appointment, { IAppointment } from '../models/Appointment';
 import PharmacistSchedule, { IPharmacistSchedule } from '../models/PharmacistSchedule';
 import Patient from '../models/Patient';
 import User from '../models/User';
+import Visit, { IVisit } from '../models/Visit';
 import {
   createNotFoundError,
   createValidationError,
@@ -192,6 +193,71 @@ export class AppointmentService {
       logger.error('Error creating appointment', {
         error: error instanceof Error ? error.message : 'Unknown error',
         data,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Get single appointment by ID
+   * Requirement: 1.1, 1.3
+   */
+  static async getAppointmentById(
+    appointmentId: string,
+    workplaceId: mongoose.Types.ObjectId
+  ): Promise<IAppointment | null> {
+    try {
+      const appointment = await Appointment.findOne({
+        _id: new mongoose.Types.ObjectId(appointmentId),
+        workplaceId,
+      }).populate('patientId assignedTo');
+
+      return appointment;
+    } catch (error) {
+      logger.error('Error fetching appointment by ID', {
+        appointmentId,
+        workplaceId: workplaceId.toString(),
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Update appointment details
+   * Requirement: 1.4, 1.6
+   */
+  static async updateAppointment(
+    appointmentId: string,
+    workplaceId: mongoose.Types.ObjectId,
+    updateData: Partial<CreateAppointmentData>,
+    updatedBy: mongoose.Types.ObjectId
+  ): Promise<IAppointment | null> {
+    try {
+      const appointment = await Appointment.findOneAndUpdate(
+        {
+          _id: new mongoose.Types.ObjectId(appointmentId),
+          workplaceId,
+        },
+        {
+          ...updateData,
+          updatedBy,
+        },
+        { new: true }
+      );
+
+      if (appointment) {
+        logger.info('Appointment updated', {
+          appointmentId,
+          updatedBy: updatedBy.toString(),
+        });
+      }
+
+      return appointment;
+    } catch (error) {
+      logger.error('Error updating appointment', {
+        appointmentId,
+        error: error instanceof Error ? error.message : 'Unknown error',
       });
       throw error;
     }
@@ -463,6 +529,17 @@ export class AppointmentService {
           if (!data.outcome) {
             throw createValidationError('Outcome is required when completing an appointment');
           }
+          
+          // Create visit if requested
+          if (data.outcome.visitCreated) {
+            const visit = await this.createVisitFromAppointment(
+              appointment,
+              data.outcome,
+              updatedBy
+            );
+            data.outcome.visitId = visit._id;
+          }
+          
           appointment.complete(data.outcome);
           break;
 
@@ -765,4 +842,54 @@ export class AppointmentService {
       );
     }
   }
+
+  /**
+   * Create a visit record from a completed appointment
+   * Requirement: 7.2, 1.4, 1.6
+   */
+  private static async createVisitFromAppointment(
+    appointment: IAppointment,
+    outcome: IAppointment['outcome'],
+    createdBy: mongoose.Types.ObjectId
+  ): Promise<IVisit> {
+    try {
+      // Pre-populate visit data from appointment
+      const visitData = {
+        workplaceId: appointment.workplaceId,
+        locationId: appointment.locationId,
+        patientId: appointment.patientId,
+        appointmentId: appointment._id,
+        date: new Date(), // Current date/time for the visit
+        soap: {
+          subjective: '', // Will be filled by pharmacist
+          objective: '', // Will be filled by pharmacist
+          assessment: outcome?.notes || '', // Pre-populate with appointment outcome notes
+          plan: outcome?.nextActions?.join('; ') || '', // Pre-populate with next actions
+        },
+        attachments: [],
+        createdBy,
+      };
+
+      const visit = new Visit(visitData);
+      await visit.save();
+
+      logger.info('Visit created from appointment', {
+        appointmentId: appointment._id.toString(),
+        visitId: visit._id.toString(),
+        patientId: appointment.patientId.toString(),
+        createdBy: createdBy.toString(),
+      });
+
+      return visit;
+    } catch (error) {
+      logger.error('Error creating visit from appointment', {
+        appointmentId: appointment._id.toString(),
+        error: error instanceof Error ? error.message : 'Unknown error',
+      });
+      throw error;
+    }
+  }
 }
+
+// Export as default for backward compatibility
+export default AppointmentService;

@@ -261,8 +261,8 @@ export class FollowUpMonitorScheduler {
         isScheduled: true,
         jobId: job.id!.toString(),
         lastRun: job.finishedOn ? new Date(job.finishedOn) : undefined,
-        nextRun: job.opts.repeat?.nextMillis 
-          ? new Date(job.opts.repeat.nextMillis) 
+        nextRun: job.opts.repeat && 'nextMillis' in job.opts.repeat && job.opts.repeat.nextMillis
+          ? new Date(Number(job.opts.repeat.nextMillis)) 
           : undefined,
       };
     } catch (error) {

@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import mongoose from 'mongoose';
 import { AuthRequest } from '../middlewares/auth';
 import AppointmentService from '../services/AppointmentService';
 import CalendarService from '../services/CalendarService';
@@ -28,8 +29,11 @@ export const createAppointment = asyncHandler(
       assignedTo: req.body.assignedTo || context.userId,
     };
 
-    const appointmentService = AppointmentService.getInstance();
-    const result = await appointmentService.createAppointment(appointmentData);
+    const result = await AppointmentService.createAppointment(
+      appointmentData,
+      new mongoose.Types.ObjectId(context.workplaceId),
+      context.userId
+    );
 
     sendSuccess(res, result, 'Appointment created successfully', 201);
   }
@@ -44,15 +48,14 @@ export const getCalendarAppointments = asyncHandler(
     const context = getRequestContext(req);
     const { view = 'week', date, pharmacistId, locationId } = req.query as any;
 
-    const calendarService = CalendarService.getInstance();
-    const calendarData = await calendarService.getCalendarView(
-      context.workplaceId,
+    const calendarData = await CalendarService.getCalendarView(
+      view,
+      date ? new Date(date) : new Date(),
       {
-        view,
-        date: date ? new Date(date) : new Date(),
-        pharmacistId,
+        pharmacistId: pharmacistId ? new mongoose.Types.ObjectId(pharmacistId) : undefined,
         locationId,
-      }
+      },
+      new mongoose.Types.ObjectId(context.workplaceId)
     );
 
     sendSuccess(res, calendarData, 'Calendar data retrieved successfully');
@@ -78,18 +81,21 @@ export const getAppointments = asyncHandler(
       cursor,
     } = req.query as any;
 
-    const appointmentService = AppointmentService.getInstance();
-    const result = await appointmentService.getAppointments(context.workplaceId, {
-      status,
-      type,
-      patientId,
-      assignedTo: pharmacistId,
-      locationId,
-      startDate: startDate ? new Date(startDate) : undefined,
-      endDate: endDate ? new Date(endDate) : undefined,
-      limit: parseInt(limit) || 50,
-      cursor,
-    });
+    const result = await AppointmentService.getAppointments(
+      {
+        status,
+        type,
+        patientId: patientId ? new mongoose.Types.ObjectId(patientId) : undefined,
+        assignedTo: pharmacistId ? new mongoose.Types.ObjectId(pharmacistId) : undefined,
+        locationId,
+        startDate: startDate ? new Date(startDate) : undefined,
+        endDate: endDate ? new Date(endDate) : undefined,
+      },
+      {
+        limit: parseInt(limit) || 50,
+      },
+      new mongoose.Types.ObjectId(context.workplaceId)
+    );
 
     sendSuccess(res, result, 'Appointments retrieved successfully');
   }
@@ -104,14 +110,13 @@ export const getAppointment = asyncHandler(
     const context = getRequestContext(req);
     const { id } = req.params;
 
-    const appointmentService = AppointmentService.getInstance();
-    const appointment = await appointmentService.getAppointmentById(
+    const appointment = await AppointmentService.getAppointmentById(
       id,
-      context.workplaceId
+      new mongoose.Types.ObjectId(context.workplaceId)
     );
 
     if (!appointment) {
-      return sendError(res, 'Appointment not found', 404);
+      return sendError(res, 'NOT_FOUND', 'Appointment not found', 404);
     }
 
     sendSuccess(res, { appointment }, 'Appointment retrieved successfully');
@@ -131,15 +136,15 @@ export const updateAppointment = asyncHandler(
       updatedBy: context.userId,
     };
 
-    const appointmentService = AppointmentService.getInstance();
-    const appointment = await appointmentService.updateAppointment(
+    const appointment = await AppointmentService.updateAppointment(
       id,
-      context.workplaceId,
-      updateData
+      new mongoose.Types.ObjectId(context.workplaceId),
+      updateData,
+      context.userId
     );
 
     if (!appointment) {
-      return sendError(res, 'Appointment not found', 404);
+      return sendError(res, 'NOT_FOUND', 'Appointment not found', 404);
     }
 
     sendSuccess(res, { appointment }, 'Appointment updated successfully');
@@ -156,17 +161,15 @@ export const updateAppointmentStatus = asyncHandler(
     const { id } = req.params;
     const { status, reason, outcome } = req.body;
 
-    const appointmentService = AppointmentService.getInstance();
-    const appointment = await appointmentService.updateAppointmentStatus(
-      id,
-      context.workplaceId,
-      status,
+    const appointment = await AppointmentService.updateAppointmentStatus(
+      new mongoose.Types.ObjectId(id),
+      { status, reason, outcome },
       context.userId,
-      { reason, outcome }
+      new mongoose.Types.ObjectId(context.workplaceId)
     );
 
     if (!appointment) {
-      return sendError(res, 'Appointment not found', 404);
+      return sendError(res, 'NOT_FOUND', 'Appointment not found', 404);
     }
 
     sendSuccess(res, { appointment }, 'Appointment status updated successfully');
@@ -183,21 +186,20 @@ export const rescheduleAppointment = asyncHandler(
     const { id } = req.params;
     const { newDate, newTime, reason, notifyPatient } = req.body;
 
-    const appointmentService = AppointmentService.getInstance();
-    const appointment = await appointmentService.rescheduleAppointment(
-      id,
-      context.workplaceId,
+    const appointment = await AppointmentService.rescheduleAppointment(
+      new mongoose.Types.ObjectId(id),
       {
         newDate: new Date(newDate),
         newTime,
         reason,
         notifyPatient,
-        rescheduledBy: context.userId,
-      }
+      },
+      context.userId,
+      new mongoose.Types.ObjectId(context.workplaceId)
     );
 
     if (!appointment) {
-      return sendError(res, 'Appointment not found', 404);
+      return sendError(res, 'NOT_FOUND', 'Appointment not found', 404);
     }
 
     sendSuccess(res, { appointment, notificationSent: notifyPatient }, 'Appointment rescheduled successfully');
@@ -214,20 +216,19 @@ export const cancelAppointment = asyncHandler(
     const { id } = req.params;
     const { reason, notifyPatient, cancelType } = req.body;
 
-    const appointmentService = AppointmentService.getInstance();
-    const result = await appointmentService.cancelAppointment(
-      id,
-      context.workplaceId,
+    const result = await AppointmentService.cancelAppointment(
+      new mongoose.Types.ObjectId(id),
       {
         reason,
         notifyPatient,
         cancelType,
-        cancelledBy: context.userId,
-      }
+      },
+      context.userId,
+      new mongoose.Types.ObjectId(context.workplaceId)
     );
 
     if (!result) {
-      return sendError(res, 'Appointment not found', 404);
+      return sendError(res, 'NOT_FOUND', 'Appointment not found', 404);
     }
 
     sendSuccess(res, result, 'Appointment cancelled successfully');
@@ -243,16 +244,12 @@ export const getAvailableSlots = asyncHandler(
     const context = getRequestContext(req);
     const { date, pharmacistId, duration, type, locationId } = req.query as any;
 
-    const calendarService = CalendarService.getInstance();
-    const slots = await calendarService.calculateAvailableSlots(
-      context.workplaceId,
-      {
-        date: new Date(date),
-        pharmacistId,
-        duration: parseInt(duration) || 30,
-        appointmentType: type,
-        locationId,
-      }
+    const slots = await CalendarService.calculateAvailableSlots(
+      new mongoose.Types.ObjectId(pharmacistId),
+      new Date(date),
+      parseInt(duration) || 30,
+      new mongoose.Types.ObjectId(context.workplaceId),
+      type
     );
 
     sendSuccess(res, { slots }, 'Available slots retrieved successfully');
@@ -269,12 +266,16 @@ export const getPatientAppointments = asyncHandler(
     const { patientId } = req.params;
     const { status, limit } = req.query as any;
 
-    const appointmentService = AppointmentService.getInstance();
-    const result = await appointmentService.getAppointments(context.workplaceId, {
-      patientId,
-      status,
-      limit: parseInt(limit) || 10,
-    });
+    const result = await AppointmentService.getAppointments(
+      {
+        patientId: new mongoose.Types.ObjectId(patientId),
+        status,
+      },
+      {
+        limit: parseInt(limit) || 10,
+      },
+      new mongoose.Types.ObjectId(context.workplaceId)
+    );
 
     sendSuccess(res, result, 'Patient appointments retrieved successfully');
   }
@@ -289,17 +290,20 @@ export const getUpcomingAppointments = asyncHandler(
     const context = getRequestContext(req);
     const { days, pharmacistId, locationId } = req.query as any;
 
-    const appointmentService = AppointmentService.getInstance();
     const endDate = new Date();
     endDate.setDate(endDate.getDate() + (parseInt(days) || 7));
 
-    const result = await appointmentService.getAppointments(context.workplaceId, {
-      assignedTo: pharmacistId,
-      locationId,
-      startDate: new Date(),
-      endDate,
-      status: 'scheduled',
-    });
+    const result = await AppointmentService.getAppointments(
+      {
+        assignedTo: pharmacistId ? new mongoose.Types.ObjectId(pharmacistId) : undefined,
+        locationId,
+        startDate: new Date(),
+        endDate,
+        status: 'scheduled',
+      },
+      {},
+      new mongoose.Types.ObjectId(context.workplaceId)
+    );
 
     // Calculate summary
     const today = new Date();
@@ -343,16 +347,15 @@ export const confirmAppointment = asyncHandler(
     // TODO: Validate confirmation token if provided
     // For now, just update the status
 
-    const appointmentService = AppointmentService.getInstance();
-    const appointment = await appointmentService.updateAppointmentStatus(
-      id,
-      context.workplaceId,
-      'confirmed',
-      context.userId
+    const appointment = await AppointmentService.updateAppointmentStatus(
+      new mongoose.Types.ObjectId(id),
+      { status: 'confirmed' },
+      context.userId,
+      new mongoose.Types.ObjectId(context.workplaceId)
     );
 
     if (!appointment) {
-      return sendError(res, 'Appointment not found', 404);
+      return sendError(res, 'NOT_FOUND', 'Appointment not found', 404);
     }
 
     sendSuccess(res, { appointment, message: 'Appointment confirmed successfully' }, 'Appointment confirmed successfully');

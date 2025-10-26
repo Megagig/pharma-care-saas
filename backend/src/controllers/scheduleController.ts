@@ -1,4 +1,5 @@
 import { Response } from 'express';
+import mongoose from 'mongoose';
 import { AuthRequest } from '../middlewares/auth';
 import CalendarService from '../services/CalendarService';
 import PharmacistSchedule from '../models/PharmacistSchedule';
@@ -23,25 +24,31 @@ export const getPharmacistSchedule = asyncHandler(
     const context = getRequestContext(req);
     const { pharmacistId } = req.params;
 
-    const calendarService = CalendarService.getInstance();
-    const availability = await calendarService.getPharmacistAvailability(
-      context.workplaceId,
-      pharmacistId
+    const availability = await CalendarService.getPharmacistAvailability(
+      new mongoose.Types.ObjectId(pharmacistId),
+      new Date(),
+      new mongoose.Types.ObjectId(context.workplaceId)
     );
 
     if (!availability) {
-      return sendError(res, 'Pharmacist schedule not found', 404);
+      return sendError(res, 'NOT_FOUND', 'Pharmacist schedule not found', 404);
     }
 
+    // Get pharmacist schedule for time-off information
+    const schedule = await PharmacistSchedule.findOne({
+      pharmacistId: new mongoose.Types.ObjectId(pharmacistId),
+      workplaceId: new mongoose.Types.ObjectId(context.workplaceId),
+    });
+
     // Get upcoming time-off
-    const upcomingTimeOff = availability.timeOff?.filter((timeOff: any) => {
+    const upcomingTimeOff = schedule?.timeOff?.filter((timeOff: any) => {
       return new Date(timeOff.endDate) >= new Date() && timeOff.status === 'approved';
     }) || [];
 
     sendSuccess(res, {
       schedule: availability,
       upcomingTimeOff,
-      capacityStats: availability.capacityStats,
+      utilizationRate: availability.utilizationRate,
     }, 'Pharmacist schedule retrieved successfully');
   }
 );
@@ -111,7 +118,7 @@ export const requestTimeOff = asyncHandler(
     });
 
     if (!schedule) {
-      return sendError(res, 'Pharmacist schedule not found', 404);
+      return sendError(res, 'NOT_FOUND', 'Pharmacist schedule not found', 404);
     }
 
     // Add time-off request
@@ -166,7 +173,7 @@ export const updateTimeOffStatus = asyncHandler(
     });
 
     if (!schedule) {
-      return sendError(res, 'Pharmacist schedule not found', 404);
+      return sendError(res, 'NOT_FOUND', 'Pharmacist schedule not found', 404);
     }
 
     // Find and update time-off request
@@ -175,7 +182,7 @@ export const updateTimeOffStatus = asyncHandler(
     );
 
     if (timeOffIndex === undefined || timeOffIndex === -1) {
-      return sendError(res, 'Time-off request not found', 404);
+      return sendError(res, 'NOT_FOUND', 'Time-off request not found', 404);
     }
 
     schedule.timeOff![timeOffIndex].status = status;
@@ -200,15 +207,11 @@ export const getCapacityReport = asyncHandler(
     const context = getRequestContext(req);
     const { startDate, endDate, pharmacistId, locationId } = req.query as any;
 
-    const calendarService = CalendarService.getInstance();
-    const capacityMetrics = await calendarService.getCapacityMetrics(
-      context.workplaceId,
-      {
-        startDate: new Date(startDate),
-        endDate: new Date(endDate),
-        pharmacistId,
-        locationId,
-      }
+    const capacityMetrics = await CalendarService.getCapacityMetrics(
+      new Date(startDate),
+      new Date(endDate),
+      new mongoose.Types.ObjectId(context.workplaceId),
+      pharmacistId ? [new mongoose.Types.ObjectId(pharmacistId)] : undefined
     );
 
     // Generate recommendations based on capacity data

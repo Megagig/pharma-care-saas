@@ -35,12 +35,21 @@ interface BusinessRuleValidation {
  */
 export const validateRequest = (
     validations: ValidationChain[],
-    businessRules: BusinessRuleValidation[] = [],
+    businessRulesOrLocation?: BusinessRuleValidation[] | string,
     options: {
         logErrors?: boolean;
         includeStack?: boolean;
     } = {}
 ) => {
+    // Handle legacy format where second parameter is location string
+    let businessRules: BusinessRuleValidation[] = [];
+    if (typeof businessRulesOrLocation === 'string') {
+        // Legacy format - ignore location parameter for now
+        businessRules = [];
+    } else if (Array.isArray(businessRulesOrLocation)) {
+        businessRules = businessRulesOrLocation;
+    }
+    
     const { logErrors = true, includeStack = false } = options;
 
     return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
@@ -242,12 +251,12 @@ export const createAppointmentSchema: ValidationChain[] = [
         .withMessage('isRecurring must be a boolean'),
 
     body('recurrencePattern.frequency')
-        .if(body('isRecurring').equals(true))
+        .if(body('isRecurring').equals('true'))
         .isIn(['daily', 'weekly', 'biweekly', 'monthly', 'quarterly'])
         .withMessage('Invalid recurrence frequency'),
 
     body('recurrencePattern.interval')
-        .if(body('isRecurring').equals(true))
+        .if(body('isRecurring').equals('true'))
         .isInt({ min: 1, max: 12 })
         .withMessage('Recurrence interval must be between 1 and 12'),
 

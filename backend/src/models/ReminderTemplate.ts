@@ -417,21 +417,24 @@ reminderTemplateSchema.methods.renderMessage = function (
   };
   
   if (channel === 'email') {
+    const emailTemplate = template as { subject: string; body: string; htmlBody?: string; };
     return {
-      subject: replacePlaceholders(template.subject || ''),
-      body: replacePlaceholders(template.body || ''),
-      htmlBody: template.htmlBody ? replacePlaceholders(template.htmlBody) : undefined,
+      subject: replacePlaceholders(emailTemplate.subject || ''),
+      body: replacePlaceholders(emailTemplate.body || ''),
+      htmlBody: emailTemplate.htmlBody ? replacePlaceholders(emailTemplate.htmlBody) : undefined,
     };
   } else if (channel === 'sms' || channel === 'whatsapp') {
+    const messageTemplate = template as { message: string; templateId?: string; };
     return {
-      message: replacePlaceholders(template.message || ''),
-      templateId: (template as any).templateId,
+      message: replacePlaceholders(messageTemplate.message || ''),
+      templateId: messageTemplate.templateId,
     };
   } else if (channel === 'push') {
+    const pushTemplate = template as { title: string; body: string; actionUrl?: string; };
     return {
-      title: replacePlaceholders(template.title || ''),
-      body: replacePlaceholders(template.body || ''),
-      actionUrl: template.actionUrl,
+      title: replacePlaceholders(pushTemplate.title || ''),
+      body: replacePlaceholders(pushTemplate.body || ''),
+      actionUrl: pushTemplate.actionUrl,
     };
   }
 };

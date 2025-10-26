@@ -235,6 +235,7 @@ export interface Visit extends AuditFields {
   _id: ObjectId;
   pharmacyId: ObjectId;
   patientId: ObjectId;
+  appointmentId?: ObjectId; // Link to appointment if created from one
   date: string;
   soap: SOAPNotes;
   attachments?: VisitAttachment[];

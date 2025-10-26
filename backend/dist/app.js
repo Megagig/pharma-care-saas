@@ -350,6 +350,14 @@ app.use('/api/payments', paymentRoutes_1.default);
 app.use('/api/billing', billingRoutes_1.default);
 app.use('/api/mtr', mtrRoutes_1.default);
 app.use('/api/mtr/notifications', mtrNotificationRoutes_1.default);
+const appointmentRoutes_1 = __importDefault(require("./routes/appointmentRoutes"));
+const followUpRoutes_1 = __importDefault(require("./routes/followUpRoutes"));
+const scheduleRoutes_1 = __importDefault(require("./routes/scheduleRoutes"));
+const queueMonitoringRoutes_1 = __importDefault(require("./routes/queueMonitoringRoutes"));
+app.use('/api/appointments', appointmentRoutes_1.default);
+app.use('/api/follow-ups', followUpRoutes_1.default);
+app.use('/api/schedules', scheduleRoutes_1.default);
+app.use('/api/queue-monitoring', queueMonitoringRoutes_1.default);
 app.get('/api/clinical-interventions/health', (req, res) => {
     res.json({
         status: 'OK',
