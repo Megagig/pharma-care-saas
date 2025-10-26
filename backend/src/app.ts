@@ -66,6 +66,7 @@ import diagnosticRoutes from './routes/diagnosticRoutes';
 import communicationRoutes from './routes/communicationRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 import notificationManagementRoutes from './routes/notificationManagementRoutes';
+import engagementIntegrationRoutes from './routes/engagementIntegrationRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
 import reportsRoutes from './routes/reportsRoutes';
 import lighthouseRoutes from './routes/lighthouseRoutes';
@@ -440,6 +441,9 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/billing', billingRoutes);
 app.use('/api/mtr', mtrRoutes);
 app.use('/api/mtr/notifications', mtrNotificationRoutes);
+
+// Engagement Integration routes
+app.use('/api/engagement-integration', engagementIntegrationRoutes);
 
 // Patient Engagement & Follow-up Management routes
 import appointmentRoutes from './routes/appointmentRoutes';

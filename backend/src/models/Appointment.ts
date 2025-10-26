@@ -669,4 +669,8 @@ appointmentSchema.methods.confirm = function (
   }
 };
 
+// Add sync middleware for MTR integration
+import { addAppointmentSyncMiddleware } from '../middlewares/engagementSync';
+addAppointmentSyncMiddleware(appointmentSchema);
+
 export default mongoose.model<IAppointment, IAppointmentModel>('Appointment', appointmentSchema);
