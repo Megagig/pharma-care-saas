@@ -9,6 +9,7 @@ import Patient from '../models/Patient';
 import User from '../models/User';
 import QueueService from './QueueService';
 import { notificationService } from './notificationService';
+import { appointmentNotificationService } from './AppointmentNotificationService';
 import { QueueName, AppointmentReminderJobData, JobPriority } from '../config/queue';
 import { sendEmail } from '../utils/email';
 import { sendSMS } from '../utils/sms';
@@ -200,7 +201,7 @@ export class ReminderSchedulerService {
   }
 
   /**
-   * Send reminder through multiple channels
+   * Send reminder through multiple channels using the integrated notification service
    */
   async sendReminder(
     appointmentId: mongoose.Types.ObjectId,
@@ -208,83 +209,43 @@ export class ReminderSchedulerService {
     channels: ReminderChannel[]
   ): Promise<ReminderDeliveryResult> {
     try {
-      const appointment = await Appointment.findById(appointmentId)
-        .populate('patientId', 'firstName lastName email phone notificationPreferences')
-        .populate('assignedTo', 'firstName lastName');
-
-      if (!appointment) {
-        throw new Error(`Appointment not found: ${appointmentId}`);
-      }
-
-      const patient = appointment.patientId as any;
-      const pharmacist = appointment.assignedTo as any;
-
-      // Generate reminder content
-      const template = this.getReminderTemplate(appointment, reminderType, patient, pharmacist);
-
-      const deliveryResults: ReminderDeliveryResult['deliveryResults'] = [];
-
-      // Send through each channel
-      for (const channel of channels) {
-        try {
-          switch (channel) {
-            case 'email':
-              await this.sendEmailReminder(patient, appointment, template);
-              deliveryResults.push({ channel, success: true });
-              break;
-
-            case 'sms':
-              await this.sendSMSReminder(patient, appointment, template);
-              deliveryResults.push({ channel, success: true });
-              break;
-
-            case 'push':
-              await this.sendPushReminder(patient, appointment, template);
-              deliveryResults.push({ channel, success: true });
-              break;
-
-            case 'whatsapp':
-              await this.sendWhatsAppReminder(patient, appointment, template);
-              deliveryResults.push({ channel, success: true });
-              break;
-
-            default:
-              logger.warn(`Unknown reminder channel: ${channel}`);
-              deliveryResults.push({
-                channel,
-                success: false,
-                error: 'Unknown channel',
-              });
-          }
-        } catch (error) {
-          logger.error(`Failed to send ${channel} reminder for appointment ${appointmentId}:`, error);
-          deliveryResults.push({
-            channel,
-            success: false,
-            error: (error as Error).message,
-          });
+      // Use the integrated appointment notification service
+      const result = await appointmentNotificationService.sendAppointmentReminder(
+        appointmentId,
+        reminderType,
+        {
+          channels,
+          includeConfirmationLink: true,
+          includeRescheduleLink: true,
         }
-      }
-
-      // Update reminder status in appointment
-      const reminder = appointment.reminders.find(
-        (r) => !r.sent && new Date(r.scheduledFor) <= new Date()
       );
 
-      if (reminder) {
-        reminder.sent = true;
-        reminder.sentAt = new Date();
-        reminder.deliveryStatus = deliveryResults.every((r) => r.success) ? 'delivered' : 'failed';
-        if (!deliveryResults.every((r) => r.success)) {
-          reminder.failureReason = deliveryResults
-            .filter((r) => !r.success)
-            .map((r) => `${r.channel}: ${r.error}`)
-            .join('; ');
+      // Convert result format to match expected interface
+      const deliveryResults: ReminderDeliveryResult['deliveryResults'] = channels.map(channel => ({
+        channel,
+        success: result.success && result.deliveryChannels[channel as keyof typeof result.deliveryChannels],
+        error: result.success ? undefined : result.error,
+      }));
+
+      // Update reminder status in appointment
+      const appointment = await Appointment.findById(appointmentId);
+      if (appointment) {
+        const reminder = appointment.reminders.find(
+          (r) => !r.sent && new Date(r.scheduledFor) <= new Date()
+        );
+
+        if (reminder) {
+          reminder.sent = true;
+          reminder.sentAt = new Date();
+          reminder.deliveryStatus = result.success ? 'delivered' : 'failed';
+          if (!result.success) {
+            reminder.failureReason = result.error || 'Unknown error';
+          }
+          await appointment.save();
         }
-        await appointment.save();
       }
 
-      logger.info(`Sent ${reminderType} reminder for appointment ${appointmentId} through ${channels.length} channels`);
+      logger.info(`Sent ${reminderType} reminder for appointment ${appointmentId} through integrated notification service`);
 
       return {
         appointmentId: appointmentId.toString(),

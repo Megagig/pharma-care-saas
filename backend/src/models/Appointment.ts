@@ -95,6 +95,8 @@ export interface IAppointment extends Document {
     source: 'manual' | 'patient_portal' | 'automated_trigger' | 'recurring';
     triggerEvent?: string;
     customFields?: Record<string, any>;
+    confirmationToken?: string;
+    confirmationTokenExpiry?: Date;
   };
   
   // Audit fields
@@ -384,6 +386,8 @@ const appointmentSchema = new Schema(
       },
       triggerEvent: String,
       customFields: Schema.Types.Mixed,
+      confirmationToken: String,
+      confirmationTokenExpiry: Date,
     },
   },
   {

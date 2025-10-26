@@ -15,6 +15,7 @@ import {
   createValidationError,
   createBusinessRuleError,
 } from '../utils/responseHelpers';
+import { appointmentNotificationService } from './AppointmentNotificationService';
 import logger from '../utils/logger';
 
 export interface CreateAppointmentData {
@@ -652,8 +653,25 @@ export class AppointmentService {
         rescheduledBy: rescheduledBy.toString(),
       });
 
-      // TODO: Send notification to patient if notifyPatient is true
-      // This will be implemented in the notification integration phase
+      // Send notification to patient if requested
+      if (data.notifyPatient) {
+        try {
+          await appointmentNotificationService.sendAppointmentRescheduled(
+            appointmentId,
+            appointment.rescheduledFrom!,
+            appointment.scheduledTime,
+            {
+              includeRescheduleLink: true,
+            }
+          );
+        } catch (error) {
+          logger.error('Failed to send reschedule notification', {
+            appointmentId: appointmentId.toString(),
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+          // Don't fail the reschedule operation if notification fails
+        }
+      }
 
       return appointment;
     } catch (error) {
@@ -731,8 +749,21 @@ export class AppointmentService {
         });
       }
 
-      // TODO: Send notification to patient if notifyPatient is true
-      // This will be implemented in the notification integration phase
+      // Send notification to patient if requested
+      if (data.notifyPatient) {
+        try {
+          await appointmentNotificationService.sendAppointmentCancelled(
+            appointmentId,
+            data.reason
+          );
+        } catch (error) {
+          logger.error('Failed to send cancellation notification', {
+            appointmentId: appointmentId.toString(),
+            error: error instanceof Error ? error.message : 'Unknown error',
+          });
+          // Don't fail the cancellation operation if notification fails
+        }
+      }
 
       return { appointment, cancelledCount };
     } catch (error) {

@@ -616,8 +616,7 @@ mtrFollowUpSchema.statics.getStatistics = async function (
     );
 };
 
-// Add sync middleware for appointment integration
-import { addMTRFollowUpSyncMiddleware } from '../middlewares/engagementSync';
-addMTRFollowUpSyncMiddleware(mtrFollowUpSchema);
+// Note: Sync middleware for appointment integration will be added separately
+// to avoid circular dependency issues
 
 export default mongoose.model<IMTRFollowUp>('MTRFollowUp', mtrFollowUpSchema);

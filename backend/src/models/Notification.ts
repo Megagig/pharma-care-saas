@@ -496,9 +496,12 @@ notificationSchema.pre('save', function (this: INotification) {
 
     // Initialize delivery status for enabled channels
     if (this.isNew) {
-        const enabledChannels = Object.entries(this.deliveryChannels)
-            .filter(([_, enabled]) => enabled)
-            .map(([channel, _]) => channel);
+        const enabledChannels: string[] = [];
+        
+        if (this.deliveryChannels.inApp) enabledChannels.push('inApp');
+        if (this.deliveryChannels.email) enabledChannels.push('email');
+        if (this.deliveryChannels.sms) enabledChannels.push('sms');
+        if (this.deliveryChannels.push) enabledChannels.push('push');
 
         this.deliveryStatus = enabledChannels.map(channel => ({
             channel: channel as any,
