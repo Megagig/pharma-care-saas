@@ -254,7 +254,7 @@ export async function processAppointmentStatusMonitor(
     return result;
   } catch (error) {
     const processingTime = Date.now() - startTime;
-    
+
     logger.error('Failed to process appointment status monitor job:', {
       jobId: job.id,
       workplaceId,
@@ -280,7 +280,7 @@ function calculateAppointmentDateTime(scheduledDate: Date, scheduledTime: string
 
     const dateTime = new Date(scheduledDate);
     dateTime.setHours(hours, minutes, 0, 0);
-    
+
     return dateTime;
   } catch (error) {
     logger.error('Error calculating appointment datetime', {
@@ -490,7 +490,7 @@ export function onAppointmentStatusMonitorCompleted(
   result: AppointmentStatusMonitorResult
 ): void {
   const duration = job.processedOn ? Date.now() - job.processedOn : 0;
-  
+
   logger.info('Appointment status monitor job completed successfully', {
     jobId: job.id,
     workplaceId: job.data.workplaceId,
