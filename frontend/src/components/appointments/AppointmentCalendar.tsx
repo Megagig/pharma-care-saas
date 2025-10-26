@@ -526,37 +526,40 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
       <Dialog
         open={detailsPanelOpen}
         onClose={() => setDetailsPanelOpen(false)}
-        maxWidth="md"
+        maxWidth="lg"
         fullWidth
         fullScreen={isMobile}
       >
-        <DialogTitle>
-          <Box display="flex" alignItems="center" gap={1}>
-            <Schedule />
-            Appointment Details
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          {/* Placeholder for AppointmentDetailsPanel component */}
-          <Typography variant="body2" color="text.secondary">
-            AppointmentDetailsPanel component will be implemented in a subsequent task.
-            {selectedAppointment && (
-              <>
-                <br />
-                Appointment: {selectedAppointment.title}
-                <br />
-                Date: {format(new Date(selectedAppointment.scheduledDate), 'PPP')}
-                <br />
-                Time: {selectedAppointment.scheduledTime}
-                <br />
-                Status: {selectedAppointment.status}
-              </>
-            )}
-          </Typography>
+        <DialogContent sx={{ p: 0 }}>
+          {selectedAppointment && (
+            <AppointmentDetailsPanel
+              appointmentId={selectedAppointment._id}
+              onClose={() => setDetailsPanelOpen(false)}
+              onEdit={(appointment) => {
+                // TODO: Implement edit functionality in future task
+                console.log('Edit appointment:', appointment);
+                setDetailsPanelOpen(false);
+              }}
+              onReschedule={(appointment) => {
+                // TODO: Implement reschedule functionality in future task
+                console.log('Reschedule appointment:', appointment);
+                setDetailsPanelOpen(false);
+              }}
+              onCancel={(appointment) => {
+                console.log('Appointment cancelled:', appointment);
+                setDetailsPanelOpen(false);
+                // Refresh calendar data
+                refetch();
+              }}
+              onComplete={(appointment) => {
+                console.log('Appointment completed:', appointment);
+                setDetailsPanelOpen(false);
+                // Refresh calendar data
+                refetch();
+              }}
+            />
+          )}
         </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setDetailsPanelOpen(false)}>Close</Button>
-        </DialogActions>
       </Dialog>
 
       {/* Custom Styles */}
