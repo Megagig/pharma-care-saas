@@ -177,6 +177,16 @@ const ClinicalInterventionDetails: React.FC = () => {
           >
             Edit
           </Button>
+          {intervention.followUp?.required && (
+            <Button
+              variant="outlined"
+              startIcon={<ScheduleIcon />}
+              onClick={() => navigate(`/interventions/${id}/schedule-followup`)}
+              color="primary"
+            >
+              Schedule Follow-up
+            </Button>
+          )}
           <FormControl size="small" sx={{ minWidth: 120 }}>
             <InputLabel>Status</InputLabel>
             <Select

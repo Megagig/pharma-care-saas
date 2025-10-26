@@ -7,6 +7,9 @@ import {
   getMTRSessionWithAppointment,
   syncMTRFollowUpStatus,
   createVisitFromAppointment,
+  createFollowUpFromIntervention,
+  updateInterventionFromFollowUp,
+  getInterventionWithEngagementData,
 } from '../controllers/engagementIntegrationController';
 import { auth } from '../middlewares/auth';
 import { validateRequest } from '../middlewares/validation';
@@ -59,6 +62,21 @@ const mtrSessionParamSchema = [
 
 const appointmentParamSchema = [
   param('appointmentId').isMongoId().withMessage('Invalid appointment ID'),
+];
+
+const createFollowUpFromInterventionSchema = [
+  param('interventionId').isMongoId().withMessage('Invalid intervention ID'),
+  body('patientId').isMongoId().withMessage('Invalid patient ID'),
+  body('assignedTo').isMongoId().withMessage('Invalid pharmacist ID'),
+  body('locationId').optional().isString(),
+];
+
+const interventionParamSchema = [
+  param('interventionId').isMongoId().withMessage('Invalid intervention ID'),
+];
+
+const followUpTaskParamSchema = [
+  param('followUpTaskId').isMongoId().withMessage('Invalid follow-up task ID'),
 ];
 
 // Routes
@@ -127,6 +145,39 @@ router.post(
   appointmentParamSchema,
   validateRequest,
   createVisitFromAppointment
+);
+
+/**
+ * POST /api/engagement-integration/intervention/:interventionId/create-followup
+ * Create follow-up task from clinical intervention
+ */
+router.post(
+  '/intervention/:interventionId/create-followup',
+  createFollowUpFromInterventionSchema,
+  validateRequest,
+  createFollowUpFromIntervention
+);
+
+/**
+ * POST /api/engagement-integration/followup/:followUpTaskId/update-intervention
+ * Update intervention status from completed follow-up
+ */
+router.post(
+  '/followup/:followUpTaskId/update-intervention',
+  followUpTaskParamSchema,
+  validateRequest,
+  updateInterventionFromFollowUp
+);
+
+/**
+ * GET /api/engagement-integration/intervention/:interventionId
+ * Get clinical intervention with linked follow-up tasks and appointments
+ */
+router.get(
+  '/intervention/:interventionId',
+  interventionParamSchema,
+  validateRequest,
+  getInterventionWithEngagementData
 );
 
 export default router;

@@ -204,6 +204,87 @@ export const syncMTRFollowUpStatus = async (req: AuthRequest, res: Response) => 
 };
 
 /**
+ * Create follow-up task from clinical intervention
+ */
+export const createFollowUpFromIntervention = async (req: AuthRequest, res: Response) => {
+  try {
+    const { interventionId } = req.params;
+    const { patientId, assignedTo, locationId } = req.body;
+
+    if (!validateAndRespond(res, interventionId, 'Intervention ID')) return;
+    if (!validateAndRespond(res, patientId, 'Patient ID')) return;
+    if (!validateAndRespond(res, assignedTo, 'Assigned pharmacist ID')) return;
+
+    const result = await engagementIntegrationService.createFollowUpFromIntervention({
+      interventionId: new mongoose.Types.ObjectId(interventionId),
+      patientId: new mongoose.Types.ObjectId(patientId),
+      assignedTo: new mongoose.Types.ObjectId(assignedTo),
+      workplaceId: req.user.workplaceId,
+      locationId,
+      createdBy: req.user.id,
+    });
+
+    sendSuccess(res, result, 'Follow-up task created from clinical intervention successfully', 201);
+  } catch (error: any) {
+    logger.error('Error creating follow-up task from clinical intervention', {
+      error: error.message,
+      interventionId: req.params.interventionId,
+      userId: req.user.id,
+    });
+    sendError(res, 'SERVER_ERROR', error.message, 500);
+  }
+};
+
+/**
+ * Update intervention status from completed follow-up
+ */
+export const updateInterventionFromFollowUp = async (req: AuthRequest, res: Response) => {
+  try {
+    const { followUpTaskId } = req.params;
+
+    if (!validateAndRespond(res, followUpTaskId, 'Follow-up Task ID')) return;
+
+    const result = await engagementIntegrationService.updateInterventionFromFollowUp(
+      new mongoose.Types.ObjectId(followUpTaskId),
+      req.user.id
+    );
+
+    sendSuccess(res, result, 'Intervention updated from follow-up completion successfully');
+  } catch (error: any) {
+    logger.error('Error updating intervention from follow-up', {
+      error: error.message,
+      followUpTaskId: req.params.followUpTaskId,
+      userId: req.user.id,
+    });
+    sendError(res, 'SERVER_ERROR', error.message, 500);
+  }
+};
+
+/**
+ * Get clinical intervention with linked follow-up tasks and appointments
+ */
+export const getInterventionWithEngagementData = async (req: AuthRequest, res: Response) => {
+  try {
+    const { interventionId } = req.params;
+
+    if (!validateAndRespond(res, interventionId, 'Intervention ID')) return;
+
+    const result = await engagementIntegrationService.getInterventionWithEngagementData(
+      new mongoose.Types.ObjectId(interventionId)
+    );
+
+    sendSuccess(res, result, 'Intervention with engagement data retrieved successfully');
+  } catch (error: any) {
+    logger.error('Error getting intervention with engagement data', {
+      error: error.message,
+      interventionId: req.params.interventionId,
+      userId: req.user.id,
+    });
+    sendError(res, 'SERVER_ERROR', error.message, 500);
+  }
+};
+
+/**
  * Create visit from completed appointment
  */
 export const createVisitFromAppointment = async (req: AuthRequest, res: Response) => {

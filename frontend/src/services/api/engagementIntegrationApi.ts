@@ -39,6 +39,18 @@ export interface MTRSessionWithAppointments {
   followUps: any[];
 }
 
+export interface CreateFollowUpFromInterventionData {
+  patientId: string;
+  assignedTo: string;
+  locationId?: string;
+}
+
+export interface InterventionWithEngagementData {
+  intervention: any;
+  followUpTasks: any[];
+  appointments: any[];
+}
+
 export const engagementIntegrationApi = {
   /**
    * Create appointment from MTR session
@@ -106,6 +118,44 @@ export const engagementIntegrationApi = {
   async createVisitFromAppointment(appointmentId: string): Promise<{ visit: any }> {
     const response = await apiClient.post(
       `/engagement-integration/appointment/${appointmentId}/create-visit`
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Create follow-up task from clinical intervention
+   */
+  async createFollowUpFromIntervention(
+    interventionId: string,
+    data: CreateFollowUpFromInterventionData
+  ): Promise<{ followUpTask: any; intervention: any }> {
+    const response = await apiClient.post(
+      `/engagement-integration/intervention/${interventionId}/create-followup`,
+      data
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Update intervention status from completed follow-up
+   */
+  async updateInterventionFromFollowUp(
+    followUpTaskId: string
+  ): Promise<{ intervention: any; followUpTask: any }> {
+    const response = await apiClient.post(
+      `/engagement-integration/followup/${followUpTaskId}/update-intervention`
+    );
+    return response.data.data;
+  },
+
+  /**
+   * Get clinical intervention with linked follow-up tasks and appointments
+   */
+  async getInterventionWithEngagementData(
+    interventionId: string
+  ): Promise<InterventionWithEngagementData> {
+    const response = await apiClient.get(
+      `/engagement-integration/intervention/${interventionId}`
     );
     return response.data.data;
   },

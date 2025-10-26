@@ -3,6 +3,8 @@ import Appointment, { IAppointment } from '../models/Appointment';
 import MTRFollowUp, { IMTRFollowUp } from '../models/MTRFollowUp';
 import MedicationTherapyReview from '../models/MedicationTherapyReview';
 import Visit from '../models/Visit';
+import FollowUpTask, { IFollowUpTask } from '../models/FollowUpTask';
+import ClinicalIntervention, { IClinicalIntervention } from '../models/ClinicalIntervention';
 import logger from '../utils/logger';
 // Simple error class
 class AppError extends Error {
@@ -34,6 +36,15 @@ export interface SyncStatusData {
   sourceType: 'appointment' | 'mtr_followup';
   newStatus: string;
   updatedBy: mongoose.Types.ObjectId;
+}
+
+export interface CreateFollowUpFromInterventionData {
+  interventionId: mongoose.Types.ObjectId;
+  patientId: mongoose.Types.ObjectId;
+  assignedTo: mongoose.Types.ObjectId;
+  workplaceId: mongoose.Types.ObjectId;
+  locationId?: string;
+  createdBy: mongoose.Types.ObjectId;
 }
 
 /**
@@ -422,6 +433,332 @@ export class EngagementIntegrationService {
       });
       throw error;
     }
+  }
+
+  /**
+   * Create follow-up task from clinical intervention when requires_followup is true
+   */
+  async createFollowUpFromIntervention(data: CreateFollowUpFromInterventionData): Promise<{
+    followUpTask: IFollowUpTask;
+    intervention: IClinicalIntervention;
+  }> {
+    try {
+      logger.info('Creating follow-up task from clinical intervention', {
+        interventionId: data.interventionId,
+        patientId: data.patientId,
+      });
+
+      // Verify clinical intervention exists
+      const intervention = await ClinicalIntervention.findById(data.interventionId);
+      if (!intervention) {
+        throw new AppError('Clinical intervention not found', 404);
+      }
+
+      // Check if follow-up is required
+      if (!intervention.followUp.required) {
+        throw new AppError('Follow-up is not required for this intervention', 400);
+      }
+
+      // Check if follow-up task already exists
+      const existingTask = await FollowUpTask.findOne({
+        'relatedRecords.clinicalInterventionId': data.interventionId,
+        status: { $nin: ['completed', 'cancelled'] },
+      });
+
+      if (existingTask) {
+        logger.info('Follow-up task already exists for intervention', {
+          interventionId: data.interventionId,
+          existingTaskId: existingTask._id,
+        });
+        return {
+          followUpTask: existingTask,
+          intervention,
+        };
+      }
+
+      // Map intervention priority to follow-up priority
+      const priorityMapping: Record<string, IFollowUpTask['priority']> = {
+        'critical': 'critical',
+        'high': 'urgent',
+        'medium': 'high',
+        'low': 'medium',
+      };
+
+      // Calculate due date based on intervention priority and category
+      const dueDateMapping: Record<string, number> = {
+        'critical': 1, // 1 day
+        'high': 3,     // 3 days
+        'medium': 7,   // 7 days
+        'low': 14,     // 14 days
+      };
+
+      const daysToAdd = dueDateMapping[intervention.priority] || 7;
+      const dueDate = new Date();
+      dueDate.setDate(dueDate.getDate() + daysToAdd);
+
+      // Use scheduled date from intervention if available
+      if (intervention.followUp.scheduledDate) {
+        dueDate.setTime(intervention.followUp.scheduledDate.getTime());
+      }
+
+      // Generate follow-up task details based on intervention
+      const taskTitle = this.generateInterventionFollowUpTitle(intervention);
+      const taskDescription = this.generateInterventionFollowUpDescription(intervention);
+      const objectives = this.generateInterventionFollowUpObjectives(intervention);
+
+      // Create follow-up task
+      const followUpTask = new FollowUpTask({
+        workplaceId: data.workplaceId,
+        locationId: data.locationId,
+        patientId: data.patientId,
+        assignedTo: data.assignedTo,
+        type: 'general_followup',
+        title: taskTitle,
+        description: taskDescription,
+        objectives,
+        priority: priorityMapping[intervention.priority] || 'medium',
+        dueDate,
+        estimatedDuration: 30, // Default 30 minutes for intervention follow-up
+        status: 'pending',
+        trigger: {
+          type: 'system_rule',
+          sourceId: data.interventionId,
+          sourceType: 'ClinicalIntervention',
+          triggerDate: new Date(),
+          triggerDetails: {
+            interventionNumber: intervention.interventionNumber,
+            interventionCategory: intervention.category,
+            interventionPriority: intervention.priority,
+            requiresFollowUp: intervention.followUp.required,
+          },
+        },
+        relatedRecords: {
+          clinicalInterventionId: data.interventionId,
+        },
+        createdBy: data.createdBy,
+      });
+
+      await followUpTask.save();
+
+      logger.info('Follow-up task created from clinical intervention', {
+        followUpTaskId: followUpTask._id,
+        interventionId: data.interventionId,
+        priority: followUpTask.priority,
+        dueDate: followUpTask.dueDate,
+      });
+
+      return {
+        followUpTask,
+        intervention,
+      };
+    } catch (error) {
+      logger.error('Error creating follow-up task from clinical intervention', {
+        error: error.message,
+        interventionId: data.interventionId,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Update intervention status when follow-up is completed
+   */
+  async updateInterventionFromFollowUp(
+    followUpTaskId: mongoose.Types.ObjectId,
+    updatedBy: mongoose.Types.ObjectId
+  ): Promise<{
+    intervention: IClinicalIntervention;
+    followUpTask: IFollowUpTask;
+  }> {
+    try {
+      logger.info('Updating intervention status from completed follow-up', {
+        followUpTaskId,
+      });
+
+      // Find the follow-up task
+      const followUpTask = await FollowUpTask.findById(followUpTaskId);
+      if (!followUpTask) {
+        throw new AppError('Follow-up task not found', 404);
+      }
+
+      if (followUpTask.status !== 'completed') {
+        throw new AppError('Follow-up task must be completed to update intervention', 400);
+      }
+
+      // Find the linked intervention
+      const interventionId = followUpTask.relatedRecords.clinicalInterventionId;
+      if (!interventionId) {
+        throw new AppError('No linked clinical intervention found', 400);
+      }
+
+      const intervention = await ClinicalIntervention.findById(interventionId);
+      if (!intervention) {
+        throw new AppError('Linked clinical intervention not found', 404);
+      }
+
+      // Update intervention follow-up status
+      intervention.followUp.completedDate = followUpTask.completedAt || new Date();
+      intervention.followUp.notes = followUpTask.outcome?.notes || '';
+
+      // Set next review date if specified in follow-up outcome
+      if (followUpTask.outcome?.nextActions?.length) {
+        const nextReviewDate = new Date();
+        nextReviewDate.setDate(nextReviewDate.getDate() + 30); // Default 30 days
+        intervention.followUp.nextReviewDate = nextReviewDate;
+      }
+
+      // Update intervention status based on follow-up outcome
+      if (followUpTask.outcome?.status === 'successful') {
+        // If intervention was in progress, mark as implemented
+        if (intervention.status === 'in_progress') {
+          intervention.status = 'implemented';
+        }
+        // If already implemented, consider marking as completed
+        else if (intervention.status === 'implemented') {
+          intervention.status = 'completed';
+          intervention.completedAt = new Date();
+        }
+      } else if (followUpTask.outcome?.status === 'unsuccessful') {
+        // Keep current status but add notes about unsuccessful follow-up
+        intervention.implementationNotes = 
+          (intervention.implementationNotes || '') + 
+          `\n\nFollow-up completed on ${followUpTask.completedAt?.toDateString()}: ${followUpTask.outcome.notes}`;
+      }
+
+      intervention.updatedBy = updatedBy;
+      await intervention.save();
+
+      logger.info('Intervention status updated from follow-up completion', {
+        interventionId: intervention._id,
+        newStatus: intervention.status,
+        followUpTaskId,
+      });
+
+      return {
+        intervention,
+        followUpTask,
+      };
+    } catch (error) {
+      logger.error('Error updating intervention from follow-up', {
+        error: error.message,
+        followUpTaskId,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Get clinical intervention with linked follow-up tasks and appointments
+   */
+  async getInterventionWithEngagementData(interventionId: mongoose.Types.ObjectId): Promise<{
+    intervention: IClinicalIntervention;
+    followUpTasks: IFollowUpTask[];
+    appointments: IAppointment[];
+  }> {
+    try {
+      const [intervention, followUpTasks, appointments] = await Promise.all([
+        ClinicalIntervention.findById(interventionId),
+        FollowUpTask.find({ 'relatedRecords.clinicalInterventionId': interventionId }),
+        Appointment.find({ 'relatedRecords.clinicalInterventionId': interventionId }),
+      ]);
+
+      if (!intervention) {
+        throw new AppError('Clinical intervention not found', 404);
+      }
+
+      return {
+        intervention,
+        followUpTasks: followUpTasks || [],
+        appointments: appointments || [],
+      };
+    } catch (error) {
+      logger.error('Error getting intervention with engagement data', {
+        error: error.message,
+        interventionId,
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Generate follow-up task title based on intervention
+   */
+  private generateInterventionFollowUpTitle(intervention: IClinicalIntervention): string {
+    const categoryTitles: Record<string, string> = {
+      'drug_therapy_problem': 'Drug Therapy Problem Follow-up',
+      'adverse_drug_reaction': 'ADR Monitoring Follow-up',
+      'medication_nonadherence': 'Adherence Check Follow-up',
+      'drug_interaction': 'Drug Interaction Follow-up',
+      'dosing_issue': 'Dosing Adjustment Follow-up',
+      'contraindication': 'Contraindication Follow-up',
+      'other': 'Clinical Intervention Follow-up',
+    };
+
+    return categoryTitles[intervention.category] || 'Clinical Intervention Follow-up';
+  }
+
+  /**
+   * Generate follow-up task description based on intervention
+   */
+  private generateInterventionFollowUpDescription(intervention: IClinicalIntervention): string {
+    const baseDescription = `Follow-up for clinical intervention ${intervention.interventionNumber}`;
+    const issueDescription = intervention.issueDescription;
+    
+    let description = `${baseDescription}\n\nOriginal Issue: ${issueDescription}`;
+    
+    if (intervention.strategies && intervention.strategies.length > 0) {
+      description += '\n\nImplemented Strategies:';
+      intervention.strategies.forEach((strategy, index) => {
+        description += `\n${index + 1}. ${strategy.description}`;
+      });
+    }
+
+    description += '\n\nFollow-up Objectives:\n- Monitor patient response to intervention\n- Assess effectiveness of implemented strategies\n- Identify any new issues or concerns\n- Determine next steps if needed';
+
+    return description;
+  }
+
+  /**
+   * Generate follow-up task objectives based on intervention
+   */
+  private generateInterventionFollowUpObjectives(intervention: IClinicalIntervention): string[] {
+    const baseObjectives = [
+      'Assess patient response to intervention',
+      'Monitor for any adverse effects',
+      'Evaluate effectiveness of implemented strategies',
+    ];
+
+    // Add category-specific objectives
+    const categoryObjectives: Record<string, string[]> = {
+      'drug_therapy_problem': [
+        'Verify drug therapy problem resolution',
+        'Check medication effectiveness',
+      ],
+      'adverse_drug_reaction': [
+        'Monitor for continued ADR symptoms',
+        'Assess tolerability of alternative therapy',
+      ],
+      'medication_nonadherence': [
+        'Evaluate adherence improvement',
+        'Identify remaining adherence barriers',
+      ],
+      'drug_interaction': [
+        'Monitor for interaction symptoms',
+        'Verify separation of interacting medications',
+      ],
+      'dosing_issue': [
+        'Assess response to dose adjustment',
+        'Monitor for dose-related side effects',
+      ],
+      'contraindication': [
+        'Verify contraindication management',
+        'Monitor alternative therapy effectiveness',
+      ],
+    };
+
+    const specificObjectives = categoryObjectives[intervention.category] || [];
+    
+    return [...baseObjectives, ...specificObjectives];
   }
 
   /**

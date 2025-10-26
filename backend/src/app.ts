@@ -218,6 +218,14 @@ app.use('/api/', latencyMeasurementMiddleware);
 import { unifiedAuditMiddleware } from './middlewares/unifiedAuditMiddleware';
 app.use('/api/', unifiedAuditMiddleware);
 
+// Clinical Intervention Sync Middleware (creates follow-up tasks automatically)
+import { 
+  clinicalInterventionSyncMiddleware, 
+  followUpCompletionSyncMiddleware 
+} from './middlewares/clinicalInterventionSync';
+app.use('/api/', clinicalInterventionSyncMiddleware);
+app.use('/api/', followUpCompletionSyncMiddleware);
+
 // Compression middleware for API responses
 import {
   intelligentCompressionMiddleware,
