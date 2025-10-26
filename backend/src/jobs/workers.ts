@@ -20,6 +20,11 @@ import {
   onMedicationReminderCompleted,
   onMedicationReminderFailed,
 } from './medicationReminderProcessor';
+import {
+  processAdherenceCheck,
+  onAdherenceCheckCompleted,
+  onAdherenceCheckFailed,
+} from './adherenceCheckProcessor';
 import logger from '../utils/logger';
 
 /**
@@ -62,8 +67,18 @@ export async function initializeWorkers(): Promise<void> {
       logger.warn('Medication reminder queue not found');
     }
 
+    // Register adherence check processor
+    const adherenceCheckQueue = QueueService.getQueue(QueueName.ADHERENCE_CHECK);
+    if (adherenceCheckQueue) {
+      adherenceCheckQueue.process(processAdherenceCheck);
+      adherenceCheckQueue.on('completed', onAdherenceCheckCompleted);
+      adherenceCheckQueue.on('failed', onAdherenceCheckFailed);
+      logger.info('Adherence check worker registered');
+    } else {
+      logger.warn('Adherence check queue not found');
+    }
+
     // TODO: Register other job processors as they are implemented
-    // - Adherence check processor (now handled by medication reminder processor)
     // - Appointment status monitor processor
 
     logger.info('Job workers initialized successfully');
