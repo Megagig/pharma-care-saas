@@ -78,6 +78,7 @@ import permissionRoutes from './routes/permissionRoutes';
 import rbacAuditRoutes from './routes/rbacAudit';
 import roleRoutes from './routes/roleRoutes';
 import pricingManagementRoutes from './routes/pricingManagementRoutes';
+import appointmentAnalyticsRoutes from './routes/appointmentAnalyticsRoutes';
 import saasRoutes from './routes/saasRoutes';
 import workspaceTeamRoutes from './routes/workspaceTeamRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
@@ -471,6 +472,9 @@ import patientPortalRoutes from './routes/patientPortalRoutes';
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/follow-ups', followUpRoutes);
 app.use('/api/schedules', scheduleRoutes);
+
+// Appointment Analytics routes
+app.use('/api', appointmentAnalyticsRoutes);
 app.use('/api/queue-monitoring', queueMonitoringRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/patient-portal', patientPortalRoutes);
