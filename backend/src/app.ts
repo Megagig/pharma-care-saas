@@ -321,6 +321,10 @@ app.get('/api/health/cache', async (req: Request, res: Response) => {
 app.use('/api/public', publicApiRoutes);
 app.use('/api/public/drugs', publicDrugDetailsRoutes);
 
+// Public Appointment routes (no authentication required)
+import publicAppointmentRoutes from './routes/publicAppointmentRoutes';
+app.use('/api/public/appointments', publicAppointmentRoutes);
+
 // Public Help routes (authentication required but no role restrictions)
 import publicHelpRoutes from './routes/publicHelpRoutes';
 app.use('/api/help', publicHelpRoutes);

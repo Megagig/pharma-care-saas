@@ -10,6 +10,7 @@ import Patient from '../models/Patient';
 import User from '../models/User';
 import { notificationService, CreateNotificationData } from './notificationService';
 import { INotificationData } from '../models/Notification';
+import PublicAppointmentService from './PublicAppointmentService';
 import logger from '../utils/logger';
 import crypto from 'crypto';
 
@@ -68,14 +69,8 @@ export class AppointmentNotificationService {
       // Generate confirmation token if needed
       let confirmationToken: string | undefined;
       if (options.includeConfirmationLink) {
-        confirmationToken = this.generateConfirmationToken(appointmentId);
-        // Store token in appointment for verification
-        appointment.metadata = {
-          ...appointment.metadata,
-          confirmationToken,
-          confirmationTokenExpiry: new Date(Date.now() + 24 * 60 * 60 * 1000), // 24 hours
-        };
-        await appointment.save();
+        const tokenData = await PublicAppointmentService.updateAppointmentWithConfirmationToken(appointmentId);
+        confirmationToken = tokenData.token;
       }
 
       // Determine delivery channels based on patient preferences
@@ -100,6 +95,9 @@ export class AppointmentNotificationService {
           confirmationToken,
           confirmationUrl: confirmationToken 
             ? `${process.env.FRONTEND_URL}/appointments/confirm/${appointmentId}?token=${confirmationToken}`
+            : undefined,
+          publicConfirmationUrl: confirmationToken
+            ? `${process.env.FRONTEND_URL}/public/appointments/${appointmentId}/confirm?token=${confirmationToken}`
             : undefined,
           rescheduleUrl: `${process.env.FRONTEND_URL}/appointments/reschedule/${appointmentId}`,
           customMessage: options.customMessage,
@@ -778,13 +776,7 @@ export class AppointmentNotificationService {
     return channels;
   }
 
-  /**
-   * Generate secure confirmation token
-   */
-  private generateConfirmationToken(appointmentId: mongoose.Types.ObjectId): string {
-    const data = `${appointmentId.toString()}-${Date.now()}-${Math.random()}`;
-    return crypto.createHash('sha256').update(data).digest('hex').substring(0, 32);
-  }
+
 
   /**
    * Get reminder title based on type and appointment type
