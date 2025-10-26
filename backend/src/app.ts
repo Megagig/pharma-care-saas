@@ -459,11 +459,13 @@ import followUpRoutes from './routes/followUpRoutes';
 import scheduleRoutes from './routes/scheduleRoutes';
 import queueMonitoringRoutes from './routes/queueMonitoringRoutes';
 import alertRoutes from './routes/alertRoutes';
+import patientPortalRoutes from './routes/patientPortalRoutes';
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/follow-ups', followUpRoutes);
 app.use('/api/schedules', scheduleRoutes);
 app.use('/api/queue-monitoring', queueMonitoringRoutes);
 app.use('/api/alerts', alertRoutes);
+app.use('/api/patient-portal', patientPortalRoutes);
 
 // Clinical interventions health check (no auth required)
 app.get('/api/clinical-interventions/health', (req, res) => {
