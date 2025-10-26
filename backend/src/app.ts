@@ -83,6 +83,7 @@ import workspaceTeamRoutes from './routes/workspaceTeamRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
 import superAdminDashboardRoutes from './routes/superAdminDashboardRoutes';
 import superAdminAuditRoutes from './routes/superAdminAuditRoutes';
+import patientNotificationPreferencesRoutes from './routes/patientNotificationPreferencesRoutes';
 import SystemIntegrationService from './services/systemIntegrationService';
 
 const app: Application = express();
@@ -369,6 +370,7 @@ app.use('/api/patients', dtpRoutes);
 app.use('/api/patients', carePlanRoutes);
 app.use('/api/patients', visitRoutes);
 app.use('/api/patients', patientMTRIntegrationRoutes);
+app.use('/api/patients', patientNotificationPreferencesRoutes);
 
 // Invitation routes (must come before individual resource routes to avoid auth conflicts)
 app.use('/api', invitationRoutes);

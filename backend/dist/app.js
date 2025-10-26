@@ -116,6 +116,7 @@ const workspaceTeamRoutes_1 = __importDefault(require("./routes/workspaceTeamRou
 const dashboardRoutes_1 = __importDefault(require("./routes/dashboardRoutes"));
 const superAdminDashboardRoutes_1 = __importDefault(require("./routes/superAdminDashboardRoutes"));
 const superAdminAuditRoutes_1 = __importDefault(require("./routes/superAdminAuditRoutes"));
+const patientNotificationPreferencesRoutes_1 = __importDefault(require("./routes/patientNotificationPreferencesRoutes"));
 const systemIntegrationService_1 = __importDefault(require("./services/systemIntegrationService"));
 const app = (0, express_1.default)();
 const systemIntegration = systemIntegrationService_1.default.getInstance();
@@ -286,6 +287,8 @@ app.get('/api/health/cache', async (req, res) => {
 });
 app.use('/api/public', publicApiRoutes_1.default);
 app.use('/api/public/drugs', publicDrugDetailsRoutes_1.default);
+const publicAppointmentRoutes_1 = __importDefault(require("./routes/publicAppointmentRoutes"));
+app.use('/api/public/appointments', publicAppointmentRoutes_1.default);
 const publicHelpRoutes_1 = __importDefault(require("./routes/publicHelpRoutes"));
 app.use('/api/help', publicHelpRoutes_1.default);
 app.use('/api/analytics', analyticsRoutes_1.default);
@@ -313,6 +316,7 @@ app.use('/api/patients', dtpRoutes_1.default);
 app.use('/api/patients', carePlanRoutes_1.default);
 app.use('/api/patients', visitRoutes_1.default);
 app.use('/api/patients', patientMTRIntegrationRoutes_1.default);
+app.use('/api/patients', patientNotificationPreferencesRoutes_1.default);
 app.use('/api', invitationRoutes_1.default);
 app.use('/api', allergyRoutes_1.default);
 app.use('/api', conditionRoutes_1.default);

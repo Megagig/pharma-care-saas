@@ -437,39 +437,45 @@ export class ReminderSchedulerService {
     requestedChannels?: ReminderChannel[]
   ): ReminderChannel[] {
     const patient = appointment.patientId as any;
-    const preferences = patient?.notificationPreferences || {};
+    const generalPreferences = patient?.notificationPreferences || {};
+    const appointmentPreferences = patient?.appointmentPreferences?.reminderPreferences || {};
 
     // If specific channels requested, use those (filtered by preferences)
     if (requestedChannels && requestedChannels.length > 0) {
       return requestedChannels.filter((channel) => {
         switch (channel) {
           case 'email':
-            return preferences.email !== false && patient.email;
+            return (appointmentPreferences.email ?? generalPreferences.email ?? true) && patient.email;
           case 'sms':
-            return preferences.sms !== false && patient.phone;
+            return (appointmentPreferences.sms ?? generalPreferences.sms ?? false) && patient.phone;
           case 'push':
-            return preferences.push !== false;
+            return (appointmentPreferences.push ?? generalPreferences.push ?? true);
           case 'whatsapp':
-            return patient.phone; // WhatsApp uses phone number
+            return (appointmentPreferences.whatsapp ?? false) && patient.phone;
           default:
             return false;
         }
       });
     }
 
-    // Otherwise, use patient preferences
+    // Otherwise, use patient preferences (appointment-specific first, then general)
     const channels: ReminderChannel[] = [];
 
-    if (preferences.email !== false && patient.email) {
+    // Check appointment-specific preferences first, fall back to general preferences
+    if ((appointmentPreferences.email ?? generalPreferences.email ?? true) && patient.email) {
       channels.push('email');
     }
 
-    if (preferences.sms !== false && patient.phone) {
+    if ((appointmentPreferences.sms ?? generalPreferences.sms ?? false) && patient.phone) {
       channels.push('sms');
     }
 
-    if (preferences.push !== false) {
+    if (appointmentPreferences.push ?? generalPreferences.push ?? true) {
       channels.push('push');
+    }
+
+    if ((appointmentPreferences.whatsapp ?? false) && patient.phone) {
+      channels.push('whatsapp');
     }
 
     // Default to email if no preferences set and email available
