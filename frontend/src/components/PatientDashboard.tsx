@@ -42,6 +42,7 @@ import { PatientMTRWidget } from './PatientMTRWidget';
 import PatientClinicalNotes from './PatientClinicalNotes';
 import PatientLabOrderWidget from './PatientLabOrderWidget';
 import PatientTimelineWidget from './PatientTimelineWidget';
+import PatientAppointmentAlerts from './PatientAppointmentAlerts';
 import { useFeatureFlags } from '../hooks/useFeatureFlags';
 import type { Patient } from '../types/patientManagement';
 
@@ -394,6 +395,13 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({
           </Card>
         </Box>
       </Box>
+
+      {/* Appointment Alerts */}
+      <PatientAppointmentAlerts 
+        patientId={patientId!}
+        onCreateAppointment={() => navigate(`/appointments/create?patientId=${patientId}`)}
+        onViewAppointment={(appointmentId) => navigate(`/appointments/${appointmentId}`)}
+      />
 
       {/* MTR Integration Widget */}
       <Box sx={{ mb: 4 }}>
