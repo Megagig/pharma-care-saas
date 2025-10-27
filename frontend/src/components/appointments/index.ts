@@ -6,3 +6,4 @@ export { default as AppointmentDetailsPanel } from './AppointmentDetailsPanel';
 export { default as PatientAutocomplete } from './PatientAutocomplete';
 export { default as PharmacistSelector } from './PharmacistSelector';
 export { default as AppointmentAnalyticsDashboard } from './AppointmentAnalyticsDashboard';
+export { default as ReminderEffectivenessChart } from './ReminderEffectivenessChart';
