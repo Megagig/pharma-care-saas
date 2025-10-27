@@ -14,7 +14,8 @@ import {
   createValidationError,
   createBusinessRuleError,
 } from '../utils/responseHelpers';
-import logger from '../utils/logger';
+import logger, { patientEngagementLogger } from '../utils/logger';
+import { MonitorOperation, trackServiceOperation } from '../middlewares/patientEngagementMonitoringMiddleware';
 import app from '../app';
 
 export interface CreateFollowUpTaskData {
@@ -85,6 +86,7 @@ export class FollowUpService {
    * Create a follow-up task with validation
    * Requirement: 3.1, 3.2
    */
+  @MonitorOperation('create', 'followup')
   static async createFollowUpTask(
     data: CreateFollowUpTaskData,
     workplaceId: mongoose.Types.ObjectId,

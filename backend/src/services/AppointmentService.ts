@@ -16,7 +16,8 @@ import {
   createBusinessRuleError,
 } from '../utils/responseHelpers';
 import { appointmentNotificationService } from './AppointmentNotificationService';
-import logger from '../utils/logger';
+import logger, { patientEngagementLogger } from '../utils/logger';
+import { MonitorOperation, trackServiceOperation } from '../middlewares/patientEngagementMonitoringMiddleware';
 import app from '../app';
 
 export interface CreateAppointmentData {
@@ -87,6 +88,7 @@ export class AppointmentService {
    * Create a new appointment with conflict checking
    * Requirement: 1.1, 1.2
    */
+  @MonitorOperation('create', 'appointment')
   static async createAppointment(
     data: CreateAppointmentData,
     workplaceId: mongoose.Types.ObjectId,
@@ -219,6 +221,7 @@ export class AppointmentService {
    * Get single appointment by ID
    * Requirement: 1.1, 1.3
    */
+  @MonitorOperation('get', 'appointment')
   static async getAppointmentById(
     appointmentId: string,
     workplaceId: mongoose.Types.ObjectId

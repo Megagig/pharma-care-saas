@@ -13,7 +13,8 @@ import path from 'path';
 // Import custom types (automatically loaded from src/types/)
 import errorHandler from './middlewares/errorHandler';
 import memoryManagementService from './services/MemoryManagementService';
-import logger from './utils/logger';
+import logger, { addCorrelationId } from './utils/logger';
+import { createPerformanceMiddleware } from './utils/performanceMonitoring';
 
 // Route imports
 import authRoutes from './routes/authRoutes';
@@ -48,6 +49,8 @@ import auditRoutes from './routes/auditRoutes';
 import securityRoutes from './routes/securityRoutes';
 import invitationRoutes from './routes/invitationRoutes';
 import medicationManagementRoutes from './routes/medicationManagementRoutes';
+import patientEngagementHealthRoutes from './routes/healthRoutes';
+import monitoringRoutes from './routes/monitoringRoutes';
 import medicationAnalyticsRoutes from './routes/medicationAnalyticsRoutes';
 import usageMonitoringRoutes from './routes/usageMonitoringRoutes';
 import locationRoutes from './routes/locationRoutes';
@@ -193,6 +196,13 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+// Add correlation ID for request tracking
+app.use(addCorrelationId);
+
+// Performance monitoring middleware
+import { performanceCollector } from './utils/performanceMonitoring';
+app.use(createPerformanceMiddleware(performanceCollector));
+
 // Data sanitization
 app.use(mongoSanitize()); // Against NoSQL query injection
 app.use(xss()); // Against XSS attacks
@@ -273,6 +283,10 @@ app.get('/api/health/integration', async (req: Request, res: Response) => {
 });
 
 app.use('/api/health/feature-flags', healthRoutes);
+
+// Patient Engagement Monitoring routes
+app.use('/api/health', patientEngagementHealthRoutes);
+app.use('/api/monitoring', monitoringRoutes);
 
 // Memory health endpoint
 app.get('/api/health/memory', (req: Request, res: Response) => {
