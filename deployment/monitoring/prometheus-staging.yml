@@ -1,0 +1,140 @@
+# Prometheus configuration for Patient Engagement Module - Staging Environment
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+  external_labels:
+    environment: 'staging'
+    module: 'patient-engagement'
+
+rule_files:
+  - "staging-alerts.yml"
+
+scrape_configs:
+  # Patient Engagement Backend API
+  - job_name: 'patient-engagement-staging-api'
+    static_configs:
+      - targets: ['app-staging:5001']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    params:
+      format: ['prometheus']
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'staging-backend'
+
+  # Health checks
+  - job_name: 'patient-engagement-staging-health'
+    static_configs:
+      - targets: ['app-staging:5001']
+    metrics_path: '/health'
+    scrape_interval: 30s
+    scrape_timeout: 5s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'staging-health'
+
+  # MongoDB metrics (if mongodb_exporter is available)
+  - job_name: 'mongodb-staging'
+    static_configs:
+      - targets: ['db-staging:27017']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'staging-mongodb'
+
+  # Redis metrics (if redis_exporter is available)
+  - job_name: 'redis-staging'
+    static_configs:
+      - targets: ['redis-staging:6379']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'staging-redis'
+
+  # Nginx metrics
+  - job_name: 'nginx-staging'
+    static_configs:
+      - targets: ['nginx-staging:8081']
+    metrics_path: '/nginx_status'
+    scrape_interval: 30s
+    scrape_timeout: 5s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'staging-nginx'
+
+  # Node exporter for system metrics
+  - job_name: 'node-exporter-staging'
+    static_configs:
+      - targets: ['node-exporter-staging:9100']
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'staging-system'
+
+  # Application-specific metrics
+  - job_name: 'patient-engagement-appointments'
+    static_configs:
+      - targets: ['app-staging:5001']
+    metrics_path: '/metrics/appointments'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'staging-appointments'
+
+  - job_name: 'patient-engagement-followups'
+    static_configs:
+      - targets: ['app-staging:5001']
+    metrics_path: '/metrics/follow-ups'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'staging-followups'
+
+  - job_name: 'patient-engagement-reminders'
+    static_configs:
+      - targets: ['app-staging:5001']
+    metrics_path: '/metrics/reminders'
+    scrape_interval: 60s
+    scrape_timeout: 10s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'staging-reminders'
+
+  # Background job metrics
+  - job_name: 'patient-engagement-jobs'
+    static_configs:
+      - targets: ['app-staging:5001']
+    metrics_path: '/metrics/jobs'
+    scrape_interval: 30s
+    scrape_timeout: 10s
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        replacement: 'staging-jobs'
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - alertmanager:9093
+      path_prefix: /
+      scheme: http
+      timeout: 10s
