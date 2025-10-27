@@ -10,6 +10,8 @@
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
+    "test:e2e": "jest --config jest.e2e.config.js",
+    "test:e2e:patient-engagement": "jest --testPathPattern=patientEngagementE2E --config jest.e2e.config.js",
     "test:mtr": "ts-node src/__tests__/runTests.ts",
     "seed": "ts-node scripts/seedSubscriptionPlans.ts",
     "seed:plans": "ts-node scripts/seedPlansFromConfig.ts",
