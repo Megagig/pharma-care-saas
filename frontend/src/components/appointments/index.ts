@@ -8,3 +8,5 @@ export { default as PharmacistSelector } from './PharmacistSelector';
 export { default as AppointmentAnalyticsDashboard } from './AppointmentAnalyticsDashboard';
 export { default as ReminderEffectivenessChart } from './ReminderEffectivenessChart';
 export { default as CapacityUtilizationChart } from './CapacityUtilizationChart';
+export { default as PharmacistScheduleView } from './PharmacistScheduleView';
+export { default as TimeOffRequestForm } from './TimeOffRequestForm';
