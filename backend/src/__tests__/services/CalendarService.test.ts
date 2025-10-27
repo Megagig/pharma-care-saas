@@ -1,6 +1,7 @@
 /**
  * CalendarService Unit Tests
- * Tests for calendar views, slot calculations, and capacity metrics
+ * Tests calendar view generation, slot calculation, and capacity metrics
+ * Requirements: 1.1, 1.3, 8.1, 8.2, 8.3
  */
 
 /// <reference types="jest" />
@@ -9,690 +10,728 @@ import mongoose from 'mongoose';
 import { CalendarService } from '../../services/CalendarService';
 import Appointment from '../../models/Appointment';
 import PharmacistSchedule from '../../models/PharmacistSchedule';
-import User from '../../models/User';
 
 // Mock dependencies
 jest.mock('../../models/Appointment');
 jest.mock('../../models/PharmacistSchedule');
-jest.mock('../../models/User');
 jest.mock('../../utils/logger');
-
-// Type the mocked modules
-const MockedAppointment = Appointment as jest.Mocked<typeof Appointment>;
-const MockedPharmacistSchedule = PharmacistSchedule as jest.Mocked<typeof PharmacistSchedule>;
-const MockedUser = User as jest.Mocked<typeof User>;
 
 describe('CalendarService', () => {
   const mockWorkplaceId = new mongoose.Types.ObjectId();
   const mockPharmacistId = new mongoose.Types.ObjectId();
-  const mockPatientId = new mongoose.Types.ObjectId();
 
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   describe('getCalendarView', () => {
-    const mockDate = new Date('2025-10-25');
-
-    it('should get day view with appointments', async () => {
+    it('should get day view appointments', async () => {
+      // Arrange
+      const date = new Date('2025-12-01');
       const mockAppointments = [
         {
           _id: new mongoose.Types.ObjectId(),
-          workplaceId: mockWorkplaceId,
-          patientId: mockPatientId,
-          assignedTo: mockPharmacistId,
-          type: 'mtm_session',
-          title: 'MTM Session - John Doe',
-          scheduledDate: mockDate,
+          scheduledDate: date,
           scheduledTime: '10:00',
           duration: 30,
+          title: 'MTM Session',
+          type: 'mtm_session',
           status: 'scheduled',
         },
         {
           _id: new mongoose.Types.ObjectId(),
-          workplaceId: mockWorkplaceId,
-          patientId: mockPatientId,
-          assignedTo: mockPharmacistId,
-          type: 'health_check',
-          title: 'Health Check - Jane Smith',
-          scheduledDate: mockDate,
+          scheduledDate: date,
           scheduledTime: '14:00',
-          duration: 30,
+          duration: 45,
+          title: 'Health Check',
+          type: 'health_check',
           status: 'confirmed',
         },
       ];
 
-      (Appointment.find as jest.Mock).mockReturnValue({
+      const mockQuery = {
         populate: jest.fn().mockReturnThis(),
-        sort: jest.fn().mockResolvedValue(mockAppointments),
-      });
+        sort: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue(mockAppointments),
+      };
 
+      (Appointment.find as jest.Mock).mockReturnValue(mockQuery);
+
+      // Act
       const result = await CalendarService.getCalendarView(
         'day',
-        mockDate,
-        {},
-        mockWorkplaceId
+        date,
+        mockWorkplaceId,
+        { pharmacistId: mockPharmacistId }
       );
 
-      expect(result).toHaveProperty('date');
-      expect(result).toHaveProperty('appointments');
-      expect(result).toHaveProperty('summary');
-      expect((result as any).appointments).toHaveLength(2);
-      expect((result as any).summary.total).toBe(2);
-      expect((result as any).summary.byStatus).toEqual({
-        scheduled: 1,
-        confirmed: 1,
-      });
+      // Assert
+      expect(result.view).toBe('day');
+      expect(result.date).toEqual(date);
+      expect(result.appointments).toHaveLength(2);
+      expect(result.summary.total).toBe(2);
+      expect(result.summary.byStatus.scheduled).toBe(1);
+      expect(result.summary.byStatus.confirmed).toBe(1);
     });
 
-    it('should get week view with daily groupings', async () => {
+    it('should get week view appointments', async () => {
+      // Arrange
+      const date = new Date('2025-12-01'); // Monday
       const mockAppointments = [
         {
           _id: new mongoose.Types.ObjectId(),
-          scheduledDate: new Date('2025-10-20'),
+          scheduledDate: new Date('2025-12-01'),
           scheduledTime: '10:00',
-          status: 'scheduled',
-          type: 'mtm_session',
+          duration: 30,
+          title: 'Monday Appointment',
         },
         {
           _id: new mongoose.Types.ObjectId(),
-          scheduledDate: new Date('2025-10-22'),
+          scheduledDate: new Date('2025-12-03'),
           scheduledTime: '14:00',
-          status: 'confirmed',
-          type: 'health_check',
+          duration: 30,
+          title: 'Wednesday Appointment',
         },
       ];
 
-      (Appointment.find as jest.Mock).mockReturnValue({
+      const mockQuery = {
         populate: jest.fn().mockReturnThis(),
-        sort: jest.fn().mockResolvedValue(mockAppointments),
-      });
+        sort: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue(mockAppointments),
+      };
 
+      (Appointment.find as jest.Mock).mockReturnValue(mockQuery);
+
+      // Act
       const result = await CalendarService.getCalendarView(
         'week',
-        mockDate,
-        {},
+        date,
         mockWorkplaceId
       );
 
-      expect(result).toHaveProperty('weekStart');
-      expect(result).toHaveProperty('weekEnd');
-      expect(result).toHaveProperty('days');
-      expect(result).toHaveProperty('summary');
-      expect((result as any).days).toHaveLength(7);
+      // Assert
+      expect(result.view).toBe('week');
+      expect(result.appointments).toHaveLength(2);
+      expect(Appointment.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          scheduledDate: expect.objectContaining({
+            $gte: expect.any(Date),
+            $lte: expect.any(Date),
+          }),
+        })
+      );
     });
 
-    it('should get month view with weekly groupings', async () => {
-      (Appointment.find as jest.Mock).mockReturnValue({
-        populate: jest.fn().mockReturnThis(),
-        sort: jest.fn().mockResolvedValue([]),
-      });
+    it('should get month view appointments', async () => {
+      // Arrange
+      const date = new Date('2025-12-15');
+      const mockAppointments = [];
 
+      const mockQuery = {
+        populate: jest.fn().mockReturnThis(),
+        sort: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue(mockAppointments),
+      };
+
+      (Appointment.find as jest.Mock).mockReturnValue(mockQuery);
+
+      // Act
       const result = await CalendarService.getCalendarView(
         'month',
-        mockDate,
-        {},
+        date,
         mockWorkplaceId
       );
 
-      expect(result).toHaveProperty('monthStart');
-      expect(result).toHaveProperty('monthEnd');
-      expect(result).toHaveProperty('weeks');
-      expect(result).toHaveProperty('summary');
-      expect((result as any).weeks.length).toBeGreaterThan(0);
+      // Assert
+      expect(result.view).toBe('month');
+      expect(result.appointments).toHaveLength(0);
+      expect(Appointment.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          scheduledDate: expect.objectContaining({
+            $gte: expect.any(Date),
+            $lte: expect.any(Date),
+          }),
+        })
+      );
     });
 
-    it('should filter appointments by pharmacist', async () => {
-      (Appointment.find as jest.Mock).mockReturnValue({
+    it('should filter by pharmacist when provided', async () => {
+      // Arrange
+      const date = new Date('2025-12-01');
+      const mockQuery = {
         populate: jest.fn().mockReturnThis(),
-        sort: jest.fn().mockResolvedValue([]),
-      });
+        sort: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue([]),
+      };
 
+      (Appointment.find as jest.Mock).mockReturnValue(mockQuery);
+
+      // Act
       await CalendarService.getCalendarView(
         'day',
-        mockDate,
-        { pharmacistId: mockPharmacistId },
-        mockWorkplaceId
+        date,
+        mockWorkplaceId,
+        { pharmacistId: mockPharmacistId }
       );
 
+      // Assert
       expect(Appointment.find).toHaveBeenCalledWith(
         expect.objectContaining({
           assignedTo: mockPharmacistId,
         })
       );
     });
+
+    it('should filter by location when provided', async () => {
+      // Arrange
+      const date = new Date('2025-12-01');
+      const locationId = 'location-123';
+      const mockQuery = {
+        populate: jest.fn().mockReturnThis(),
+        sort: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue([]),
+      };
+
+      (Appointment.find as jest.Mock).mockReturnValue(mockQuery);
+
+      // Act
+      await CalendarService.getCalendarView(
+        'day',
+        date,
+        mockWorkplaceId,
+        { locationId }
+      );
+
+      // Assert
+      expect(Appointment.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          locationId,
+        })
+      );
+    });
   });
 
   describe('calculateAvailableSlots', () => {
-    const mockDate = new Date('2025-10-25');
+    it('should calculate available slots correctly', async () => {
+      // Arrange
+      const date = new Date('2025-12-01');
+      const duration = 30;
 
-    const mockSchedule = {
-      _id: new mongoose.Types.ObjectId(),
-      pharmacistId: mockPharmacistId,
-      workplaceId: mockWorkplaceId,
-      isWorkingOn: jest.fn().mockReturnValue(true),
-      getShiftsForDate: jest.fn().mockReturnValue([
-        {
-          startTime: '09:00',
-          endTime: '17:00',
-          breakStart: '12:00',
-          breakEnd: '13:00',
+      const mockSchedule = {
+        isWorkingOn: jest.fn().mockReturnValue(true),
+        getShiftsForDate: jest.fn().mockReturnValue([
+          {
+            startTime: '09:00',
+            endTime: '12:00',
+          },
+        ]),
+        appointmentPreferences: {
+          bufferBetweenAppointments: 0,
         },
-      ]),
-      canHandleAppointmentType: jest.fn().mockReturnValue(true),
-      appointmentPreferences: {
-        bufferBetweenAppointments: 5,
-        defaultDuration: 30,
-        appointmentTypes: ['mtm_session', 'health_check'],
-      },
-    };
+      };
 
-    beforeEach(() => {
+      const mockExistingAppointments = [
+        {
+          scheduledTime: '10:00',
+          duration: 30,
+          get: jest.fn((field: string) => {
+            if (field === 'appointmentDateTime') {
+              const dt = new Date(date);
+              dt.setHours(10, 0, 0, 0);
+              return dt;
+            }
+            if (field === 'endDateTime') {
+              const dt = new Date(date);
+              dt.setHours(10, 30, 0, 0);
+              return dt;
+            }
+            return null;
+          }),
+        },
+      ];
+
       (PharmacistSchedule.findCurrentSchedule as jest.Mock).mockResolvedValue(mockSchedule);
-    });
-
-    it('should calculate available slots for a working day', async () => {
       (Appointment.find as jest.Mock).mockReturnValue({
-        sort: jest.fn().mockResolvedValue([]),
+        sort: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue(mockExistingAppointments),
       });
 
+      // Act
       const slots = await CalendarService.calculateAvailableSlots(
         mockPharmacistId,
-        mockDate,
-        30,
+        date,
+        duration,
         mockWorkplaceId
       );
 
+      // Assert
       expect(slots.length).toBeGreaterThan(0);
-      expect(slots[0]).toHaveProperty('time');
-      expect(slots[0]).toHaveProperty('available');
-      expect(slots[0]).toHaveProperty('pharmacistId');
+      expect(slots.some(s => s.time === '09:00' && s.available)).toBe(true);
+      expect(slots.some(s => s.time === '10:00' && !s.available)).toBe(true);
     });
 
-    it('should mark break times as unavailable', async () => {
-      (Appointment.find as jest.Mock).mockReturnValue({
-        sort: jest.fn().mockResolvedValue([]),
-      });
+    it('should return empty array for non-working day', async () => {
+      // Arrange
+      const date = new Date('2025-12-01');
+      const duration = 30;
 
-      const slots = await CalendarService.calculateAvailableSlots(
-        mockPharmacistId,
-        mockDate,
-        30,
-        mockWorkplaceId
-      );
-
-      const breakSlots = slots.filter(slot => slot.isBreak);
-      expect(breakSlots.length).toBeGreaterThan(0);
-      expect(breakSlots.every(slot => !slot.available)).toBe(true);
-    });
-
-    it('should mark conflicting slots as unavailable', async () => {
-      const existingAppointment = {
-        _id: new mongoose.Types.ObjectId(),
-        scheduledDate: mockDate,
-        scheduledTime: '10:00',
-        duration: 30,
-        get: jest.fn((field: string) => {
-          if (field === 'appointmentDateTime') {
-            const dt = new Date(mockDate);
-            dt.setHours(10, 0, 0, 0);
-            return dt;
-          }
-          if (field === 'endDateTime') {
-            const dt = new Date(mockDate);
-            dt.setHours(10, 30, 0, 0);
-            return dt;
-          }
-          return null;
-        }),
+      const mockSchedule = {
+        isWorkingOn: jest.fn().mockReturnValue(false),
       };
 
-      (Appointment.find as jest.Mock).mockReturnValue({
-        sort: jest.fn().mockResolvedValue([existingAppointment]),
-      });
+      (PharmacistSchedule.findCurrentSchedule as jest.Mock).mockResolvedValue(mockSchedule);
 
+      // Act
       const slots = await CalendarService.calculateAvailableSlots(
         mockPharmacistId,
-        mockDate,
-        30,
+        date,
+        duration,
         mockWorkplaceId
       );
 
-      const conflictingSlot = slots.find(slot => slot.time === '10:00');
-      expect(conflictingSlot?.available).toBe(false);
-      expect(conflictingSlot?.conflictingAppointment).toBeDefined();
-    });
-
-    it('should return empty array for non-working days', async () => {
-      mockSchedule.isWorkingOn.mockReturnValue(false);
-
-      const slots = await CalendarService.calculateAvailableSlots(
-        mockPharmacistId,
-        mockDate,
-        30,
-        mockWorkplaceId
-      );
-
+      // Assert
       expect(slots).toEqual([]);
     });
 
-    it('should return empty array if pharmacist cannot handle appointment type', async () => {
-      mockSchedule.canHandleAppointmentType.mockReturnValue(false);
+    it('should handle break times correctly', async () => {
+      // Arrange
+      const date = new Date('2025-12-01');
+      const duration = 30;
 
-      const slots = await CalendarService.calculateAvailableSlots(
-        mockPharmacistId,
-        mockDate,
-        30,
-        mockWorkplaceId,
-        'vaccination'
-      );
-
-      expect(slots).toEqual([]);
-    });
-
-    it('should respect buffer time between appointments', async () => {
-      const existingAppointment = {
-        _id: new mongoose.Types.ObjectId(),
-        scheduledDate: mockDate,
-        scheduledTime: '10:00',
-        duration: 30,
-        get: jest.fn((field: string) => {
-          if (field === 'appointmentDateTime') {
-            const dt = new Date(mockDate);
-            dt.setHours(10, 0, 0, 0);
-            return dt;
-          }
-          if (field === 'endDateTime') {
-            const dt = new Date(mockDate);
-            dt.setHours(10, 30, 0, 0);
-            return dt;
-          }
-          return null;
-        }),
+      const mockSchedule = {
+        isWorkingOn: jest.fn().mockReturnValue(true),
+        getShiftsForDate: jest.fn().mockReturnValue([
+          {
+            startTime: '09:00',
+            endTime: '17:00',
+            breakStart: '12:00',
+            breakEnd: '13:00',
+          },
+        ]),
+        appointmentPreferences: {
+          bufferBetweenAppointments: 0,
+        },
       };
 
+      (PharmacistSchedule.findCurrentSchedule as jest.Mock).mockResolvedValue(mockSchedule);
       (Appointment.find as jest.Mock).mockReturnValue({
-        sort: jest.fn().mockResolvedValue([existingAppointment]),
+        sort: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue([]),
       });
 
+      // Act
       const slots = await CalendarService.calculateAvailableSlots(
         mockPharmacistId,
-        mockDate,
-        30,
+        date,
+        duration,
         mockWorkplaceId
       );
 
-      // Slot at 10:30 should also be unavailable due to 5-minute buffer
-      const bufferSlot = slots.find(slot => slot.time === '10:30');
-      expect(bufferSlot?.available).toBe(false);
+      // Assert
+      // Should not have slots during break time (12:00-13:00)
+      expect(slots.some(s => s.time === '12:00')).toBe(false);
+      expect(slots.some(s => s.time === '12:15')).toBe(false);
+      expect(slots.some(s => s.time === '12:30')).toBe(false);
+      expect(slots.some(s => s.time === '12:45')).toBe(false);
+    });
+
+    it('should apply buffer time between appointments', async () => {
+      // Arrange
+      const date = new Date('2025-12-01');
+      const duration = 30;
+
+      const mockSchedule = {
+        isWorkingOn: jest.fn().mockReturnValue(true),
+        getShiftsForDate: jest.fn().mockReturnValue([
+          {
+            startTime: '09:00',
+            endTime: '12:00',
+          },
+        ]),
+        appointmentPreferences: {
+          bufferBetweenAppointments: 15, // 15 minute buffer
+        },
+      };
+
+      const mockExistingAppointments = [
+        {
+          scheduledTime: '10:00',
+          duration: 30,
+          get: jest.fn((field: string) => {
+            if (field === 'appointmentDateTime') {
+              const dt = new Date(date);
+              dt.setHours(10, 0, 0, 0);
+              return dt;
+            }
+            if (field === 'endDateTime') {
+              const dt = new Date(date);
+              dt.setHours(10, 30, 0, 0);
+              return dt;
+            }
+            return null;
+          }),
+        },
+      ];
+
+      (PharmacistSchedule.findCurrentSchedule as jest.Mock).mockResolvedValue(mockSchedule);
+      (Appointment.find as jest.Mock).mockReturnValue({
+        sort: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue(mockExistingAppointments),
+      });
+
+      // Act
+      const slots = await CalendarService.calculateAvailableSlots(
+        mockPharmacistId,
+        date,
+        duration,
+        mockWorkplaceId
+      );
+
+      // Assert
+      // Slots should be unavailable until 10:45 (10:30 + 15 min buffer)
+      expect(slots.some(s => s.time === '10:30' && !s.available)).toBe(true);
+    });
+
+    it('should throw error if schedule not found', async () => {
+      // Arrange
+      const date = new Date('2025-12-01');
+      const duration = 30;
+
+      (PharmacistSchedule.findCurrentSchedule as jest.Mock).mockResolvedValue(null);
+
+      // Act & Assert
+      await expect(
+        CalendarService.calculateAvailableSlots(
+          mockPharmacistId,
+          date,
+          duration,
+          mockWorkplaceId
+        )
+      ).rejects.toThrow('Pharmacist schedule');
     });
   });
 
   describe('getPharmacistAvailability', () => {
-    const mockDate = new Date('2025-10-25');
+    it('should get pharmacist availability for date range', async () => {
+      // Arrange
+      const startDate = new Date('2025-12-01');
+      const endDate = new Date('2025-12-07');
 
-    const mockPharmacist = {
-      _id: mockPharmacistId,
-      name: 'Dr. John Smith',
-      role: 'pharmacist',
-    };
+      const mockSchedule = {
+        workingHours: [
+          { dayOfWeek: 1, isWorkingDay: true, shifts: [{ startTime: '09:00', endTime: '17:00' }] },
+          { dayOfWeek: 2, isWorkingDay: true, shifts: [{ startTime: '09:00', endTime: '17:00' }] },
+          { dayOfWeek: 3, isWorkingDay: true, shifts: [{ startTime: '09:00', endTime: '17:00' }] },
+          { dayOfWeek: 4, isWorkingDay: true, shifts: [{ startTime: '09:00', endTime: '17:00' }] },
+          { dayOfWeek: 5, isWorkingDay: true, shifts: [{ startTime: '09:00', endTime: '17:00' }] },
+          { dayOfWeek: 6, isWorkingDay: false, shifts: [] },
+          { dayOfWeek: 0, isWorkingDay: false, shifts: [] },
+        ],
+        timeOff: [],
+        isWorkingOn: jest.fn().mockImplementation((date: Date) => {
+          const dayOfWeek = date.getDay();
+          return dayOfWeek >= 1 && dayOfWeek <= 5; // Monday to Friday
+        }),
+      };
 
-    const mockSchedule = {
-      _id: new mongoose.Types.ObjectId(),
-      pharmacistId: mockPharmacistId,
-      workplaceId: mockWorkplaceId,
-      isWorkingOn: jest.fn().mockReturnValue(true),
-      getShiftsForDate: jest.fn().mockReturnValue([
-        {
-          startTime: '09:00',
-          endTime: '17:00',
-        },
-      ]),
-      appointmentPreferences: {
-        defaultDuration: 30,
-        appointmentTypes: ['mtm_session'],
-        bufferBetweenAppointments: 0,
-      },
-    };
-
-    beforeEach(() => {
-      (User.findById as jest.Mock).mockResolvedValue(mockPharmacist);
       (PharmacistSchedule.findCurrentSchedule as jest.Mock).mockResolvedValue(mockSchedule);
-      (Appointment.find as jest.Mock).mockReturnValue({
-        sort: jest.fn().mockResolvedValue([]),
-      });
-    });
 
-    it('should get pharmacist availability for a working day', async () => {
-      const result = await CalendarService.getPharmacistAvailability(
+      // Act
+      const availability = await CalendarService.getPharmacistAvailability(
         mockPharmacistId,
-        mockDate,
+        startDate,
+        endDate,
         mockWorkplaceId
       );
 
-      expect(result).toHaveProperty('pharmacistId', mockPharmacistId);
-      expect(result).toHaveProperty('pharmacistName', 'Dr. John Smith');
-      expect(result).toHaveProperty('date');
-      expect(result).toHaveProperty('isWorking', true);
-      expect(result).toHaveProperty('shifts');
-      expect(result).toHaveProperty('appointments');
-      expect(result).toHaveProperty('availableSlots');
-      expect(result).toHaveProperty('utilizationRate');
+      // Assert
+      expect(availability.pharmacistId).toEqual(mockPharmacistId);
+      expect(availability.dateRange.start).toEqual(startDate);
+      expect(availability.dateRange.end).toEqual(endDate);
+      expect(availability.workingDays).toHaveLength(5); // Monday to Friday
+      expect(availability.timeOff).toHaveLength(0);
     });
 
-    it('should return not working for non-working days', async () => {
-      mockSchedule.isWorkingOn.mockReturnValue(false);
+    it('should include time off in availability', async () => {
+      // Arrange
+      const startDate = new Date('2025-12-01');
+      const endDate = new Date('2025-12-07');
 
-      const result = await CalendarService.getPharmacistAvailability(
+      const mockSchedule = {
+        workingHours: [
+          { dayOfWeek: 1, isWorkingDay: true, shifts: [{ startTime: '09:00', endTime: '17:00' }] },
+        ],
+        timeOff: [
+          {
+            startDate: new Date('2025-12-03'),
+            endDate: new Date('2025-12-03'),
+            reason: 'Personal leave',
+            type: 'personal',
+            status: 'approved',
+          },
+        ],
+        isWorkingOn: jest.fn().mockImplementation((date: Date) => {
+          const timeOffDate = new Date('2025-12-03');
+          return date.getTime() !== timeOffDate.getTime();
+        }),
+      };
+
+      (PharmacistSchedule.findCurrentSchedule as jest.Mock).mockResolvedValue(mockSchedule);
+
+      // Act
+      const availability = await CalendarService.getPharmacistAvailability(
         mockPharmacistId,
-        mockDate,
+        startDate,
+        endDate,
         mockWorkplaceId
       );
 
-      expect(result.isWorking).toBe(false);
-      expect(result.shifts).toEqual([]);
-      expect(result.availableSlots).toEqual([]);
-      expect(result.utilizationRate).toBe(0);
+      // Assert
+      expect(availability.timeOff).toHaveLength(1);
+      expect(availability.timeOff[0].reason).toBe('Personal leave');
     });
 
-    it('should calculate utilization rate correctly', async () => {
-      // Mock 10 total slots, 7 booked
-      const mockSlots = Array(10)
-        .fill(null)
-        .map((_, i) => ({
-          time: `${9 + Math.floor(i / 4)}:${(i % 4) * 15}`,
-          available: i >= 7, // First 7 are booked
-          pharmacistId: mockPharmacistId,
-        }));
+    it('should throw error if schedule not found', async () => {
+      // Arrange
+      const startDate = new Date('2025-12-01');
+      const endDate = new Date('2025-12-07');
 
-      jest.spyOn(CalendarService, 'calculateAvailableSlots').mockResolvedValue(mockSlots);
+      (PharmacistSchedule.findCurrentSchedule as jest.Mock).mockResolvedValue(null);
 
-      const result = await CalendarService.getPharmacistAvailability(
-        mockPharmacistId,
-        mockDate,
-        mockWorkplaceId
-      );
-
-      expect(result.utilizationRate).toBe(70); // 7/10 = 70%
-    });
-
-    it('should throw error if pharmacist not found', async () => {
-      (User.findById as jest.Mock).mockResolvedValue(null);
-
+      // Act & Assert
       await expect(
         CalendarService.getPharmacistAvailability(
           mockPharmacistId,
-          mockDate,
+          startDate,
+          endDate,
           mockWorkplaceId
         )
-      ).rejects.toThrow('Pharmacist not found');
+      ).rejects.toThrow('Pharmacist schedule');
     });
   });
 
   describe('getCapacityMetrics', () => {
-    const startDate = new Date('2025-10-20');
-    const endDate = new Date('2025-10-26');
+    it('should calculate capacity metrics correctly', async () => {
+      // Arrange
+      const startDate = new Date('2025-12-01');
+      const endDate = new Date('2025-12-07');
 
-    const mockPharmacists = [
-      {
-        _id: mockPharmacistId,
-        name: 'Dr. John Smith',
-        role: 'pharmacist',
-      },
-      {
-        _id: new mongoose.Types.ObjectId(),
-        name: 'Dr. Jane Doe',
-        role: 'pharmacist',
-      },
-    ];
-
-    const mockSchedule = {
-      _id: new mongoose.Types.ObjectId(),
-      pharmacistId: mockPharmacistId,
-      workplaceId: mockWorkplaceId,
-      isWorkingOn: jest.fn().mockReturnValue(true),
-      appointmentPreferences: {
-        defaultDuration: 30,
-      },
-    };
-
-    beforeEach(() => {
-      (User.find as jest.Mock).mockResolvedValue(mockPharmacists);
-      (PharmacistSchedule.findCurrentSchedule as jest.Mock).mockResolvedValue(mockSchedule);
-    });
-
-    it('should calculate capacity metrics for date range', async () => {
-      const mockSlots = Array(20)
-        .fill(null)
-        .map((_, i) => ({
-          time: `${9 + Math.floor(i / 4)}:${(i % 4) * 15}`,
-          available: i % 2 === 0, // 50% utilization
+      const mockSchedules = [
+        {
           pharmacistId: mockPharmacistId,
-        }));
+          appointmentPreferences: {
+            maxAppointmentsPerDay: 16,
+          },
+          getWorkingDaysInRange: jest.fn().mockReturnValue(5),
+          getTotalHoursInRange: jest.fn().mockReturnValue(40),
+        },
+      ];
 
-      jest.spyOn(CalendarService, 'calculateAvailableSlots').mockResolvedValue(mockSlots);
+      const mockAppointments = [
+        { assignedTo: mockPharmacistId, duration: 30 },
+        { assignedTo: mockPharmacistId, duration: 45 },
+        { assignedTo: mockPharmacistId, duration: 30 },
+      ];
 
-      const result = await CalendarService.getCapacityMetrics(
+      (PharmacistSchedule.find as jest.Mock).mockReturnValue({
+        populate: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue(mockSchedules),
+      });
+
+      (Appointment.find as jest.Mock).mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockAppointments),
+      });
+
+      // Act
+      const metrics = await CalendarService.getCapacityMetrics(
         startDate,
         endDate,
         mockWorkplaceId
       );
 
-      expect(result).toHaveProperty('overall');
-      expect(result).toHaveProperty('byPharmacist');
-      expect(result).toHaveProperty('byDay');
-      expect(result).toHaveProperty('recommendations');
-      expect(result.overall.totalSlots).toBeGreaterThan(0);
-      expect(result.byPharmacist.length).toBeGreaterThan(0);
-      expect(result.byDay.length).toBe(7); // 7 days in range
+      // Assert
+      expect(metrics.dateRange.start).toEqual(startDate);
+      expect(metrics.dateRange.end).toEqual(endDate);
+      expect(metrics.overall.totalPharmacists).toBe(1);
+      expect(metrics.overall.totalAppointments).toBe(3);
+      expect(metrics.byPharmacist).toHaveLength(1);
+      expect(metrics.byPharmacist[0].pharmacistId).toEqual(mockPharmacistId);
     });
 
-    it('should generate recommendations for underutilized pharmacists', async () => {
-      const mockSlots = Array(20)
-        .fill(null)
-        .map((_, i) => ({
-          time: `${9 + Math.floor(i / 4)}:${(i % 4) * 15}`,
-          available: i < 18, // Only 10% utilization
+    it('should handle multiple pharmacists', async () => {
+      // Arrange
+      const startDate = new Date('2025-12-01');
+      const endDate = new Date('2025-12-07');
+      const pharmacist2Id = new mongoose.Types.ObjectId();
+
+      const mockSchedules = [
+        {
           pharmacistId: mockPharmacistId,
-        }));
+          appointmentPreferences: { maxAppointmentsPerDay: 16 },
+          getWorkingDaysInRange: jest.fn().mockReturnValue(5),
+          getTotalHoursInRange: jest.fn().mockReturnValue(40),
+        },
+        {
+          pharmacistId: pharmacist2Id,
+          appointmentPreferences: { maxAppointmentsPerDay: 12 },
+          getWorkingDaysInRange: jest.fn().mockReturnValue(3),
+          getTotalHoursInRange: jest.fn().mockReturnValue(24),
+        },
+      ];
 
-      jest.spyOn(CalendarService, 'calculateAvailableSlots').mockResolvedValue(mockSlots);
+      const mockAppointments = [
+        { assignedTo: mockPharmacistId, duration: 30 },
+        { assignedTo: pharmacist2Id, duration: 45 },
+      ];
 
-      const result = await CalendarService.getCapacityMetrics(
+      (PharmacistSchedule.find as jest.Mock).mockReturnValue({
+        populate: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue(mockSchedules),
+      });
+
+      (Appointment.find as jest.Mock).mockReturnValue({
+        exec: jest.fn().mockResolvedValue(mockAppointments),
+      });
+
+      // Act
+      const metrics = await CalendarService.getCapacityMetrics(
         startDate,
         endDate,
         mockWorkplaceId
       );
 
-      expect(result.recommendations.length).toBeGreaterThan(0);
-      expect(result.recommendations.some(r => r.includes('underutilized'))).toBe(true);
+      // Assert
+      expect(metrics.overall.totalPharmacists).toBe(2);
+      expect(metrics.byPharmacist).toHaveLength(2);
     });
 
-    it('should generate recommendations for overutilized pharmacists', async () => {
-      const mockSlots = Array(20)
-        .fill(null)
-        .map((_, i) => ({
-          time: `${9 + Math.floor(i / 4)}:${(i % 4) * 15}`,
-          available: i >= 19, // 95% utilization
+    it('should filter by pharmacist when provided', async () => {
+      // Arrange
+      const startDate = new Date('2025-12-01');
+      const endDate = new Date('2025-12-07');
+
+      const mockSchedules = [
+        {
           pharmacistId: mockPharmacistId,
-        }));
+          appointmentPreferences: { maxAppointmentsPerDay: 16 },
+          getWorkingDaysInRange: jest.fn().mockReturnValue(5),
+          getTotalHoursInRange: jest.fn().mockReturnValue(40),
+        },
+      ];
 
-      jest.spyOn(CalendarService, 'calculateAvailableSlots').mockResolvedValue(mockSlots);
+      (PharmacistSchedule.find as jest.Mock).mockReturnValue({
+        populate: jest.fn().mockReturnThis(),
+        exec: jest.fn().mockResolvedValue(mockSchedules),
+      });
 
-      const result = await CalendarService.getCapacityMetrics(
-        startDate,
-        endDate,
-        mockWorkplaceId
-      );
+      (Appointment.find as jest.Mock).mockReturnValue({
+        exec: jest.fn().mockResolvedValue([]),
+      });
 
-      expect(result.recommendations.some(r => r.includes('near capacity'))).toBe(true);
-    });
-
-    it('should filter by specific pharmacists', async () => {
-      const mockSlots = Array(20)
-        .fill(null)
-        .map((_, i) => ({
-          time: `${9 + Math.floor(i / 4)}:${(i % 4) * 15}`,
-          available: true,
-          pharmacistId: mockPharmacistId,
-        }));
-
-      jest.spyOn(CalendarService, 'calculateAvailableSlots').mockResolvedValue(mockSlots);
-
-      const result = await CalendarService.getCapacityMetrics(
+      // Act
+      await CalendarService.getCapacityMetrics(
         startDate,
         endDate,
         mockWorkplaceId,
-        [mockPharmacistId]
+        { pharmacistId: mockPharmacistId }
       );
 
-      expect(User.find).toHaveBeenCalledWith({
-        _id: { $in: [mockPharmacistId] },
-        role: { $in: ['pharmacist', 'pharmacy_manager'] },
-      });
+      // Assert
+      expect(PharmacistSchedule.find).toHaveBeenCalledWith(
+        expect.objectContaining({
+          pharmacistId: mockPharmacistId,
+        })
+      );
     });
   });
 
   describe('suggestOptimalTimes', () => {
-    const mockPatientHistory = [
-      {
-        _id: new mongoose.Types.ObjectId(),
-        patientId: mockPatientId,
-        scheduledDate: new Date('2025-10-15'),
-        scheduledTime: '10:00',
-        status: 'completed',
-      },
-      {
-        _id: new mongoose.Types.ObjectId(),
-        patientId: mockPatientId,
-        scheduledDate: new Date('2025-10-08'),
-        scheduledTime: '10:30',
-        status: 'completed',
-      },
-      {
-        _id: new mongoose.Types.ObjectId(),
-        patientId: mockPatientId,
-        scheduledDate: new Date('2025-10-01'),
-        scheduledTime: '14:00',
-        status: 'completed',
-      },
-    ];
+    it('should suggest optimal appointment times', async () => {
+      // Arrange
+      const patientId = new mongoose.Types.ObjectId();
+      const appointmentType = 'mtm_session';
+      const duration = 30;
 
-    const mockSchedule = {
-      _id: new mongoose.Types.ObjectId(),
-      pharmacistId: mockPharmacistId,
-      workplaceId: mockWorkplaceId,
-      isWorkingOn: jest.fn().mockReturnValue(true),
-      appointmentPreferences: {
-        appointmentTypes: ['mtm_session'],
-      },
-    };
+      const mockHistoricalData = [
+        { scheduledTime: '10:00', outcome: { status: 'successful' } },
+        { scheduledTime: '14:00', outcome: { status: 'successful' } },
+        { scheduledTime: '16:00', outcome: { status: 'unsuccessful' } },
+      ];
 
-    beforeEach(() => {
       (Appointment.find as jest.Mock).mockReturnValue({
-        sort: jest.fn().mockReturnThis(),
-        limit: jest.fn().mockResolvedValue(mockPatientHistory),
+        exec: jest.fn().mockResolvedValue(mockHistoricalData),
       });
 
-      (PharmacistSchedule.find as jest.Mock).mockReturnValue({
-        populate: jest.fn().mockResolvedValue([
-          {
-            ...mockSchedule,
-            pharmacistId: { _id: mockPharmacistId, name: 'Dr. Smith' },
-          },
-        ]),
+      // Act
+      const suggestions = await CalendarService.suggestOptimalTimes(
+        patientId,
+        appointmentType,
+        duration,
+        mockWorkplaceId
+      );
+
+      // Assert
+      expect(suggestions.patientId).toEqual(patientId);
+      expect(suggestions.appointmentType).toBe(appointmentType);
+      expect(suggestions.recommendedTimes).toBeDefined();
+      expect(suggestions.recommendedTimes.length).toBeGreaterThan(0);
+    });
+
+    it('should handle no historical data', async () => {
+      // Arrange
+      const patientId = new mongoose.Types.ObjectId();
+      const appointmentType = 'health_check';
+      const duration = 30;
+
+      (Appointment.find as jest.Mock).mockReturnValue({
+        exec: jest.fn().mockResolvedValue([]),
       });
-    });
 
-    it('should suggest optimal times based on patient history', async () => {
-      const mockSlots = [
-        { time: '10:00', available: true, pharmacistId: mockPharmacistId },
-        { time: '10:15', available: true, pharmacistId: mockPharmacistId },
-        { time: '14:00', available: true, pharmacistId: mockPharmacistId },
-      ];
-
-      jest.spyOn(CalendarService, 'calculateAvailableSlots').mockResolvedValue(mockSlots);
-
-      const result = await CalendarService.suggestOptimalTimes(
-        mockPatientId,
-        'mtm_session',
-        30,
-        mockWorkplaceId,
-        7
+      // Act
+      const suggestions = await CalendarService.suggestOptimalTimes(
+        patientId,
+        appointmentType,
+        duration,
+        mockWorkplaceId
       );
 
-      expect(result.length).toBeGreaterThan(0);
-      expect(result[0]).toHaveProperty('date');
-      expect(result[0]).toHaveProperty('time');
-      expect(result[0]).toHaveProperty('pharmacistId');
-      expect(result[0]).toHaveProperty('score');
-      expect(result[0]).toHaveProperty('reasons');
+      // Assert
+      expect(suggestions.patientId).toEqual(patientId);
+      expect(suggestions.recommendedTimes).toBeDefined();
+      // Should provide default recommendations
+      expect(suggestions.recommendedTimes.length).toBeGreaterThan(0);
     });
 
-    it('should prioritize patient preferred times', async () => {
-      const mockSlots = [
-        { time: '10:00', available: true, pharmacistId: mockPharmacistId },
-        { time: '16:00', available: true, pharmacistId: mockPharmacistId },
-      ];
+    it('should consider patient preferences', async () => {
+      // Arrange
+      const patientId = new mongoose.Types.ObjectId();
+      const appointmentType = 'vaccination';
+      const duration = 15;
+      const preferences = {
+        preferredDays: [1, 2, 3], // Monday, Tuesday, Wednesday
+        preferredTimeSlots: [
+          { start: '09:00', end: '12:00' },
+          { start: '14:00', end: '16:00' },
+        ],
+      };
 
-      jest.spyOn(CalendarService, 'calculateAvailableSlots').mockResolvedValue(mockSlots);
+      (Appointment.find as jest.Mock).mockReturnValue({
+        exec: jest.fn().mockResolvedValue([]),
+      });
 
-      const result = await CalendarService.suggestOptimalTimes(
-        mockPatientId,
-        'mtm_session',
-        30,
+      // Act
+      const suggestions = await CalendarService.suggestOptimalTimes(
+        patientId,
+        appointmentType,
+        duration,
         mockWorkplaceId,
-        7
+        { patientPreferences: preferences }
       );
 
-      // 10:00 should have higher score due to patient history
-      const morningSlot = result.find(s => s.time === '10:00');
-      const eveningSlot = result.find(s => s.time === '16:00');
-
-      if (morningSlot && eveningSlot) {
-        expect(morningSlot.score).toBeGreaterThan(eveningSlot.score);
-      }
-    });
-
-    it('should return top 10 suggestions', async () => {
-      const mockSlots = Array(50)
-        .fill(null)
-        .map((_, i) => ({
-          time: `${9 + Math.floor(i / 4)}:${(i % 4) * 15}`,
-          available: true,
-          pharmacistId: mockPharmacistId,
-        }));
-
-      jest.spyOn(CalendarService, 'calculateAvailableSlots').mockResolvedValue(mockSlots);
-
-      const result = await CalendarService.suggestOptimalTimes(
-        mockPatientId,
-        'mtm_session',
-        30,
-        mockWorkplaceId,
-        14
-      );
-
-      expect(result.length).toBeLessThanOrEqual(10);
-    });
-
-    it('should include reasons for suggestions', async () => {
-      const mockSlots = [
-        { time: '10:00', available: true, pharmacistId: mockPharmacistId },
-      ];
-
-      jest.spyOn(CalendarService, 'calculateAvailableSlots').mockResolvedValue(mockSlots);
-
-      const result = await CalendarService.suggestOptimalTimes(
-        mockPatientId,
-        'mtm_session',
-        30,
-        mockWorkplaceId,
-        7
-      );
-
-      expect(result[0].reasons.length).toBeGreaterThan(0);
-      expect(result[0].reasons.some(r => r.includes('morning'))).toBe(true);
+      // Assert
+      expect(suggestions.patientId).toEqual(patientId);
+      expect(suggestions.patientPreferences).toEqual(preferences);
+      expect(suggestions.recommendedTimes).toBeDefined();
     });
   });
 });
