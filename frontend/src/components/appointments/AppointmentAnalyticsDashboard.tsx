@@ -83,10 +83,12 @@ const PIE_COLORS = [
 
 interface AppointmentAnalyticsDashboardProps {
   className?: string;
+  compact?: boolean;
 }
 
 const AppointmentAnalyticsDashboard: React.FC<AppointmentAnalyticsDashboardProps> = ({
   className,
+  compact = false,
 }) => {
   // State for filters
   const [dateRange, setDateRange] = useState({

@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '../utils/apiClient';
+import { apiClient } from '../services/apiClient';
 
 export interface NotificationPreferencesData {
   email: boolean;

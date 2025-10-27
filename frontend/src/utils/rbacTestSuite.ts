@@ -13,6 +13,7 @@ const TEST_DATA = {
     'medication_management',
     'clinical_notes',
     'basic_reports',
+    'patient_engagement',
     'advanced_analytics',
     'team_management',
     'api_access'
@@ -123,7 +124,7 @@ class RBACTestSuite {
       const mockUser = {
         role: 'pharmacist',
         permissions: ['patient:read', 'patient:write', 'medication:read'],
-        features: ['patient_management', 'medication_management']
+        features: ['patient_management', 'medication_management', 'patient_engagement']
       };
 
       console.log('Testing user permissions:', mockUser.permissions);
@@ -148,8 +149,8 @@ class RBACTestSuite {
       // Test plan structure validation
       const expectedPlanFeatures = {
         free_trial: ['patient_management', 'medication_management'],
-        basic: ['patient_management', 'medication_management', 'clinical_notes', 'basic_reports'],
-        pro: ['patient_management', 'medication_management', 'clinical_notes', 'basic_reports', 'advanced_analytics', 'team_management'],
+        basic: ['patient_management', 'medication_management', 'clinical_notes', 'basic_reports', 'patient_engagement'],
+        pro: ['patient_management', 'medication_management', 'clinical_notes', 'basic_reports', 'patient_engagement', 'advanced_analytics', 'team_management'],
         enterprise: ['*'] // All features
       };
 

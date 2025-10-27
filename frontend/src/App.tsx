@@ -72,6 +72,11 @@ import {
   LazyMTRHelp,
   LazyLicenseUpload,
   LazyWorkspaceTeam,
+  LazyPatientEngagement,
+  LazyAppointmentManagement,
+  LazyFollowUpManagement,
+  LazyPatientPortal,
+  LazyPatientAuth,
 } from './components/LazyComponents';
 
 import { LazyWrapper, useRoutePreloading } from './components/LazyWrapper';
@@ -447,6 +452,73 @@ function App(): JSX.Element {
                                   </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
+                            }
+                          />
+
+                          {/* Patient Engagement & Follow-up Module */}
+                          <Route
+                            path="/patient-engagement"
+                            element={
+                              <ProtectedRoute
+                                requiredFeature="patient_engagement"
+                                requiresActiveSubscription
+                              >
+                                <AppLayout>
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyPatientEngagement />
+                                  </LazyWrapper>
+                                </AppLayout>
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/appointments"
+                            element={
+                              <ProtectedRoute
+                                requiredFeature="patient_engagement"
+                                requiresActiveSubscription
+                              >
+                                <AppLayout>
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyAppointmentManagement />
+                                  </LazyWrapper>
+                                </AppLayout>
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/follow-ups"
+                            element={
+                              <ProtectedRoute
+                                requiredFeature="patient_engagement"
+                                requiresActiveSubscription
+                              >
+                                <AppLayout>
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyFollowUpManagement />
+                                  </LazyWrapper>
+                                </AppLayout>
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/patient-portal"
+                            element={
+                              <ProtectedRoute>
+                                <AppLayout>
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyPatientPortal />
+                                  </LazyWrapper>
+                                </AppLayout>
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/patient-auth"
+                            element={
+                              <LazyWrapper fallback={PageSkeleton}>
+                                <LazyPatientAuth />
+                              </LazyWrapper>
                             }
                           />
 

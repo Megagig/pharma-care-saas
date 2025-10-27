@@ -66,6 +66,9 @@ import { useNavigate } from 'react-router-dom';
 import CommunicationWidget from '../communication/CommunicationWidget';
 import CommunicationMetrics from '../communication/CommunicationMetrics';
 
+// Patient Engagement Components
+import PatientEngagementWidget from './PatientEngagementWidget';
+
 // All components enabled
 import AdminDashboardIntegration from './AdminDashboardIntegration';
 import WorkspaceAnalytics from './WorkspaceAnalytics';
@@ -655,6 +658,91 @@ export const ModernDashboard: React.FC = () => {
         </Box>
       </motion.div>
 
+      {/* Patient Engagement KPIs */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.15 }}
+      >
+        <Typography
+          variant="h5"
+          sx={{
+            fontWeight: 'bold',
+            mb: 3,
+            color: theme.palette.text.primary,
+          }}
+        >
+          Patient Engagement
+        </Typography>
+        <Box
+          className="engagement-kpis-grid"
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: {
+              xs: '1fr',
+              sm: '1fr 1fr',
+              md: 'repeat(3, 1fr)',
+              lg: 'repeat(4, 1fr)',
+            },
+            gap: 3,
+            mb: 4,
+            width: '100%',
+          }}
+        >
+          <Box sx={{ width: '100%' }}>
+            <KPICard
+              title="Appointments"
+              value={stats.totalAppointments || 0}
+              subtitle="Scheduled appointments"
+              icon={<EventIcon />}
+              color={theme.palette.info.main}
+              trend={{ value: 18, isPositive: true, period: 'last month' }}
+              loading={dashboardLoading}
+              onClick={() => navigate('/appointments')}
+            />
+          </Box>
+
+          <Box sx={{ width: '100%' }}>
+            <KPICard
+              title="Follow-ups"
+              value={stats.totalFollowUps || 0}
+              subtitle="Active follow-up tasks"
+              icon={<AssignmentIcon />}
+              color={theme.palette.warning.main}
+              trend={{ value: -5, isPositive: false, period: 'last week' }}
+              loading={dashboardLoading}
+              onClick={() => navigate('/follow-ups')}
+            />
+          </Box>
+
+          <Box sx={{ width: '100%' }}>
+            <KPICard
+              title="Completed Today"
+              value={stats.completedToday || 0}
+              subtitle="Tasks completed today"
+              icon={<CheckCircleIcon />}
+              color={theme.palette.success.main}
+              trend={{ value: 25, isPositive: true, period: 'vs yesterday' }}
+              loading={dashboardLoading}
+              onClick={() => navigate('/follow-ups')}
+            />
+          </Box>
+
+          <Box sx={{ width: '100%' }}>
+            <KPICard
+              title="Portal Users"
+              value={stats.portalUsers || 0}
+              subtitle="Active portal patients"
+              icon={<PersonAddIcon />}
+              color={theme.palette.secondary.main}
+              trend={{ value: 12, isPositive: true, period: 'last month' }}
+              loading={dashboardLoading}
+              onClick={() => navigate('/patient-portal')}
+            />
+          </Box>
+        </Box>
+      </motion.div>
+
       {/* Charts Section */}
       <motion.div
         initial={{ opacity: 0, y: 20 }}
@@ -1004,6 +1092,93 @@ export const ModernDashboard: React.FC = () => {
                 interactive={true}
               />
             )}
+          </Box>
+        </Box>
+      </motion.div>
+
+      {/* Patient Engagement Widget Section */}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, delay: 0.23 }}
+      >
+        <Box
+          sx={{
+            display: 'grid',
+            gridTemplateColumns: { xs: '1fr', lg: '2fr 1fr' },
+            gap: 4,
+            mb: 4,
+            width: '100%',
+          }}
+        >
+          {/* Main Patient Engagement Widget */}
+          <Box sx={{ width: '100%' }}>
+            <PatientEngagementWidget height={400} />
+          </Box>
+
+          {/* Quick Appointment Calendar Preview */}
+          <Box sx={{ width: '100%' }}>
+            <Card
+              sx={{
+                height: 400,
+                background: `linear-gradient(135deg, ${alpha(theme.palette.info.main, 0.05)} 0%, ${alpha(theme.palette.primary.main, 0.02)} 100%)`,
+                border: `1px solid ${alpha(theme.palette.info.main, 0.1)}`,
+              }}
+            >
+              <CardContent sx={{ p: 3, height: '100%' }}>
+                <Box display="flex" alignItems="center" justifyContent="between" mb={2}>
+                  <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+                    Today's Schedule
+                  </Typography>
+                  <Button
+                    size="small"
+                    onClick={() => navigate('/appointments')}
+                    sx={{ textTransform: 'none' }}
+                  >
+                    View Calendar
+                  </Button>
+                </Box>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 2,
+                    height: 'calc(100% - 60px)',
+                    overflow: 'auto',
+                  }}
+                >
+                  {/* Mock appointment slots */}
+                  {[
+                    { time: '9:00 AM', patient: 'John Doe', type: 'Consultation' },
+                    { time: '10:30 AM', patient: 'Jane Smith', type: 'MTR Session' },
+                    { time: '2:00 PM', patient: 'Robert Johnson', type: 'Follow-up' },
+                    { time: '3:30 PM', patient: 'Mary Wilson', type: 'Consultation' },
+                  ].map((appointment, index) => (
+                    <Box
+                      key={index}
+                      sx={{
+                        p: 2,
+                        borderRadius: 2,
+                        border: `1px solid ${theme.palette.divider}`,
+                        background: theme.palette.background.paper,
+                      }}
+                    >
+                      <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
+                        {appointment.time}
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        {appointment.patient}
+                      </Typography>
+                      <Chip
+                        label={appointment.type}
+                        size="small"
+                        sx={{ mt: 1, fontSize: '0.7rem' }}
+                      />
+                    </Box>
+                  ))}
+                </Box>
+              </CardContent>
+            </Card>
           </Box>
         </Box>
       </motion.div>

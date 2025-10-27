@@ -27,6 +27,11 @@ import FlagIcon from '@mui/icons-material/Flag';
 import AssessmentIcon from '@mui/icons-material/Assessment';
 import AdminPanelSettings from '@mui/icons-material/AdminPanelSettings';
 import Assignment from '@mui/icons-material/Assignment';
+// Patient Engagement icons
+import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import TaskIcon from '@mui/icons-material/Task';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import EventAvailableIcon from '@mui/icons-material/EventAvailable';
 // Pharmacy module icons - using default imports
 import Reviews from '@mui/icons-material/Reviews';
 import MedicalServices from '@mui/icons-material/MedicalServices';
@@ -116,6 +121,13 @@ const Sidebar = () => {
       show: hasFeature('basic_reports'),
     },
     {
+      name: 'Patient Engagement',
+      path: '/patient-engagement',
+      icon: PersonAddIcon,
+      show: hasFeature('patient_engagement'),
+      badge: !subscriptionStatus?.isActive ? 'Premium' : null,
+    },
+    {
       name: 'Subscriptions',
       path: '/subscriptions',
       icon: CreditCardIcon,
@@ -160,6 +172,27 @@ const Sidebar = () => {
       icon: PsychologyIcon,
       show: true,
       badge: null, // Ensure no badge blocking
+    },
+  ];
+
+  const engagementModules = [
+    {
+      name: 'Appointments',
+      path: '/appointments',
+      icon: CalendarTodayIcon,
+      show: hasFeature('patient_engagement'),
+    },
+    {
+      name: 'Follow-ups',
+      path: '/follow-ups',
+      icon: TaskIcon,
+      show: hasFeature('patient_engagement'),
+    },
+    {
+      name: 'Patient Portal',
+      path: '/patient-portal',
+      icon: EventAvailableIcon,
+      show: hasFeature('patient_engagement'),
     },
   ];
 
@@ -730,6 +763,49 @@ const Sidebar = () => {
             </Box>
           )}
           {renderNavItems(pharmacyModules)}
+        </Box>
+
+        <Divider
+          sx={{
+            mx: sidebarOpen ? 3 : 1.5,
+            opacity: 0.6,
+            borderColor: 'rgba(25, 118, 210, 0.12)',
+            my: 1,
+          }}
+        />
+
+        <Divider
+          sx={{
+            mx: sidebarOpen ? 3 : 1.5,
+            opacity: 0.6,
+            borderColor: 'rgba(25, 118, 210, 0.12)',
+            my: 1,
+          }}
+        />
+
+        {/* Patient Engagement Section */}
+        <Box sx={{ pt: 2, pb: 2 }}>
+          {sidebarOpen && (
+            <Box sx={{ px: 3, mb: 1.5 }}>
+              <Typography
+                variant="overline"
+                sx={{
+                  color: 'primary.main',
+                  fontWeight: 700,
+                  fontSize: '0.8rem',
+                  letterSpacing: '0.12em',
+                  textShadow: '0 0 1px rgba(25, 118, 210, 0.2)',
+                  display: 'inline-block',
+                  borderBottom: '2px solid',
+                  borderColor: 'primary.main',
+                  paddingBottom: '4px',
+                }}
+              >
+                PATIENT ENGAGEMENT
+              </Typography>
+            </Box>
+          )}
+          {renderNavItems(engagementModules)}
         </Box>
 
         <Divider
