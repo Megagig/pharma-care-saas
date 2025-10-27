@@ -7,3 +7,4 @@ export { default as PatientAutocomplete } from './PatientAutocomplete';
 export { default as PharmacistSelector } from './PharmacistSelector';
 export { default as AppointmentAnalyticsDashboard } from './AppointmentAnalyticsDashboard';
 export { default as ReminderEffectivenessChart } from './ReminderEffectivenessChart';
+export { default as CapacityUtilizationChart } from './CapacityUtilizationChart';
