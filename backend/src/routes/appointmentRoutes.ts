@@ -1,212 +1,448 @@
+/**
+ * Appointment Routes
+ * 
+ * Routes for appointment scheduling and management with feature flag protection
+ */
+
 import express from 'express';
-import {
-  createAppointment,
-  getCalendarAppointments,
-  getAppointments,
-  getAppointment,
-  updateAppointment,
-  updateAppointmentStatus,
-  rescheduleAppointment,
-  cancelAppointment,
-  getAvailableSlots,
-  getPatientAppointments,
-  getUpcomingAppointments,
-  confirmAppointment,
-} from '../controllers/appointmentController';
+import { body, query, param } from 'express-validator';
 import { auth } from '../middlewares/auth';
-import { authWithWorkspace } from '../middlewares/authWithWorkspace';
-import { requireDynamicPermission } from '../middlewares/rbac';
+import rbac from '../middlewares/rbac';
+import { validateRequest } from '../middlewares/validateRequest';
 import {
-  requireAppointmentRead,
-  requireAppointmentCreate,
-  requireAppointmentUpdate,
-  requireAppointmentDelete,
-  requireAppointmentReschedule,
-  requireAppointmentCancel,
-  requireAppointmentConfirm,
-  checkAppointmentOwnership,
-  checkAppointmentFeatureAccess,
-} from '../middlewares/appointmentRBAC';
-import {
-  validateRequest,
-  createAppointmentSchema,
-  updateAppointmentSchema,
-  updateAppointmentStatusSchema,
-  rescheduleAppointmentSchema,
-  cancelAppointmentSchema,
-  confirmAppointmentSchema,
-  appointmentParamsSchema,
-  appointmentQuerySchema,
-  availableSlotsQuerySchema,
-  upcomingAppointmentsQuerySchema,
-} from '../validators/appointmentValidators';
+  requirePatientEngagementModule,
+  requireAppointmentScheduling,
+  requireRecurringAppointments,
+  requirePatientPortal,
+  PATIENT_ENGAGEMENT_FLAGS
+} from '../middlewares/patientEngagementFeatureFlags';
+import appointmentController from '../controllers/appointmentController';
 
 const router = express.Router();
 
-// Apply authentication and workspace context to all routes
+// Apply authentication to all routes
 router.use(auth);
-router.use(authWithWorkspace);
 
-// Apply feature access check to all routes
-router.use(checkAppointmentFeatureAccess);
-
-// ===============================
-// APPOINTMENT ROUTES
-// ===============================
+// Apply patient engagement module check to all routes
+router.use(requirePatientEngagementModule);
 
 /**
- * GET /api/appointments/calendar
- * Get appointments in calendar view
+ * @route   GET /api/appointments/calendar
+ * @desc    Get appointments for calendar view
+ * @access  Private (Pharmacist, Manager, Admin)
  */
 router.get(
   '/calendar',
-  requireAppointmentRead,
-  requireDynamicPermission('appointment.calendar_view'),
-  validateRequest(appointmentQuerySchema, 'query'),
-  getCalendarAppointments
+  requireAppointmentScheduling,
+  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
+  [
+    query('view')
+      .optional()
+      .isIn(['day', 'week', 'month'])
+      .withMessage('View must be day, week, or month'),
+    query('date')
+      .optional()
+      .isISO8601()
+      .withMessage('Date must be in ISO format'),
+    query('pharmacistId')
+      .optional()
+      .isMongoId()
+      .withMessage('Pharmacist ID must be valid'),
+    query('locationId')
+      .optional()
+      .isString()
+      .withMessage('Location ID must be a string'),
+  ],
+  validateRequest,
+  appointmentController.getCalendarAppointments
 );
 
 /**
- * GET /api/appointments/available-slots
- * Get available appointment slots
+ * @route   GET /api/appointments/available-slots
+ * @desc    Get available appointment slots
+ * @access  Private (Pharmacist, Manager, Admin) + Public (Patient Portal)
  */
 router.get(
   '/available-slots',
-  requireAppointmentRead,
-  requireDynamicPermission('appointment.available_slots'),
-  validateRequest(availableSlotsQuerySchema, 'query'),
-  getAvailableSlots
+  requireAppointmentScheduling,
+  [
+    query('date')
+      .isISO8601()
+      .withMessage('Date is required and must be in ISO format'),
+    query('pharmacistId')
+      .optional()
+      .isMongoId()
+      .withMessage('Pharmacist ID must be valid'),
+    query('duration')
+      .optional()
+      .isInt({ min: 5, max: 120 })
+      .withMessage('Duration must be between 5 and 120 minutes'),
+    query('type')
+      .optional()
+      .isIn(['mtm_session', 'chronic_disease_review', 'new_medication_consultation', 
+             'vaccination', 'health_check', 'smoking_cessation', 'general_followup'])
+      .withMessage('Invalid appointment type'),
+  ],
+  validateRequest,
+  appointmentController.getAvailableSlots
 );
 
 /**
- * GET /api/appointments/upcoming
- * Get upcoming appointments
- */
-router.get(
-  '/upcoming',
-  requireAppointmentRead,
-  requireDynamicPermission('appointment.read'),
-  validateRequest(upcomingAppointmentsQuerySchema, 'query'),
-  getUpcomingAppointments
-);
-
-/**
- * GET /api/appointments/patient/:patientId
- * Get appointments for a specific patient
- */
-router.get(
-  '/patient/:patientId',
-  requireAppointmentRead,
-  requireDynamicPermission('appointment.read'),
-  validateRequest(appointmentParamsSchema, 'params'),
-  getPatientAppointments
-);
-
-/**
- * POST /api/appointments
- * Create a new appointment
+ * @route   POST /api/appointments
+ * @desc    Create new appointment
+ * @access  Private (Pharmacist, Manager, Admin)
  */
 router.post(
   '/',
-  requireAppointmentCreate,
-  requireDynamicPermission('appointment.create'),
-  validateRequest(createAppointmentSchema, 'body'),
-  createAppointment
+  requireAppointmentScheduling,
+  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
+  [
+    body('patientId')
+      .isMongoId()
+      .withMessage('Patient ID is required and must be valid'),
+    body('type')
+      .isIn(['mtm_session', 'chronic_disease_review', 'new_medication_consultation', 
+             'vaccination', 'health_check', 'smoking_cessation', 'general_followup'])
+      .withMessage('Valid appointment type is required'),
+    body('scheduledDate')
+      .isISO8601()
+      .withMessage('Scheduled date is required and must be in ISO format'),
+    body('scheduledTime')
+      .matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
+      .withMessage('Scheduled time must be in HH:mm format'),
+    body('duration')
+      .isInt({ min: 5, max: 120 })
+      .withMessage('Duration must be between 5 and 120 minutes'),
+    body('assignedTo')
+      .optional()
+      .isMongoId()
+      .withMessage('Assigned pharmacist ID must be valid'),
+    body('description')
+      .optional()
+      .isLength({ max: 500 })
+      .withMessage('Description must not exceed 500 characters'),
+    body('isRecurring')
+      .optional()
+      .isBoolean()
+      .withMessage('isRecurring must be a boolean'),
+    body('recurrencePattern')
+      .optional()
+      .isObject()
+      .withMessage('Recurrence pattern must be an object'),
+    body('recurrencePattern.frequency')
+      .if(body('isRecurring').equals(true))
+      .isIn(['daily', 'weekly', 'biweekly', 'monthly', 'quarterly'])
+      .withMessage('Valid recurrence frequency is required'),
+  ],
+  validateRequest,
+  appointmentController.createAppointment
 );
 
 /**
- * GET /api/appointments
- * List appointments with filtering and pagination
- */
-router.get(
-  '/',
-  requireAppointmentRead,
-  requireDynamicPermission('appointment.read'),
-  validateRequest(appointmentQuerySchema, 'query'),
-  getAppointments
-);
-
-/**
- * GET /api/appointments/:id
- * Get single appointment details
+ * @route   GET /api/appointments/:id
+ * @desc    Get single appointment
+ * @access  Private (Pharmacist, Manager, Admin)
  */
 router.get(
   '/:id',
-  requireAppointmentRead,
-  requireDynamicPermission('appointment.read'),
-  validateRequest(appointmentParamsSchema, 'params'),
-  checkAppointmentOwnership,
-  getAppointment
+  requireAppointmentScheduling,
+  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
+  [
+    param('id')
+      .isMongoId()
+      .withMessage('Appointment ID must be valid'),
+  ],
+  validateRequest,
+  appointmentController.getAppointment
 );
 
 /**
- * PUT /api/appointments/:id
- * Update appointment details
+ * @route   PUT /api/appointments/:id
+ * @desc    Update appointment
+ * @access  Private (Pharmacist, Manager, Admin)
  */
 router.put(
   '/:id',
-  requireAppointmentUpdate,
-  requireDynamicPermission('appointment.update'),
-  validateRequest(appointmentParamsSchema, 'params'),
-  validateRequest(updateAppointmentSchema, 'body'),
-  checkAppointmentOwnership,
-  updateAppointment
+  requireAppointmentScheduling,
+  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
+  [
+    param('id')
+      .isMongoId()
+      .withMessage('Appointment ID must be valid'),
+    body('scheduledDate')
+      .optional()
+      .isISO8601()
+      .withMessage('Scheduled date must be in ISO format'),
+    body('scheduledTime')
+      .optional()
+      .matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
+      .withMessage('Scheduled time must be in HH:mm format'),
+    body('duration')
+      .optional()
+      .isInt({ min: 5, max: 120 })
+      .withMessage('Duration must be between 5 and 120 minutes'),
+    body('description')
+      .optional()
+      .isLength({ max: 500 })
+      .withMessage('Description must not exceed 500 characters'),
+    body('updateType')
+      .optional()
+      .isIn(['this_only', 'this_and_future'])
+      .withMessage('Update type must be this_only or this_and_future'),
+  ],
+  validateRequest,
+  appointmentController.updateAppointment
 );
 
 /**
- * PATCH /api/appointments/:id/status
- * Update appointment status
+ * @route   PATCH /api/appointments/:id/status
+ * @desc    Update appointment status
+ * @access  Private (Pharmacist, Manager, Admin)
  */
 router.patch(
   '/:id/status',
-  requireAppointmentUpdate,
-  requireDynamicPermission('appointment.update'),
-  validateRequest(appointmentParamsSchema, 'params'),
-  validateRequest(updateAppointmentStatusSchema, 'body'),
-  checkAppointmentOwnership,
-  updateAppointmentStatus
+  requireAppointmentScheduling,
+  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
+  [
+    param('id')
+      .isMongoId()
+      .withMessage('Appointment ID must be valid'),
+    body('status')
+      .isIn(['confirmed', 'in_progress', 'completed', 'cancelled', 'no_show'])
+      .withMessage('Valid status is required'),
+    body('reason')
+      .if(body('status').isIn(['cancelled', 'no_show']))
+      .notEmpty()
+      .withMessage('Reason is required for cancellation or no-show'),
+    body('outcome')
+      .if(body('status').equals('completed'))
+      .isObject()
+      .withMessage('Outcome is required for completion'),
+  ],
+  validateRequest,
+  appointmentController.updateAppointmentStatus
 );
 
 /**
- * POST /api/appointments/:id/reschedule
- * Reschedule an appointment
+ * @route   POST /api/appointments/:id/reschedule
+ * @desc    Reschedule appointment
+ * @access  Private (Pharmacist, Manager, Admin)
  */
 router.post(
   '/:id/reschedule',
-  requireAppointmentReschedule,
-  requireDynamicPermission('appointment.reschedule'),
-  validateRequest(appointmentParamsSchema, 'params'),
-  validateRequest(rescheduleAppointmentSchema, 'body'),
-  checkAppointmentOwnership,
-  rescheduleAppointment
+  requireAppointmentScheduling,
+  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
+  [
+    param('id')
+      .isMongoId()
+      .withMessage('Appointment ID must be valid'),
+    body('newDate')
+      .isISO8601()
+      .withMessage('New date is required and must be in ISO format'),
+    body('newTime')
+      .matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
+      .withMessage('New time is required and must be in HH:mm format'),
+    body('reason')
+      .notEmpty()
+      .withMessage('Reason for rescheduling is required'),
+    body('notifyPatient')
+      .optional()
+      .isBoolean()
+      .withMessage('notifyPatient must be a boolean'),
+  ],
+  validateRequest,
+  appointmentController.rescheduleAppointment
 );
 
 /**
- * POST /api/appointments/:id/cancel
- * Cancel an appointment
+ * @route   POST /api/appointments/:id/cancel
+ * @desc    Cancel appointment
+ * @access  Private (Pharmacist, Manager, Admin)
  */
 router.post(
   '/:id/cancel',
-  requireAppointmentCancel,
-  requireDynamicPermission('appointment.cancel'),
-  validateRequest(appointmentParamsSchema, 'params'),
-  validateRequest(cancelAppointmentSchema, 'body'),
-  checkAppointmentOwnership,
-  cancelAppointment
+  requireAppointmentScheduling,
+  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
+  [
+    param('id')
+      .isMongoId()
+      .withMessage('Appointment ID must be valid'),
+    body('reason')
+      .notEmpty()
+      .withMessage('Cancellation reason is required'),
+    body('notifyPatient')
+      .optional()
+      .isBoolean()
+      .withMessage('notifyPatient must be a boolean'),
+    body('cancelType')
+      .optional()
+      .isIn(['this_only', 'all_future'])
+      .withMessage('Cancel type must be this_only or all_future'),
+  ],
+  validateRequest,
+  appointmentController.cancelAppointment
 );
 
 /**
- * POST /api/appointments/:id/confirm
- * Confirm an appointment
+ * @route   POST /api/appointments/:id/confirm
+ * @desc    Confirm appointment (can be used by patients with token)
+ * @access  Private or Public with confirmation token
  */
 router.post(
   '/:id/confirm',
-  requireAppointmentConfirm,
-  requireDynamicPermission('appointment.confirm'),
-  validateRequest(appointmentParamsSchema, 'params'),
-  validateRequest(confirmAppointmentSchema, 'body'),
-  checkAppointmentOwnership,
-  confirmAppointment
+  // Note: This endpoint can be accessed without full auth if confirmation token is provided
+  [
+    param('id')
+      .isMongoId()
+      .withMessage('Appointment ID must be valid'),
+    body('confirmationToken')
+      .optional()
+      .isString()
+      .withMessage('Confirmation token must be a string'),
+  ],
+  validateRequest,
+  appointmentController.confirmAppointment
+);
+
+/**
+ * @route   GET /api/appointments/patient/:patientId
+ * @desc    Get appointments for a specific patient
+ * @access  Private (Pharmacist, Manager, Admin)
+ */
+router.get(
+  '/patient/:patientId',
+  requireAppointmentScheduling,
+  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
+  [
+    param('patientId')
+      .isMongoId()
+      .withMessage('Patient ID must be valid'),
+    query('status')
+      .optional()
+      .isIn(['scheduled', 'confirmed', 'in_progress', 'completed', 'cancelled', 'no_show'])
+      .withMessage('Invalid status filter'),
+    query('limit')
+      .optional()
+      .isInt({ min: 1, max: 100 })
+      .withMessage('Limit must be between 1 and 100'),
+    query('page')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('Page must be a positive integer'),
+  ],
+  validateRequest,
+  appointmentController.getPatientAppointments
+);
+
+/**
+ * @route   GET /api/appointments/upcoming
+ * @desc    Get upcoming appointments
+ * @access  Private (Pharmacist, Manager, Admin)
+ */
+router.get(
+  '/upcoming',
+  requireAppointmentScheduling,
+  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
+  [
+    query('days')
+      .optional()
+      .isInt({ min: 1, max: 30 })
+      .withMessage('Days must be between 1 and 30'),
+    query('pharmacistId')
+      .optional()
+      .isMongoId()
+      .withMessage('Pharmacist ID must be valid'),
+  ],
+  validateRequest,
+  appointmentController.getUpcomingAppointments
+);
+
+/**
+ * Recurring Appointments Routes (require additional feature flag)
+ */
+
+/**
+ * @route   POST /api/appointments/:id/recurring/update
+ * @desc    Update recurring appointment series
+ * @access  Private (Pharmacist, Manager, Admin)
+ */
+router.post(
+  '/:id/recurring/update',
+  requireRecurringAppointments,
+  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
+  [
+    param('id')
+      .isMongoId()
+      .withMessage('Appointment ID must be valid'),
+    body('updateType')
+      .isIn(['this_only', 'this_and_future', 'all_instances'])
+      .withMessage('Update type is required'),
+    body('changes')
+      .isObject()
+      .withMessage('Changes object is required'),
+  ],
+  validateRequest,
+  appointmentController.updateRecurringAppointment
+);
+
+/**
+ * @route   GET /api/appointments/:id/recurring/series
+ * @desc    Get all appointments in recurring series
+ * @access  Private (Pharmacist, Manager, Admin)
+ */
+router.get(
+  '/:id/recurring/series',
+  requireRecurringAppointments,
+  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
+  [
+    param('id')
+      .isMongoId()
+      .withMessage('Appointment ID must be valid'),
+  ],
+  validateRequest,
+  appointmentController.getRecurringSeries
+);
+
+/**
+ * Patient Portal Routes (require patient portal feature flag)
+ */
+
+/**
+ * @route   GET /api/appointments/portal/types
+ * @desc    Get available appointment types for patient portal
+ * @access  Public (for patient portal)
+ */
+router.get(
+  '/portal/types',
+  requirePatientPortal,
+  appointmentController.getAppointmentTypes
+);
+
+/**
+ * @route   POST /api/appointments/portal/book
+ * @desc    Book appointment through patient portal
+ * @access  Public (for patient portal)
+ */
+router.post(
+  '/portal/book',
+  requirePatientPortal,
+  [
+    body('patientInfo')
+      .isObject()
+      .withMessage('Patient information is required'),
+    body('appointmentType')
+      .isIn(['mtm_session', 'chronic_disease_review', 'new_medication_consultation', 
+             'vaccination', 'health_check', 'smoking_cessation', 'general_followup'])
+      .withMessage('Valid appointment type is required'),
+    body('scheduledDate')
+      .isISO8601()
+      .withMessage('Scheduled date is required'),
+    body('scheduledTime')
+      .matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
+      .withMessage('Scheduled time is required'),
+  ],
+  validateRequest,
+  appointmentController.bookAppointmentPortal
 );
 
 export default router;

@@ -1,284 +1,355 @@
+/**
+ * Follow-up Controller
+ * 
+ * Controller for follow-up task management with feature flag integration
+ */
+
 import { Response } from 'express';
-import mongoose from 'mongoose';
-import { AuthRequest } from '../middlewares/auth';
-import FollowUpService from '../services/FollowUpService';
-import AppointmentService from '../services/AppointmentService';
-import {
-  sendSuccess,
-  sendError,
-  asyncHandler,
-  getRequestContext,
-} from '../utils/responseHelpers';
+import { AuthRequest } from '../types/auth';
+import logger from '../utils/logger';
 
-/**
- * Follow-up Task Management Controller
- * Handles all follow-up task-related HTTP requests
- */
-
-/**
- * POST /api/follow-ups
- * Create a new follow-up task
- */
-export const createFollowUp = asyncHandler(
-  async (req: AuthRequest, res: Response) => {
-    const context = getRequestContext(req);
-    const followUpData = {
-      ...req.body,
-      workplaceId: context.workplaceId,
-      createdBy: context.userId,
-      assignedTo: req.body.assignedTo || context.userId,
-    };
-
-    const followUpTask = await FollowUpService.createFollowUpTask(
-      followUpData,
-      new mongoose.Types.ObjectId(context.workplaceId),
-      context.userId
-    );
-
-    sendSuccess(res, { followUpTask }, 'Follow-up task created successfully', 201);
-  }
-);
-
-/**
- * GET /api/follow-ups
- * List follow-up tasks with filtering and pagination
- */
-export const getFollowUps = asyncHandler(
-  async (req: AuthRequest, res: Response) => {
-    const context = getRequestContext(req);
-    const {
-      status,
-      priority,
-      type,
-      assignedTo,
-      patientId,
-      startDate,
-      endDate,
-      overdue,
-      limit,
-      cursor,
-    } = req.query as any;
-
-    const result = await FollowUpService.getFollowUpTasks(
-      {
-        status,
-        priority,
-        type,
-        assignedTo: assignedTo ? new mongoose.Types.ObjectId(assignedTo) : undefined,
-        patientId: patientId ? new mongoose.Types.ObjectId(patientId) : undefined,
-        startDate: startDate ? new Date(startDate) : undefined,
-        endDate: endDate ? new Date(endDate) : undefined,
-        overdue: overdue === 'true',
-      },
-      {
-        limit: parseInt(limit) || 50,
-      },
-      new mongoose.Types.ObjectId(context.workplaceId)
-    );
-
-    // Calculate summary statistics
-    const summary = {
-      total: result.tasks.length,
-      overdue: result.tasks.filter((task: any) => task.status === 'overdue').length,
-      dueToday: result.tasks.filter((task: any) => {
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-        const dueDate = new Date(task.dueDate);
-        dueDate.setHours(0, 0, 0, 0);
-        return dueDate.getTime() === today.getTime() && task.status === 'pending';
-      }).length,
-      byPriority: result.tasks.reduce((acc: any, task: any) => {
-        acc[task.priority] = (acc[task.priority] || 0) + 1;
-        return acc;
-      }, {}),
-    };
-
-    sendSuccess(res, { ...result, summary }, 'Follow-up tasks retrieved successfully');
-  }
-);
-
-/**
- * GET /api/follow-ups/:id
- * Get single follow-up task details
- */
-export const getFollowUp = asyncHandler(
-  async (req: AuthRequest, res: Response) => {
-    const context = getRequestContext(req);
-    const { id } = req.params;
-
-    const task = await FollowUpService.getFollowUpTaskById(
-      id,
-      new mongoose.Types.ObjectId(context.workplaceId)
-    );
-
-    if (!task) {
-      return sendError(res, 'NOT_FOUND', 'Follow-up task not found', 404);
+class FollowUpController {
+  /**
+   * Get follow-up tasks with filtering
+   */
+  async getFollowUpTasks(req: AuthRequest, res: Response) {
+    try {
+      // TODO: Implement follow-up tasks logic
+      res.json({
+        success: true,
+        message: 'Get follow-up tasks endpoint - implementation pending',
+        data: {
+          tasks: [],
+          summary: {
+            total: 0,
+            overdue: 0,
+            dueToday: 0,
+            byPriority: {}
+          },
+          pagination: {}
+        }
+      });
+    } catch (error) {
+      logger.error('Error getting follow-up tasks:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get follow-up tasks'
+      });
     }
-
-    sendSuccess(res, { task }, 'Follow-up task retrieved successfully');
   }
-);
 
-/**
- * PUT /api/follow-ups/:id
- * Update follow-up task details
- */
-export const updateFollowUp = asyncHandler(
-  async (req: AuthRequest, res: Response) => {
-    const context = getRequestContext(req);
-    const { id } = req.params;
-    const updateData = {
-      ...req.body,
-      updatedBy: context.userId,
-    };
-
-    const task = await FollowUpService.updateFollowUpTask(
-      id,
-      new mongoose.Types.ObjectId(context.workplaceId),
-      updateData,
-      context.userId
-    );
-
-    if (!task) {
-      return sendError(res, 'NOT_FOUND', 'Follow-up task not found', 404);
+  /**
+   * Create new follow-up task
+   */
+  async createFollowUpTask(req: AuthRequest, res: Response) {
+    try {
+      // TODO: Implement follow-up task creation logic
+      res.status(201).json({
+        success: true,
+        message: 'Create follow-up task endpoint - implementation pending',
+        data: {
+          followUpTask: {}
+        }
+      });
+    } catch (error) {
+      logger.error('Error creating follow-up task:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to create follow-up task'
+      });
     }
-
-    sendSuccess(res, { task }, 'Follow-up task updated successfully');
   }
-);
 
-/**
- * POST /api/follow-ups/:id/complete
- * Complete a follow-up task
- */
-export const completeFollowUp = asyncHandler(
-  async (req: AuthRequest, res: Response) => {
-    const context = getRequestContext(req);
-    const { id } = req.params;
-    const { outcome } = req.body;
-
-    const task = await FollowUpService.completeFollowUpTask(
-      new mongoose.Types.ObjectId(id),
-      { outcome },
-      context.userId,
-      new mongoose.Types.ObjectId(context.workplaceId)
-    );
-
-    if (!task) {
-      return sendError(res, 'NOT_FOUND', 'Follow-up task not found', 404);
+  /**
+   * Get single follow-up task
+   */
+  async getFollowUpTask(req: AuthRequest, res: Response) {
+    try {
+      // TODO: Implement get follow-up task logic
+      res.json({
+        success: true,
+        message: 'Get follow-up task endpoint - implementation pending',
+        data: {
+          task: {},
+          patient: {},
+          assignedPharmacist: {},
+          relatedRecords: {}
+        }
+      });
+    } catch (error) {
+      logger.error('Error getting follow-up task:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get follow-up task'
+      });
     }
-
-    sendSuccess(res, { task }, 'Follow-up task completed successfully');
   }
-);
 
-/**
- * POST /api/follow-ups/:id/convert-to-appointment
- * Convert follow-up task to appointment
- */
-export const convertToAppointment = asyncHandler(
-  async (req: AuthRequest, res: Response) => {
-    const context = getRequestContext(req);
-    const { id } = req.params;
-    const { scheduledDate, scheduledTime, duration, type, description } = req.body;
-
-    const result = await FollowUpService.convertToAppointment(
-      new mongoose.Types.ObjectId(id),
-      {
-        scheduledDate: new Date(scheduledDate),
-        scheduledTime,
-        duration,
-        type,
-        description,
-      },
-      context.userId,
-      new mongoose.Types.ObjectId(context.workplaceId)
-    );
-
-    if (!result) {
-      return sendError(res, 'NOT_FOUND', 'Follow-up task not found', 404);
+  /**
+   * Update follow-up task
+   */
+  async updateFollowUpTask(req: AuthRequest, res: Response) {
+    try {
+      // TODO: Implement follow-up task update logic
+      res.json({
+        success: true,
+        message: 'Update follow-up task endpoint - implementation pending',
+        data: {
+          task: {}
+        }
+      });
+    } catch (error) {
+      logger.error('Error updating follow-up task:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to update follow-up task'
+      });
     }
-
-    sendSuccess(res, result, 'Follow-up task converted to appointment successfully', 201);
   }
-);
 
-/**
- * GET /api/follow-ups/overdue
- * Get overdue follow-up tasks
- */
-export const getOverdueFollowUps = asyncHandler(
-  async (req: AuthRequest, res: Response) => {
-    const context = getRequestContext(req);
-    const { assignedTo } = req.query as any;
-
-    const result = await FollowUpService.getFollowUpTasks(
-      {
-        status: 'overdue',
-        assignedTo: assignedTo ? new mongoose.Types.ObjectId(assignedTo) : undefined,
-      },
-      {},
-      new mongoose.Types.ObjectId(context.workplaceId)
-    );
-
-    // Calculate summary by priority
-    const summary = {
-      total: result.tasks.length,
-      critical: result.tasks.filter((task: any) => task.priority === 'critical').length,
-      high: result.tasks.filter((task: any) => task.priority === 'high').length,
-      urgent: result.tasks.filter((task: any) => task.priority === 'urgent').length,
-    };
-
-    sendSuccess(res, { ...result, summary }, 'Overdue follow-up tasks retrieved successfully');
-  }
-);
-
-/**
- * POST /api/follow-ups/:id/escalate
- * Escalate follow-up task priority
- */
-export const escalateFollowUp = asyncHandler(
-  async (req: AuthRequest, res: Response) => {
-    const context = getRequestContext(req);
-    const { id } = req.params;
-    const { newPriority, reason } = req.body;
-
-    const task = await FollowUpService.escalateFollowUp(
-      new mongoose.Types.ObjectId(id),
-      { newPriority, reason },
-      context.userId,
-      new mongoose.Types.ObjectId(context.workplaceId)
-    );
-
-    if (!task) {
-      return sendError(res, 'NOT_FOUND', 'Follow-up task not found', 404);
+  /**
+   * Complete follow-up task
+   */
+  async completeFollowUpTask(req: AuthRequest, res: Response) {
+    try {
+      // TODO: Implement complete follow-up task logic
+      res.json({
+        success: true,
+        message: 'Complete follow-up task endpoint - implementation pending',
+        data: {
+          task: {}
+        }
+      });
+    } catch (error) {
+      logger.error('Error completing follow-up task:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to complete follow-up task'
+      });
     }
-
-    sendSuccess(res, { task }, 'Follow-up task escalated successfully');
   }
-);
 
-/**
- * GET /api/follow-ups/patient/:patientId
- * Get follow-up tasks for a specific patient
- */
-export const getPatientFollowUps = asyncHandler(
-  async (req: AuthRequest, res: Response) => {
-    const context = getRequestContext(req);
-    const { patientId } = req.params;
-    const { status, limit } = req.query as any;
-
-    const result = await FollowUpService.getFollowUpTasks(
-      {
-        patientId: new mongoose.Types.ObjectId(patientId),
-        status,
-      },
-      {
-        limit: parseInt(limit) || 10,
-      },
-      new mongoose.Types.ObjectId(context.workplaceId)
-    );
-
-    sendSuccess(res, result, 'Patient follow-up tasks retrieved successfully');
+  /**
+   * Convert follow-up task to appointment
+   */
+  async convertToAppointment(req: AuthRequest, res: Response) {
+    try {
+      // TODO: Implement convert to appointment logic
+      res.status(201).json({
+        success: true,
+        message: 'Convert to appointment endpoint - implementation pending',
+        data: {
+          appointment: {},
+          task: {}
+        }
+      });
+    } catch (error) {
+      logger.error('Error converting follow-up to appointment:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to convert follow-up to appointment'
+      });
+    }
   }
-);
+
+  /**
+   * Get overdue follow-up tasks
+   */
+  async getOverdueFollowUps(req: AuthRequest, res: Response) {
+    try {
+      // TODO: Implement overdue follow-ups logic
+      res.json({
+        success: true,
+        message: 'Get overdue follow-ups endpoint - implementation pending',
+        data: {
+          tasks: [],
+          summary: {
+            total: 0,
+            critical: 0,
+            high: 0
+          }
+        }
+      });
+    } catch (error) {
+      logger.error('Error getting overdue follow-ups:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get overdue follow-ups'
+      });
+    }
+  }
+
+  /**
+   * Escalate follow-up task priority
+   */
+  async escalateFollowUp(req: AuthRequest, res: Response) {
+    try {
+      // TODO: Implement escalate follow-up logic
+      res.json({
+        success: true,
+        message: 'Escalate follow-up endpoint - implementation pending',
+        data: {
+          task: {}
+        }
+      });
+    } catch (error) {
+      logger.error('Error escalating follow-up:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to escalate follow-up'
+      });
+    }
+  }
+
+  /**
+   * Get follow-up tasks for a specific patient
+   */
+  async getPatientFollowUps(req: AuthRequest, res: Response) {
+    try {
+      // TODO: Implement patient follow-ups logic
+      res.json({
+        success: true,
+        message: 'Get patient follow-ups endpoint - implementation pending',
+        data: {
+          tasks: [],
+          summary: {}
+        }
+      });
+    } catch (error) {
+      logger.error('Error getting patient follow-ups:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get patient follow-ups'
+      });
+    }
+  }
+
+  /**
+   * Get follow-up dashboard summary
+   */
+  async getDashboardSummary(req: AuthRequest, res: Response) {
+    try {
+      // TODO: Implement dashboard summary logic
+      res.json({
+        success: true,
+        message: 'Get dashboard summary endpoint - implementation pending',
+        data: {
+          summary: {
+            totalTasks: 0,
+            overdueTasks: 0,
+            dueTodayTasks: 0,
+            completedThisWeek: 0,
+            byPriority: {},
+            byType: {},
+            recentActivity: []
+          }
+        }
+      });
+    } catch (error) {
+      logger.error('Error getting dashboard summary:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get dashboard summary'
+      });
+    }
+  }
+
+  /**
+   * Create follow-up task from clinical intervention
+   */
+  async createFromIntervention(req: AuthRequest, res: Response) {
+    try {
+      // TODO: Implement create from intervention logic
+      res.status(201).json({
+        success: true,
+        message: 'Create from intervention endpoint - implementation pending',
+        data: {
+          followUpTask: {}
+        }
+      });
+    } catch (error) {
+      logger.error('Error creating follow-up from intervention:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to create follow-up from intervention'
+      });
+    }
+  }
+
+  /**
+   * Create follow-up task from lab result
+   */
+  async createFromLabResult(req: AuthRequest, res: Response) {
+    try {
+      // TODO: Implement create from lab result logic
+      res.status(201).json({
+        success: true,
+        message: 'Create from lab result endpoint - implementation pending',
+        data: {
+          followUpTask: {}
+        }
+      });
+    } catch (error) {
+      logger.error('Error creating follow-up from lab result:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to create follow-up from lab result'
+      });
+    }
+  }
+
+  /**
+   * Create follow-up task from medication start
+   */
+  async createFromMedicationStart(req: AuthRequest, res: Response) {
+    try {
+      // TODO: Implement create from medication start logic
+      res.status(201).json({
+        success: true,
+        message: 'Create from medication start endpoint - implementation pending',
+        data: {
+          followUpTask: {}
+        }
+      });
+    } catch (error) {
+      logger.error('Error creating follow-up from medication start:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to create follow-up from medication start'
+      });
+    }
+  }
+
+  /**
+   * Get follow-up analytics summary
+   */
+  async getAnalyticsSummary(req: AuthRequest, res: Response) {
+    try {
+      // TODO: Implement analytics summary logic
+      res.json({
+        success: true,
+        message: 'Get analytics summary endpoint - implementation pending',
+        data: {
+          summary: {
+            totalTasks: 0,
+            completionRate: 0,
+            averageTimeToCompletion: 0,
+            overdueCount: 0
+          },
+          byType: {},
+          byPriority: {},
+          byTrigger: {},
+          trends: {}
+        }
+      });
+    } catch (error) {
+      logger.error('Error getting analytics summary:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get analytics summary'
+      });
+    }
+  }
+}
+
+export default new FollowUpController();
