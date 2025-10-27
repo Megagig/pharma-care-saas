@@ -4,273 +4,115 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
+const PatientEngagementMonitoringService_1 = require("../services/PatientEngagementMonitoringService");
+const performanceMonitoring_1 = require("../utils/performanceMonitoring");
+const logger_1 = __importDefault(require("../utils/logger"));
 const mongoose_1 = __importDefault(require("mongoose"));
-const metrics_1 = require("../utils/metrics");
 const router = express_1.default.Router();
-const healthCheckDuration = new metrics_1.promClient.Histogram({
-    name: 'PharmacyCopilot_health_check_duration_seconds',
-    help: 'Duration of health checks in seconds',
-    labelNames: ['check_type'],
-});
-const healthCheckStatus = new metrics_1.promClient.Gauge({
-    name: 'PharmacyCopilot_health_check_status',
-    help: 'Status of health checks (1 = healthy, 0 = unhealthy)',
-    labelNames: ['check_type'],
-});
 router.get('/', async (req, res) => {
-    const startTime = Date.now();
-    const checks = [];
     try {
-        const dbCheckStart = Date.now();
-        try {
-            await mongoose_1.default.connection.db.admin().ping();
-            const dbDuration = Date.now() - dbCheckStart;
-            checks.push({
-                name: 'database',
-                status: 'healthy',
-                message: 'MongoDB connection is healthy',
-                duration: dbDuration,
-                details: {
-                    readyState: mongoose_1.default.connection.readyState,
-                    host: mongoose_1.default.connection.host,
-                    port: mongoose_1.default.connection.port,
-                },
-            });
-            healthCheckStatus.set({ check_type: 'database' }, 1);
-            healthCheckDuration.observe({ check_type: 'database' }, dbDuration / 1000);
-        }
-        catch (error) {
-            checks.push({
-                name: 'database',
-                status: 'unhealthy',
-                message: 'MongoDB connection failed',
-                details: { error: error instanceof Error ? error.message : 'Unknown error' },
-            });
-            healthCheckStatus.set({ check_type: 'database' }, 0);
-        }
-        const memoryUsage = process.memoryUsage();
-        const memoryCheckStart = Date.now();
-        const memoryThreshold = 1024 * 1024 * 1024;
-        const isMemoryHealthy = memoryUsage.heapUsed < memoryThreshold;
-        checks.push({
-            name: 'memory',
-            status: isMemoryHealthy ? 'healthy' : 'unhealthy',
-            message: isMemoryHealthy ? 'Memory usage is within limits' : 'Memory usage is high',
-            duration: Date.now() - memoryCheckStart,
-            details: {
-                heapUsed: Math.round(memoryUsage.heapUsed / 1024 / 1024),
-                heapTotal: Math.round(memoryUsage.heapTotal / 1024 / 1024),
-                external: Math.round(memoryUsage.external / 1024 / 1024),
-                rss: Math.round(memoryUsage.rss / 1024 / 1024),
-            },
-        });
-        healthCheckStatus.set({ check_type: 'memory' }, isMemoryHealthy ? 1 : 0);
-        const eventLoopStart = Date.now();
-        await new Promise(resolve => setImmediate(resolve));
-        const eventLoopLag = Date.now() - eventLoopStart;
-        const isEventLoopHealthy = eventLoopLag < 100;
-        checks.push({
-            name: 'event_loop',
-            status: isEventLoopHealthy ? 'healthy' : 'unhealthy',
-            message: isEventLoopHealthy ? 'Event loop is responsive' : 'Event loop lag detected',
-            duration: eventLoopLag,
-            details: {
-                lag: eventLoopLag,
-                threshold: 100,
-            },
-        });
-        healthCheckStatus.set({ check_type: 'event_loop' }, isEventLoopHealthy ? 1 : 0);
-        const envCheckStart = Date.now();
-        const requiredEnvVars = [
-            'NODE_ENV',
-            'MONGODB_URI',
-            'JWT_SECRET',
-            'RESEND_API_KEY',
-        ];
-        const missingEnvVars = requiredEnvVars.filter(envVar => !process.env[envVar]);
-        const isEnvHealthy = missingEnvVars.length === 0;
-        checks.push({
-            name: 'environment',
-            status: isEnvHealthy ? 'healthy' : 'unhealthy',
-            message: isEnvHealthy ? 'All required environment variables are set' : 'Missing required environment variables',
-            duration: Date.now() - envCheckStart,
-            details: {
-                missing: missingEnvVars,
-                nodeEnv: process.env.NODE_ENV,
-            },
-        });
-        healthCheckStatus.set({ check_type: 'environment' }, isEnvHealthy ? 1 : 0);
-        const healthyChecks = checks.filter(check => check.status === 'healthy').length;
-        const unhealthyChecks = checks.filter(check => check.status === 'unhealthy').length;
-        const overallStatus = unhealthyChecks === 0 ? 'healthy' : 'unhealthy';
-        const response = {
-            status: overallStatus,
+        const startTime = Date.now();
+        const checks = {
             timestamp: new Date().toISOString(),
             uptime: process.uptime(),
-            version: process.env.npm_package_version || '1.0.0',
+            memory: process.memoryUsage(),
+            database: mongoose_1.default.connection.readyState === 1 ? 'connected' : 'disconnected',
             environment: process.env.NODE_ENV || 'development',
-            checks,
-            summary: {
-                total: checks.length,
-                healthy: healthyChecks,
-                unhealthy: unhealthyChecks,
-            },
         };
-        healthCheckStatus.set({ check_type: 'overall' }, overallStatus === 'healthy' ? 1 : 0);
-        healthCheckDuration.observe({ check_type: 'overall' }, (Date.now() - startTime) / 1000);
-        const statusCode = overallStatus === 'healthy' ? 200 : 503;
-        res.status(statusCode).json(response);
+        const responseTime = Date.now() - startTime;
+        res.status(200).json({
+            status: 'healthy',
+            responseTime,
+            checks,
+        });
     }
     catch (error) {
-        const response = {
-            status: 'unhealthy',
-            timestamp: new Date().toISOString(),
-            uptime: process.uptime(),
-            version: process.env.npm_package_version || '1.0.0',
-            environment: process.env.NODE_ENV || 'development',
-            checks: [{
-                    name: 'health_check',
-                    status: 'unhealthy',
-                    message: 'Health check failed',
-                    details: { error: error instanceof Error ? error.message : 'Unknown error' },
-                }],
-            summary: {
-                total: 1,
-                healthy: 0,
-                unhealthy: 1,
-            },
-        };
-        healthCheckStatus.set({ check_type: 'overall' }, 0);
-        res.status(503).json(response);
-    }
-});
-router.get('/detailed', async (req, res) => {
-    const startTime = Date.now();
-    const checks = [];
-    try {
-        const collectionsCheckStart = Date.now();
-        try {
-            const collections = await mongoose_1.default.connection.db.listCollections().toArray();
-            const requiredCollections = ['users', 'workplaces', 'subscriptions', 'invitations'];
-            const existingCollections = collections.map(c => c.name);
-            const missingCollections = requiredCollections.filter(c => !existingCollections.includes(c));
-            checks.push({
-                name: 'database_collections',
-                status: missingCollections.length === 0 ? 'healthy' : 'unhealthy',
-                message: missingCollections.length === 0 ? 'All required collections exist' : 'Missing required collections',
-                duration: Date.now() - collectionsCheckStart,
-                details: {
-                    existing: existingCollections,
-                    missing: missingCollections,
-                    total: collections.length,
-                },
-            });
-        }
-        catch (error) {
-            checks.push({
-                name: 'database_collections',
-                status: 'unhealthy',
-                message: 'Failed to check database collections',
-                details: { error: error instanceof Error ? error.message : 'Unknown error' },
-            });
-        }
-        const emailCheckStart = Date.now();
-        try {
-            const hasEmailConfig = !!(process.env.RESEND_API_KEY && process.env.FROM_EMAIL);
-            checks.push({
-                name: 'email_service',
-                status: hasEmailConfig ? 'healthy' : 'unhealthy',
-                message: hasEmailConfig ? 'Email service configuration is present' : 'Email service not configured',
-                duration: Date.now() - emailCheckStart,
-                details: {
-                    hasApiKey: !!process.env.RESEND_API_KEY,
-                    hasFromEmail: !!process.env.FROM_EMAIL,
-                },
-            });
-        }
-        catch (error) {
-            checks.push({
-                name: 'email_service',
-                status: 'unhealthy',
-                message: 'Email service check failed',
-                details: { error: error instanceof Error ? error.message : 'Unknown error' },
-            });
-        }
-        const fsCheckStart = Date.now();
-        try {
-            const fs = require('fs').promises;
-            const tempFile = '/tmp/PharmacyCopilot_health_check';
-            await fs.writeFile(tempFile, 'health check');
-            await fs.unlink(tempFile);
-            checks.push({
-                name: 'file_system',
-                status: 'healthy',
-                message: 'File system is writable',
-                duration: Date.now() - fsCheckStart,
-            });
-        }
-        catch (error) {
-            checks.push({
-                name: 'file_system',
-                status: 'unhealthy',
-                message: 'File system check failed',
-                details: { error: error instanceof Error ? error.message : 'Unknown error' },
-            });
-        }
-        const healthyChecks = checks.filter(check => check.status === 'healthy').length;
-        const unhealthyChecks = checks.filter(check => check.status === 'unhealthy').length;
-        const overallStatus = unhealthyChecks === 0 ? 'healthy' : 'unhealthy';
-        const response = {
-            status: overallStatus,
-            timestamp: new Date().toISOString(),
-            uptime: process.uptime(),
-            version: process.env.npm_package_version || '1.0.0',
-            environment: process.env.NODE_ENV || 'development',
-            checks,
-            summary: {
-                total: checks.length,
-                healthy: healthyChecks,
-                unhealthy: unhealthyChecks,
-            },
-        };
-        const statusCode = overallStatus === 'healthy' ? 200 : 503;
-        res.status(statusCode).json(response);
-    }
-    catch (error) {
+        logger_1.default.error('Health check failed:', error);
         res.status(503).json({
             status: 'unhealthy',
-            timestamp: new Date().toISOString(),
-            uptime: process.uptime(),
-            version: process.env.npm_package_version || '1.0.0',
-            environment: process.env.NODE_ENV || 'development',
-            checks: [{
-                    name: 'detailed_health_check',
+            error: error instanceof Error ? error.message : 'Unknown error',
+        });
+    }
+});
+router.get('/patient-engagement', async (req, res) => {
+    try {
+        const startTime = Date.now();
+        const services = [
+            'appointment_service',
+            'followup_service',
+            'reminder_service',
+            'database',
+            'queue_service',
+        ];
+        const healthChecks = await Promise.all(services.map(async (service) => {
+            try {
+                return await PatientEngagementMonitoringService_1.patientEngagementMonitoring.performHealthCheck(service);
+            }
+            catch (error) {
+                return {
+                    service,
                     status: 'unhealthy',
-                    message: 'Detailed health check failed',
+                    responseTime: 0,
                     details: { error: error instanceof Error ? error.message : 'Unknown error' },
-                }],
+                    timestamp: new Date(),
+                };
+            }
+        }));
+        const unhealthyServices = healthChecks.filter(h => h.status === 'unhealthy');
+        const degradedServices = healthChecks.filter(h => h.status === 'degraded');
+        let overallStatus = 'healthy';
+        if (unhealthyServices.length > 0) {
+            overallStatus = 'unhealthy';
+        }
+        else if (degradedServices.length > 0) {
+            overallStatus = 'degraded';
+        }
+        const responseTime = Date.now() - startTime;
+        const statusCode = overallStatus === 'healthy' ? 200 : overallStatus === 'degraded' ? 200 : 503;
+        res.status(statusCode).json({
+            status: overallStatus,
+            responseTime,
+            services: healthChecks,
             summary: {
-                total: 1,
-                healthy: 0,
-                unhealthy: 1,
+                total: services.length,
+                healthy: healthChecks.filter(h => h.status === 'healthy').length,
+                degraded: degradedServices.length,
+                unhealthy: unhealthyServices.length,
             },
+        });
+    }
+    catch (error) {
+        logger_1.default.error('Patient engagement health check failed:', error);
+        res.status(503).json({
+            status: 'unhealthy',
+            error: error instanceof Error ? error.message : 'Unknown error',
         });
     }
 });
 router.get('/ready', async (req, res) => {
     try {
-        await mongoose_1.default.connection.db.admin().ping();
-        res.status(200).json({
-            status: 'ready',
-            timestamp: new Date().toISOString(),
-            message: 'Application is ready to serve requests',
-        });
+        const checks = {
+            database: mongoose_1.default.connection.readyState === 1,
+            memory: process.memoryUsage().heapUsed < 1024 * 1024 * 1024,
+        };
+        const isReady = Object.values(checks).every(Boolean);
+        if (isReady) {
+            res.status(200).json({
+                status: 'ready',
+                checks,
+            });
+        }
+        else {
+            res.status(503).json({
+                status: 'not_ready',
+                checks,
+            });
+        }
     }
     catch (error) {
+        logger_1.default.error('Readiness check failed:', error);
         res.status(503).json({
             status: 'not_ready',
-            timestamp: new Date().toISOString(),
-            message: 'Application is not ready to serve requests',
             error: error instanceof Error ? error.message : 'Unknown error',
         });
     }
@@ -280,9 +122,136 @@ router.get('/live', (req, res) => {
         status: 'alive',
         timestamp: new Date().toISOString(),
         uptime: process.uptime(),
-        pid: process.pid,
-        message: 'Application is alive',
     });
+});
+router.get('/metrics', async (req, res) => {
+    try {
+        const startTime = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        const endTime = new Date();
+        const workplaceId = req.query.workplaceId;
+        const dashboardData = await PatientEngagementMonitoringService_1.patientEngagementMonitoring.getDashboardData(startTime, endTime, workplaceId);
+        const performanceReport = performanceMonitoring_1.performanceCollector.generatePerformanceReport(startTime, endTime);
+        res.json({
+            patientEngagement: dashboardData,
+            systemPerformance: performanceReport,
+            timestamp: new Date().toISOString(),
+        });
+    }
+    catch (error) {
+        logger_1.default.error('Metrics endpoint failed:', error);
+        res.status(500).json({
+            error: error instanceof Error ? error.message : 'Unknown error',
+        });
+    }
+});
+router.get('/errors', async (req, res) => {
+    try {
+        const startTime = req.query.startTime
+            ? new Date(req.query.startTime)
+            : new Date(Date.now() - 24 * 60 * 60 * 1000);
+        const endTime = req.query.endTime
+            ? new Date(req.query.endTime)
+            : new Date();
+        const workplaceId = req.query.workplaceId;
+        const errorAnalysis = PatientEngagementMonitoringService_1.patientEngagementMonitoring.getErrorAnalysis(startTime, endTime, workplaceId);
+        res.json({
+            ...errorAnalysis,
+            timeRange: {
+                start: startTime.toISOString(),
+                end: endTime.toISOString(),
+            },
+        });
+    }
+    catch (error) {
+        logger_1.default.error('Error analysis endpoint failed:', error);
+        res.status(500).json({
+            error: error instanceof Error ? error.message : 'Unknown error',
+        });
+    }
+});
+router.get('/alerts', async (req, res) => {
+    try {
+        const dashboardData = await PatientEngagementMonitoringService_1.patientEngagementMonitoring.getDashboardData();
+        res.json({
+            activeAlerts: dashboardData.alerts,
+            summary: {
+                total: dashboardData.alerts.length,
+                critical: dashboardData.alerts.filter(a => a.severity === 'critical').length,
+                high: dashboardData.alerts.filter(a => a.severity === 'high').length,
+                medium: dashboardData.alerts.filter(a => a.severity === 'medium').length,
+                low: dashboardData.alerts.filter(a => a.severity === 'low').length,
+            },
+        });
+    }
+    catch (error) {
+        logger_1.default.error('Alerts endpoint failed:', error);
+        res.status(500).json({
+            error: error instanceof Error ? error.message : 'Unknown error',
+        });
+    }
+});
+router.post('/alerts/:alertId/resolve', (req, res) => {
+    try {
+        const { alertId } = req.params;
+        const resolved = PatientEngagementMonitoringService_1.patientEngagementMonitoring.resolveAlert(alertId);
+        if (resolved) {
+            res.json({
+                success: true,
+                message: 'Alert resolved successfully',
+            });
+        }
+        else {
+            res.status(404).json({
+                success: false,
+                message: 'Alert not found or already resolved',
+            });
+        }
+    }
+    catch (error) {
+        logger_1.default.error('Alert resolution failed:', error);
+        res.status(500).json({
+            success: false,
+            error: error instanceof Error ? error.message : 'Unknown error',
+        });
+    }
+});
+router.get('/system', (req, res) => {
+    try {
+        const memUsage = process.memoryUsage();
+        const cpuUsage = process.cpuUsage();
+        res.json({
+            process: {
+                pid: process.pid,
+                uptime: process.uptime(),
+                version: process.version,
+                platform: process.platform,
+                arch: process.arch,
+            },
+            memory: {
+                rss: Math.round(memUsage.rss / 1024 / 1024),
+                heapTotal: Math.round(memUsage.heapTotal / 1024 / 1024),
+                heapUsed: Math.round(memUsage.heapUsed / 1024 / 1024),
+                external: Math.round(memUsage.external / 1024 / 1024),
+                heapUsagePercent: Math.round((memUsage.heapUsed / memUsage.heapTotal) * 100),
+            },
+            cpu: {
+                user: Math.round(cpuUsage.user / 1000),
+                system: Math.round(cpuUsage.system / 1000),
+            },
+            environment: {
+                nodeEnv: process.env.NODE_ENV || 'development',
+                port: process.env.PORT || '5000',
+                mongoUri: process.env.MONGO_URI ? 'configured' : 'not_configured',
+                redisHost: process.env.REDIS_HOST || 'localhost',
+            },
+        });
+    }
+    catch (error) {
+        logger_1.default.error('System info endpoint failed:', error);
+        res.status(500).json({
+            error: error instanceof Error ? error.message : 'Unknown error',
+        });
+    }
 });
 exports.default = router;
 //# sourceMappingURL=healthRoutes.js.map

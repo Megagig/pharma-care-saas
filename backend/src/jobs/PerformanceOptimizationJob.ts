@@ -5,11 +5,11 @@
  */
 
 import { Job } from 'bull';
-import PatientEngagementPerformanceService from '../services/PatientEngagementPerformanceService';
-import PatientEngagementIndexOptimizer from '../services/PatientEngagementIndexOptimizer';
+import patientEngagementPerformanceService from '../services/PatientEngagementPerformanceService';
+import patientEngagementIndexOptimizer from '../services/PatientEngagementIndexOptimizer';
 import PerformanceCacheService from '../services/PerformanceCacheService';
 import ConnectionPoolService from '../services/ConnectionPoolService';
-import DatabaseOptimizationService from '../services/DatabaseOptimizationService';
+import databaseOptimizationService from '../services/DatabaseOptimizationService';
 import logger from '../utils/logger';
 
 export interface PerformanceOptimizationJobData {
@@ -40,18 +40,18 @@ export interface PerformanceReport {
  * Background job processor for performance optimization
  */
 export class PerformanceOptimizationJobProcessor {
-  private performanceService: PatientEngagementPerformanceService;
-  private indexOptimizer: PatientEngagementIndexOptimizer;
-  private cacheService: PerformanceCacheService;
-  private connectionPool: ConnectionPoolService;
-  private dbOptimizer: DatabaseOptimizationService;
+  private performanceService: any;
+  private indexOptimizer: any;
+  private cacheService: any;
+  private connectionPool: any;
+  private dbOptimizer: any;
 
   constructor() {
-    this.performanceService = PatientEngagementPerformanceService.getInstance();
-    this.indexOptimizer = PatientEngagementIndexOptimizer.getInstance();
+    this.performanceService = patientEngagementPerformanceService;
+    this.indexOptimizer = patientEngagementIndexOptimizer;
     this.cacheService = PerformanceCacheService.getInstance();
     this.connectionPool = ConnectionPoolService.getInstance();
-    this.dbOptimizer = DatabaseOptimizationService.getInstance();
+    this.dbOptimizer = databaseOptimizationService;
   }
 
   /**
@@ -252,7 +252,7 @@ export class PerformanceOptimizationJobProcessor {
 
       // Identify and reconnect failed connections if not dry run
       const failedConnections = Object.entries(healthStatus)
-        .filter(([_, status]) => !status.healthy)
+        .filter(([_, status]) => !(status as any).healthy)
         .map(([name]) => name);
 
       if (failedConnections.length > 0 && !options.dryRun) {

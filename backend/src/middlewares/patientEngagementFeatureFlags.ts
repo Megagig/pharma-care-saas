@@ -74,8 +74,8 @@ export const checkFeatureFlag = (featureFlag: PatientEngagementFlag) => {
       });
 
       // Add feature flag info to request for downstream use
-      req.featureFlags = req.featureFlags || {};
-      req.featureFlags[featureFlag] = evaluation;
+      req.featureFlags = req.featureFlags || {} as any;
+      (req.featureFlags as any)[featureFlag] = evaluation;
 
       next();
     } catch (error) {
@@ -167,7 +167,7 @@ export const requireAnyFeature = (featureFlags: PatientEngagementFlag[]) => {
         )
       );
 
-      const enabledFlags = evaluations.filter(eval => eval.enabled);
+      const enabledFlags = evaluations.filter(evaluation => evaluation.enabled);
 
       if (enabledFlags.length === 0) {
         logger.warn(`Multiple feature flag check failed`, {
@@ -185,9 +185,9 @@ export const requireAnyFeature = (featureFlags: PatientEngagementFlag[]) => {
       }
 
       // Add all evaluations to request
-      req.featureFlags = req.featureFlags || {};
+      req.featureFlags = req.featureFlags || {} as any;
       featureFlags.forEach((flag, index) => {
-        req.featureFlags![flag] = evaluations[index];
+        (req.featureFlags as any)![flag] = evaluations[index];
       });
 
       next();
@@ -249,9 +249,9 @@ export const requireAllFeatures = (featureFlags: PatientEngagementFlag[]) => {
       }
 
       // Add all evaluations to request
-      req.featureFlags = req.featureFlags || {};
+      req.featureFlags = req.featureFlags || {} as any;
       featureFlags.forEach((flag, index) => {
-        req.featureFlags![flag] = evaluations[index];
+        (req.featureFlags as any)![flag] = evaluations[index];
       });
 
       next();
@@ -289,14 +289,8 @@ export const isPatientEngagementFeatureEnabled = async (
 
 /**
  * Extend AuthRequest type to include feature flag evaluations
+ * Note: Using the existing featureFlags property from config/featureFlags.ts
  */
-declare global {
-  namespace Express {
-    interface Request {
-      featureFlags?: Record<string, any>;
-    }
-  }
-}
 
 export default {
   checkFeatureFlag,

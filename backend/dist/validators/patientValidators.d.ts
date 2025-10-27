@@ -61,8 +61,8 @@ export declare const createPatientSchema: z.ZodObject<{
         snomedId: z.ZodOptional<z.ZodString>;
         onsetDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
         status: z.ZodOptional<z.ZodEnum<{
-            active: "active";
             resolved: "resolved";
+            active: "active";
             remission: "remission";
         }>>;
         notes: z.ZodOptional<z.ZodString>;
@@ -182,8 +182,8 @@ export declare const updatePatientSchema: z.ZodObject<{
         snomedId: z.ZodOptional<z.ZodString>;
         onsetDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
         status: z.ZodOptional<z.ZodEnum<{
-            active: "active";
             resolved: "resolved";
+            active: "active";
             remission: "remission";
         }>>;
         notes: z.ZodOptional<z.ZodString>;
@@ -292,8 +292,8 @@ export declare const createConditionSchema: z.ZodObject<{
     snomedId: z.ZodOptional<z.ZodString>;
     onsetDate: z.ZodOptional<z.ZodString>;
     status: z.ZodDefault<z.ZodEnum<{
-        active: "active";
         resolved: "resolved";
+        active: "active";
         remission: "remission";
     }>>;
     notes: z.ZodOptional<z.ZodString>;
@@ -303,8 +303,8 @@ export declare const updateConditionSchema: z.ZodObject<{
     snomedId: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     onsetDate: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     status: z.ZodOptional<z.ZodDefault<z.ZodEnum<{
-        active: "active";
         resolved: "resolved";
+        active: "active";
         remission: "remission";
     }>>>;
     notes: z.ZodOptional<z.ZodOptional<z.ZodString>>;

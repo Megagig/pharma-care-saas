@@ -49,6 +49,7 @@ const UsageAlertCronService_1 = __importDefault(require("./services/UsageAlertCr
 const EmailDeliveryCronService_1 = require("./services/EmailDeliveryCronService");
 const communicationSocketService_1 = __importDefault(require("./services/communicationSocketService"));
 const socketNotificationService_1 = __importDefault(require("./services/socketNotificationService"));
+const AppointmentSocketService_1 = __importDefault(require("./services/AppointmentSocketService"));
 const QueueService_1 = __importDefault(require("./services/QueueService"));
 require("./models/Medication");
 require("./models/Conversation");
@@ -105,6 +106,7 @@ async function initializeServer() {
     });
     const communicationSocketService = new communicationSocketService_1.default(io);
     const socketNotificationService = new socketNotificationService_1.default(io);
+    const appointmentSocketService = new AppointmentSocketService_1.default(io);
     const { initializeChatSocketService } = await Promise.resolve().then(() => __importStar(require('./services/chat/ChatSocketService')));
     const { initializePresenceModel } = await Promise.resolve().then(() => __importStar(require('./models/chat/Presence')));
     const Redis = (await Promise.resolve().then(() => __importStar(require('ioredis')))).default;
@@ -127,6 +129,7 @@ async function initializeServer() {
     const chatSocketService = initializeChatSocketService(io);
     app_1.default.set('communicationSocket', communicationSocketService);
     app_1.default.set('socketNotification', socketNotificationService);
+    app_1.default.set('appointmentSocket', appointmentSocketService);
     app_1.default.set('chatSocket', chatSocketService);
     const server = httpServer.listen(PORT, () => {
         console.log(`🚀 Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);

@@ -164,7 +164,7 @@ export function buildAppointmentAnalyticsPipeline(
     };
 
     if (['hour', 'day', 'week', 'month'].includes(options.groupBy)) {
-      groupStage._id = buildTimeGroupStage(options.groupBy as any).._id;
+      groupStage._id = buildTimeGroupStage(options.groupBy as any)._id;
       groupStage.date = buildTimeGroupStage(options.groupBy as any).date;
     } else if (options.groupBy === 'pharmacist') {
       groupStage._id = '$assignedTo';
@@ -510,7 +510,7 @@ export function buildCapacityAnalyticsPipeline(
     });
   }
 
-  pipeline.push({ $lookup: appointmentLookup });
+  pipeline.push({ $lookup: appointmentLookup as any });
 
   // Calculate capacity metrics
   pipeline.push({

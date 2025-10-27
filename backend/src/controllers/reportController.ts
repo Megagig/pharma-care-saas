@@ -26,7 +26,7 @@ export const generateAppointmentReport = async (req: AuthRequest, res: Response)
 
     // Validate required fields
     if (!workplaceId) {
-      return sendError(res, 'Workplace ID is required', 400);
+      return sendError(res, 'BAD_REQUEST', 'Workplace ID is required', 400);
     }
 
     // Default to last 30 days if no date range provided
@@ -39,7 +39,7 @@ export const generateAppointmentReport = async (req: AuthRequest, res: Response)
 
     // Validate date range
     if (startDate > endDate) {
-      return sendError(res, 'Start date cannot be after end date', 400);
+      return sendError(res, 'BAD_REQUEST', 'Start date cannot be after end date', 400);
     }
 
     const options: ReportOptions = {
@@ -86,7 +86,7 @@ export const generateAppointmentReport = async (req: AuthRequest, res: Response)
         mimeType = 'text/csv';
         break;
       default:
-        return sendError(res, 'Invalid format. Supported formats: pdf, excel, csv', 400);
+        return sendError(res, 'BAD_REQUEST', 'Invalid format. Supported formats: pdf, excel, csv', 400);
     }
 
     res.setHeader('Content-Type', mimeType);
@@ -102,7 +102,7 @@ export const generateAppointmentReport = async (req: AuthRequest, res: Response)
     });
   } catch (error) {
     logger.error('Error generating appointment report:', error);
-    sendError(res, 'Failed to generate appointment report', 500);
+    sendError(res, 'SERVER_ERROR', 'Failed to generate appointment report', 500);
   }
 };
 
@@ -123,7 +123,7 @@ export const generateFollowUpReport = async (req: AuthRequest, res: Response) =>
     } = req.body;
 
     if (!workplaceId) {
-      return sendError(res, 'Workplace ID is required', 400);
+      return sendError(res, 'BAD_REQUEST', 'Workplace ID is required', 400);
     }
 
     const startDate = startDateParam 
@@ -134,7 +134,7 @@ export const generateFollowUpReport = async (req: AuthRequest, res: Response) =>
       : new Date();
 
     if (startDate > endDate) {
-      return sendError(res, 'Start date cannot be after end date', 400);
+      return sendError(res, 'BAD_REQUEST', 'Start date cannot be after end date', 400);
     }
 
     const options: ReportOptions = {
@@ -190,7 +190,7 @@ export const generateFollowUpReport = async (req: AuthRequest, res: Response) =>
     });
   } catch (error) {
     logger.error('Error generating follow-up report:', error);
-    sendError(res, 'Failed to generate follow-up report', 500);
+    sendError(res, 'SERVER_ERROR', 'Failed to generate follow-up report', 500);
   }
 };
 
@@ -211,7 +211,7 @@ export const generateReminderReport = async (req: AuthRequest, res: Response) =>
     } = req.body;
 
     if (!workplaceId) {
-      return sendError(res, 'Workplace ID is required', 400);
+      return sendError(res, 'BAD_REQUEST', 'Workplace ID is required', 400);
     }
 
     const startDate = startDateParam 
@@ -222,7 +222,7 @@ export const generateReminderReport = async (req: AuthRequest, res: Response) =>
       : new Date();
 
     if (startDate > endDate) {
-      return sendError(res, 'Start date cannot be after end date', 400);
+      return sendError(res, 'BAD_REQUEST', 'Start date cannot be after end date', 400);
     }
 
     const options: ReportOptions = {
@@ -278,7 +278,7 @@ export const generateReminderReport = async (req: AuthRequest, res: Response) =>
     });
   } catch (error) {
     logger.error('Error generating reminder report:', error);
-    sendError(res, 'Failed to generate reminder report', 500);
+    sendError(res, 'SERVER_ERROR', 'Failed to generate reminder report', 500);
   }
 };
 
@@ -299,7 +299,7 @@ export const generateCapacityReport = async (req: AuthRequest, res: Response) =>
     } = req.body;
 
     if (!workplaceId) {
-      return sendError(res, 'Workplace ID is required', 400);
+      return sendError(res, 'BAD_REQUEST', 'Workplace ID is required', 400);
     }
 
     const startDate = startDateParam 
@@ -310,7 +310,7 @@ export const generateCapacityReport = async (req: AuthRequest, res: Response) =>
       : new Date();
 
     if (startDate > endDate) {
-      return sendError(res, 'Start date cannot be after end date', 400);
+      return sendError(res, 'BAD_REQUEST', 'Start date cannot be after end date', 400);
     }
 
     const options: ReportOptions = {
@@ -366,7 +366,7 @@ export const generateCapacityReport = async (req: AuthRequest, res: Response) =>
     });
   } catch (error) {
     logger.error('Error generating capacity report:', error);
-    sendError(res, 'Failed to generate capacity report', 500);
+    sendError(res, 'SERVER_ERROR', 'Failed to generate capacity report', 500);
   }
 };
 
@@ -393,28 +393,28 @@ export const emailReport = async (req: AuthRequest, res: Response) => {
 
     // Validate required fields
     if (!workplaceId) {
-      return sendError(res, 'Workplace ID is required', 400);
+      return sendError(res, 'BAD_REQUEST', 'Workplace ID is required', 400);
     }
 
     if (!reportType) {
-      return sendError(res, 'Report type is required', 400);
+      return sendError(res, 'BAD_REQUEST', 'Report type is required', 400);
     }
 
     if (!recipientEmails || !Array.isArray(recipientEmails) || recipientEmails.length === 0) {
-      return sendError(res, 'At least one recipient email is required', 400);
+      return sendError(res, 'BAD_REQUEST', 'At least one recipient email is required', 400);
     }
 
     // Validate email addresses
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const invalidEmails = recipientEmails.filter(email => !emailRegex.test(email));
     if (invalidEmails.length > 0) {
-      return sendError(res, `Invalid email addresses: ${invalidEmails.join(', ')}`, 400);
+      return sendError(res, 'BAD_REQUEST', `Invalid email addresses: ${invalidEmails.join(', ')}`, 400);
     }
 
     // Validate report type
     const validReportTypes = ['appointment', 'followup', 'reminder', 'capacity'];
     if (!validReportTypes.includes(reportType)) {
-      return sendError(res, `Invalid report type. Supported types: ${validReportTypes.join(', ')}`, 400);
+      return sendError(res, 'BAD_REQUEST', `Invalid report type. Supported types: ${validReportTypes.join(', ')}`, 400);
     }
 
     const startDate = startDateParam 
@@ -425,7 +425,7 @@ export const emailReport = async (req: AuthRequest, res: Response) => {
       : new Date();
 
     if (startDate > endDate) {
-      return sendError(res, 'Start date cannot be after end date', 400);
+      return sendError(res, 'BAD_REQUEST', 'Start date cannot be after end date', 400);
     }
 
     const emailOptions: EmailReportOptions = {
@@ -474,7 +474,7 @@ export const emailReport = async (req: AuthRequest, res: Response) => {
     });
   } catch (error) {
     logger.error('Error sending report email:', error);
-    sendError(res, 'Failed to send report email', 500);
+    sendError(res, 'SERVER_ERROR', 'Failed to send report email', 500);
   }
 };
 
@@ -484,7 +484,7 @@ export const emailReport = async (req: AuthRequest, res: Response) => {
 export const scheduleRecurringReport = async (req: AuthRequest, res: Response) => {
   try {
     const workplaceId = req.user?.workplaceId;
-    const userId = req.user?.userId;
+    const userId = req.user?._id;
     const {
       reportType,
       recipientEmails,
@@ -499,31 +499,31 @@ export const scheduleRecurringReport = async (req: AuthRequest, res: Response) =
 
     // Validate required fields
     if (!workplaceId || !userId) {
-      return sendError(res, 'Authentication required', 401);
+      return sendError(res, 'UNAUTHORIZED', 'Authentication required', 401);
     }
 
     if (!reportType) {
-      return sendError(res, 'Report type is required', 400);
+      return sendError(res, 'BAD_REQUEST', 'Report type is required', 400);
     }
 
     if (!recipientEmails || !Array.isArray(recipientEmails) || recipientEmails.length === 0) {
-      return sendError(res, 'At least one recipient email is required', 400);
+      return sendError(res, 'BAD_REQUEST', 'At least one recipient email is required', 400);
     }
 
     if (!schedule || !schedule.frequency || !schedule.time) {
-      return sendError(res, 'Schedule configuration is required (frequency and time)', 400);
+      return sendError(res, 'BAD_REQUEST', 'Schedule configuration is required (frequency and time)', 400);
     }
 
     // Validate schedule
     const validFrequencies = ['daily', 'weekly', 'monthly'];
     if (!validFrequencies.includes(schedule.frequency)) {
-      return sendError(res, `Invalid frequency. Supported: ${validFrequencies.join(', ')}`, 400);
+      return sendError(res, 'BAD_REQUEST', `Invalid frequency. Supported: ${validFrequencies.join(', ')}`, 400);
     }
 
     // Validate time format (HH:mm)
     const timeRegex = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/;
     if (!timeRegex.test(schedule.time)) {
-      return sendError(res, 'Invalid time format. Use HH:mm (24-hour format)', 400);
+      return sendError(res, 'BAD_REQUEST', 'Invalid time format. Use HH:mm (24-hour format)', 400);
     }
 
     const reportOptions: ReportOptions = {
@@ -576,7 +576,7 @@ export const scheduleRecurringReport = async (req: AuthRequest, res: Response) =
     });
   } catch (error) {
     logger.error('Error scheduling recurring report:', error);
-    sendError(res, 'Failed to schedule recurring report', 500);
+    sendError(res, 'SERVER_ERROR', 'Failed to schedule recurring report', 500);
   }
 };
 
@@ -589,17 +589,17 @@ export const testEmailConfiguration = async (req: AuthRequest, res: Response) =>
     const { testEmail } = req.body;
 
     if (!workplaceId) {
-      return sendError(res, 'Workplace ID is required', 400);
+      return sendError(res, 'BAD_REQUEST', 'Workplace ID is required', 400);
     }
 
     if (!testEmail) {
-      return sendError(res, 'Test email address is required', 400);
+      return sendError(res, 'BAD_REQUEST', 'Test email address is required', 400);
     }
 
     // Validate email format
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailRegex.test(testEmail)) {
-      return sendError(res, 'Invalid email address format', 400);
+      return sendError(res, 'BAD_REQUEST', 'Invalid email address format', 400);
     }
 
     logger.info('Testing email configuration', { testEmail });
@@ -607,7 +607,7 @@ export const testEmailConfiguration = async (req: AuthRequest, res: Response) =>
     // Test email configuration
     const configTest = await ReportEmailService.testEmailConfiguration();
     if (!configTest) {
-      return sendError(res, 'Email configuration test failed', 500);
+      return sendError(res, 'SERVER_ERROR', 'Email configuration test failed', 500);
     }
 
     // Send test report
@@ -624,6 +624,6 @@ export const testEmailConfiguration = async (req: AuthRequest, res: Response) =>
     logger.info('Test email sent successfully', { testEmail });
   } catch (error) {
     logger.error('Error testing email configuration:', error);
-    sendError(res, 'Failed to send test email', 500);
+    sendError(res, 'SERVER_ERROR', 'Failed to send test email', 500);
   }
 };

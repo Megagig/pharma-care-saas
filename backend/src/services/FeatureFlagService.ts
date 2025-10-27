@@ -348,7 +348,7 @@ class FeatureFlagService {
 
       // Clear cache for this user
       const cachePattern = `${featureName}:${userId}:`;
-      for (const key of this.cache.keys()) {
+      for (const key of Array.from(this.cache.keys())) {
         if (key.startsWith(cachePattern)) {
           this.cache.delete(key);
         }
@@ -387,7 +387,7 @@ class FeatureFlagService {
 
       // Clear cache for this workspace
       const cachePattern = `${featureName}:`;
-      for (const key of this.cache.keys()) {
+      for (const key of Array.from(this.cache.keys())) {
         if (key.includes(`:${workspaceId}`)) {
           this.cache.delete(key);
         }
@@ -412,7 +412,7 @@ class FeatureFlagService {
       await FeatureFlag.deleteMany(query);
 
       // Clear relevant cache entries
-      for (const key of this.cache.keys()) {
+      for (const key of Array.from(this.cache.keys())) {
         if (key.startsWith(`${featureName}:`)) {
           if (!userId && !workspaceId) {
             this.cache.delete(key);

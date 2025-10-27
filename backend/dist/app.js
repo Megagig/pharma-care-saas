@@ -48,7 +48,8 @@ const hpp_1 = __importDefault(require("hpp"));
 const path_1 = __importDefault(require("path"));
 const errorHandler_1 = __importDefault(require("./middlewares/errorHandler"));
 const MemoryManagementService_1 = __importDefault(require("./services/MemoryManagementService"));
-const logger_1 = __importDefault(require("./utils/logger"));
+const logger_1 = __importStar(require("./utils/logger"));
+const performanceMonitoring_1 = require("./utils/performanceMonitoring");
 const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
 const patientAuthRoutes_1 = __importDefault(require("./routes/patientAuthRoutes"));
 const userSettingsRoutes_1 = __importDefault(require("./routes/userSettingsRoutes"));
@@ -81,6 +82,8 @@ const auditRoutes_1 = __importDefault(require("./routes/auditRoutes"));
 const securityRoutes_1 = __importDefault(require("./routes/securityRoutes"));
 const invitationRoutes_1 = __importDefault(require("./routes/invitationRoutes"));
 const medicationManagementRoutes_1 = __importDefault(require("./routes/medicationManagementRoutes"));
+const healthRoutes_2 = __importDefault(require("./routes/healthRoutes"));
+const monitoringRoutes_1 = __importDefault(require("./routes/monitoringRoutes"));
 const medicationAnalyticsRoutes_1 = __importDefault(require("./routes/medicationAnalyticsRoutes"));
 const usageMonitoringRoutes_1 = __importDefault(require("./routes/usageMonitoringRoutes"));
 const locationRoutes_1 = __importDefault(require("./routes/locationRoutes"));
@@ -111,6 +114,7 @@ const permissionRoutes_1 = __importDefault(require("./routes/permissionRoutes"))
 const rbacAudit_1 = __importDefault(require("./routes/rbacAudit"));
 const roleRoutes_1 = __importDefault(require("./routes/roleRoutes"));
 const pricingManagementRoutes_1 = __importDefault(require("./routes/pricingManagementRoutes"));
+const appointmentAnalyticsRoutes_1 = __importDefault(require("./routes/appointmentAnalyticsRoutes"));
 const saasRoutes_1 = __importDefault(require("./routes/saasRoutes"));
 const workspaceTeamRoutes_1 = __importDefault(require("./routes/workspaceTeamRoutes"));
 const dashboardRoutes_1 = __importDefault(require("./routes/dashboardRoutes"));
@@ -195,6 +199,9 @@ app.use('/api/', limiter);
 app.use(express_1.default.json({ limit: '10mb' }));
 app.use(express_1.default.urlencoded({ extended: true }));
 app.use((0, cookie_parser_1.default)());
+app.use(logger_1.addCorrelationId);
+const performanceMonitoring_2 = require("./utils/performanceMonitoring");
+app.use((0, performanceMonitoring_1.createPerformanceMiddleware)(performanceMonitoring_2.performanceCollector));
 app.use((0, express_mongo_sanitize_1.default)());
 app.use((0, xss_clean_1.default)());
 app.use((0, hpp_1.default)());
@@ -243,6 +250,8 @@ app.get('/api/health/integration', async (req, res) => {
     }
 });
 app.use('/api/health/feature-flags', healthRoutes_1.default);
+app.use('/api/health', healthRoutes_2.default);
+app.use('/api/monitoring', monitoringRoutes_1.default);
 app.get('/api/health/memory', (req, res) => {
     try {
         const memoryReport = MemoryManagementService_1.default.getMemoryReport();
@@ -370,6 +379,7 @@ const patientPortalRoutes_1 = __importDefault(require("./routes/patientPortalRou
 app.use('/api/appointments', appointmentRoutes_1.default);
 app.use('/api/follow-ups', followUpRoutes_1.default);
 app.use('/api/schedules', scheduleRoutes_1.default);
+app.use('/api', appointmentAnalyticsRoutes_1.default);
 app.use('/api/queue-monitoring', queueMonitoringRoutes_1.default);
 app.use('/api/alerts', alertRoutes_1.default);
 app.use('/api/patient-portal', patientPortalRoutes_1.default);
@@ -414,6 +424,8 @@ app.use('/api/email', emailWebhookRoutes_1.default);
 app.use('/api/admin', admin_1.default);
 app.use('/api/admin/dashboard', adminDashboardRoutes_1.default);
 app.use('/api/admin/saas', saasRoutes_1.default);
+const rolloutRoutes_1 = __importDefault(require("./routes/rolloutRoutes"));
+app.use('/api/admin/rollout', rolloutRoutes_1.default);
 app.use('/api/roles', roleRoutes_1.default);
 app.use('/api/role-hierarchy', roleHierarchyRoutes_1.default);
 app.use('/api/permissions', permissionRoutes_1.default);

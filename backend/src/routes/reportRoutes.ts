@@ -1,6 +1,6 @@
 import express from 'express';
 import { auth } from '../middlewares/auth';
-import { checkPermission } from '../middlewares/rbac';
+import rbac from '../middlewares/rbac';
 import { validateReportGeneration, validateEmailReport, validateScheduleReport } from '../validators/reportValidators';
 import {
   generateAppointmentReport,
@@ -24,7 +24,7 @@ router.use(auth);
  */
 router.post(
   '/appointments/generate',
-  checkPermission('reports:read'),
+  rbac.requirePermission('reports:read'),
   validateReportGeneration,
   generateAppointmentReport
 );
@@ -36,7 +36,7 @@ router.post(
  */
 router.post(
   '/follow-ups/generate',
-  checkPermission('reports:read'),
+  rbac.requirePermission('reports:read'),
   validateReportGeneration,
   generateFollowUpReport
 );
@@ -48,7 +48,7 @@ router.post(
  */
 router.post(
   '/reminders/generate',
-  checkPermission('reports:read'),
+  rbac.requirePermission('reports:read'),
   validateReportGeneration,
   generateReminderReport
 );
@@ -60,7 +60,7 @@ router.post(
  */
 router.post(
   '/capacity/generate',
-  checkPermission('reports:read'),
+  rbac.requirePermission('reports:read'),
   validateReportGeneration,
   generateCapacityReport
 );
@@ -72,7 +72,7 @@ router.post(
  */
 router.post(
   '/email',
-  checkPermission('reports:email'),
+  rbac.requirePermission('reports:email'),
   validateEmailReport,
   emailReport
 );
@@ -84,7 +84,7 @@ router.post(
  */
 router.post(
   '/schedule',
-  checkPermission('reports:schedule'),
+  rbac.requirePermission('reports:schedule'),
   validateScheduleReport,
   scheduleRecurringReport
 );
@@ -96,7 +96,7 @@ router.post(
  */
 router.post(
   '/test-email',
-  checkPermission('reports:email'),
+  rbac.requirePermission('reports:email'),
   testEmailConfiguration
 );
 

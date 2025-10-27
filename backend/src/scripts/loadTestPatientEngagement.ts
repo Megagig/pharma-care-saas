@@ -6,8 +6,8 @@
 
 import mongoose from 'mongoose';
 import { performance } from 'perf_hooks';
-import PatientEngagementPerformanceService from '../services/PatientEngagementPerformanceService';
-import PatientEngagementIndexOptimizer from '../services/PatientEngagementIndexOptimizer';
+import patientEngagementPerformanceService from '../services/PatientEngagementPerformanceService';
+import patientEngagementIndexOptimizer from '../services/PatientEngagementIndexOptimizer';
 import Appointment from '../models/Appointment';
 import FollowUpTask from '../models/FollowUpTask';
 import Patient from '../models/Patient';
@@ -61,8 +61,8 @@ export interface LoadTestResults {
  * Load testing service for Patient Engagement module
  */
 export class PatientEngagementLoadTester {
-  private performanceService: PatientEngagementPerformanceService;
-  private indexOptimizer: PatientEngagementIndexOptimizer;
+  private performanceService: any;
+  private indexOptimizer: any;
   private testData: {
     workplaceId: mongoose.Types.ObjectId;
     patientIds: mongoose.Types.ObjectId[];
@@ -72,8 +72,8 @@ export class PatientEngagementLoadTester {
   };
 
   constructor() {
-    this.performanceService = PatientEngagementPerformanceService.getInstance();
-    this.indexOptimizer = PatientEngagementIndexOptimizer.getInstance();
+    this.performanceService = patientEngagementPerformanceService;
+    this.indexOptimizer = patientEngagementIndexOptimizer;
     this.testData = {
       workplaceId: new mongoose.Types.ObjectId(),
       patientIds: [],

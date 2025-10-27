@@ -4,7 +4,8 @@
  * Requirements: 9.1, 9.2, 9.3
  */
 
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
+import { AuthRequest } from '../types/auth';
 import { patientEngagementMonitoring } from '../services/PatientEngagementMonitoringService';
 import logger from '../utils/logger';
 
@@ -24,7 +25,7 @@ export const monitorPatientEngagementEndpoint = (
   operation: string,
   module: MonitoringContext['module']
 ) => {
-  return (req: Request, res: Response, next: NextFunction) => {
+  return (req: AuthRequest, res: Response, next: NextFunction) => {
     const startTime = Date.now();
     
     // Extract context from request
@@ -131,7 +132,7 @@ export const monitorPatientEngagementEndpoint = (
  */
 export const patientEngagementErrorHandler = (
   err: Error,
-  req: Request,
+  req: AuthRequest,
   res: Response,
   next: NextFunction
 ) => {

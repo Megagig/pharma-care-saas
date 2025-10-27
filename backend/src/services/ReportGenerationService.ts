@@ -744,7 +744,7 @@ export class ReportGenerationService {
       });
     }
 
-    return await workbook.xlsx.writeBuffer() as Buffer;
+    return await workbook.xlsx.writeBuffer() as unknown as Buffer;
   }
 
   /**
@@ -941,7 +941,7 @@ export class ReportGenerationService {
       });
     }
 
-    return await workbook.xlsx.writeBuffer() as Buffer;
+    return await workbook.xlsx.writeBuffer() as unknown as Buffer;
   }
 
   /**
@@ -1129,7 +1129,7 @@ export class ReportGenerationService {
       });
     }
 
-    return await workbook.xlsx.writeBuffer() as Buffer;
+    return await workbook.xlsx.writeBuffer() as unknown as Buffer;
   }
 
   /**
@@ -1305,7 +1305,7 @@ export class ReportGenerationService {
       });
     }
 
-    return await workbook.xlsx.writeBuffer() as Buffer;
+    return await workbook.xlsx.writeBuffer() as unknown as Buffer;
   }
 
   /**

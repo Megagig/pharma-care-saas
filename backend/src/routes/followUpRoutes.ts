@@ -8,7 +8,7 @@ import express from 'express';
 import { body, query, param } from 'express-validator';
 import { auth } from '../middlewares/auth';
 import rbac from '../middlewares/rbac';
-import { validateRequest } from '../middlewares/validateRequest';
+import { validateRequest } from '../middlewares/validation';
 import {
   requirePatientEngagementModule,
   requireFollowUpManagement,

@@ -11,6 +11,8 @@ const rbac_1 = require("../middlewares/rbac");
 const reportsRBAC_1 = __importDefault(require("../middlewares/reportsRBAC"));
 const express_rate_limit_1 = __importDefault(require("express-rate-limit"));
 const reportsController_1 = require("../controllers/reportsController");
+const reportController_1 = require("../controllers/reportController");
+const reportValidators_1 = require("../validators/reportValidators");
 const MedicationTherapyReview_1 = __importDefault(require("../models/MedicationTherapyReview"));
 const MTRIntervention_1 = __importDefault(require("../models/MTRIntervention"));
 const Patient_1 = __importDefault(require("../models/Patient"));
@@ -1136,6 +1138,13 @@ router.get('/:reportType', validateDateRange, async (req, res) => {
 router.post('/export', (0, rbac_1.requirePermission)('export_reports', { useDynamicRBAC: true }), reportsRBAC_1.default.enforceWorkspaceIsolation, (0, auditMiddleware_1.auditMTRActivity)('QUEUE_REPORT_EXPORT'), reportsController_1.queueReportExport);
 router.get('/export/:jobId/status', (0, rbac_1.requirePermission)('export_reports', { useDynamicRBAC: true }), reportsController_1.getExportJobStatus);
 router.get('/performance/stats', (0, rbac_1.requirePermission)('view_system_stats', { useDynamicRBAC: true }), reportsController_1.getPerformanceStats);
+router.post('/engagement/appointments/generate', (0, rbac_1.requirePermission)('view_reports', { useDynamicRBAC: true }), reportValidators_1.validateReportGeneration, reportController_1.generateAppointmentReport);
+router.post('/engagement/follow-ups/generate', (0, rbac_1.requirePermission)('view_reports', { useDynamicRBAC: true }), reportValidators_1.validateReportGeneration, reportController_1.generateFollowUpReport);
+router.post('/engagement/reminders/generate', (0, rbac_1.requirePermission)('view_reports', { useDynamicRBAC: true }), reportValidators_1.validateReportGeneration, reportController_1.generateReminderReport);
+router.post('/engagement/capacity/generate', (0, rbac_1.requirePermission)('view_reports', { useDynamicRBAC: true }), reportValidators_1.validateReportGeneration, reportController_1.generateCapacityReport);
+router.post('/engagement/email', (0, rbac_1.requirePermission)('export_reports', { useDynamicRBAC: true }), reportValidators_1.validateEmailReport, reportController_1.emailReport);
+router.post('/engagement/schedule', (0, rbac_1.requirePermission)('export_reports', { useDynamicRBAC: true }), reportValidators_1.validateScheduleReport, reportController_1.scheduleRecurringReport);
+router.post('/engagement/test-email', (0, rbac_1.requirePermission)('export_reports', { useDynamicRBAC: true }), reportController_1.testEmailConfiguration);
 router.use((error, req, res, next) => {
     console.error('Reports API Error:', error);
     if (error.name === 'ValidationError') {

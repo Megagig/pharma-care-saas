@@ -8,7 +8,7 @@ import express from 'express';
 import { body, query, param } from 'express-validator';
 import { auth } from '../middlewares/auth';
 import rbac from '../middlewares/rbac';
-import { validateRequest } from '../middlewares/validateRequest';
+import { validateRequest } from '../middlewares/validation';
 import {
   requirePatientEngagementModule,
   requireAppointmentScheduling,
@@ -130,7 +130,7 @@ router.post(
       .isObject()
       .withMessage('Recurrence pattern must be an object'),
     body('recurrencePattern.frequency')
-      .if(body('isRecurring').equals(true))
+      .if(body('isRecurring').equals('true'))
       .isIn(['daily', 'weekly', 'biweekly', 'monthly', 'quarterly'])
       .withMessage('Valid recurrence frequency is required'),
   ],

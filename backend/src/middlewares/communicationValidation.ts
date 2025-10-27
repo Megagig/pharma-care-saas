@@ -299,7 +299,7 @@ export const auditLogValidationSchema = Joi.object({
 
 // Middleware functions
 export const validateConversation = (
-  req: Request,
+  req: AuthRequest,
   res: Response,
   next: NextFunction,
 ): void => {
@@ -353,7 +353,7 @@ export const validateConversation = (
 };
 
 export const validateMessage = (
-  req: Request,
+  req: AuthRequest,
   res: Response,
   next: NextFunction,
 ): void => {
@@ -395,7 +395,7 @@ export const validateMessage = (
 };
 
 export const validateNotification = (
-  req: Request,
+  req: AuthRequest,
   res: Response,
   next: NextFunction,
 ): void => {
@@ -433,7 +433,7 @@ export const validateNotification = (
 };
 
 export const validateAuditLog = (
-  req: Request,
+  req: AuthRequest,
   res: Response,
   next: NextFunction,
 ): void => {

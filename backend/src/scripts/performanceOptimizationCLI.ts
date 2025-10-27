@@ -8,8 +8,8 @@
 
 import { Command } from 'commander';
 import mongoose from 'mongoose';
-import PatientEngagementPerformanceService from '../services/PatientEngagementPerformanceService';
-import PatientEngagementIndexOptimizer from '../services/PatientEngagementIndexOptimizer';
+import patientEngagementPerformanceService from '../services/PatientEngagementPerformanceService';
+import patientEngagementIndexOptimizer from '../services/PatientEngagementIndexOptimizer';
 import PatientEngagementLoadTester, { defaultLoadTestConfigs } from './loadTestPatientEngagement';
 import PerformanceOptimizationScheduler from '../jobs/PerformanceOptimizationJob';
 import logger from '../utils/logger';
@@ -20,13 +20,13 @@ const program = new Command();
  * CLI application for performance optimization
  */
 class PerformanceOptimizationCLI {
-  private performanceService: PatientEngagementPerformanceService;
-  private indexOptimizer: PatientEngagementIndexOptimizer;
+  private performanceService: any;
+  private indexOptimizer: any;
   private loadTester: PatientEngagementLoadTester;
 
   constructor() {
-    this.performanceService = PatientEngagementPerformanceService.getInstance();
-    this.indexOptimizer = PatientEngagementIndexOptimizer.getInstance();
+    this.performanceService = patientEngagementPerformanceService;
+    this.indexOptimizer = patientEngagementIndexOptimizer;
     this.loadTester = new PatientEngagementLoadTester();
   }
 

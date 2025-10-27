@@ -124,7 +124,7 @@ export function cacheMiddleware(options: {
   keyGenerator?: (req: Request) => string;
   condition?: (req: Request) => boolean;
 } = {}) {
-  const performanceService = PatientEngagementPerformanceService.getInstance();
+  const performanceService = require('../services/PatientEngagementPerformanceService').default;
 
   return async (req: OptimizedRequest, res: Response, next: NextFunction) => {
     try {
@@ -241,7 +241,7 @@ export function paginationMiddleware(options: {
       const cursor = req.query.cursor as string;
 
       // Use cursor pagination for large datasets
-      const useCursor = enableCursor && (limit > 100 || cursor);
+      const useCursor = enableCursor && (limit > 100 || !!cursor);
 
       req.pagination = {
         page,
@@ -468,7 +468,7 @@ function optimizeBooleanQueries(req: Request): void {
   for (const field of booleanFields) {
     const value = req.query[field];
     if (typeof value === 'string') {
-      req.query[field] = value.toLowerCase() === 'true';
+      (req.query as any)[field] = value.toLowerCase() === 'true';
     }
   }
 }

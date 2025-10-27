@@ -85,6 +85,8 @@
     "rollout": "npm run patient-engagement:rollout",
     "monitor-rollout": "npm run patient-engagement:monitor",
     "test-rollout": "npm run patient-engagement:test",
+    "post-launch:monitor": "ts-node src/scripts/postLaunchMonitoring.ts",
+    "bug-fix:manage": "ts-node src/scripts/bugFixReleaseManager.ts",
     "load-test:websockets": "artillery run tests/load/websockets-load-test.yml",
     "load-test:database": "artillery run tests/load/database-load-test.yml",
     "load-test:full": "npm run load-test:appointments && npm run load-test:followups && npm run load-test:websockets",

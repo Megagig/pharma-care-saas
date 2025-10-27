@@ -7,10 +7,10 @@ import {
   exportAppointmentAnalytics
 } from '../controllers/appointmentAnalyticsController';
 import { auth } from '../middlewares/auth';
-import { rbac } from '../middlewares/rbac';
+import rbac from '../middlewares/rbac';
 import { appointmentAnalyticsValidators } from '../validators/appointmentAnalyticsValidators';
-import { validate } from '../middlewares/validation';
-import { rateLimiting } from '../middlewares/rateLimiting';
+import { validateRequest } from '../middlewares/validation';
+import rateLimiting from '../middlewares/rateLimiting';
 
 const router = express.Router();
 
@@ -18,7 +18,7 @@ const router = express.Router();
 router.use(auth);
 
 // Apply rate limiting
-router.use(rateLimiting({
+router.use(rateLimiting.createRateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // Limit each IP to 100 requests per windowMs
   message: 'Too many analytics requests, please try again later'
@@ -31,8 +31,8 @@ router.use(rateLimiting({
  */
 router.get(
   '/appointments/analytics',
-  rbac(['view_appointment_analytics', 'view_appointments']),
-  validate(appointmentAnalyticsValidators.getAppointmentAnalytics),
+  rbac.requirePermission('view_appointment_analytics'),
+  validateRequest,
   getAppointmentAnalytics
 );
 
@@ -43,8 +43,8 @@ router.get(
  */
 router.get(
   '/follow-ups/analytics',
-  rbac(['view_followup_analytics', 'view_follow_ups']),
-  validate(appointmentAnalyticsValidators.getFollowUpAnalytics),
+  rbac.requirePermission("view_analytics"),
+  validateRequest,
   getFollowUpAnalytics
 );
 
@@ -55,8 +55,8 @@ router.get(
  */
 router.get(
   '/reminders/analytics',
-  rbac(['view_reminder_analytics', 'view_appointments']),
-  validate(appointmentAnalyticsValidators.getReminderAnalytics),
+  rbac.requirePermission("view_analytics"),
+  validateRequest,
   getReminderAnalytics
 );
 
@@ -67,8 +67,8 @@ router.get(
  */
 router.get(
   '/schedules/capacity',
-  rbac(['view_capacity_analytics', 'view_schedules']),
-  validate(appointmentAnalyticsValidators.getCapacityAnalytics),
+  rbac.requirePermission("view_analytics"),
+  validateRequest,
   getCapacityAnalytics
 );
 
@@ -79,9 +79,9 @@ router.get(
  */
 router.post(
   '/appointments/analytics/export',
-  rbac(['export_analytics', 'view_appointment_analytics']),
-  validate(appointmentAnalyticsValidators.exportAnalytics),
-  rateLimiting({
+  rbac.requirePermission("view_analytics"),
+  validateRequest,
+  rateLimiting.createRateLimiter({
     windowMs: 60 * 60 * 1000, // 1 hour
     max: 10, // Limit exports to 10 per hour
     message: 'Too many export requests, please try again later'

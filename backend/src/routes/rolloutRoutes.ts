@@ -7,14 +7,14 @@
 
 import express from 'express';
 import { body, query } from 'express-validator';
-import { validateRequest } from '../middlewares/validateRequest';
-import { requireAuth } from '../middlewares/auth';
+import { validateRequest } from '../middlewares/validation';
+import { auth } from '../middlewares/auth';
 import rolloutController from '../controllers/rolloutController';
 
 const router = express.Router();
 
 // Apply authentication to all rollout routes
-router.use(requireAuth);
+router.use(auth);
 
 /**
  * @route   GET /api/rollout/status

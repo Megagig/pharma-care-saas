@@ -1,5 +1,5 @@
 import { body, query, ValidationChain } from 'express-validator';
-import { isValidObjectId } from '../utils/validation';
+import { validateObjectId } from '../utils/validation';
 
 export const appointmentAnalyticsValidators = {
   /**
@@ -26,7 +26,7 @@ export const appointmentAnalyticsValidators = {
     
     query('pharmacistId')
       .optional()
-      .custom(isValidObjectId)
+      .custom(validateObjectId)
       .withMessage('Pharmacist ID must be a valid ObjectId'),
     
     query('locationId')
@@ -85,7 +85,7 @@ export const appointmentAnalyticsValidators = {
     
     query('pharmacistId')
       .optional()
-      .custom(isValidObjectId)
+      .custom(validateObjectId)
       .withMessage('Pharmacist ID must be a valid ObjectId'),
     
     query('taskType')
@@ -163,7 +163,7 @@ export const appointmentAnalyticsValidators = {
     
     query('templateId')
       .optional()
-      .custom(isValidObjectId)
+      .custom(validateObjectId)
       .withMessage('Template ID must be a valid ObjectId'),
     
     query('appointmentType')
@@ -215,7 +215,7 @@ export const appointmentAnalyticsValidators = {
     
     query('pharmacistId')
       .optional()
-      .custom(isValidObjectId)
+      .custom(validateObjectId)
       .withMessage('Pharmacist ID must be a valid ObjectId'),
     
     query('locationId')
@@ -281,7 +281,7 @@ export const appointmentAnalyticsValidators = {
     
     body('filters.pharmacistId')
       .optional()
-      .custom(isValidObjectId)
+      .custom(validateObjectId)
       .withMessage('Pharmacist ID must be a valid ObjectId'),
     
     body('filters.locationId')

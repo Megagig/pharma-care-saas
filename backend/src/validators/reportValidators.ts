@@ -10,7 +10,7 @@ const handleValidationErrors = (req: Request, res: Response, next: NextFunction)
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
     const errorMessages = errors.array().map(error => error.msg);
-    return sendError(res, `Validation error: ${errorMessages.join(', ')}`, 400);
+    return sendError(res, 'VALIDATION_ERROR', `Validation error: ${errorMessages.join(', ')}`, 400);
   }
   next();
 };

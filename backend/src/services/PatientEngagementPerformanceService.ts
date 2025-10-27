@@ -60,12 +60,12 @@ export class PatientEngagementPerformanceService {
   private static instance: PatientEngagementPerformanceService;
   private cache: PerformanceCacheService;
   private connectionPool: ConnectionPoolService;
-  private dbOptimizer: DatabaseOptimizationService;
+  private dbOptimizer: any;
 
   constructor() {
     this.cache = PerformanceCacheService.getInstance();
     this.connectionPool = ConnectionPoolService.getInstance();
-    this.dbOptimizer = DatabaseOptimizationService.getInstance();
+    this.dbOptimizer = require('./DatabaseOptimizationService').default;
   }
 
   static getInstance(): PatientEngagementPerformanceService {
@@ -732,6 +732,13 @@ export class PatientEngagementPerformanceService {
         nextCursor: nextCursor?.toString(),
         hasMore,
       },
+      performance: {
+        queryTime: 0,
+        cacheHit: false,
+        indexesUsed: [],
+        optimizationApplied: ['performance-optimization'],
+        documentsReturned: 0
+      }
     };
   }
 
@@ -768,6 +775,13 @@ export class PatientEngagementPerformanceService {
         pages: Math.ceil(total / limit),
         hasMore: page * limit < total,
       },
+      performance: {
+        queryTime: 0,
+        cacheHit: false,
+        indexesUsed: [],
+        optimizationApplied: ['performance-optimization'],
+        documentsReturned: 0
+      }
     };
   }
 
@@ -813,6 +827,13 @@ export class PatientEngagementPerformanceService {
         nextCursor: nextCursor?.toString(),
         hasMore,
       },
+      performance: {
+        queryTime: 0,
+        cacheHit: false,
+        indexesUsed: [],
+        optimizationApplied: ['performance-optimization'],
+        documentsReturned: 0
+      }
     };
   }
 
@@ -849,6 +870,13 @@ export class PatientEngagementPerformanceService {
         pages: Math.ceil(total / limit),
         hasMore: page * limit < total,
       },
+      performance: {
+        queryTime: 0,
+        cacheHit: false,
+        indexesUsed: [],
+        optimizationApplied: ['performance-optimization'],
+        documentsReturned: 0
+      }
     };
   }
 

@@ -329,7 +329,7 @@ export const getAppointmentAnalytics = async (req: AuthRequest, res: Response) =
     sendSuccess(res, analytics, 'Appointment analytics retrieved successfully');
   } catch (error) {
     logger.error('Error getting appointment analytics:', error);
-    sendError(res, 'Failed to retrieve appointment analytics', 500);
+    sendError(res, 'SERVER_ERROR', 'Failed to retrieve appointment analytics', 500);
   }
 };
 
@@ -434,7 +434,7 @@ export const getFollowUpAnalytics = async (req: AuthRequest, res: Response) => {
     sendSuccess(res, analytics, 'Follow-up analytics retrieved successfully');
   } catch (error) {
     logger.error('Error getting follow-up analytics:', error);
-    sendError(res, 'Failed to retrieve follow-up analytics', 500);
+    sendError(res, 'SERVER_ERROR', 'Failed to retrieve follow-up analytics', 500);
   }
 };
 
@@ -478,7 +478,7 @@ export const getReminderAnalytics = async (req: AuthRequest, res: Response) => {
     sendSuccess(res, analytics, 'Reminder analytics retrieved successfully');
   } catch (error) {
     logger.error('Error getting reminder analytics:', error);
-    sendError(res, 'Failed to retrieve reminder analytics', 500);
+    sendError(res, 'SERVER_ERROR', 'Failed to retrieve reminder analytics', 500);
   }
 };
 
@@ -550,7 +550,7 @@ export const getCapacityAnalytics = async (req: AuthRequest, res: Response) => {
     sendSuccess(res, analytics, 'Capacity analytics retrieved successfully');
   } catch (error) {
     logger.error('Error getting capacity analytics:', error);
-    sendError(res, 'Failed to retrieve capacity analytics', 500);
+    sendError(res, 'SERVER_ERROR', 'Failed to retrieve capacity analytics', 500);
   }
 };
 
@@ -563,7 +563,7 @@ export const exportAppointmentAnalytics = async (req: AuthRequest, res: Response
     const workplaceId = req.user?.workplaceId;
 
     // Get analytics data (reuse the logic from getAppointmentAnalytics)
-    const analyticsData = await getAnalyticsDataForExport(workplaceId, req.query);
+    const analyticsData = await getAnalyticsDataForExport(workplaceId?.toString(), req.query);
 
     if (exportFormat === 'pdf') {
       const pdfBuffer = await generatePDFReport(analyticsData);
@@ -578,11 +578,11 @@ export const exportAppointmentAnalytics = async (req: AuthRequest, res: Response
       res.setHeader('Content-Disposition', 'attachment; filename="appointment-analytics.xlsx"');
       res.send(excelBuffer);
     } else {
-      sendError(res, 'Invalid export format. Supported formats: pdf, excel', 400);
+      sendError(res, 'BAD_REQUEST', 'Invalid export format. Supported formats: pdf, excel', 400);
     }
   } catch (error) {
     logger.error('Error exporting appointment analytics:', error);
-    sendError(res, 'Failed to export appointment analytics', 500);
+    sendError(res, 'SERVER_ERROR', 'Failed to export appointment analytics', 500);
   }
 };
 
@@ -698,8 +698,9 @@ async function generateFollowUpTypeAnalytics(tasks: any[]) {
   }, {} as Record<string, typeof tasks>);
 
   return Object.entries(typeGroups).map(([type, typeTasks]) => {
-    const completed = typeTasks.filter(t => t.status === 'completed').length;
-    const completedWithTime = typeTasks.filter(t => 
+    const tasks = typeTasks as any[];
+    const completed = tasks.filter(t => t.status === 'completed').length;
+    const completedWithTime = tasks.filter(t => 
       t.status === 'completed' && t.completedAt && t.createdAt
     );
     
@@ -712,9 +713,9 @@ async function generateFollowUpTypeAnalytics(tasks: any[]) {
 
     return {
       type,
-      count: typeTasks.length,
-      completionRate: typeTasks.length > 0 
-        ? Math.round((completed / typeTasks.length) * 100)
+      count: tasks.length,
+      completionRate: tasks.length > 0 
+        ? Math.round((completed / tasks.length) * 100)
         : 0,
       averageTimeToCompletion
     };
@@ -732,8 +733,9 @@ async function generateFollowUpPriorityAnalytics(tasks: any[]) {
   }, {} as Record<string, typeof tasks>);
 
   return Object.entries(priorityGroups).map(([priority, priorityTasks]) => {
-    const completed = priorityTasks.filter(t => t.status === 'completed').length;
-    const completedWithTime = priorityTasks.filter(t => 
+    const tasks = priorityTasks as any[];
+    const completed = tasks.filter(t => t.status === 'completed').length;
+    const completedWithTime = tasks.filter(t => 
       t.status === 'completed' && t.completedAt && t.createdAt
     );
     
@@ -746,9 +748,9 @@ async function generateFollowUpPriorityAnalytics(tasks: any[]) {
 
     return {
       priority,
-      count: priorityTasks.length,
-      completionRate: priorityTasks.length > 0 
-        ? Math.round((completed / priorityTasks.length) * 100)
+      count: tasks.length,
+      completionRate: tasks.length > 0 
+        ? Math.round((completed / tasks.length) * 100)
         : 0,
       averageTimeToCompletion
     };
@@ -766,13 +768,14 @@ async function generateFollowUpTriggerAnalytics(tasks: any[]) {
   }, {} as Record<string, typeof tasks>);
 
   return Object.entries(triggerGroups).map(([triggerType, triggerTasks]) => {
-    const completed = triggerTasks.filter(t => t.status === 'completed').length;
+    const tasks = triggerTasks as any[];
+    const completed = tasks.filter(t => t.status === 'completed').length;
 
     return {
       triggerType,
-      count: triggerTasks.length,
-      completionRate: triggerTasks.length > 0 
-        ? Math.round((completed / triggerTasks.length) * 100)
+      count: tasks.length,
+      completionRate: tasks.length > 0 
+        ? Math.round((completed / tasks.length) * 100)
         : 0
     };
   });
@@ -1035,5 +1038,5 @@ async function generateExcelReport(data: any): Promise<Buffer> {
     });
   }
 
-  return await workbook.xlsx.writeBuffer() as Buffer;
+  return await workbook.xlsx.writeBuffer() as unknown as Buffer;
 }
