@@ -548,6 +548,10 @@ app.use('/api/email', emailWebhookRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/admin/dashboard', adminDashboardRoutes);
 app.use('/api/admin/saas', saasRoutes);
+
+// Patient Engagement Rollout Management routes (Super Admin only)
+import rolloutRoutes from './routes/rolloutRoutes';
+app.use('/api/admin/rollout', rolloutRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/role-hierarchy', roleHierarchyRoutes);
 app.use('/api/permissions', permissionRoutes);
