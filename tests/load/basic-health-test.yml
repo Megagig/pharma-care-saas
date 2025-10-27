@@ -1,0 +1,19 @@
+config:
+  target: 'http://localhost:5000'
+  phases:
+    - duration: 30
+      arrivalRate: 10
+      name: "Basic Health Check Test"
+  
+  ensure:
+    - http.response_time.p95: 1000
+    - http.codes.200: 90
+
+scenarios:
+  - name: "Health Check"
+    weight: 100
+    flow:
+      - get:
+          url: "/api/health"
+          name: "Health Check Endpoint"
+      - think: 1

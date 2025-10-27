@@ -1,0 +1,281 @@
+config:
+  target: 'http://localhost:5000'
+  phases:
+    # Follow-up specific load testing
+    - duration: 60
+      arrivalRate: 15
+      name: "Follow-up Warm-up"
+    - duration: 180
+      arrivalRate: 80
+      rampTo: 250
+      name: "Follow-up Peak Load"
+    - duration: 120
+      arrivalRate: 250
+      name: "Follow-up Sustained Load"
+  
+  ensure:
+    - http.response_time.p95: 450
+    - http.response_time.p99: 900
+    - http.request_rate: 200
+    - http.codes.200: 96
+    - http.codes.500: 1
+
+  variables:
+    dueDate: "2025-10-30T10:00:00.000Z"
+    triggerDate: "2025-10-27T10:00:00.000Z"
+
+  plugins:
+    metrics-by-endpoint:
+      useOnlyRequestNames: true
+
+scenarios:
+  # Intensive follow-up task management
+  - name: "Follow-up Task Management"
+    weight: 50
+    flow:
+      - post:
+          url: "/api/auth/login"
+          name: "Login"
+          json:
+            email: "pharmacist+{{ $randomInt(1, 40) }}@example.com"
+            password: "LoadTest123!"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+      
+      # Get follow-up dashboard (high frequency)
+      - loop:
+          count: 3
+          over:
+            - get:
+                url: "/api/follow-ups/dashboard/summary"
+                name: "Dashboard Summary"
+                headers:
+                  Authorization: "Bearer {{ authToken }}"
+            - think: 1
+      
+      # Query follow-ups with different filters
+      - loop:
+          count: 4
+          over:
+            - get:
+                url: "/api/follow-ups"
+                name: "Query Follow-ups"
+                qs:
+                  status: "{{ $randomItem(['pending', 'in_progress', 'overdue']) }}"
+                  priority: "{{ $randomItem(['high', 'medium', 'urgent']) }}"
+                  limit: 20
+                headers:
+                  Authorization: "Bearer {{ authToken }}"
+            - think: 0.5
+      
+      # Create follow-up tasks rapidly
+      - loop:
+          count: 3
+          over:
+            - post:
+                url: "/api/follow-ups"
+                name: "Create Follow-up Task"
+                json:
+                  patientId: "{{ $randomString() }}"
+                  type: "{{ $randomItem(['medication_start_followup', 'adherence_check', 'chronic_disease_monitoring']) }}"
+                  title: "Load test follow-up {{ $randomInt(1, 100000) }}"
+                  description: "Automated load test follow-up task for performance testing"
+                  objectives: 
+                    - "Monitor patient response"
+                    - "Check for adverse effects"
+                    - "Ensure medication adherence"
+                  priority: "{{ $randomItem(['low', 'medium', 'high', 'urgent']) }}"
+                  dueDate: "{{ dueDate }}"
+                  trigger:
+                    type: "{{ $randomItem(['manual', 'medication_start', 'system_rule']) }}"
+                    triggerDate: "{{ triggerDate }}"
+                headers:
+                  Authorization: "Bearer {{ authToken }}"
+                capture:
+                  - json: "$.data.followUpTask._id"
+                    as: "followUpId{{ $loopCount }}"
+            - think: 0.3
+      
+      # Update follow-up tasks
+      - put:
+          url: "/api/follow-ups/{{ followUpId1 }}"
+          name: "Update Follow-up Task"
+          json:
+            priority: "urgent"
+            description: "Updated during load test"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+      
+      # Complete a follow-up task
+      - post:
+          url: "/api/follow-ups/{{ followUpId2 }}/complete"
+          name: "Complete Follow-up Task"
+          json:
+            outcome:
+              status: "successful"
+              notes: "Load test completion - patient responded well"
+              nextActions: ["Schedule follow-up appointment", "Continue monitoring"]
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+
+  # Follow-up to appointment conversion workflow
+  - name: "Follow-up to Appointment Conversion"
+    weight: 20
+    flow:
+      - post:
+          url: "/api/auth/login"
+          name: "Login"
+          json:
+            email: "pharmacist+{{ $randomInt(1, 20) }}@example.com"
+            password: "LoadTest123!"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+      
+      # Create follow-up task
+      - post:
+          url: "/api/follow-ups"
+          name: "Create Follow-up for Conversion"
+          json:
+            patientId: "{{ $randomString() }}"
+            type: "general_followup"
+            title: "Follow-up for appointment conversion {{ $randomInt(1, 10000) }}"
+            description: "This follow-up will be converted to an appointment"
+            objectives: ["Schedule face-to-face consultation"]
+            priority: "medium"
+            dueDate: "{{ dueDate }}"
+            trigger:
+              type: "manual"
+              triggerDate: "{{ triggerDate }}"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          capture:
+            - json: "$.data.followUpTask._id"
+              as: "followUpId"
+      
+      - think: 2
+      
+      # Convert to appointment
+      - post:
+          url: "/api/follow-ups/{{ followUpId }}/convert-to-appointment"
+          name: "Convert to Appointment"
+          json:
+            scheduledDate: "2025-10-28"
+            scheduledTime: "{{ $randomItem(['09:00', '10:00', '11:00', '14:00']) }}"
+            duration: 30
+            type: "general_followup"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+
+  # Overdue follow-up monitoring
+  - name: "Overdue Follow-up Monitoring"
+    weight: 15
+    flow:
+      - post:
+          url: "/api/auth/login"
+          name: "Login"
+          json:
+            email: "manager+{{ $randomInt(1, 10) }}@example.com"
+            password: "LoadTest123!"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+      
+      # Check overdue follow-ups frequently (simulating monitoring dashboard)
+      - loop:
+          count: 8
+          over:
+            - get:
+                url: "/api/follow-ups/overdue"
+                name: "Check Overdue Follow-ups"
+                qs:
+                  priority: "{{ $randomItem(['high', 'urgent', 'critical']) }}"
+                headers:
+                  Authorization: "Bearer {{ authToken }}"
+            - think: 3
+      
+      # Get analytics
+      - get:
+          url: "/api/follow-ups/analytics/summary"
+          name: "Follow-up Analytics"
+          qs:
+            startDate: "2025-10-01"
+            endDate: "2025-10-31"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+
+  # Patient-specific follow-up queries
+  - name: "Patient Follow-up Queries"
+    weight: 10
+    flow:
+      - post:
+          url: "/api/auth/login"
+          name: "Login"
+          json:
+            email: "pharmacist+{{ $randomInt(1, 15) }}@example.com"
+            password: "LoadTest123!"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+      
+      # Query follow-ups for multiple patients
+      - loop:
+          count: 6
+          over:
+            - get:
+                url: "/api/follow-ups/patient/{{ $randomString() }}"
+                name: "Patient Follow-up Query"
+                qs:
+                  status: "{{ $randomItem(['pending', 'completed']) }}"
+                  limit: 15
+                headers:
+                  Authorization: "Bearer {{ authToken }}"
+            - think: 1.5
+
+  # Follow-up escalation workflow
+  - name: "Follow-up Escalation"
+    weight: 5
+    flow:
+      - post:
+          url: "/api/auth/login"
+          name: "Login"
+          json:
+            email: "manager+{{ $randomInt(1, 5) }}@example.com"
+            password: "LoadTest123!"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+      
+      # Create follow-up task
+      - post:
+          url: "/api/follow-ups"
+          name: "Create Follow-up for Escalation"
+          json:
+            patientId: "{{ $randomString() }}"
+            type: "medication_start_followup"
+            title: "High-risk medication follow-up {{ $randomInt(1, 1000) }}"
+            description: "Follow-up for high-risk medication - may need escalation"
+            objectives: ["Monitor for adverse effects", "Check vital signs"]
+            priority: "medium"
+            dueDate: "{{ dueDate }}"
+            trigger:
+              type: "medication_start"
+              triggerDate: "{{ triggerDate }}"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          capture:
+            - json: "$.data.followUpTask._id"
+              as: "followUpId"
+      
+      - think: 1
+      
+      # Escalate priority
+      - post:
+          url: "/api/follow-ups/{{ followUpId }}/escalate"
+          name: "Escalate Follow-up"
+          json:
+            newPriority: "urgent"
+            reason: "Patient reported concerning symptoms during load test"
+          headers:
+            Authorization: "Bearer {{ authToken }}"

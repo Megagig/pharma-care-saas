@@ -1,0 +1,155 @@
+config:
+  target: 'ws://localhost:5000'
+  phases:
+    # WebSocket connection load testing
+    - duration: 30
+      arrivalRate: 10
+      name: "WebSocket Warm-up"
+    - duration: 120
+      arrivalRate: 50
+      rampTo: 200
+      name: "WebSocket Connection Ramp"
+    - duration: 180
+      arrivalRate: 200
+      name: "WebSocket Sustained Load"
+    - duration: 60
+      arrivalRate: 200
+      rampTo: 500
+      name: "WebSocket Peak Connections"
+  
+  ensure:
+    - ws.connection_time.p95: 1000  # Connection time < 1s
+    - ws.message_rate: 100          # Minimum messages per second
+    - ws.errors: 2                  # Less than 2% errors
+
+  variables:
+    testMessage: "Load test message {{ $randomInt(1, 10000) }}"
+
+  plugins:
+    metrics-by-endpoint:
+      useOnlyRequestNames: true
+
+  ws:
+    timeout: 30
+    subprotocols: ['socket.io']
+
+scenarios:
+  # Real-time appointment updates
+  - name: "Real-time Appointment Updates"
+    weight: 40
+    engine: ws
+    flow:
+      # Connect to WebSocket
+      - connect:
+          url: "/socket.io/?EIO=4&transport=websocket"
+          name: "WebSocket Connect"
+          headers:
+            Authorization: "Bearer {{ $env.TEST_AUTH_TOKEN }}"
+      
+      # Join appointment room
+      - send:
+          name: "Join Appointment Room"
+          data: '40{"type":"join","room":"appointments:{{ $randomString() }}"}'
+      
+      # Simulate real-time appointment events
+      - loop:
+          count: 10
+          over:
+            - send:
+                name: "Appointment Status Update"
+                data: '42["appointmentStatusUpdate",{"appointmentId":"{{ $randomString() }}","status":"confirmed","timestamp":"{{ $timestamp }}"}]'
+            - think: 2
+            - send:
+                name: "New Appointment Created"
+                data: '42["appointmentCreated",{"appointmentId":"{{ $randomString() }}","patientName":"Load Test Patient","scheduledTime":"10:00","type":"mtm_session"}]'
+            - think: 3
+      
+      # Disconnect
+      - send:
+          name: "Disconnect"
+          data: '41'
+
+  # Real-time follow-up notifications
+  - name: "Real-time Follow-up Notifications"
+    weight: 30
+    engine: ws
+    flow:
+      - connect:
+          url: "/socket.io/?EIO=4&transport=websocket"
+          name: "WebSocket Connect"
+          headers:
+            Authorization: "Bearer {{ $env.TEST_AUTH_TOKEN }}"
+      
+      # Join follow-up room
+      - send:
+          name: "Join Follow-up Room"
+          data: '40{"type":"join","room":"followups:{{ $randomString() }}"}'
+      
+      # Simulate follow-up events
+      - loop:
+          count: 8
+          over:
+            - send:
+                name: "Follow-up Task Created"
+                data: '42["followUpTaskCreated",{"taskId":"{{ $randomString() }}","patientName":"Load Test Patient","priority":"high","dueDate":"2025-10-30"}]'
+            - think: 2.5
+            - send:
+                name: "Follow-up Overdue Alert"
+                data: '42["followUpOverdue",{"taskId":"{{ $randomString() }}","patientName":"Load Test Patient","daysPastDue":3}]'
+            - think: 4
+      
+      - send:
+          name: "Disconnect"
+          data: '41'
+
+  # Dashboard real-time updates
+  - name: "Dashboard Real-time Updates"
+    weight: 20
+    engine: ws
+    flow:
+      - connect:
+          url: "/socket.io/?EIO=4&transport=websocket"
+          name: "WebSocket Connect"
+          headers:
+            Authorization: "Bearer {{ $env.TEST_AUTH_TOKEN }}"
+      
+      # Join dashboard room
+      - send:
+          name: "Join Dashboard Room"
+          data: '40{"type":"join","room":"dashboard:{{ $randomString() }}"}'
+      
+      # Simulate dashboard metric updates
+      - loop:
+          count: 15
+          over:
+            - send:
+                name: "Metrics Update"
+                data: '42["metricsUpdate",{"totalAppointments":{{ $randomInt(50, 200) }},"pendingFollowUps":{{ $randomInt(10, 50) }},"overdueCount":{{ $randomInt(0, 10) }}}]'
+            - think: 5
+      
+      - send:
+          name: "Disconnect"
+          data: '41'
+
+  # Concurrent connection stress test
+  - name: "Connection Stress Test"
+    weight: 10
+    engine: ws
+    flow:
+      # Multiple rapid connections and disconnections
+      - loop:
+          count: 5
+          over:
+            - connect:
+                url: "/socket.io/?EIO=4&transport=websocket"
+                name: "Rapid Connect"
+                headers:
+                  Authorization: "Bearer {{ $env.TEST_AUTH_TOKEN }}"
+            - send:
+                name: "Ping"
+                data: '2'
+            - think: 1
+            - send:
+                name: "Rapid Disconnect"
+                data: '41'
+            - think: 0.5

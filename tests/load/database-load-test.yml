@@ -1,0 +1,277 @@
+config:
+  target: 'http://localhost:5000'
+  phases:
+    # Database-intensive operations
+    - duration: 60
+      arrivalRate: 20
+      name: "Database Warm-up"
+    - duration: 180
+      arrivalRate: 100
+      rampTo: 400
+      name: "Database Heavy Load"
+    - duration: 120
+      arrivalRate: 400
+      name: "Database Sustained Load"
+  
+  ensure:
+    - http.response_time.p95: 600  # Slightly higher for DB operations
+    - http.response_time.p99: 1200
+    - http.request_rate: 300
+    - http.codes.200: 95
+    - http.codes.500: 1
+
+  variables:
+    startDate: "2025-10-01"
+    endDate: "2025-10-31"
+
+  plugins:
+    metrics-by-endpoint:
+      useOnlyRequestNames: true
+
+scenarios:
+  # Heavy database read operations
+  - name: "Database Read Intensive"
+    weight: 40
+    flow:
+      - post:
+          url: "/api/auth/login"
+          name: "Login"
+          json:
+            email: "pharmacist+{{ $randomInt(1, 50) }}@example.com"
+            password: "LoadTest123!"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+      
+      # Multiple concurrent queries
+      - loop:
+          count: 8
+          over:
+            # Complex appointment queries
+            - get:
+                url: "/api/appointments/calendar"
+                name: "Complex Calendar Query"
+                qs:
+                  view: "month"
+                  date: "2025-10-{{ $randomInt(1, 31) }}"
+                  pharmacistId: "{{ $randomString() }}"
+                headers:
+                  Authorization: "Bearer {{ authToken }}"
+            
+            # Follow-up queries with filters
+            - get:
+                url: "/api/follow-ups"
+                name: "Complex Follow-up Query"
+                qs:
+                  status: "pending"
+                  priority: "high"
+                  assignedTo: "{{ $randomString() }}"
+                  limit: 50
+                headers:
+                  Authorization: "Bearer {{ authToken }}"
+            
+            # Analytics queries (heavy aggregation)
+            - get:
+                url: "/api/appointments/analytics"
+                name: "Heavy Analytics Query"
+                qs:
+                  startDate: "{{ startDate }}"
+                  endDate: "{{ endDate }}"
+                  pharmacistId: "{{ $randomString() }}"
+                headers:
+                  Authorization: "Bearer {{ authToken }}"
+            
+            - think: 0.5
+
+  # Heavy database write operations
+  - name: "Database Write Intensive"
+    weight: 35
+    flow:
+      - post:
+          url: "/api/auth/login"
+          name: "Login"
+          json:
+            email: "pharmacist+{{ $randomInt(1, 30) }}@example.com"
+            password: "LoadTest123!"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+      
+      # Rapid creation of appointments and follow-ups
+      - loop:
+          count: 5
+          over:
+            # Create appointment
+            - post:
+                url: "/api/appointments"
+                name: "Rapid Appointment Creation"
+                json:
+                  patientId: "{{ $randomString() }}"
+                  type: "{{ $randomItem(['mtm_session', 'health_check', 'chronic_disease_review']) }}"
+                  scheduledDate: "2025-10-{{ $randomInt(25, 31) }}"
+                  scheduledTime: "{{ $randomItem(['09:00', '10:00', '11:00', '14:00', '15:00']) }}"
+                  duration: "{{ $randomInt(15, 60) }}"
+                  description: "Database load test appointment {{ $randomInt(1, 100000) }}"
+                  isRecurring: "{{ $randomBoolean() }}"
+                  recurrencePattern: 
+                    frequency: "weekly"
+                    interval: 1
+                headers:
+                  Authorization: "Bearer {{ authToken }}"
+                capture:
+                  - json: "$.data.appointment._id"
+                    as: "appointmentId{{ $loopCount }}"
+            
+            # Create follow-up task
+            - post:
+                url: "/api/follow-ups"
+                name: "Rapid Follow-up Creation"
+                json:
+                  patientId: "{{ $randomString() }}"
+                  type: "{{ $randomItem(['medication_start_followup', 'adherence_check', 'chronic_disease_monitoring']) }}"
+                  title: "Database load test follow-up {{ $randomInt(1, 100000) }}"
+                  description: "Intensive database testing follow-up task with complex data"
+                  objectives: 
+                    - "Monitor patient response to new medication"
+                    - "Check for adverse drug reactions"
+                    - "Ensure proper medication adherence"
+                    - "Schedule follow-up appointment if needed"
+                  priority: "{{ $randomItem(['low', 'medium', 'high', 'urgent', 'critical']) }}"
+                  dueDate: "2025-10-{{ $randomInt(28, 31) }}T{{ $randomInt(8, 17) }}:00:00.000Z"
+                  estimatedDuration: "{{ $randomInt(15, 120) }}"
+                  trigger:
+                    type: "{{ $randomItem(['medication_start', 'lab_result', 'system_rule']) }}"
+                    sourceId: "{{ $randomString() }}"
+                    sourceType: "Medication"
+                    triggerDate: "2025-10-27T10:00:00.000Z"
+                    triggerDetails:
+                      medicationName: "Load Test Medication {{ $randomInt(1, 1000) }}"
+                      riskLevel: "{{ $randomItem(['low', 'medium', 'high']) }}"
+                headers:
+                  Authorization: "Bearer {{ authToken }}"
+                capture:
+                  - json: "$.data.followUpTask._id"
+                    as: "followUpId{{ $loopCount }}"
+            
+            - think: 0.3
+      
+      # Update operations
+      - loop:
+          count: 3
+          over:
+            - patch:
+                url: "/api/appointments/{{ appointmentId1 }}/status"
+                name: "Appointment Status Update"
+                json:
+                  status: "{{ $randomItem(['confirmed', 'in_progress', 'completed']) }}"
+                  outcome:
+                    status: "successful"
+                    notes: "Database load test completion with detailed notes and outcome tracking"
+                    nextActions: ["Schedule follow-up", "Monitor patient", "Update care plan"]
+                    visitCreated: true
+                headers:
+                  Authorization: "Bearer {{ authToken }}"
+            
+            - put:
+                url: "/api/follow-ups/{{ followUpId1 }}"
+                name: "Follow-up Update"
+                json:
+                  priority: "urgent"
+                  description: "Updated during database load test - priority escalated due to patient condition"
+                  objectives: 
+                    - "Immediate patient contact required"
+                    - "Review medication regimen"
+                    - "Consider hospitalization if needed"
+                headers:
+                  Authorization: "Bearer {{ authToken }}"
+            
+            - think: 0.5
+
+  # Complex aggregation queries
+  - name: "Complex Aggregation Queries"
+    weight: 15
+    flow:
+      - post:
+          url: "/api/auth/login"
+          name: "Login"
+          json:
+            email: "manager+{{ $randomInt(1, 10) }}@example.com"
+            password: "LoadTest123!"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+      
+      # Heavy analytics and reporting queries
+      - loop:
+          count: 4
+          over:
+            - get:
+                url: "/api/appointments/analytics"
+                name: "Complex Appointment Analytics"
+                qs:
+                  startDate: "{{ startDate }}"
+                  endDate: "{{ endDate }}"
+                  pharmacistId: "{{ $randomString() }}"
+                  locationId: "{{ $randomString() }}"
+                headers:
+                  Authorization: "Bearer {{ authToken }}"
+            
+            - get:
+                url: "/api/follow-ups/analytics/summary"
+                name: "Complex Follow-up Analytics"
+                qs:
+                  startDate: "{{ startDate }}"
+                  endDate: "{{ endDate }}"
+                  pharmacistId: "{{ $randomString() }}"
+                headers:
+                  Authorization: "Bearer {{ authToken }}"
+            
+            - get:
+                url: "/api/schedules/capacity"
+                name: "Capacity Analytics"
+                qs:
+                  startDate: "{{ startDate }}"
+                  endDate: "{{ endDate }}"
+                  pharmacistId: "{{ $randomString() }}"
+                headers:
+                  Authorization: "Bearer {{ authToken }}"
+            
+            - think: 2
+
+  # Concurrent patient data queries
+  - name: "Concurrent Patient Queries"
+    weight: 10
+    flow:
+      - post:
+          url: "/api/auth/login"
+          name: "Login"
+          json:
+            email: "pharmacist+{{ $randomInt(1, 20) }}@example.com"
+            password: "LoadTest123!"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+      
+      # Simulate multiple patient record access
+      - loop:
+          count: 10
+          over:
+            - get:
+                url: "/api/appointments/patient/{{ $randomString() }}"
+                name: "Patient Appointment History"
+                qs:
+                  limit: 20
+                  status: "{{ $randomItem(['completed', 'scheduled', 'cancelled']) }}"
+                headers:
+                  Authorization: "Bearer {{ authToken }}"
+            
+            - get:
+                url: "/api/follow-ups/patient/{{ $randomString() }}"
+                name: "Patient Follow-up History"
+                qs:
+                  limit: 15
+                  status: "{{ $randomItem(['completed', 'pending']) }}"
+                headers:
+                  Authorization: "Bearer {{ authToken }}"
+            
+            - think: 1

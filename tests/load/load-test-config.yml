@@ -1,0 +1,327 @@
+config:
+  target: 'http://localhost:5000'
+  phases:
+    # Warm-up phase
+    - duration: 60
+      arrivalRate: 10
+      name: "Warm-up"
+    # Ramp-up phase
+    - duration: 120
+      arrivalRate: 50
+      rampTo: 200
+      name: "Ramp-up"
+    # Sustained load phase
+    - duration: 300
+      arrivalRate: 200
+      name: "Sustained Load"
+    # Peak load phase (1000 concurrent users)
+    - duration: 180
+      arrivalRate: 500
+      rampTo: 1000
+      name: "Peak Load"
+    # Cool-down phase
+    - duration: 60
+      arrivalRate: 1000
+      rampTo: 10
+      name: "Cool-down"
+  
+  # Performance thresholds
+  ensure:
+    - http.response_time.p95: 500  # 95th percentile response time < 500ms
+    - http.response_time.p99: 1000 # 99th percentile response time < 1000ms
+    - http.request_rate: 800       # Minimum requests per second
+    - http.codes.200: 95           # 95% success rate
+    - http.codes.500: 1            # Less than 1% server errors
+
+  # Load test environment variables
+  variables:
+    testWorkspaceId: "{{ $randomString() }}"
+    testUserId: "{{ $randomString() }}"
+    testPatientId: "{{ $randomString() }}"
+
+  # Plugins for enhanced reporting
+  plugins:
+    metrics-by-endpoint:
+      useOnlyRequestNames: true
+    publish-metrics:
+      - type: datadog
+        apiKey: "{{ $env.DATADOG_API_KEY }}"
+        prefix: "artillery.loadtest"
+        tags:
+          - "environment:test"
+          - "service:patient-engagement"
+
+  # HTTP configuration
+  http:
+    timeout: 30
+    pool: 50
+    maxSockets: 50
+
+  # WebSocket configuration
+  ws:
+    timeout: 30
+
+before:
+  flow:
+    - log: "Starting Patient Engagement Load Test"
+    - log: "Target: {{ target }}"
+    - log: "Test Workspace ID: {{ testWorkspaceId }}"
+
+after:
+  flow:
+    - log: "Load test completed"
+    - log: "Check Artillery report for detailed metrics"
+
+scenarios:
+  # Authentication scenario (20% of traffic)
+  - name: "Authentication Flow"
+    weight: 20
+    flow:
+      - post:
+          url: "/api/auth/login"
+          name: "Login"
+          json:
+            email: "loadtest+{{ $randomInt(1, 1000) }}@example.com"
+            password: "LoadTest123!"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+            - json: "$.user.workplaceId"
+              as: "workplaceId"
+            - json: "$.user._id"
+              as: "userId"
+      - think: 2
+      - get:
+          url: "/api/health"
+          name: "Health Check"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+
+  # Appointment Management scenario (40% of traffic)
+  - name: "Appointment Management"
+    weight: 40
+    flow:
+      # Login first
+      - post:
+          url: "/api/auth/login"
+          name: "Login"
+          json:
+            email: "pharmacist+{{ $randomInt(1, 100) }}@example.com"
+            password: "LoadTest123!"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+            - json: "$.user.workplaceId"
+              as: "workplaceId"
+      
+      # Get calendar view
+      - get:
+          url: "/api/appointments/calendar"
+          name: "Get Calendar"
+          qs:
+            view: "week"
+            date: "2025-10-27"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+      
+      - think: 1
+      
+      # Get available slots
+      - get:
+          url: "/api/appointments/available-slots"
+          name: "Get Available Slots"
+          qs:
+            date: "2025-10-28"
+            duration: 30
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+      
+      - think: 2
+      
+      # Create appointment
+      - post:
+          url: "/api/appointments"
+          name: "Create Appointment"
+          json:
+            patientId: "{{ $randomString() }}"
+            type: "{{ $randomItem(['mtm_session', 'health_check', 'general_followup']) }}"
+            scheduledDate: "2025-10-28"
+            scheduledTime: "{{ $randomItem(['09:00', '10:00', '11:00', '14:00', '15:00']) }}"
+            duration: "{{ $randomInt(15, 60) }}"
+            description: "Load test appointment {{ $randomInt(1, 10000) }}"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          capture:
+            - json: "$.data.appointment._id"
+              as: "appointmentId"
+      
+      - think: 1
+      
+      # Get appointment details
+      - get:
+          url: "/api/appointments/{{ appointmentId }}"
+          name: "Get Appointment Details"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+      
+      # Update appointment status (50% chance)
+      - ifTrue: "{{ $randomInt(1, 100) <= 50 }}"
+        then:
+          - patch:
+              url: "/api/appointments/{{ appointmentId }}/status"
+              name: "Update Appointment Status"
+              json:
+                status: "confirmed"
+              headers:
+                Authorization: "Bearer {{ authToken }}"
+
+  # Follow-up Management scenario (25% of traffic)
+  - name: "Follow-up Management"
+    weight: 25
+    flow:
+      # Login
+      - post:
+          url: "/api/auth/login"
+          name: "Login"
+          json:
+            email: "pharmacist+{{ $randomInt(1, 100) }}@example.com"
+            password: "LoadTest123!"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+      
+      # Get follow-up tasks
+      - get:
+          url: "/api/follow-ups"
+          name: "Get Follow-up Tasks"
+          qs:
+            status: "pending"
+            limit: 20
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+      
+      - think: 1
+      
+      # Get dashboard summary
+      - get:
+          url: "/api/follow-ups/dashboard/summary"
+          name: "Get Dashboard Summary"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+      
+      - think: 2
+      
+      # Create follow-up task
+      - post:
+          url: "/api/follow-ups"
+          name: "Create Follow-up Task"
+          json:
+            patientId: "{{ $randomString() }}"
+            type: "{{ $randomItem(['medication_start_followup', 'adherence_check', 'general_followup']) }}"
+            title: "Load test follow-up {{ $randomInt(1, 10000) }}"
+            description: "This is a load test follow-up task"
+            objectives: ["Monitor medication adherence", "Check for side effects"]
+            priority: "{{ $randomItem(['low', 'medium', 'high']) }}"
+            dueDate: "2025-10-30T10:00:00.000Z"
+            trigger:
+              type: "manual"
+              triggerDate: "2025-10-27T10:00:00.000Z"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+          capture:
+            - json: "$.data.followUpTask._id"
+              as: "followUpId"
+      
+      # Get overdue follow-ups (30% chance)
+      - ifTrue: "{{ $randomInt(1, 100) <= 30 }}"
+        then:
+          - get:
+              url: "/api/follow-ups/overdue"
+              name: "Get Overdue Follow-ups"
+              headers:
+                Authorization: "Bearer {{ authToken }}"
+
+  # Analytics and Reporting scenario (10% of traffic)
+  - name: "Analytics and Reporting"
+    weight: 10
+    flow:
+      # Login as manager
+      - post:
+          url: "/api/auth/login"
+          name: "Login"
+          json:
+            email: "manager+{{ $randomInt(1, 10) }}@example.com"
+            password: "LoadTest123!"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+      
+      # Get appointment analytics
+      - get:
+          url: "/api/appointments/analytics"
+          name: "Get Appointment Analytics"
+          qs:
+            startDate: "2025-10-01"
+            endDate: "2025-10-31"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+      
+      - think: 2
+      
+      # Get follow-up analytics
+      - get:
+          url: "/api/follow-ups/analytics/summary"
+          name: "Get Follow-up Analytics"
+          qs:
+            startDate: "2025-10-01"
+            endDate: "2025-10-31"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+      
+      - think: 1
+      
+      # Get capacity report
+      - get:
+          url: "/api/schedules/capacity"
+          name: "Get Capacity Report"
+          qs:
+            startDate: "2025-10-01"
+            endDate: "2025-10-31"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+
+  # Patient Portal scenario (5% of traffic)
+  - name: "Patient Portal"
+    weight: 5
+    flow:
+      # Get appointment types (public endpoint)
+      - get:
+          url: "/api/appointments/portal/types"
+          name: "Get Appointment Types"
+      
+      - think: 2
+      
+      # Get available slots (public endpoint)
+      - get:
+          url: "/api/appointments/available-slots"
+          name: "Get Available Slots (Portal)"
+          qs:
+            date: "2025-10-28"
+            duration: 30
+      
+      - think: 3
+      
+      # Book appointment through portal
+      - post:
+          url: "/api/appointments/portal/book"
+          name: "Book Appointment (Portal)"
+          json:
+            patientInfo:
+              firstName: "LoadTest"
+              lastName: "Patient{{ $randomInt(1, 10000) }}"
+              email: "patient{{ $randomInt(1, 10000) }}@example.com"
+              phone: "+234{{ $randomInt(7000000000, 9999999999) }}"
+            appointmentType: "health_check"
+            scheduledDate: "2025-10-28"
+            scheduledTime: "10:00"
+            notes: "Load test booking"

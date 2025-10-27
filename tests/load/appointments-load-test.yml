@@ -1,0 +1,184 @@
+config:
+  target: 'http://localhost:5000'
+  phases:
+    # Focused appointment load testing
+    - duration: 60
+      arrivalRate: 20
+      name: "Appointment Warm-up"
+    - duration: 180
+      arrivalRate: 100
+      rampTo: 300
+      name: "Appointment Peak Load"
+    - duration: 120
+      arrivalRate: 300
+      name: "Appointment Sustained Load"
+  
+  ensure:
+    - http.response_time.p95: 400  # Stricter for appointment operations
+    - http.response_time.p99: 800
+    - http.request_rate: 250
+    - http.codes.200: 97
+    - http.codes.500: 0.5
+
+  variables:
+    testDate: "2025-10-28"
+    testTime: "{{ $randomItem(['09:00', '10:00', '11:00', '14:00', '15:00', '16:00']) }}"
+
+  plugins:
+    metrics-by-endpoint:
+      useOnlyRequestNames: true
+
+scenarios:
+  # Heavy appointment CRUD operations
+  - name: "Appointment CRUD Intensive"
+    weight: 60
+    flow:
+      # Login
+      - post:
+          url: "/api/auth/login"
+          name: "Login"
+          json:
+            email: "pharmacist+{{ $randomInt(1, 50) }}@example.com"
+            password: "LoadTest123!"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+            - json: "$.user.workplaceId"
+              as: "workplaceId"
+      
+      # Rapid calendar requests (simulating real-time calendar usage)
+      - loop:
+          count: 5
+          over:
+            - get:
+                url: "/api/appointments/calendar"
+                name: "Rapid Calendar Requests"
+                qs:
+                  view: "{{ $randomItem(['day', 'week', 'month']) }}"
+                  date: "{{ testDate }}"
+                headers:
+                  Authorization: "Bearer {{ authToken }}"
+            - think: 0.5
+      
+      # Batch slot checking
+      - loop:
+          count: 3
+          over:
+            - get:
+                url: "/api/appointments/available-slots"
+                name: "Batch Slot Checking"
+                qs:
+                  date: "{{ testDate }}"
+                  duration: "{{ $randomInt(15, 60) }}"
+                headers:
+                  Authorization: "Bearer {{ authToken }}"
+            - think: 0.2
+      
+      # Create multiple appointments rapidly
+      - loop:
+          count: 2
+          over:
+            - post:
+                url: "/api/appointments"
+                name: "Rapid Appointment Creation"
+                json:
+                  patientId: "{{ $randomString() }}"
+                  type: "{{ $randomItem(['mtm_session', 'health_check', 'chronic_disease_review']) }}"
+                  scheduledDate: "{{ testDate }}"
+                  scheduledTime: "{{ testTime }}"
+                  duration: "{{ $randomInt(15, 60) }}"
+                  description: "Load test appointment {{ $randomInt(1, 100000) }}"
+                headers:
+                  Authorization: "Bearer {{ authToken }}"
+                capture:
+                  - json: "$.data.appointment._id"
+                    as: "appointmentId{{ $loopCount }}"
+            - think: 0.3
+      
+      # Rapid status updates
+      - patch:
+          url: "/api/appointments/{{ appointmentId1 }}/status"
+          name: "Rapid Status Update"
+          json:
+            status: "confirmed"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+      
+      - think: 0.5
+      
+      # Reschedule appointment
+      - post:
+          url: "/api/appointments/{{ appointmentId2 }}/reschedule"
+          name: "Reschedule Appointment"
+          json:
+            newDate: "2025-10-29"
+            newTime: "11:00"
+            reason: "Load test reschedule"
+            notifyPatient: false
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+
+  # Concurrent calendar viewing (simulating multiple users viewing calendar)
+  - name: "Concurrent Calendar Viewing"
+    weight: 25
+    flow:
+      - post:
+          url: "/api/auth/login"
+          name: "Login"
+          json:
+            email: "user+{{ $randomInt(1, 200) }}@example.com"
+            password: "LoadTest123!"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+      
+      # Simulate user browsing calendar for 30 seconds
+      - loop:
+          count: 15
+          over:
+            - get:
+                url: "/api/appointments/calendar"
+                name: "Calendar Browsing"
+                qs:
+                  view: "{{ $randomItem(['day', 'week', 'month']) }}"
+                  date: "2025-10-{{ $randomInt(25, 31) }}"
+                headers:
+                  Authorization: "Bearer {{ authToken }}"
+            - think: 2
+      
+      # Get upcoming appointments
+      - get:
+          url: "/api/appointments/upcoming"
+          name: "Get Upcoming Appointments"
+          qs:
+            days: "{{ $randomInt(1, 14) }}"
+          headers:
+            Authorization: "Bearer {{ authToken }}"
+
+  # Patient-specific appointment queries
+  - name: "Patient Appointment Queries"
+    weight: 15
+    flow:
+      - post:
+          url: "/api/auth/login"
+          name: "Login"
+          json:
+            email: "pharmacist+{{ $randomInt(1, 30) }}@example.com"
+            password: "LoadTest123!"
+          capture:
+            - json: "$.token"
+              as: "authToken"
+      
+      # Query appointments for multiple patients
+      - loop:
+          count: 5
+          over:
+            - get:
+                url: "/api/appointments/patient/{{ $randomString() }}"
+                name: "Patient Appointment Query"
+                qs:
+                  status: "{{ $randomItem(['scheduled', 'confirmed', 'completed']) }}"
+                  limit: 10
+                headers:
+                  Authorization: "Bearer {{ authToken }}"
+            - think: 1
