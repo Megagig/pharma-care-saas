@@ -14,6 +14,22 @@ import {
     getExportJobStatus,
     getPerformanceStats,
 } from '../controllers/reportsController';
+
+// Import new engagement report controllers
+import {
+    generateAppointmentReport,
+    generateFollowUpReport,
+    generateReminderReport,
+    generateCapacityReport,
+    emailReport,
+    scheduleRecurringReport,
+    testEmailConfiguration
+} from '../controllers/reportController';
+import { 
+    validateReportGeneration, 
+    validateEmailReport, 
+    validateScheduleReport 
+} from '../validators/reportValidators';
 import MedicationTherapyReview from '../models/MedicationTherapyReview';
 import MTRIntervention from '../models/MTRIntervention';
 import DrugTherapyProblem from '../models/DrugTherapyProblem';
@@ -1358,6 +1374,86 @@ router.get('/export/:jobId/status',
 router.get('/performance/stats',
     requirePermission('view_system_stats', { useDynamicRBAC: true }),
     getPerformanceStats
+);
+
+// ===============================
+// PATIENT ENGAGEMENT REPORT ROUTES
+// ===============================
+
+/**
+ * @route   POST /api/reports/engagement/appointments/generate
+ * @desc    Generate appointment report (PDF/Excel/CSV)
+ * @access  Private (requires reports:read permission)
+ */
+router.post('/engagement/appointments/generate',
+    requirePermission('view_reports', { useDynamicRBAC: true }),
+    validateReportGeneration,
+    generateAppointmentReport
+);
+
+/**
+ * @route   POST /api/reports/engagement/follow-ups/generate
+ * @desc    Generate follow-up tasks report (PDF/Excel/CSV)
+ * @access  Private (requires reports:read permission)
+ */
+router.post('/engagement/follow-ups/generate',
+    requirePermission('view_reports', { useDynamicRBAC: true }),
+    validateReportGeneration,
+    generateFollowUpReport
+);
+
+/**
+ * @route   POST /api/reports/engagement/reminders/generate
+ * @desc    Generate reminder effectiveness report (PDF/Excel/CSV)
+ * @access  Private (requires reports:read permission)
+ */
+router.post('/engagement/reminders/generate',
+    requirePermission('view_reports', { useDynamicRBAC: true }),
+    validateReportGeneration,
+    generateReminderReport
+);
+
+/**
+ * @route   POST /api/reports/engagement/capacity/generate
+ * @desc    Generate capacity utilization report (PDF/Excel/CSV)
+ * @access  Private (requires reports:read permission)
+ */
+router.post('/engagement/capacity/generate',
+    requirePermission('view_reports', { useDynamicRBAC: true }),
+    validateReportGeneration,
+    generateCapacityReport
+);
+
+/**
+ * @route   POST /api/reports/engagement/email
+ * @desc    Send engagement report via email
+ * @access  Private (requires reports:email permission)
+ */
+router.post('/engagement/email',
+    requirePermission('export_reports', { useDynamicRBAC: true }),
+    validateEmailReport,
+    emailReport
+);
+
+/**
+ * @route   POST /api/reports/engagement/schedule
+ * @desc    Schedule recurring engagement report
+ * @access  Private (requires reports:schedule permission)
+ */
+router.post('/engagement/schedule',
+    requirePermission('export_reports', { useDynamicRBAC: true }),
+    validateScheduleReport,
+    scheduleRecurringReport
+);
+
+/**
+ * @route   POST /api/reports/engagement/test-email
+ * @desc    Test email configuration for engagement reports
+ * @access  Private (requires reports:email permission)
+ */
+router.post('/engagement/test-email',
+    requirePermission('export_reports', { useDynamicRBAC: true }),
+    testEmailConfiguration
 );
 
 // ===============================
