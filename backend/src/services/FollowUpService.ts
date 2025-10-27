@@ -15,6 +15,7 @@ import {
   createBusinessRuleError,
 } from '../utils/responseHelpers';
 import logger from '../utils/logger';
+import app from '../app';
 
 export interface CreateFollowUpTaskData {
   patientId: mongoose.Types.ObjectId;
@@ -178,6 +179,21 @@ export class FollowUpService {
         dueDate: data.dueDate,
       });
 
+      // Emit real-time event
+      try {
+        const appointmentSocket = app.get('appointmentSocket');
+        if (appointmentSocket) {
+          appointmentSocket.emitFollowUpCreated(followUpTask, {
+            userId: createdBy.toString(),
+            name: pharmacist.firstName + ' ' + pharmacist.lastName,
+            role: pharmacist.role,
+          });
+        }
+      } catch (socketError) {
+        logger.error('Failed to emit follow-up created event:', socketError);
+        // Don't fail the operation if socket emission fails
+      }
+
       return followUpTask;
     } catch (error) {
       logger.error('Error creating follow-up task', {
@@ -308,6 +324,23 @@ export class FollowUpService {
           taskId,
           updatedBy: updatedBy.toString(),
         });
+
+        // Emit real-time event
+        try {
+          const appointmentSocket = app.get('appointmentSocket');
+          if (appointmentSocket) {
+            const user = await User.findById(updatedBy);
+            if (user) {
+              appointmentSocket.emitFollowUpUpdated(task, {
+                userId: updatedBy.toString(),
+                name: user.firstName + ' ' + user.lastName,
+                role: user.role,
+              });
+            }
+          }
+        } catch (socketError) {
+          logger.error('Failed to emit follow-up updated event:', socketError);
+        }
       }
 
       return task;
@@ -503,6 +536,23 @@ export class FollowUpService {
         completedBy: completedBy.toString(),
       });
 
+      // Emit real-time event
+      try {
+        const appointmentSocket = app.get('appointmentSocket');
+        if (appointmentSocket) {
+          const user = await User.findById(completedBy);
+          if (user) {
+            appointmentSocket.emitFollowUpCompleted(task, {
+              userId: completedBy.toString(),
+              name: user.firstName + ' ' + user.lastName,
+              role: user.role,
+            });
+          }
+        }
+      } catch (socketError) {
+        logger.error('Failed to emit follow-up completed event:', socketError);
+      }
+
       return task;
     } catch (error) {
       logger.error('Error completing follow-up task', {
@@ -598,6 +648,23 @@ export class FollowUpService {
         convertedBy: convertedBy.toString(),
       });
 
+      // Emit real-time event
+      try {
+        const appointmentSocket = app.get('appointmentSocket');
+        if (appointmentSocket) {
+          const user = await User.findById(convertedBy);
+          if (user) {
+            appointmentSocket.emitFollowUpConvertedToAppointment(task, appointment, {
+              userId: convertedBy.toString(),
+              name: user.firstName + ' ' + user.lastName,
+              role: user.role,
+            });
+          }
+        }
+      } catch (socketError) {
+        logger.error('Failed to emit follow-up converted to appointment event:', socketError);
+      }
+
       return { task, appointment };
     } catch (error) {
       logger.error('Error converting follow-up task to appointment', {
@@ -680,8 +747,22 @@ export class FollowUpService {
         reason: data.reason,
       });
 
-      // TODO: Send notification to assigned pharmacist and manager
-      // This will be implemented in the notification integration phase
+      // Emit real-time event
+      try {
+        const appointmentSocket = app.get('appointmentSocket');
+        if (appointmentSocket) {
+          const user = await User.findById(escalatedBy);
+          if (user) {
+            appointmentSocket.emitFollowUpEscalated(task, {
+              userId: escalatedBy.toString(),
+              name: user.firstName + ' ' + user.lastName,
+              role: user.role,
+            }, oldPriority, data.reason);
+          }
+        }
+      } catch (socketError) {
+        logger.error('Failed to emit follow-up escalated event:', socketError);
+      }
 
       return task;
     } catch (error) {

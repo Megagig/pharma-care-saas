@@ -13,6 +13,7 @@ import UsageAlertCronService from './services/UsageAlertCronService';
 import { emailDeliveryCronService } from './services/EmailDeliveryCronService';
 import CommunicationSocketService from './services/communicationSocketService';
 import SocketNotificationService from './services/socketNotificationService';
+import AppointmentSocketService from './services/AppointmentSocketService';
 import QueueService from './services/QueueService';
 
 // Import models to ensure they are registered with Mongoose
@@ -93,6 +94,7 @@ async function initializeServer() {
   // Initialize Socket.IO services
   const communicationSocketService = new CommunicationSocketService(io);
   const socketNotificationService = new SocketNotificationService(io);
+  const appointmentSocketService = new AppointmentSocketService(io);
 
   // Initialize new Chat Socket Service
   const { initializeChatSocketService } = await import('./services/chat/ChatSocketService');
@@ -127,6 +129,7 @@ async function initializeServer() {
   // Make socket services available globally for other services
   app.set('communicationSocket', communicationSocketService);
   app.set('socketNotification', socketNotificationService);
+  app.set('appointmentSocket', appointmentSocketService);
   app.set('chatSocket', chatSocketService);
 
   const server = httpServer.listen(PORT, () => {

@@ -17,6 +17,7 @@ import {
 } from '../utils/responseHelpers';
 import { appointmentNotificationService } from './AppointmentNotificationService';
 import logger from '../utils/logger';
+import app from '../app';
 
 export interface CreateAppointmentData {
   patientId: mongoose.Types.ObjectId;
@@ -189,6 +190,21 @@ export class AppointmentService {
         type: data.type,
       });
 
+      // Emit real-time event
+      try {
+        const appointmentSocket = app.get('appointmentSocket');
+        if (appointmentSocket) {
+          appointmentSocket.emitAppointmentCreated(appointment, {
+            userId: createdBy.toString(),
+            name: pharmacist.firstName + ' ' + pharmacist.lastName,
+            role: pharmacist.role,
+          });
+        }
+      } catch (socketError) {
+        logger.error('Failed to emit appointment created event:', socketError);
+        // Don't fail the operation if socket emission fails
+      }
+
       return appointment;
     } catch (error) {
       logger.error('Error creating appointment', {
@@ -252,6 +268,23 @@ export class AppointmentService {
           appointmentId,
           updatedBy: updatedBy.toString(),
         });
+
+        // Emit real-time event
+        try {
+          const appointmentSocket = app.get('appointmentSocket');
+          if (appointmentSocket) {
+            const user = await User.findById(updatedBy);
+            if (user) {
+              appointmentSocket.emitAppointmentUpdated(appointment, {
+                userId: updatedBy.toString(),
+                name: user.firstName + ' ' + user.lastName,
+                role: user.role,
+              });
+            }
+          }
+        } catch (socketError) {
+          logger.error('Failed to emit appointment updated event:', socketError);
+        }
       }
 
       return appointment;
@@ -563,15 +596,33 @@ export class AppointmentService {
           appointment.status = data.status;
       }
 
+      const oldStatus = appointment.status;
       appointment.updatedBy = updatedBy;
       await appointment.save();
 
       logger.info('Appointment status updated', {
         appointmentId: appointmentId.toString(),
-        oldStatus: appointment.status,
+        oldStatus,
         newStatus: data.status,
         updatedBy: updatedBy.toString(),
       });
+
+      // Emit real-time event
+      try {
+        const appointmentSocket = app.get('appointmentSocket');
+        if (appointmentSocket) {
+          const user = await User.findById(updatedBy);
+          if (user) {
+            appointmentSocket.emitAppointmentStatusChanged(appointment, {
+              userId: updatedBy.toString(),
+              name: user.firstName + ' ' + user.lastName,
+              role: user.role,
+            }, oldStatus);
+          }
+        }
+      } catch (socketError) {
+        logger.error('Failed to emit appointment status changed event:', socketError);
+      }
 
       return appointment;
     } catch (error) {
@@ -642,6 +693,8 @@ export class AppointmentService {
       // Update reminders for new date/time
       appointment.reminders = this.generateDefaultReminders(data.newDate, data.newTime);
 
+      const oldDate = appointment.rescheduledFrom!;
+      const oldTime = appointment.scheduledTime; // Store old time before update
       appointment.updatedBy = rescheduledBy;
       await appointment.save();
 
@@ -652,6 +705,23 @@ export class AppointmentService {
         newTime: data.newTime,
         rescheduledBy: rescheduledBy.toString(),
       });
+
+      // Emit real-time event
+      try {
+        const appointmentSocket = app.get('appointmentSocket');
+        if (appointmentSocket) {
+          const user = await User.findById(rescheduledBy);
+          if (user) {
+            appointmentSocket.emitAppointmentRescheduled(appointment, {
+              userId: rescheduledBy.toString(),
+              name: user.firstName + ' ' + user.lastName,
+              role: user.role,
+            }, oldDate, oldTime);
+          }
+        }
+      } catch (socketError) {
+        logger.error('Failed to emit appointment rescheduled event:', socketError);
+      }
 
       // Send notification to patient if requested
       if (data.notifyPatient) {
@@ -747,6 +817,23 @@ export class AppointmentService {
           reason: data.reason,
           cancelledBy: cancelledBy.toString(),
         });
+      }
+
+      // Emit real-time event
+      try {
+        const appointmentSocket = app.get('appointmentSocket');
+        if (appointmentSocket) {
+          const user = await User.findById(cancelledBy);
+          if (user) {
+            appointmentSocket.emitAppointmentCancelled(appointment, {
+              userId: cancelledBy.toString(),
+              name: user.firstName + ' ' + user.lastName,
+              role: user.role,
+            }, data.reason);
+          }
+        }
+      } catch (socketError) {
+        logger.error('Failed to emit appointment cancelled event:', socketError);
       }
 
       // Send notification to patient if requested
