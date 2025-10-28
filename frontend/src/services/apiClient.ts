@@ -38,15 +38,6 @@ apiClient.interceptors.request.use(
       }
     }
 
-    // Debug logging for API requests
-    console.log('🔵 API Request:', {
-      method: config.method?.toUpperCase(),
-      url: config.url,
-      baseURL: config.baseURL,
-      fullURL: config.baseURL ? `${config.baseURL}${config.url}` : config.url,
-      hasCSRF: !!config.headers['x-csrf-token']
-    });
-
     // Don't add custom headers that aren't in CORS allowedHeaders
     // The backend RBAC will handle authentication via cookies
 

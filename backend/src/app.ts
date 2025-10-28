@@ -348,6 +348,8 @@ app.use('/api/public/workspaces', publicWorkspaceRoutes);
 // Patient Portal Authentication routes (no authentication required)
 import patientPortalAuthRoutes from './routes/patientPortalAuthRoutes';
 app.use('/api/patient-portal/auth', patientPortalAuthRoutes);
+// Mount specific auth routes that need to be at /api/patient-portal level
+app.use('/api/patient-portal/patients', patientPortalAuthRoutes); // For /patients/pending route
 
 // Public Help routes (authentication required but no role restrictions)
 import publicHelpRoutes from './routes/publicHelpRoutes';

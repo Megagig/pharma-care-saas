@@ -1,10 +1,12 @@
 import express from 'express';
 import { body, validationResult } from 'express-validator';
 import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import PatientUser from '../models/PatientUser';
 import { Workplace } from '../models/Workplace';
 import { generalRateLimiters } from '../middlewares/rateLimiting';
 import { sendEmail } from '../utils/email';
+import { auth } from '../middlewares/auth';
 
 const router = express.Router();
 
@@ -105,7 +107,7 @@ router.post(
 
       // Create new patient user with pending status
       const patientUser = new PatientUser({
-        workspaceId,
+        workplaceId: workspaceId, // Correct field name for PatientUser model
         firstName,
         lastName,
         email,
@@ -116,7 +118,7 @@ router.post(
         isActive: false, // Not active until approved
         emailVerified: false,
         phoneVerified: false,
-        createdBy: null, // Self-registration
+        createdBy: new mongoose.Types.ObjectId('000000000000000000000000'), // Self-registration - use null ObjectId
       });
 
       await patientUser.save();
@@ -310,12 +312,25 @@ router.post(
 
       await patientUser.save();
 
+      // Set httpOnly cookies for secure token storage
+      res.cookie('patientAccessToken', token, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+      });
+
+      res.cookie('patientRefreshToken', refreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === 'production',
+        sameSite: 'lax',
+        maxAge: 30 * 24 * 60 * 60 * 1000, // 30 days
+      });
+
       res.json({
         success: true,
         message: 'Login successful',
         data: {
-          token,
-          refreshToken,
           patientUser: {
             id: patientUser._id,
             firstName: patientUser.firstName,
@@ -448,5 +463,88 @@ router.patch(
     }
   }
 );
+
+/**
+ * @route GET /api/patient-portal/patients/pending
+ * @desc Get all pending patient registrations for workspace (workspace owner only)
+ * @access Private (Workspace Owner)
+ */
+router.get(
+  '/patients/pending',
+  auth, // Require authentication
+  async (req, res) => {
+    try {
+      // Get workspaceId from authenticated user or query parameter (for authenticated requests)
+      let workspaceId = (req as any).user?.workplaceId || (req as any).user?.workplace || req.query.workspaceId;
+
+      if (!workspaceId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Workspace ID is required. Please ensure you are logged in.',
+        });
+      }
+
+      // Find all pending patients for this workspace
+      const pendingPatients = await PatientUser.find({
+        workplaceId: workspaceId,
+        status: 'pending',
+        isDeleted: false,
+      })
+        .select('_id firstName lastName email phone dateOfBirth status createdAt workplaceId')
+        .sort({ createdAt: -1 })
+        .lean();
+
+      res.json({
+        success: true,
+        data: {
+          patients: pendingPatients,
+          total: pendingPatients.length,
+        },
+        message: `Found ${pendingPatients.length} pending patient registration${pendingPatients.length !== 1 ? 's' : ''}`,
+      });
+    } catch (error) {
+      console.error('Fetch pending patients error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch pending patients',
+        error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined,
+      });
+    }
+  }
+);
+
+/**
+ * @route POST /api/patient-portal/auth/logout
+ * @desc Logout patient user
+ * @access Public
+ */
+router.post('/logout', async (req, res) => {
+  try {
+    // Clear patient cookies
+    res.clearCookie('patientAccessToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+    });
+    
+    res.clearCookie('patientRefreshToken', {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+    });
+
+    res.json({
+      success: true,
+      message: 'Logged out successfully',
+    });
+  } catch (error) {
+    console.error('Patient logout error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Logout failed',
+      error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined,
+    });
+  }
+});
 
 export default router;

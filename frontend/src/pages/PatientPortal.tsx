@@ -9,13 +9,16 @@ import {
   Tabs,
   Tab,
   Container,
+  Button,
 } from '@mui/material';
+import LogoutIcon from '@mui/icons-material/Logout';
 import AvailableSlotsView from '../components/patient-portal/AvailableSlotsView';
 import BookAppointmentForm from '../components/patient-portal/BookAppointmentForm';
 import MyAppointmentsList from '../components/patient-portal/MyAppointmentsList';
 import NotificationPreferencesForm from '../components/patient-portal/NotificationPreferencesForm';
 import { useAuth } from '../hooks/useAuth';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
+import { apiClient } from '../services/apiClient';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -47,6 +50,7 @@ const PatientPortal: React.FC = () => {
   const theme = useTheme();
   const { user } = useAuth();
   const { workspaceId } = useParams<{ workspaceId: string }>();
+  const navigate = useNavigate();
   const [tabValue, setTabValue] = useState(0);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
@@ -54,26 +58,76 @@ const PatientPortal: React.FC = () => {
   };
 
   // Get workspace and patient info from params and localStorage
-  const currentWorkspaceId = workspaceId || localStorage.getItem('patientWorkspace') || 'demo-workspace';
-  const patientId = user?.id || localStorage.getItem('patientId') || 'demo-patient';
+  const currentWorkspaceId = workspaceId || localStorage.getItem('patientWorkspace') || '507f1f77bcf86cd799439011'; // Valid ObjectId for demo
+  const patientId = user?.id || localStorage.getItem('patientId') || '507f1f77bcf86cd799439012'; // Valid ObjectId for demo
+
+  // Debug logging
+  console.log('PatientPortal Debug:', {
+    workspaceId,
+    currentWorkspaceId,
+    patientId,
+    user,
+    localStorage: {
+      patientWorkspace: localStorage.getItem('patientWorkspace'),
+      patientId: localStorage.getItem('patientId')
+    }
+  });
+  const patientUser = localStorage.getItem('patientUser') ? JSON.parse(localStorage.getItem('patientUser')!) : null;
+
+  const handleLogout = async () => {
+    try {
+      await apiClient.post('/patient-portal/auth/logout');
+      // Clear localStorage
+      localStorage.removeItem('patientUser');
+      localStorage.removeItem('patientId');
+      localStorage.removeItem('patientWorkspace');
+      // Redirect to patient auth page
+      navigate(`/patient-auth/${currentWorkspaceId}`);
+    } catch (error) {
+      console.error('Logout error:', error);
+      // Even if logout fails, clear local data and redirect
+      localStorage.removeItem('patientUser');
+      localStorage.removeItem('patientId');
+      localStorage.removeItem('patientWorkspace');
+      navigate(`/patient-auth/${currentWorkspaceId}`);
+    }
+  };
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
       {/* Header */}
-      <Box sx={{ mb: 4, textAlign: 'center' }}>
-        <Typography
-          variant="h3"
-          sx={{
-            fontWeight: 700,
-            background: 'linear-gradient(135deg, #1976d2 0%, #2196f3 100%)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent',
-            mb: 2,
-          }}
-        >
-          Patient Portal
-        </Typography>
-        <Typography variant="h6" color="text.secondary">
+      <Box sx={{ mb: 4 }}>
+        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+          <Box sx={{ textAlign: 'center', flex: 1 }}>
+            <Typography
+              variant="h3"
+              sx={{
+                fontWeight: 700,
+                background: 'linear-gradient(135deg, #1976d2 0%, #2196f3 100%)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                mb: 1,
+              }}
+            >
+              Patient Portal
+            </Typography>
+            {patientUser && (
+              <Typography variant="subtitle1" color="text.secondary">
+                Welcome, {patientUser.firstName} {patientUser.lastName}
+              </Typography>
+            )}
+          </Box>
+          <Button
+            variant="outlined"
+            color="error"
+            startIcon={<LogoutIcon />}
+            onClick={handleLogout}
+            sx={{ minWidth: 120 }}
+          >
+            Logout
+          </Button>
+        </Box>
+        <Typography variant="h6" color="text.secondary" sx={{ textAlign: 'center' }}>
           Book appointments, manage your healthcare, and stay connected
         </Typography>
       </Box>
@@ -128,7 +182,7 @@ const PatientPortal: React.FC = () => {
                 Book New Appointment
               </Typography>
               <BookAppointmentForm
-                workspaceId={currentWorkspaceId}
+                workplaceId={currentWorkspaceId}
                 patientId={patientId}
                 onSuccess={() => {
                   // Switch to My Appointments tab after successful booking
@@ -145,7 +199,7 @@ const PatientPortal: React.FC = () => {
                 My Appointments
               </Typography>
               <MyAppointmentsList
-                workspaceId={currentWorkspaceId}
+                workplaceId={currentWorkspaceId}
                 patientId={patientId}
               />
             </Box>
@@ -158,7 +212,7 @@ const PatientPortal: React.FC = () => {
                 Available Appointment Times
               </Typography>
               <AvailableSlotsView
-                workspaceId={currentWorkspaceId}
+                workplaceId={currentWorkspaceId}
                 onSlotSelect={(slot) => {
                   // Switch to booking form with pre-selected slot
                   setTabValue(0);
@@ -175,7 +229,7 @@ const PatientPortal: React.FC = () => {
               </Typography>
               <NotificationPreferencesForm
                 patientId={patientId}
-                workspaceId={currentWorkspaceId}
+                workplaceId={currentWorkspaceId}
               />
             </Box>
           </TabPanel>

@@ -327,6 +327,14 @@ const BookAppointmentForm: React.FC<BookAppointmentFormProps> = ({
         What type of appointment do you need?
       </Typography>
       
+      {/* Debug information */}
+      {process.env.NODE_ENV === 'development' && (
+        <Alert severity="info" sx={{ mb: 2 }}>
+          Debug: workplaceId={workplaceId}, patientId={patientId}
+          {typesError && <div>Error: {JSON.stringify(typesError)}</div>}
+        </Alert>
+      )}
+      
       {loadingTypes ? (
         <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
           <CircularProgress />
@@ -334,6 +342,9 @@ const BookAppointmentForm: React.FC<BookAppointmentFormProps> = ({
       ) : typesError ? (
         <Alert severity="error" sx={{ mb: 2 }}>
           Failed to load appointment types. Please try again.
+          {process.env.NODE_ENV === 'development' && (
+            <div>Error details: {JSON.stringify(typesError, null, 2)}</div>
+          )}
         </Alert>
       ) : (
         <Controller

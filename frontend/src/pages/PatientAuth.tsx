@@ -24,6 +24,7 @@ import Person from '@mui/icons-material/Person';
 import Lock from '@mui/icons-material/Lock';
 import LocalHospital from '@mui/icons-material/LocalHospital';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
+import { apiClient } from '../services/apiClient';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -93,28 +94,17 @@ const PatientAuth: React.FC = () => {
     setError('');
 
     try {
-      const response = await fetch(`/api/patient-portal/auth/login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: loginForm.email,
-          password: loginForm.password,
-          workspaceId: workspaceId,
-        }),
+      const response = await apiClient.post('/patient-portal/auth/login', {
+        email: loginForm.email,
+        password: loginForm.password,
+        workspaceId: workspaceId,
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Login failed');
-      }
+      const data = response.data;
 
       if (data.success) {
-        // Store patient session
-        localStorage.setItem('patientToken', data.data.token);
-        localStorage.setItem('patientRefreshToken', data.data.refreshToken);
+        // Tokens are automatically stored in httpOnly cookies by the backend
+        // Store minimal patient info in localStorage for UI display only
         localStorage.setItem('patientWorkspace', workspaceId || '');
         localStorage.setItem('patientId', data.data.patientUser.id);
         localStorage.setItem('patientUser', JSON.stringify(data.data.patientUser));
@@ -125,7 +115,8 @@ const PatientAuth: React.FC = () => {
         throw new Error(data.message || 'Login failed');
       }
     } catch (err: any) {
-      setError(err.message || 'Login failed. Please check your credentials.');
+      const errorMessage = err.response?.data?.message || err.message || 'Login failed. Please check your credentials.';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -150,27 +141,17 @@ const PatientAuth: React.FC = () => {
     }
 
     try {
-      const response = await fetch('/api/patient-portal/auth/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          firstName: registerForm.firstName,
-          lastName: registerForm.lastName,
-          email: registerForm.email,
-          phone: registerForm.phone,
-          dateOfBirth: registerForm.dateOfBirth,
-          password: registerForm.password,
-          workspaceId: workspaceId,
-        }),
+      const response = await apiClient.post('/patient-portal/auth/register', {
+        firstName: registerForm.firstName,
+        lastName: registerForm.lastName,
+        email: registerForm.email,
+        phone: registerForm.phone,
+        dateOfBirth: registerForm.dateOfBirth,
+        password: registerForm.password,
+        workspaceId: workspaceId,
       });
 
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.message || 'Registration failed');
-      }
+      const data = response.data;
 
       if (data.success) {
         // Show success message and redirect to login
@@ -192,7 +173,17 @@ const PatientAuth: React.FC = () => {
         throw new Error(data.message || 'Registration failed');
       }
     } catch (err: any) {
-      setError(err.message || 'Registration failed. Please try again.');
+      let errorMessage = err.response?.data?.message || err.message || 'Registration failed. Please try again.';
+      
+      // If there are validation errors, show them
+      if (err.response?.data?.errors && Array.isArray(err.response.data.errors)) {
+        const validationErrors = err.response.data.errors
+          .map((error: any) => error.msg)
+          .join('. ');
+        errorMessage = validationErrors || errorMessage;
+      }
+      
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -428,6 +419,7 @@ const PatientAuth: React.FC = () => {
                   onChange={(e) =>
                     setRegisterForm({ ...registerForm, phone: e.target.value })
                   }
+                  placeholder="+2349060394022"
                   InputProps={{
                     startAdornment: (
                       <InputAdornment position="start">
@@ -435,6 +427,7 @@ const PatientAuth: React.FC = () => {
                       </InputAdornment>
                     ),
                   }}
+                  helperText="Use international format with country code (e.g., +2349060394022)"
                   sx={{ mb: 3 }}
                   required
                 />
@@ -477,6 +470,7 @@ const PatientAuth: React.FC = () => {
                       </InputAdornment>
                     ),
                   }}
+                  helperText="Must be at least 8 characters with one uppercase, one lowercase, and one number"
                   sx={{ mb: 3 }}
                   required
                 />
