@@ -229,6 +229,26 @@ const Landing = () => {
               gap: 3,
             }}
           >
+            <Button 
+              component={Link} 
+              to="/patient-access" 
+              color="inherit"
+              startIcon={<LocalPharmacyIcon />}
+              sx={{
+                fontWeight: 600,
+                color: 'primary.main',
+                '&:hover': {
+                  backgroundColor: 'primary.main',
+                  color: 'white',
+                },
+                border: '1px solid',
+                borderColor: 'primary.main',
+                borderRadius: 2,
+                px: 2,
+              }}
+            >
+              Patient Portal
+            </Button>
             <Button component={Link} to="/about" color="inherit">
               About
             </Button>

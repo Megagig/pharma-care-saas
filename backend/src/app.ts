@@ -341,6 +341,14 @@ app.use('/api/public/drugs', publicDrugDetailsRoutes);
 import publicAppointmentRoutes from './routes/publicAppointmentRoutes';
 app.use('/api/public/appointments', publicAppointmentRoutes);
 
+// Public Workspace routes (no authentication required)
+import publicWorkspaceRoutes from './routes/publicWorkspaceRoutes';
+app.use('/api/public/workspaces', publicWorkspaceRoutes);
+
+// Patient Portal Authentication routes (no authentication required)
+import patientPortalAuthRoutes from './routes/patientPortalAuthRoutes';
+app.use('/api/patient-portal/auth', patientPortalAuthRoutes);
+
 // Public Help routes (authentication required but no role restrictions)
 import publicHelpRoutes from './routes/publicHelpRoutes';
 app.use('/api/help', publicHelpRoutes);

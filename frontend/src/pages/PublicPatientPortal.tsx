@@ -23,16 +23,21 @@ import {
   AccessTime as HoursIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
+import { apiClient } from '../services/apiClient';
 
-interface Pharmacy {
+interface Workspace {
   id: string;
+  workspaceId: string;
   name: string;
+  type: string;
   address: string;
   phone: string;
   email: string;
   hours: string;
   description: string;
-  workspaceId: string;
+  state?: string;
+  lga?: string;
+  logoUrl?: string;
 }
 
 /**
@@ -44,79 +49,50 @@ const PublicPatientPortal: React.FC = () => {
   const navigate = useNavigate();
   
   const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<Pharmacy[]>([]);
+  const [searchResults, setSearchResults] = useState<Workspace[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // Mock pharmacy data - in real implementation, this would come from API
-  const mockPharmacies: Pharmacy[] = [
-    {
-      id: '1',
-      name: 'HealthCare Pharmacy',
-      address: '123 Main Street, Lagos, Nigeria',
-      phone: '+234 801 234 5678',
-      email: 'info@healthcarepharmacy.ng',
-      hours: 'Mon-Fri: 8AM-8PM, Sat: 9AM-6PM',
-      description: 'Your trusted neighborhood pharmacy providing comprehensive healthcare services.',
-      workspaceId: 'healthcare-pharmacy-workspace',
-    },
-    {
-      id: '2',
-      name: 'MediCare Plus Pharmacy',
-      address: '456 Victoria Island, Lagos, Nigeria',
-      phone: '+234 802 345 6789',
-      email: 'contact@medicareplus.ng',
-      hours: 'Mon-Sun: 24/7',
-      description: 'Round-the-clock pharmaceutical care with expert consultation services.',
-      workspaceId: 'medicare-plus-workspace',
-    },
-    {
-      id: '3',
-      name: 'Wellness Pharmacy',
-      address: '789 Abuja Central, FCT, Nigeria',
-      phone: '+234 803 456 7890',
-      email: 'hello@wellnesspharmacy.ng',
-      hours: 'Mon-Fri: 7AM-9PM, Weekends: 8AM-7PM',
-      description: 'Focused on preventive care and wellness solutions for the whole family.',
-      workspaceId: 'wellness-pharmacy-workspace',
-    },
-  ];
-
   const handleSearch = async () => {
     if (!searchQuery.trim()) {
-      setError('Please enter a pharmacy name or location to search');
+      setError('Please enter a pharmacy, clinic, or hospital name or location to search');
       return;
     }
 
     setLoading(true);
     setError('');
+    setSearchResults([]);
 
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      // Filter mock data based on search query
-      const results = mockPharmacies.filter(pharmacy =>
-        pharmacy.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        pharmacy.address.toLowerCase().includes(searchQuery.toLowerCase())
-      );
-      
-      setSearchResults(results);
-      
-      if (results.length === 0) {
-        setError('No pharmacies found matching your search. Please try a different search term.');
+      const response = await apiClient.get('/public/workspaces/search', {
+        params: {
+          query: searchQuery,
+        },
+      });
+
+      const data = response.data;
+
+      if (data.success) {
+        setSearchResults(data.data.workspaces);
+        
+        if (data.data.workspaces.length === 0) {
+          setError('No pharmacy, clinic, or hospital found matching your search. Please try a different search term.');
+        }
+      } else {
+        setError(data.message || 'Search failed');
       }
-    } catch (err) {
-      setError('Failed to search pharmacies. Please try again.');
+    } catch (err: any) {
+      const errorMessage = err.response?.data?.message || err.message || 'An error occurred while searching. Please try again.';
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleAccessPortal = (pharmacy: Pharmacy) => {
-    // Navigate to pharmacy-specific patient authentication
-    navigate(`/patient-auth/${pharmacy.workspaceId}`, {
-      state: { pharmacyInfo: pharmacy }
+  const handleAccessPortal = (workspace: Workspace) => {
+    // Navigate to workspace-specific patient authentication
+    navigate(`/patient-auth/${workspace.workspaceId}`, {
+      state: { workspaceInfo: workspace }
     });
   };
 
@@ -201,7 +177,7 @@ const PublicPatientPortal: React.FC = () => {
             <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
               <TextField
                 fullWidth
-                placeholder="Search by pharmacy name or location..."
+                placeholder="Search by name or location (e.g., 'Lagos', 'HealthCare Pharmacy', 'Hospital')..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyPress={handleKeyPress}
@@ -244,12 +220,12 @@ const PublicPatientPortal: React.FC = () => {
             {searchResults.length > 0 && (
               <Box>
                 <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
-                  Found {searchResults.length} pharmacy{searchResults.length !== 1 ? 'ies' : ''}
+                  Found {searchResults.length} workspace{searchResults.length !== 1 ? 's' : ''}
                 </Typography>
                 
                 <Grid container spacing={3}>
-                  {searchResults.map((pharmacy) => (
-                    <Grid item xs={12} md={6} key={pharmacy.id}>
+                  {searchResults.map((workspace) => (
+                    <Grid item xs={12} md={6} key={workspace.id}>
                       <Paper
                         sx={{
                           p: 3,
@@ -273,10 +249,13 @@ const PublicPatientPortal: React.FC = () => {
                           />
                           <Box sx={{ flex: 1 }}>
                             <Typography variant="h6" sx={{ fontWeight: 600, mb: 1 }}>
-                              {pharmacy.name}
+                              {workspace.name}
+                            </Typography>
+                            <Typography variant="body2" color="primary.main" sx={{ mb: 1, fontWeight: 500 }}>
+                              {workspace.type}
                             </Typography>
                             <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
-                              {pharmacy.description}
+                              {workspace.description}
                             </Typography>
                           </Box>
                         </Box>
@@ -285,25 +264,29 @@ const PublicPatientPortal: React.FC = () => {
                           <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
                             <LocationIcon sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }} />
                             <Typography variant="body2" color="text.secondary">
-                              {pharmacy.address}
+                              {workspace.address}{workspace.state && `, ${workspace.state}`}
                             </Typography>
                           </Box>
-                          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                            <PhoneIcon sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }} />
-                            <Typography variant="body2" color="text.secondary">
-                              {pharmacy.phone}
-                            </Typography>
-                          </Box>
-                          <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                            <EmailIcon sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }} />
-                            <Typography variant="body2" color="text.secondary">
-                              {pharmacy.email}
-                            </Typography>
-                          </Box>
+                          {workspace.phone && (
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                              <PhoneIcon sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }} />
+                              <Typography variant="body2" color="text.secondary">
+                                {workspace.phone}
+                              </Typography>
+                            </Box>
+                          )}
+                          {workspace.email && (
+                            <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
+                              <EmailIcon sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }} />
+                              <Typography variant="body2" color="text.secondary">
+                                {workspace.email}
+                              </Typography>
+                            </Box>
+                          )}
                           <Box sx={{ display: 'flex', alignItems: 'center' }}>
                             <HoursIcon sx={{ fontSize: 16, mr: 1, color: 'text.secondary' }} />
                             <Typography variant="body2" color="text.secondary">
-                              {pharmacy.hours}
+                              {workspace.hours}
                             </Typography>
                           </Box>
                         </Box>
@@ -312,7 +295,7 @@ const PublicPatientPortal: React.FC = () => {
                           fullWidth
                           variant="contained"
                           size="large"
-                          onClick={() => handleAccessPortal(pharmacy)}
+                          onClick={() => handleAccessPortal(workspace)}
                           sx={{
                             borderRadius: 2,
                             textTransform: 'none',

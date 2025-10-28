@@ -16,17 +16,14 @@ import {
   useTheme,
   Container,
 } from '@mui/material';
-import {
-  Visibility,
-  VisibilityOff,
-  Email,
-  Phone,
-  Person,
-  Lock,
-  LocalHospital,
-} from '@mui/icons-material';
-import { useNavigate, useSearchParams, useParams, useLocation } from 'react-router-dom';
-import { useAuth } from '../hooks/useAuth';
+import Visibility from '@mui/icons-material/Visibility';
+import VisibilityOff from '@mui/icons-material/VisibilityOff';
+import Email from '@mui/icons-material/Email';
+import Phone from '@mui/icons-material/Phone';
+import Person from '@mui/icons-material/Person';
+import Lock from '@mui/icons-material/Lock';
+import LocalHospital from '@mui/icons-material/LocalHospital';
+import { useNavigate, useParams, useLocation } from 'react-router-dom';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -57,13 +54,11 @@ function TabPanel(props: TabPanelProps) {
 const PatientAuth: React.FC = () => {
   const theme = useTheme();
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const location = useLocation();
-  const { login } = useAuth();
 
-  // Get pharmacy info from navigation state
-  const pharmacyInfo = location.state?.pharmacyInfo;
+  // Get workspace info from navigation state
+  const workspaceInfo = location.state?.workspaceInfo;
 
   const [tabValue, setTabValue] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
@@ -87,7 +82,7 @@ const PatientAuth: React.FC = () => {
     confirmPassword: '',
   });
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
     setError('');
   };
@@ -98,8 +93,6 @@ const PatientAuth: React.FC = () => {
     setError('');
 
     try {
-      // In a real implementation, this would call a patient-specific login endpoint
-      // Include workspace context in the login
       const response = await fetch(`/api/patient-portal/auth/login`, {
         method: 'POST',
         headers: {
@@ -112,18 +105,25 @@ const PatientAuth: React.FC = () => {
         }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error('Invalid credentials');
+        throw new Error(data.message || 'Login failed');
       }
 
-      const data = await response.json();
-      
-      // Store patient session
-      localStorage.setItem('patientToken', data.token);
-      localStorage.setItem('patientWorkspace', workspaceId || '');
-      
-      // Redirect to patient portal
-      navigate(`/patient-portal/${workspaceId}`);
+      if (data.success) {
+        // Store patient session
+        localStorage.setItem('patientToken', data.data.token);
+        localStorage.setItem('patientRefreshToken', data.data.refreshToken);
+        localStorage.setItem('patientWorkspace', workspaceId || '');
+        localStorage.setItem('patientId', data.data.patientUser.id);
+        localStorage.setItem('patientUser', JSON.stringify(data.data.patientUser));
+        
+        // Redirect to patient portal
+        navigate(`/patient-portal/${workspaceId}`);
+      } else {
+        throw new Error(data.message || 'Login failed');
+      }
     } catch (err: any) {
       setError(err.message || 'Login failed. Please check your credentials.');
     } finally {
@@ -150,7 +150,6 @@ const PatientAuth: React.FC = () => {
     }
 
     try {
-      // Register patient for specific workspace
       const response = await fetch('/api/patient-portal/auth/register', {
         method: 'POST',
         headers: {
@@ -167,19 +166,31 @@ const PatientAuth: React.FC = () => {
         }),
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.message || 'Registration failed');
+        throw new Error(data.message || 'Registration failed');
       }
 
-      const data = await response.json();
-      
-      // Store patient session
-      localStorage.setItem('patientToken', data.token);
-      localStorage.setItem('patientWorkspace', workspaceId || '');
-      
-      // Navigate to patient portal
-      navigate(`/patient-portal/${workspaceId}`);
+      if (data.success) {
+        // Show success message and redirect to login
+        setError('');
+        alert(data.message); // In production, use a proper notification system
+        setTabValue(0); // Switch to login tab
+        
+        // Clear registration form
+        setRegisterForm({
+          firstName: '',
+          lastName: '',
+          email: '',
+          phone: '',
+          dateOfBirth: '',
+          password: '',
+          confirmPassword: '',
+        });
+      } else {
+        throw new Error(data.message || 'Registration failed');
+      }
     } catch (err: any) {
       setError(err.message || 'Registration failed. Please try again.');
     } finally {
@@ -191,13 +202,16 @@ const PatientAuth: React.FC = () => {
     <Container maxWidth="sm" sx={{ py: 8 }}>
       {/* Header */}
       <Box sx={{ textAlign: 'center', mb: 4 }}>
-        {pharmacyInfo && (
+        {workspaceInfo && (
           <Box sx={{ mb: 3 }}>
             <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
-              {pharmacyInfo.name}
+              {workspaceInfo.name}
+            </Typography>
+            <Typography variant="body2" color="primary.main" sx={{ fontWeight: 500, mb: 1 }}>
+              {workspaceInfo.type}
             </Typography>
             <Typography variant="body2" color="text.secondary">
-              {pharmacyInfo.address}
+              {workspaceInfo.address}
             </Typography>
           </Box>
         )}
@@ -229,8 +243,8 @@ const PatientAuth: React.FC = () => {
           </Typography>
         </Box>
         <Typography variant="body1" color="text.secondary">
-          {pharmacyInfo 
-            ? `Access your account at ${pharmacyInfo.name}`
+          {workspaceInfo 
+            ? `Access your account at ${workspaceInfo.name}`
             : 'Access your healthcare information and manage appointments'
           }
         </Typography>
