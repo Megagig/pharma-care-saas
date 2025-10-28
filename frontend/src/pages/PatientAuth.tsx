@@ -25,7 +25,7 @@ import {
   Lock,
   LocalHospital,
 } from '@mui/icons-material';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams, useParams, useLocation } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
 interface TabPanelProps {
@@ -58,7 +58,12 @@ const PatientAuth: React.FC = () => {
   const theme = useTheme();
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { workspaceId } = useParams<{ workspaceId: string }>();
+  const location = useLocation();
   const { login } = useAuth();
+
+  // Get pharmacy info from navigation state
+  const pharmacyInfo = location.state?.pharmacyInfo;
 
   const [tabValue, setTabValue] = useState(0);
   const [showPassword, setShowPassword] = useState(false);
@@ -94,11 +99,31 @@ const PatientAuth: React.FC = () => {
 
     try {
       // In a real implementation, this would call a patient-specific login endpoint
-      await login(loginForm.email, loginForm.password);
+      // Include workspace context in the login
+      const response = await fetch(`/api/patient-portal/auth/login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: loginForm.email,
+          password: loginForm.password,
+          workspaceId: workspaceId,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('Invalid credentials');
+      }
+
+      const data = await response.json();
       
-      // Redirect to patient portal or intended page
-      const returnTo = searchParams.get('returnTo') || '/patient-portal';
-      navigate(returnTo);
+      // Store patient session
+      localStorage.setItem('patientToken', data.token);
+      localStorage.setItem('patientWorkspace', workspaceId || '');
+      
+      // Redirect to patient portal
+      navigate(`/patient-portal/${workspaceId}`);
     } catch (err: any) {
       setError(err.message || 'Login failed. Please check your credentials.');
     } finally {
@@ -125,8 +150,8 @@ const PatientAuth: React.FC = () => {
     }
 
     try {
-      // In a real implementation, this would call a patient registration endpoint
-      const response = await fetch('/api/patient-portal/register', {
+      // Register patient for specific workspace
+      const response = await fetch('/api/patient-portal/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -138,16 +163,23 @@ const PatientAuth: React.FC = () => {
           phone: registerForm.phone,
           dateOfBirth: registerForm.dateOfBirth,
           password: registerForm.password,
+          workspaceId: workspaceId,
         }),
       });
 
       if (!response.ok) {
-        throw new Error('Registration failed');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Registration failed');
       }
 
-      // Auto-login after successful registration
-      await login(registerForm.email, registerForm.password);
-      navigate('/patient-portal');
+      const data = await response.json();
+      
+      // Store patient session
+      localStorage.setItem('patientToken', data.token);
+      localStorage.setItem('patientWorkspace', workspaceId || '');
+      
+      // Navigate to patient portal
+      navigate(`/patient-portal/${workspaceId}`);
     } catch (err: any) {
       setError(err.message || 'Registration failed. Please try again.');
     } finally {
@@ -159,6 +191,16 @@ const PatientAuth: React.FC = () => {
     <Container maxWidth="sm" sx={{ py: 8 }}>
       {/* Header */}
       <Box sx={{ textAlign: 'center', mb: 4 }}>
+        {pharmacyInfo && (
+          <Box sx={{ mb: 3 }}>
+            <Typography variant="h5" sx={{ fontWeight: 600, mb: 1 }}>
+              {pharmacyInfo.name}
+            </Typography>
+            <Typography variant="body2" color="text.secondary">
+              {pharmacyInfo.address}
+            </Typography>
+          </Box>
+        )}
         <Box
           sx={{
             display: 'flex',
@@ -187,7 +229,10 @@ const PatientAuth: React.FC = () => {
           </Typography>
         </Box>
         <Typography variant="body1" color="text.secondary">
-          Access your healthcare information and manage appointments
+          {pharmacyInfo 
+            ? `Access your account at ${pharmacyInfo.name}`
+            : 'Access your healthcare information and manage appointments'
+          }
         </Typography>
       </Box>
 

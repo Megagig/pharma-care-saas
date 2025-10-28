@@ -77,6 +77,7 @@ import {
   LazyFollowUpManagement,
   LazyPatientPortal,
   LazyPatientAuth,
+  LazyPublicPatientPortal,
 } from './components/LazyComponents';
 
 import { LazyWrapper, useRoutePreloading } from './components/LazyWrapper';
@@ -225,6 +226,11 @@ function App(): JSX.Element {
                           <Route path="/contact" element={<Contact />} />
                           <Route path="/pricing" element={<Pricing />} />
                           <Route path="/login" element={<Login />} />
+                          <Route path="/patient-access" element={
+                            <LazyWrapper fallback={PageSkeleton}>
+                              <LazyPublicPatientPortal />
+                            </LazyWrapper>
+                          } />
                           <Route
                             path="/register"
                             element={<MultiStepRegister />}
@@ -513,11 +519,28 @@ function App(): JSX.Element {
                               </ProtectedRoute>
                             }
                           />
+                          {/* Public Patient Portal Routes */}
                           <Route
-                            path="/patient-auth"
+                            path="/patient-portal-public"
+                            element={
+                              <LazyWrapper fallback={PageSkeleton}>
+                                <LazyPublicPatientPortal />
+                              </LazyWrapper>
+                            }
+                          />
+                          <Route
+                            path="/patient-auth/:workspaceId"
                             element={
                               <LazyWrapper fallback={PageSkeleton}>
                                 <LazyPatientAuth />
+                              </LazyWrapper>
+                            }
+                          />
+                          <Route
+                            path="/patient-portal/:workspaceId"
+                            element={
+                              <LazyWrapper fallback={PageSkeleton}>
+                                <LazyPatientPortal />
                               </LazyWrapper>
                             }
                           />

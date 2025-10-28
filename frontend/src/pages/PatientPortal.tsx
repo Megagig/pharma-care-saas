@@ -15,6 +15,7 @@ import BookAppointmentForm from '../components/patient-portal/BookAppointmentFor
 import MyAppointmentsList from '../components/patient-portal/MyAppointmentsList';
 import NotificationPreferencesForm from '../components/patient-portal/NotificationPreferencesForm';
 import { useAuth } from '../hooks/useAuth';
+import { useParams } from 'react-router-dom';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -45,15 +46,16 @@ function TabPanel(props: TabPanelProps) {
 const PatientPortal: React.FC = () => {
   const theme = useTheme();
   const { user } = useAuth();
+  const { workspaceId } = useParams<{ workspaceId: string }>();
   const [tabValue, setTabValue] = useState(0);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
   };
 
-  // For demo purposes, using current user's workspace
-  const workspaceId = user?.workspaceId || 'demo-workspace';
-  const patientId = user?.id || 'demo-patient';
+  // Get workspace and patient info from params and localStorage
+  const currentWorkspaceId = workspaceId || localStorage.getItem('patientWorkspace') || 'demo-workspace';
+  const patientId = user?.id || localStorage.getItem('patientId') || 'demo-patient';
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
@@ -126,7 +128,7 @@ const PatientPortal: React.FC = () => {
                 Book New Appointment
               </Typography>
               <BookAppointmentForm
-                workspaceId={workspaceId}
+                workspaceId={currentWorkspaceId}
                 patientId={patientId}
                 onSuccess={() => {
                   // Switch to My Appointments tab after successful booking
@@ -143,7 +145,7 @@ const PatientPortal: React.FC = () => {
                 My Appointments
               </Typography>
               <MyAppointmentsList
-                workspaceId={workspaceId}
+                workspaceId={currentWorkspaceId}
                 patientId={patientId}
               />
             </Box>
@@ -156,7 +158,7 @@ const PatientPortal: React.FC = () => {
                 Available Appointment Times
               </Typography>
               <AvailableSlotsView
-                workspaceId={workspaceId}
+                workspaceId={currentWorkspaceId}
                 onSlotSelect={(slot) => {
                   // Switch to booking form with pre-selected slot
                   setTabValue(0);
@@ -173,7 +175,7 @@ const PatientPortal: React.FC = () => {
               </Typography>
               <NotificationPreferencesForm
                 patientId={patientId}
-                workspaceId={workspaceId}
+                workspaceId={currentWorkspaceId}
               />
             </Box>
           </TabPanel>
