@@ -493,6 +493,21 @@ function App(): JSX.Element {
                             }
                           />
                           <Route
+                            path="/appointments/waitlist"
+                            element={
+                              <ProtectedRoute
+                                requiredFeature="patient_engagement"
+                                requiresActiveSubscription
+                              >
+                                <AppLayout>
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyAppointmentManagement />
+                                  </LazyWrapper>
+                                </AppLayout>
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
                             path="/follow-ups"
                             element={
                               <ProtectedRoute

@@ -16,6 +16,8 @@ import {
   Badge,
   Fade,
   Button,
+  Tabs,
+  Tab,
 } from '@mui/material';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
@@ -27,6 +29,8 @@ import ScheduleIcon from '@mui/icons-material/Schedule';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import AnalyticsIcon from '@mui/icons-material/Analytics';
+import HourglassEmptyIcon from '@mui/icons-material/HourglassEmpty';
+import SmartToyIcon from '@mui/icons-material/SmartToy';
 import { motion } from 'framer-motion';
 import ResponsiveAppointmentCalendar from '../components/appointments/ResponsiveAppointmentCalendar';
 import AppointmentAnalyticsDashboard from '../components/appointments/AppointmentAnalyticsDashboard';
@@ -34,8 +38,11 @@ import PharmacistScheduleView from '../components/appointments/PharmacistSchedul
 import CapacityUtilizationChart from '../components/appointments/CapacityUtilizationChart';
 import ReminderEffectivenessChart from '../components/appointments/ReminderEffectivenessChart';
 import CreateAppointmentDialog from '../components/appointments/CreateAppointmentDialog';
+import WaitlistManagement from '../components/appointments/WaitlistManagement';
+import SmartSchedulingDialog from '../components/appointments/SmartSchedulingDialog';
 import { useAppointments } from '../hooks/useAppointments';
 import { format, endOfWeek } from 'date-fns';
+import { useLocation, useNavigate } from 'react-router-dom';
 
 const MotionCard = motion(Card);
 const MotionBox = motion(Box);
@@ -46,8 +53,16 @@ const MotionBox = motion(Box);
  */
 const AppointmentManagement: React.FC = () => {
   const theme = useTheme();
+  const location = useLocation();
+  const navigate = useNavigate();
   const [refreshing, setRefreshing] = useState(false);
   const [createAppointmentOpen, setCreateAppointmentOpen] = useState(false);
+  const [smartSchedulingOpen, setSmartSchedulingOpen] = useState(false);
+  
+  // Set initial tab based on URL
+  const [currentTab, setCurrentTab] = useState(
+    location.pathname.includes('/waitlist') ? 1 : 0
+  );
 
   // Fetch appointments data
   const { data: appointmentsData, refetch } = useAppointments({ limit: 100 });
@@ -78,6 +93,16 @@ const AppointmentManagement: React.FC = () => {
     setRefreshing(true);
     await refetch();
     setTimeout(() => setRefreshing(false), 1000);
+  };
+
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setCurrentTab(newValue);
+    // Update URL based on tab selection
+    if (newValue === 0) {
+      navigate('/appointments');
+    } else if (newValue === 1) {
+      navigate('/appointments/waitlist');
+    }
   };
 
   // Animation variants
@@ -150,6 +175,24 @@ const AppointmentManagement: React.FC = () => {
             >
               New Appointment
             </Button>
+            <Button
+              variant="outlined"
+              startIcon={<SmartToyIcon />}
+              onClick={() => setSmartSchedulingOpen(true)}
+              sx={{
+                borderRadius: 3,
+                textTransform: 'none',
+                fontWeight: 600,
+                borderColor: theme.palette.info.main,
+                color: theme.palette.info.main,
+                '&:hover': {
+                  borderColor: theme.palette.info.dark,
+                  bgcolor: alpha(theme.palette.info.main, 0.1),
+                },
+              }}
+            >
+              Smart Schedule
+            </Button>
             <Tooltip title="Refresh">
               <IconButton
                 onClick={handleRefresh}
@@ -183,8 +226,62 @@ const AppointmentManagement: React.FC = () => {
         {refreshing && <LinearProgress sx={{ mt: 2, borderRadius: 2 }} />}
       </MotionBox>
 
-      {/* Quick Stats Cards */}
-      <Grid container spacing={3} sx={{ mb: 4 }}>
+      {/* Navigation Tabs */}
+      <MotionBox
+        initial={{ opacity: 0, y: -10 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.3, delay: 0.1 }}
+        sx={{ mb: 4 }}
+      >
+        <Card
+          sx={{
+            borderRadius: 3,
+            boxShadow: theme.shadows[4],
+            background: theme.palette.background.paper,
+            border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+          }}
+        >
+          <Tabs
+            value={currentTab}
+            onChange={handleTabChange}
+            sx={{
+              px: 2,
+              '& .MuiTab-root': {
+                textTransform: 'none',
+                fontWeight: 600,
+                fontSize: '1rem',
+                minHeight: 64,
+                '&.Mui-selected': {
+                  color: theme.palette.primary.main,
+                },
+              },
+              '& .MuiTabs-indicator': {
+                height: 3,
+                borderRadius: 2,
+                background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.info.main} 100%)`,
+              },
+            }}
+          >
+            <Tab
+              icon={<CalendarMonthIcon />}
+              iconPosition="start"
+              label="Calendar & Analytics"
+              sx={{ mr: 2 }}
+            />
+            <Tab
+              icon={<HourglassEmptyIcon />}
+              iconPosition="start"
+              label="Waitlist Management"
+            />
+          </Tabs>
+        </Card>
+      </MotionBox>
+
+      {/* Tab Content */}
+      {currentTab === 0 && (
+        <>
+          {/* Quick Stats Cards */}
+          <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={4} component="div">
           <MotionCard
             initial="hidden"
@@ -579,10 +676,28 @@ const AppointmentManagement: React.FC = () => {
         </Grid>
       </Grid>
 
+        </>
+      )}
+
+      {/* Waitlist Management Tab */}
+      {currentTab === 1 && (
+        <Fade in timeout={600}>
+          <Box>
+            <WaitlistManagement />
+          </Box>
+        </Fade>
+      )}
+
       {/* Create Appointment Dialog */}
       <CreateAppointmentDialog
         open={createAppointmentOpen}
         onClose={() => setCreateAppointmentOpen(false)}
+      />
+
+      {/* Smart Scheduling Dialog */}
+      <SmartSchedulingDialog
+        open={smartSchedulingOpen}
+        onClose={() => setSmartSchedulingOpen(false)}
       />
     </Box>
   );
