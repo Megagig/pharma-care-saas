@@ -17,27 +17,26 @@ import {
   Fade,
   Button,
 } from '@mui/material';
-import {
-  CalendarMonth as CalendarIcon,
-  TrendingUp as TrendingUpIcon,
-  Notifications as NotificationsIcon,
-  Refresh as RefreshIcon,
-  MoreVert as MoreVertIcon,
-  Event as EventIcon,
-  Schedule as ScheduleIcon,
-  CheckCircle as CheckCircleIcon,
-  PersonAdd as PersonAddIcon,
-  Analytics as AnalyticsIcon,
-} from '@mui/icons-material';
+import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import NotificationsIcon from '@mui/icons-material/Notifications';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import MoreVertIcon from '@mui/icons-material/MoreVert';
+import EventIcon from '@mui/icons-material/Event';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import PersonAddIcon from '@mui/icons-material/PersonAdd';
+import AnalyticsIcon from '@mui/icons-material/Analytics';
 import { motion } from 'framer-motion';
 import ResponsiveAppointmentCalendar from '../components/appointments/ResponsiveAppointmentCalendar';
 import AppointmentAnalyticsDashboard from '../components/appointments/AppointmentAnalyticsDashboard';
 import PharmacistScheduleView from '../components/appointments/PharmacistScheduleView';
 import CapacityUtilizationChart from '../components/appointments/CapacityUtilizationChart';
 import ReminderEffectivenessChart from '../components/appointments/ReminderEffectivenessChart';
+import CreateAppointmentDialog from '../components/appointments/CreateAppointmentDialog';
 import { useAuth } from '../hooks/useAuth';
 import { useAppointments } from '../hooks/useAppointments';
-import { format, startOfWeek, endOfWeek } from 'date-fns';
+import { format, endOfWeek } from 'date-fns';
 
 const MotionCard = motion(Card);
 const MotionBox = motion(Box);
@@ -48,24 +47,26 @@ const MotionBox = motion(Box);
  */
 const AppointmentManagement: React.FC = () => {
   const theme = useTheme();
-  const { user } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
+  const [createAppointmentOpen, setCreateAppointmentOpen] = useState(false);
 
   // Fetch appointments data
   const { data: appointmentsData, refetch } = useAppointments({ limit: 100 });
 
-  // Calculate stats
-  const todayAppointments = appointmentsData?.data?.appointments?.filter(
+  // Calculate stats - data.results is the appointments array
+  const appointments = appointmentsData?.data?.results || [];
+  
+  const todayAppointments = appointments.filter(
     (apt: any) => format(new Date(apt.scheduledDate), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')
   ).length || 0;
 
-  const completedToday = appointmentsData?.data?.appointments?.filter(
+  const completedToday = appointments.filter(
     (apt: any) => 
       format(new Date(apt.scheduledDate), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') &&
       apt.status === 'completed'
   ).length || 0;
 
-  const upcomingThisWeek = appointmentsData?.data?.appointments?.filter(
+  const upcomingThisWeek = appointments.filter(
     (apt: any) => {
       const aptDate = new Date(apt.scheduledDate);
       const today = new Date();
@@ -97,7 +98,7 @@ const AppointmentManagement: React.FC = () => {
       opacity: 1,
       y: 0,
       transition: {
-        type: 'spring',
+        type: 'spring' as const,
         stiffness: 100,
       },
     },
@@ -146,6 +147,7 @@ const AppointmentManagement: React.FC = () => {
             <Button
               variant="contained"
               startIcon={<PersonAddIcon />}
+              onClick={() => setCreateAppointmentOpen(true)}
               sx={{
                 borderRadius: 3,
                 textTransform: 'none',
@@ -193,17 +195,11 @@ const AppointmentManagement: React.FC = () => {
       </MotionBox>
 
       {/* Quick Stats Cards */}
-      <MotionBox
-        variants={containerVariants}
-        initial="hidden"
-        animate="visible"
-        component={Grid}
-        container
-        spacing={3}
-        sx={{ mb: 4 }}
-      >
+      <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} sm={6} md={4}>
           <MotionCard
+            initial="hidden"
+            animate="visible"
             variants={itemVariants}
             whileHover={{ scale: 1.05, boxShadow: theme.shadows[8] }}
             sx={{
@@ -247,6 +243,8 @@ const AppointmentManagement: React.FC = () => {
 
         <Grid item xs={12} sm={6} md={4}>
           <MotionCard
+            initial="hidden"
+            animate="visible"
             variants={itemVariants}
             whileHover={{ scale: 1.05, boxShadow: theme.shadows[8] }}
             sx={{
@@ -290,6 +288,8 @@ const AppointmentManagement: React.FC = () => {
 
         <Grid item xs={12} sm={6} md={4}>
           <MotionCard
+            initial="hidden"
+            animate="visible"
             variants={itemVariants}
             whileHover={{ scale: 1.05, boxShadow: theme.shadows[8] }}
             sx={{
@@ -315,7 +315,7 @@ const AppointmentManagement: React.FC = () => {
             <CardContent>
               <Stack spacing={2}>
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
-                  <CalendarIcon sx={{ fontSize: 40, opacity: 0.9 }} />
+                  <CalendarMonthIcon sx={{ fontSize: 40, opacity: 0.9 }} />
                   <Chip label="This Week" size="small" sx={{ bgcolor: alpha('#fff', 0.2), color: 'white' }} />
                 </Stack>
                 <Box>
@@ -330,7 +330,7 @@ const AppointmentManagement: React.FC = () => {
             </CardContent>
           </MotionCard>
         </Grid>
-      </MotionBox>
+      </Grid>
 
       {/* Main Content Grid */}
       <Grid container spacing={3}>
@@ -360,7 +360,7 @@ const AppointmentManagement: React.FC = () => {
                 <Stack direction="row" justifyContent="space-between" alignItems="center">
                   <Stack direction="row" spacing={2} alignItems="center">
                     <Avatar sx={{ bgcolor: theme.palette.primary.main, width: 48, height: 48 }}>
-                      <CalendarIcon />
+                      <CalendarMonthIcon />
                     </Avatar>
                     <Box>
                       <Typography variant="h6" sx={{ fontWeight: 700 }}>
@@ -589,6 +589,12 @@ const AppointmentManagement: React.FC = () => {
           </Fade>
         </Grid>
       </Grid>
+
+      {/* Create Appointment Dialog */}
+      <CreateAppointmentDialog
+        open={createAppointmentOpen}
+        onClose={() => setCreateAppointmentOpen(false)}
+      />
     </Box>
   );
 };

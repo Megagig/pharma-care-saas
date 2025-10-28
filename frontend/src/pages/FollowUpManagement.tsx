@@ -33,6 +33,7 @@ import {
 import { motion } from 'framer-motion';
 import ResponsiveFollowUpTaskList from '../components/followups/ResponsiveFollowUpTaskList';
 import FollowUpAnalyticsDashboard from '../components/follow-ups/FollowUpAnalyticsDashboard';
+import CreateFollowUpDialog from '../components/followups/CreateFollowUpDialog';
 import { useAuth } from '../hooks/useAuth';
 import { useFollowUpTasks } from '../hooks/useFollowUps';
 import { format, startOfWeek, endOfWeek, isToday, isPast, parseISO } from 'date-fns';
@@ -48,6 +49,7 @@ const FollowUpManagement: React.FC = () => {
   const theme = useTheme();
   const { user } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
+  const [createFollowUpOpen, setCreateFollowUpOpen] = useState(false);
 
   // Fetch follow-up tasks data
   const { data: followUpsData, refetch } = useFollowUpTasks({ limit: 100 });
@@ -147,6 +149,7 @@ const FollowUpManagement: React.FC = () => {
             <Button
               variant="contained"
               startIcon={<AddTaskIcon />}
+              onClick={() => setCreateFollowUpOpen(true)}
               sx={{
                 borderRadius: 3,
                 textTransform: 'none',
@@ -607,6 +610,12 @@ const FollowUpManagement: React.FC = () => {
           </Fade>
         </Grid>
       </Grid>
+
+      {/* Create Follow-up Dialog */}
+      <CreateFollowUpDialog
+        open={createFollowUpOpen}
+        onClose={() => setCreateFollowUpOpen(false)}
+      />
     </Box>
   );
 };

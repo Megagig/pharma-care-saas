@@ -512,37 +512,15 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
       )}
 
       {/* Create Appointment Dialog */}
-      <Dialog
+      <CreateAppointmentDialog
         open={createDialogOpen}
-        onClose={() => setCreateDialogOpen(false)}
-        maxWidth="md"
-        fullWidth
-        fullScreen={isMobile}
-      >
-        <DialogTitle>
-          <Box display="flex" alignItems="center" gap={1}>
-            <Event />
-            Schedule New Appointment
-          </Box>
-        </DialogTitle>
-        <DialogContent>
-          {/* Placeholder for CreateAppointmentDialog component */}
-          <Typography variant="body2" color="text.secondary">
-            CreateAppointmentDialog component will be implemented in the next task.
-            {selectedSlot && (
-              <>
-                <br />
-                Selected date: {format(selectedSlot.date, 'PPP')}
-                {selectedSlot.time && <><br />Selected time: {selectedSlot.time}</>}
-              </>
-            )}
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setCreateDialogOpen(false)}>Cancel</Button>
-          <Button variant="contained" disabled>Create Appointment</Button>
-        </DialogActions>
-      </Dialog>
+        onClose={() => {
+          setCreateDialogOpen(false);
+          setSelectedSlot(null);
+        }}
+        selectedDate={selectedSlot?.date}
+        selectedTime={selectedSlot?.time}
+      />
 
       {/* Appointment Details Panel */}
       <Dialog
