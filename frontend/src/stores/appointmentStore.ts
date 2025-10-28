@@ -154,32 +154,74 @@ export const useAppointmentStore = create<AppointmentStore>()(
         },
 
         filterByStatus: (status: string | string[]) => {
-          get().setFilters({ status: status as any, page: 1 });
+          set(
+            (state) => ({
+              filters: { ...state.filters, status: status as any, page: 1 },
+            }),
+            false,
+            'filterByStatus'
+          );
         },
 
         filterByType: (type: string | string[]) => {
-          get().setFilters({ type: type as any, page: 1 });
+          set(
+            (state) => ({
+              filters: { ...state.filters, type: type as any, page: 1 },
+            }),
+            false,
+            'filterByType'
+          );
         },
 
         filterByPharmacist: (pharmacistId: string) => {
-          get().setFilters({ assignedTo: pharmacistId, page: 1 });
+          set(
+            (state) => ({
+              filters: { ...state.filters, assignedTo: pharmacistId, page: 1 },
+            }),
+            false,
+            'filterByPharmacist'
+          );
         },
 
         filterByPatient: (patientId: string) => {
-          get().setFilters({ patientId, page: 1 });
+          set(
+            (state) => ({
+              filters: { ...state.filters, patientId, page: 1 },
+            }),
+            false,
+            'filterByPatient'
+          );
         },
 
         filterByDateRange: (startDate: Date, endDate: Date) => {
-          get().setFilters({ startDate, endDate, page: 1 });
+          set(
+            (state) => ({
+              filters: { ...state.filters, startDate, endDate, page: 1 },
+            }),
+            false,
+            'filterByDateRange'
+          );
         },
 
         // Pagination actions
         setPage: (page: number) => {
-          get().setFilters({ page });
+          set(
+            (state) => ({
+              filters: { ...state.filters, page },
+            }),
+            false,
+            'setPage'
+          );
         },
 
         setLimit: (limit: number) => {
-          get().setFilters({ limit, page: 1 });
+          set(
+            (state) => ({
+              filters: { ...state.filters, limit, page: 1 },
+            }),
+            false,
+            'setLimit'
+          );
         },
 
         // Utility actions
@@ -317,7 +359,15 @@ export const useAppointmentStore = create<AppointmentStore>()(
         },
 
         getTodayAppointments: () => {
-          return get().getAppointmentsByDate(new Date());
+          const { appointments } = get();
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
+
+          return appointments.filter((appointment) => {
+            const appointmentDate = new Date(appointment.scheduledDate);
+            appointmentDate.setHours(0, 0, 0, 0);
+            return appointmentDate.getTime() === today.getTime();
+          });
         },
 
         getOverdueAppointments: () => {
@@ -358,24 +408,35 @@ export const useAppointmentStore = create<AppointmentStore>()(
   )
 );
 
-// Selector hooks for better performance
-export const useAppointmentCalendar = () =>
-  useAppointmentStore((state) => ({
-    selectedDate: state.selectedDate,
-    selectedView: state.selectedView,
-    setSelectedDate: state.setSelectedDate,
-    setSelectedView: state.setSelectedView,
-    navigateDate: state.navigateDate,
-    goToToday: state.goToToday,
-    getAppointmentsByDate: state.getAppointmentsByDate,
-    getAppointmentsByDateRange: state.getAppointmentsByDateRange,
-  }));
+// Selector hooks for better performance - COMPLETELY STABLE to prevent infinite re-renders
+export const useAppointmentCalendar = () => {
+  // Use individual selectors to ensure maximum stability
+  const selectedDate = useAppointmentStore((state) => state.selectedDate);
+  const selectedView = useAppointmentStore((state) => state.selectedView);
+  const setSelectedDate = useAppointmentStore((state) => state.setSelectedDate);
+  const setSelectedView = useAppointmentStore((state) => state.setSelectedView);
+  const navigateDate = useAppointmentStore((state) => state.navigateDate);
+  const goToToday = useAppointmentStore((state) => state.goToToday);
+  
+  return {
+    selectedDate,
+    selectedView,
+    setSelectedDate,
+    setSelectedView,
+    navigateDate,
+    goToToday,
+  };
+};
 
-export const useAppointmentSelection = () =>
-  useAppointmentStore((state) => ({
-    selectedAppointment: state.selectedAppointment,
-    selectAppointment: state.selectAppointment,
-  }));
+export const useAppointmentSelection = () => {
+  const selectedAppointment = useAppointmentStore((state) => state.selectedAppointment);
+  const selectAppointment = useAppointmentStore((state) => state.selectAppointment);
+  
+  return {
+    selectedAppointment,
+    selectAppointment,
+  };
+};
 
 export const useAppointmentFilters = () =>
   useAppointmentStore((state) => ({

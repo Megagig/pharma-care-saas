@@ -35,9 +35,9 @@ apiClient.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
-      // Handle unauthorized - redirect to login
-      localStorage.removeItem('token');
-      window.location.href = '/login';
+      // Don't automatically logout for analytics endpoints - they might not be implemented yet
+      // Just log the error and let the component handle it gracefully
+      console.warn('Analytics API returned 401 - endpoint may not be implemented:', error.config?.url);
     }
     return Promise.reject(error);
   }

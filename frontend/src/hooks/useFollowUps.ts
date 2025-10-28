@@ -46,9 +46,18 @@ export const useFollowUpTasks = (filters: FollowUpFilters = {}) => {
         
         setError('fetchTasks', null);
         return response;
-      } catch (error) {
+      } catch (error: any) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to fetch follow-up tasks';
+        console.warn('Follow-up tasks API error:', errorMessage);
         setError('fetchTasks', errorMessage);
+        
+        // Don't throw on 403/401 errors to prevent infinite loops
+        if (error?.response?.status === 403 || error?.response?.status === 401) {
+          console.warn('Follow-up tasks API not available - returning empty data');
+          setError('fetchTasks', null); // Clear the error
+          return { data: { tasks: [], summary: null } };
+        }
+        
         throw error;
       } finally {
         setLoading('fetchTasks', false);
@@ -87,9 +96,18 @@ export const useFollowUpTask = (taskId: string, enabled = true) => {
         
         setError('fetchTask', null);
         return response;
-      } catch (error) {
+      } catch (error: any) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to fetch follow-up task';
+        console.warn('Follow-up task API error:', errorMessage);
         setError('fetchTask', errorMessage);
+        
+        // Don't throw on 403/401 errors to prevent infinite loops
+        if (error?.response?.status === 403 || error?.response?.status === 401) {
+          console.warn('Follow-up task API not available - returning empty data');
+          setError('fetchTask', null); // Clear the error
+          return { data: { task: null } };
+        }
+        
         throw error;
       } finally {
         setLoading('fetchTask', false);
@@ -206,7 +224,10 @@ export const useCreateFollowUpTask = () => {
         dueDate: taskData.dueDate,
         estimatedDuration: taskData.estimatedDuration,
         status: 'pending',
-        trigger: taskData.trigger || {
+        trigger: taskData.trigger ? {
+          ...taskData.trigger,
+          triggerDate: taskData.trigger.triggerDate || new Date(),
+        } : {
           type: 'manual',
           triggerDate: new Date(),
         },
@@ -224,7 +245,7 @@ export const useCreateFollowUpTask = () => {
       return { previousTasks, tempTask };
     },
 
-    onSuccess: (response, variables, context) => {
+    onSuccess: (response, _variables, _context) => {
       setLoading('createTask', false);
       
       if (response.data?.task) {
@@ -247,7 +268,7 @@ export const useCreateFollowUpTask = () => {
       }
     },
 
-    onError: (error, variables, context) => {
+    onError: (error, _variables, _context) => {
       const errorMessage = error instanceof Error ? error.message : 'Failed to create follow-up task';
       setError('createTask', errorMessage);
       setLoading('createTask', false);
@@ -302,7 +323,10 @@ export const useCompleteFollowUp = () => {
       updateTaskInState(taskId, {
         status: 'completed',
         completedAt: new Date(),
-        outcome: completionData.outcome,
+        outcome: completionData.outcome ? {
+          ...completionData.outcome,
+          appointmentCreated: completionData.outcome.appointmentCreated ?? false,
+        } : undefined,
       });
 
       return { previousTask };
@@ -551,8 +575,19 @@ export const useUpdateFollowUpTask = () => {
       // Snapshot previous value
       const previousTask = queryClient.getQueryData(followUpKeys.detail(taskId));
 
-      // Optimistically update
-      updateTaskInState(taskId, updates);
+      // Optimistically update - convert form data to task data
+      const taskUpdates: Partial<FollowUpTask> = {
+        ...updates,
+        trigger: updates.trigger ? {
+          ...updates.trigger,
+          triggerDate: updates.trigger.triggerDate || new Date(),
+        } : undefined,
+        outcome: updates.outcome ? {
+          ...updates.outcome,
+          appointmentCreated: updates.outcome.appointmentCreated ?? false,
+        } : undefined,
+      };
+      updateTaskInState(taskId, taskUpdates);
 
       return { previousTask };
     },

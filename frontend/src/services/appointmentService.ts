@@ -32,12 +32,24 @@ class AppointmentService {
       return response.data as T;
     } catch (error: any) {
       console.error('Appointment API Request failed:', error);
-      throw new Error(
-        error.response?.data?.error?.message ||
-        error.response?.data?.message ||
-        error.message ||
-        'An error occurred'
-      );
+      
+      // Preserve the original error structure for proper error handling
+      if (error.response) {
+        // The request was made and the server responded with a status code
+        // that falls out of the range of 2xx
+        const enhancedError = new Error(
+          error.response?.data?.error?.message ||
+          error.response?.data?.message ||
+          error.message ||
+          'An error occurred'
+        );
+        // Preserve the response for status code checking
+        (enhancedError as any).response = error.response;
+        throw enhancedError;
+      } else {
+        // Something happened in setting up the request that triggered an Error
+        throw error;
+      }
     }
   }
 

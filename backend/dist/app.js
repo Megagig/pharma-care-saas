@@ -302,6 +302,7 @@ const publicWorkspaceRoutes_1 = __importDefault(require("./routes/publicWorkspac
 app.use('/api/public/workspaces', publicWorkspaceRoutes_1.default);
 const patientPortalAuthRoutes_1 = __importDefault(require("./routes/patientPortalAuthRoutes"));
 app.use('/api/patient-portal/auth', patientPortalAuthRoutes_1.default);
+app.use('/api/patient-portal/patients', patientPortalAuthRoutes_1.default);
 const publicHelpRoutes_1 = __importDefault(require("./routes/publicHelpRoutes"));
 app.use('/api/help', publicHelpRoutes_1.default);
 app.use('/api/analytics', analyticsRoutes_1.default);

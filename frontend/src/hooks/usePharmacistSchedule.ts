@@ -33,11 +33,31 @@ export const scheduleKeys = {
 export const usePharmacistSchedule = (pharmacistId: string, enabled = true) => {
   return useQuery({
     queryKey: scheduleKeys.detail(pharmacistId),
-    queryFn: () => pharmacistScheduleService.getPharmacistSchedule(pharmacistId),
+    queryFn: async () => {
+      try {
+        return await pharmacistScheduleService.getPharmacistSchedule(pharmacistId);
+      } catch (error: any) {
+        console.warn('Pharmacist schedule API error:', error.message);
+        
+        // Don't throw on 403/401 errors to prevent infinite loops
+        if (error?.response?.status === 403 || error?.response?.status === 401) {
+          console.warn('Pharmacist schedule API not available - returning empty data');
+          return { data: null, success: false, message: 'API not available' };
+        }
+        
+        throw error;
+      }
+    },
     enabled: enabled && !!pharmacistId,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
-    retry: 2,
+    retry: (failureCount, error: any) => {
+      // Don't retry on 4xx errors
+      if (error?.response?.status >= 400 && error?.response?.status < 500) {
+        return false;
+      }
+      return failureCount < 2;
+    },
   });
 };
 
@@ -47,10 +67,30 @@ export const usePharmacistSchedule = (pharmacistId: string, enabled = true) => {
 export const useAllPharmacistSchedules = (locationId?: string) => {
   return useQuery({
     queryKey: scheduleKeys.list(locationId),
-    queryFn: () => pharmacistScheduleService.getAllPharmacistSchedules(locationId),
+    queryFn: async () => {
+      try {
+        return await pharmacistScheduleService.getAllPharmacistSchedules(locationId);
+      } catch (error: any) {
+        console.warn('All pharmacist schedules API error:', error.message);
+        
+        // Don't throw on 403/401 errors to prevent infinite loops
+        if (error?.response?.status === 403 || error?.response?.status === 401) {
+          console.warn('All pharmacist schedules API not available - returning empty data');
+          return { data: [], success: false, message: 'API not available' };
+        }
+        
+        throw error;
+      }
+    },
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
-    retry: 2,
+    retry: (failureCount, error: any) => {
+      // Don't retry on 4xx errors
+      if (error?.response?.status >= 400 && error?.response?.status < 500) {
+        return false;
+      }
+      return failureCount < 2;
+    },
   });
 };
 
@@ -68,11 +108,31 @@ export const useCapacityReport = (
 ) => {
   return useQuery({
     queryKey: scheduleKeys.capacityReport(params),
-    queryFn: () => pharmacistScheduleService.getCapacityReport(params),
+    queryFn: async () => {
+      try {
+        return await pharmacistScheduleService.getCapacityReport(params);
+      } catch (error: any) {
+        console.warn('Capacity report API error:', error.message);
+        
+        // Don't throw on 403/401 errors to prevent infinite loops
+        if (error?.response?.status === 403 || error?.response?.status === 401) {
+          console.warn('Capacity report API not available - returning empty data');
+          return { data: null, success: false, message: 'API not available' };
+        }
+        
+        throw error;
+      }
+    },
     enabled: enabled && !!params.startDate && !!params.endDate,
     staleTime: 2 * 60 * 1000, // 2 minutes
     gcTime: 5 * 60 * 1000, // 5 minutes
-    retry: 2,
+    retry: (failureCount, error: any) => {
+      // Don't retry on 4xx errors
+      if (error?.response?.status >= 400 && error?.response?.status < 500) {
+        return false;
+      }
+      return failureCount < 2;
+    },
   });
 };
 

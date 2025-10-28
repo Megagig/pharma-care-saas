@@ -112,7 +112,7 @@ const AppointmentAnalyticsDashboard: React.FC<AppointmentAnalyticsDashboardProps
     isLoading,
     error,
     refetch,
-  } = useAppointmentAnalytics(analyticsParams);
+  } = useAppointmentAnalytics(analyticsParams, true); // Re-enabled with error handling
 
   const { data: usersData } = useUsers();
 

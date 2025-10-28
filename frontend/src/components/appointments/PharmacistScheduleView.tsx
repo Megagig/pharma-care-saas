@@ -61,7 +61,7 @@ import { useNotification } from '../../hooks/useNotification';
 import { PharmacistSchedule, TimeOffRequest } from '../../services/pharmacistScheduleService';
 
 interface PharmacistScheduleViewProps {
-  pharmacistId: string;
+  pharmacistId?: string;
   canEdit?: boolean;
   showCapacityMetrics?: boolean;
 }
@@ -91,6 +91,17 @@ const PharmacistScheduleView: React.FC<PharmacistScheduleViewProps> = ({
   canEdit = false,
   showCapacityMetrics = true,
 }) => {
+  // Handle case where no pharmacistId is provided
+  if (!pharmacistId) {
+    return (
+      <Box sx={{ p: 3, textAlign: 'center' }}>
+        <Typography variant="body2" color="text.secondary">
+          Please select a pharmacist to view their schedule
+        </Typography>
+      </Box>
+    );
+  }
+
   const [activeTab, setActiveTab] = useState(0);
   const [editDialogOpen, setEditDialogOpen] = useState(false);
   const [timeOffDialogOpen, setTimeOffDialogOpen] = useState(false);

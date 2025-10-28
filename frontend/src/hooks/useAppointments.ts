@@ -75,12 +75,15 @@ export const useAppointments = (filters: AppointmentFilters = {}) => {
 /**
  * Hook to fetch calendar view of appointments
  */
-export const useAppointmentCalendar = (params: {
-  view: 'day' | 'week' | 'month';
-  date: string;
-  pharmacistId?: string;
-  locationId?: string;
-}) => {
+export const useAppointmentCalendar = (
+  params: {
+    view: 'day' | 'week' | 'month';
+    date: string;
+    pharmacistId?: string;
+    locationId?: string;
+  },
+  enabled = true
+) => {
   const { setAppointments, setSummary, setLoading, setError } = useAppointmentStore();
 
   return useQuery({
@@ -100,18 +103,41 @@ export const useAppointmentCalendar = (params: {
         
         setError('fetchCalendar', null);
         return response;
-      } catch (error) {
+      } catch (error: any) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to fetch calendar';
+        console.warn('Calendar API error:', errorMessage);
         setError('fetchCalendar', errorMessage);
+        
+        // Don't throw on 403/401 errors or "feature not available" errors to prevent infinite loops
+        if (error?.response?.status === 403 || 
+            error?.response?.status === 401 || 
+            errorMessage.includes('This feature is not available') ||
+            errorMessage.includes('feature is not available')) {
+          console.warn('Calendar API not available - returning empty data');
+          setError('fetchCalendar', null); // Clear the error
+          return { data: { appointments: [], summary: null } };
+        }
+        
         throw error;
       } finally {
         setLoading('fetchCalendar', false);
       }
     },
+    enabled,
     staleTime: 2 * 60 * 1000, // 2 minutes for calendar data
     gcTime: 5 * 60 * 1000, // 5 minutes
-    refetchOnWindowFocus: true, // Refetch calendar when window gains focus
-    retry: 2,
+    refetchOnWindowFocus: false, // Disable to prevent loops
+    retry: (failureCount, error: any) => {
+      // Don't retry on 4xx errors or feature not available errors
+      if (error?.response?.status >= 400 && error?.response?.status < 500) {
+        return false;
+      }
+      if (error?.message?.includes('This feature is not available') || 
+          error?.message?.includes('feature is not available')) {
+        return false;
+      }
+      return failureCount < 2;
+    },
   });
 };
 

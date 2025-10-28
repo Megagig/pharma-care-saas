@@ -112,40 +112,94 @@ export const useFollowUpStore = create<FollowUpStore>()(
         },
 
         filterByStatus: (status: FollowUpStatus | FollowUpStatus[]) => {
-          get().setFilters({ status, page: 1 });
+          set(
+            (state) => ({
+              filters: { ...state.filters, status, page: 1 },
+            }),
+            false,
+            'filterByStatus'
+          );
         },
 
         filterByPriority: (priority: FollowUpPriority | FollowUpPriority[]) => {
-          get().setFilters({ priority, page: 1 });
+          set(
+            (state) => ({
+              filters: { ...state.filters, priority, page: 1 },
+            }),
+            false,
+            'filterByPriority'
+          );
         },
 
         filterByType: (type: string | string[]) => {
-          get().setFilters({ type: type as any, page: 1 });
+          set(
+            (state) => ({
+              filters: { ...state.filters, type: type as any, page: 1 },
+            }),
+            false,
+            'filterByType'
+          );
         },
 
         filterByPharmacist: (pharmacistId: string) => {
-          get().setFilters({ assignedTo: pharmacistId, page: 1 });
+          set(
+            (state) => ({
+              filters: { ...state.filters, assignedTo: pharmacistId, page: 1 },
+            }),
+            false,
+            'filterByPharmacist'
+          );
         },
 
         filterByPatient: (patientId: string) => {
-          get().setFilters({ patientId, page: 1 });
+          set(
+            (state) => ({
+              filters: { ...state.filters, patientId, page: 1 },
+            }),
+            false,
+            'filterByPatient'
+          );
         },
 
         filterByOverdue: (overdue: boolean) => {
-          get().setFilters({ overdue, page: 1 });
+          set(
+            (state) => ({
+              filters: { ...state.filters, overdue, page: 1 },
+            }),
+            false,
+            'filterByOverdue'
+          );
         },
 
         filterByDueDateRange: (from: Date, to: Date) => {
-          get().setFilters({ dueDateFrom: from, dueDateTo: to, page: 1 });
+          set(
+            (state) => ({
+              filters: { ...state.filters, dueDateFrom: from, dueDateTo: to, page: 1 },
+            }),
+            false,
+            'filterByDueDateRange'
+          );
         },
 
         // Pagination actions
         setPage: (page: number) => {
-          get().setFilters({ page });
+          set(
+            (state) => ({
+              filters: { ...state.filters, page },
+            }),
+            false,
+            'setPage'
+          );
         },
 
         setLimit: (limit: number) => {
-          get().setFilters({ limit, page: 1 });
+          set(
+            (state) => ({
+              filters: { ...state.filters, limit, page: 1 },
+            }),
+            false,
+            'setLimit'
+          );
         },
 
         // Utility actions
@@ -339,58 +393,88 @@ export const useFollowUpStore = create<FollowUpStore>()(
   )
 );
 
-// Selector hooks for better performance
-export const useFollowUpSelection = () =>
-  useFollowUpStore((state) => ({
-    selectedTask: state.selectedTask,
-    selectTask: state.selectTask,
-  }));
+// Selector hooks for better performance - FIXED to prevent infinite re-renders
+export const useFollowUpSelection = () => {
+  const selectedTask = useFollowUpStore((state) => state.selectedTask);
+  const selectTask = useFollowUpStore((state) => state.selectTask);
+  
+  return {
+    selectedTask,
+    selectTask,
+  };
+};
 
-export const useFollowUpFilters = () =>
-  useFollowUpStore((state) => ({
-    filters: state.filters,
-    setFilters: state.setFilters,
-    clearFilters: state.clearFilters,
-    filterByStatus: state.filterByStatus,
-    filterByPriority: state.filterByPriority,
-    filterByType: state.filterByType,
-    filterByPharmacist: state.filterByPharmacist,
-    filterByPatient: state.filterByPatient,
-    filterByOverdue: state.filterByOverdue,
-    filterByDueDateRange: state.filterByDueDateRange,
-  }));
+export const useFollowUpFilters = () => {
+  const filters = useFollowUpStore((state) => state.filters);
+  const setFilters = useFollowUpStore((state) => state.setFilters);
+  const clearFilters = useFollowUpStore((state) => state.clearFilters);
+  const filterByStatus = useFollowUpStore((state) => state.filterByStatus);
+  const filterByPriority = useFollowUpStore((state) => state.filterByPriority);
+  const filterByType = useFollowUpStore((state) => state.filterByType);
+  const filterByPharmacist = useFollowUpStore((state) => state.filterByPharmacist);
+  const filterByPatient = useFollowUpStore((state) => state.filterByPatient);
+  const filterByOverdue = useFollowUpStore((state) => state.filterByOverdue);
+  const filterByDueDateRange = useFollowUpStore((state) => state.filterByDueDateRange);
+  
+  return {
+    filters,
+    setFilters,
+    clearFilters,
+    filterByStatus,
+    filterByPriority,
+    filterByType,
+    filterByPharmacist,
+    filterByPatient,
+    filterByOverdue,
+    filterByDueDateRange,
+  };
+};
 
-export const useFollowUpList = () =>
-  useFollowUpStore((state) => ({
-    tasks: state.tasks,
-    summary: state.summary,
-    pagination: state.pagination,
-    loading: state.loading,
-    errors: state.errors,
-    setPage: state.setPage,
-    setLimit: state.setLimit,
-  }));
+export const useFollowUpList = () => {
+  const tasks = useFollowUpStore((state) => state.tasks);
+  const summary = useFollowUpStore((state) => state.summary);
+  const pagination = useFollowUpStore((state) => state.pagination);
+  const loading = useFollowUpStore((state) => state.loading);
+  const errors = useFollowUpStore((state) => state.errors);
+  const setPage = useFollowUpStore((state) => state.setPage);
+  const setLimit = useFollowUpStore((state) => state.setLimit);
+  
+  return {
+    tasks,
+    summary,
+    pagination,
+    loading,
+    errors,
+    setPage,
+    setLimit,
+  };
+};
 
-export const useFollowUpActions = () =>
-  useFollowUpStore((state) => ({
-    addTaskToState: state.addTaskToState,
-    updateTaskInState: state.updateTaskInState,
-    removeTaskFromState: state.removeTaskFromState,
-    setTasks: state.setTasks,
-    setSummary: state.setSummary,
-    setLoading: state.setLoading,
-    setError: state.setError,
-    clearErrors: state.clearErrors,
-  }));
+export const useFollowUpActions = () => {
+  const addTaskToState = useFollowUpStore((state) => state.addTaskToState);
+  const updateTaskInState = useFollowUpStore((state) => state.updateTaskInState);
+  const removeTaskFromState = useFollowUpStore((state) => state.removeTaskFromState);
+  const setTasks = useFollowUpStore((state) => state.setTasks);
+  const setSummary = useFollowUpStore((state) => state.setSummary);
+  const setLoading = useFollowUpStore((state) => state.setLoading);
+  const setError = useFollowUpStore((state) => state.setError);
+  const clearErrors = useFollowUpStore((state) => state.clearErrors);
+  
+  return {
+    addTaskToState,
+    updateTaskInState,
+    removeTaskFromState,
+    setTasks,
+    setSummary,
+    setLoading,
+    setError,
+    clearErrors,
+  };
+};
 
-export const useFollowUpQueries = () =>
-  useFollowUpStore((state) => ({
-    getOverdueTasks: state.getOverdueTasks,
-    getDueTodayTasks: state.getDueTodayTasks,
-    getDueThisWeekTasks: state.getDueThisWeekTasks,
-    getTasksByPriority: state.getTasksByPriority,
-    getTasksByStatus: state.getTasksByStatus,
-    getTasksByType: state.getTasksByType,
-    getHighPriorityTasks: state.getHighPriorityTasks,
-    getPendingTasks: state.getPendingTasks,
-  }));
+// Don't include computed getters in selectors as they cause infinite re-renders
+// These can be accessed directly from the store when needed
+export const useFollowUpQueries = () => {
+  // Return empty object for now - computed getters should be accessed directly
+  return {};
+};

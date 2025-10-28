@@ -238,12 +238,32 @@ export const useAppointmentAnalytics = (
 ) => {
   return useQuery({
     queryKey: appointmentAnalyticsKeys.analytics(params),
-    queryFn: () => appointmentAnalyticsService.getAppointmentAnalytics(params),
+    queryFn: async () => {
+      try {
+        return await appointmentAnalyticsService.getAppointmentAnalytics(params);
+      } catch (error: any) {
+        console.warn('Appointment analytics API error:', error.message);
+        
+        // Don't throw on 403/401 errors to prevent infinite loops
+        if (error?.response?.status === 403 || error?.response?.status === 401) {
+          console.warn('Appointment analytics API not available - returning empty data');
+          return { data: null, success: false, message: 'API not available' };
+        }
+        
+        throw error;
+      }
+    },
     enabled,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
     refetchOnWindowFocus: false,
-    retry: 2,
+    retry: (failureCount, error: any) => {
+      // Don't retry on 4xx errors
+      if (error?.response?.status >= 400 && error?.response?.status < 500) {
+        return false;
+      }
+      return failureCount < 2;
+    },
   });
 };
 
@@ -256,12 +276,32 @@ export const useFollowUpAnalytics = (
 ) => {
   return useQuery({
     queryKey: appointmentAnalyticsKeys.followUps(params),
-    queryFn: () => appointmentAnalyticsService.getFollowUpAnalytics(params),
+    queryFn: async () => {
+      try {
+        return await appointmentAnalyticsService.getFollowUpAnalytics(params);
+      } catch (error: any) {
+        console.warn('Follow-up analytics API error:', error.message);
+        
+        // Don't throw on 403/401 errors to prevent infinite loops
+        if (error?.response?.status === 403 || error?.response?.status === 401) {
+          console.warn('Follow-up analytics API not available - returning empty data');
+          return { data: null, success: false, message: 'API not available' };
+        }
+        
+        throw error;
+      }
+    },
     enabled,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
     refetchOnWindowFocus: false,
-    retry: 2,
+    retry: (failureCount, error: any) => {
+      // Don't retry on 4xx errors
+      if (error?.response?.status >= 400 && error?.response?.status < 500) {
+        return false;
+      }
+      return failureCount < 2;
+    },
   });
 };
 
@@ -274,12 +314,32 @@ export const useReminderAnalytics = (
 ) => {
   return useQuery({
     queryKey: appointmentAnalyticsKeys.reminders(params),
-    queryFn: () => appointmentAnalyticsService.getReminderAnalytics(params),
+    queryFn: async () => {
+      try {
+        return await appointmentAnalyticsService.getReminderAnalytics(params);
+      } catch (error: any) {
+        console.warn('Reminder analytics API error:', error.message);
+        
+        // Don't throw on 403/401 errors to prevent infinite loops
+        if (error?.response?.status === 403 || error?.response?.status === 401) {
+          console.warn('Reminder analytics API not available - returning empty data');
+          return { data: null, success: false, message: 'API not available' };
+        }
+        
+        throw error;
+      }
+    },
     enabled,
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 10 * 60 * 1000, // 10 minutes
     refetchOnWindowFocus: false,
-    retry: 2,
+    retry: (failureCount, error: any) => {
+      // Don't retry on 4xx errors
+      if (error?.response?.status >= 400 && error?.response?.status < 500) {
+        return false;
+      }
+      return failureCount < 2;
+    },
   });
 };
 
@@ -292,11 +352,31 @@ export const useCapacityAnalytics = (
 ) => {
   return useQuery({
     queryKey: appointmentAnalyticsKeys.capacity(params),
-    queryFn: () => appointmentAnalyticsService.getCapacityAnalytics(params),
+    queryFn: async () => {
+      try {
+        return await appointmentAnalyticsService.getCapacityAnalytics(params);
+      } catch (error: any) {
+        console.warn('Capacity analytics API error:', error.message);
+        
+        // Don't throw on 403/401 errors to prevent infinite loops
+        if (error?.response?.status === 403 || error?.response?.status === 401) {
+          console.warn('Capacity analytics API not available - returning empty data');
+          return { data: null, success: false, message: 'API not available' };
+        }
+        
+        throw error;
+      }
+    },
     enabled,
     staleTime: 2 * 60 * 1000, // 2 minutes for capacity data
     gcTime: 5 * 60 * 1000, // 5 minutes
-    refetchOnWindowFocus: true,
-    retry: 2,
+    refetchOnWindowFocus: false, // Disable to prevent loops
+    retry: (failureCount, error: any) => {
+      // Don't retry on 4xx errors
+      if (error?.response?.status >= 400 && error?.response?.status < 500) {
+        return false;
+      }
+      return failureCount < 2;
+    },
   });
 };

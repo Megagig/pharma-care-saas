@@ -56,7 +56,7 @@ export interface EscalateFollowUpData {
 }
 
 class FollowUpService {
-  private baseUrl = '/api/follow-ups';
+  private baseUrl = '/follow-ups';
 
   /**
    * Get follow-up tasks with filtering and pagination

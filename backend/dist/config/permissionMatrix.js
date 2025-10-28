@@ -624,6 +624,37 @@ exports.PERMISSION_MATRIX = {
         requiresActiveSubscription: false,
         allowTrialAccess: true,
     },
+    'view_analytics': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'view_appointment_analytics': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'view_followup_analytics': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'view_reminder_analytics': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'view_capacity_analytics': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'export_analytics': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['dataExport'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: false,
+    },
     'audit.view': {
         workplaceRoles: ['Owner'],
         systemRoles: ['super_admin'],

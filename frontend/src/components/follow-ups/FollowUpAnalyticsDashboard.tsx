@@ -108,12 +108,13 @@ const FollowUpAnalyticsDashboard: React.FC<FollowUpAnalyticsDashboardProps> = ({
     ...(selectedPriority && { priority: selectedPriority }),
   }), [dateRange, selectedPharmacist, selectedType, selectedPriority]);
 
+  // Re-enabled with proper error handling
   const {
     data: analyticsData,
     isLoading,
     error,
     refetch,
-  } = useFollowUpAnalytics(analyticsParams);
+  } = useFollowUpAnalytics(analyticsParams, true);
 
   const { data: usersData } = useUsers();
 
