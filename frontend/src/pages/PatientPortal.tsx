@@ -16,7 +16,6 @@ import AvailableSlotsView from '../components/patient-portal/AvailableSlotsView'
 import BookAppointmentForm from '../components/patient-portal/BookAppointmentForm';
 import MyAppointmentsList from '../components/patient-portal/MyAppointmentsList';
 import NotificationPreferencesForm from '../components/patient-portal/NotificationPreferencesForm';
-import { useAuth } from '../hooks/useAuth';
 import { useParams, useNavigate } from 'react-router-dom';
 import { apiClient } from '../services/apiClient';
 
@@ -48,7 +47,6 @@ function TabPanel(props: TabPanelProps) {
  */
 const PatientPortal: React.FC = () => {
   const theme = useTheme();
-  const { user } = useAuth();
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const navigate = useNavigate();
   const [tabValue, setTabValue] = useState(0);
@@ -59,19 +57,8 @@ const PatientPortal: React.FC = () => {
 
   // Get workspace and patient info from params and localStorage
   const currentWorkspaceId = workspaceId || localStorage.getItem('patientWorkspace') || '507f1f77bcf86cd799439011'; // Valid ObjectId for demo
-  const patientId = user?.id || localStorage.getItem('patientId') || '507f1f77bcf86cd799439012'; // Valid ObjectId for demo
+  const patientId = localStorage.getItem('patientId') || '507f1f77bcf86cd799439012'; // Valid ObjectId for demo
 
-  // Debug logging
-  console.log('PatientPortal Debug:', {
-    workspaceId,
-    currentWorkspaceId,
-    patientId,
-    user,
-    localStorage: {
-      patientWorkspace: localStorage.getItem('patientWorkspace'),
-      patientId: localStorage.getItem('patientId')
-    }
-  });
   const patientUser = localStorage.getItem('patientUser') ? JSON.parse(localStorage.getItem('patientUser')!) : null;
 
   const handleLogout = async () => {

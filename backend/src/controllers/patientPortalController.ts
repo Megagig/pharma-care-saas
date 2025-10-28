@@ -1,6 +1,7 @@
 import { Response } from 'express';
 import mongoose from 'mongoose';
 import { AuthRequest } from '../middlewares/auth';
+import { PatientAuthRequest } from '../middlewares/patientPortalAuth';
 import AppointmentService from '../services/AppointmentService';
 import CalendarService from '../services/CalendarService';
 import PatientPortalService from '../services/PatientPortalService';
@@ -81,22 +82,22 @@ export const getAvailableSlots = asyncHandler(
  * Requires authentication
  */
 export const bookAppointment = asyncHandler(
-  async (req: AuthRequest, res: Response) => {
-    const context = getRequestContext(req);
+  async (req: PatientAuthRequest, res: Response) => {
+    if (!req.patient) {
+      return sendError(res, 'UNAUTHORIZED', 'Patient authentication required', 401);
+    }
     
-    // Validate that the patient belongs to the authenticated user's workplace
     const appointmentData = {
       ...req.body,
-      workplaceId: context.workplaceId,
-      createdBy: context.userId,
-      // For patient portal, the patient is booking for themselves
-      // We'll validate this in the service layer
+      workplaceId: req.patient.workplaceId,
+      patientId: req.patient._id,
+      createdBy: req.patient._id,
     };
 
     const result = await PatientPortalService.bookAppointment(
       appointmentData,
-      new mongoose.Types.ObjectId(context.workplaceId),
-      context.userId
+      new mongoose.Types.ObjectId(req.patient.workplaceId),
+      new mongoose.Types.ObjectId(req.patient._id)
     );
 
     sendSuccess(res, result, 'Appointment booked successfully', 201);
@@ -109,8 +110,11 @@ export const bookAppointment = asyncHandler(
  * Requires authentication
  */
 export const getMyAppointments = asyncHandler(
-  async (req: AuthRequest, res: Response) => {
-    const context = getRequestContext(req);
+  async (req: PatientAuthRequest, res: Response) => {
+    if (!req.patient) {
+      return sendError(res, 'UNAUTHORIZED', 'Patient authentication required', 401);
+    }
+
     const {
       status,
       type,
@@ -122,10 +126,9 @@ export const getMyAppointments = asyncHandler(
       includeCancelled,
     } = req.query as any;
 
-    // For patient portal, we only show appointments for patients associated with the user
     const result = await PatientPortalService.getPatientAppointments(
-      new mongoose.Types.ObjectId(context.workplaceId),
-      context.userId,
+      new mongoose.Types.ObjectId(req.patient.workplaceId),
+      new mongoose.Types.ObjectId(req.patient._id),
       {
         status,
         type,
@@ -150,8 +153,11 @@ export const getMyAppointments = asyncHandler(
  * Requires authentication
  */
 export const rescheduleAppointment = asyncHandler(
-  async (req: AuthRequest, res: Response) => {
-    const context = getRequestContext(req);
+  async (req: PatientAuthRequest, res: Response) => {
+    if (!req.patient) {
+      return sendError(res, 'UNAUTHORIZED', 'Patient authentication required', 401);
+    }
+
     const { id } = req.params;
     const { newDate, newTime, reason, notifyPharmacist = true } = req.body;
 
@@ -163,8 +169,8 @@ export const rescheduleAppointment = asyncHandler(
         reason,
         notifyPharmacist,
       },
-      new mongoose.Types.ObjectId(context.workplaceId),
-      context.userId
+      new mongoose.Types.ObjectId(req.patient.workplaceId),
+      new mongoose.Types.ObjectId(req.patient._id)
     );
 
     sendSuccess(res, result, 'Appointment rescheduled successfully');
@@ -177,8 +183,11 @@ export const rescheduleAppointment = asyncHandler(
  * Requires authentication
  */
 export const cancelAppointment = asyncHandler(
-  async (req: AuthRequest, res: Response) => {
-    const context = getRequestContext(req);
+  async (req: PatientAuthRequest, res: Response) => {
+    if (!req.patient) {
+      return sendError(res, 'UNAUTHORIZED', 'Patient authentication required', 401);
+    }
+
     const { id } = req.params;
     const { reason, notifyPharmacist = true } = req.body;
 
@@ -188,8 +197,8 @@ export const cancelAppointment = asyncHandler(
         reason,
         notifyPharmacist,
       },
-      new mongoose.Types.ObjectId(context.workplaceId),
-      context.userId
+      new mongoose.Types.ObjectId(req.patient.workplaceId),
+      new mongoose.Types.ObjectId(req.patient._id)
     );
 
     sendSuccess(res, result, 'Appointment cancelled successfully');

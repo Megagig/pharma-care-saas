@@ -22,7 +22,7 @@ interface AppointmentType {
   name: string;
   description: string;
   duration: number;
-  isAvailable: boolean;
+  available: boolean;
   requiresPreparation?: string;
   estimatedCost?: {
     min: number;
@@ -102,7 +102,7 @@ class PatientPortalService {
           name: 'Medication Therapy Management (MTM)',
           description: 'Comprehensive review of your medications to optimize therapy and prevent drug-related problems.',
           duration: 45,
-          isAvailable: true,
+          available: true,
           requiresPreparation: 'Please bring all your current medications, including over-the-counter drugs and supplements.',
           estimatedCost: {
             min: 5000,
@@ -115,7 +115,7 @@ class PatientPortalService {
           name: 'Chronic Disease Management',
           description: 'Specialized consultation for managing chronic conditions like diabetes, hypertension, or asthma.',
           duration: 30,
-          isAvailable: true,
+          available: true,
           requiresPreparation: 'Please bring recent lab results and blood pressure/glucose monitoring records.',
           estimatedCost: {
             min: 3000,
@@ -128,7 +128,7 @@ class PatientPortalService {
           name: 'New Medication Consultation',
           description: 'Counseling session for newly prescribed medications to ensure safe and effective use.',
           duration: 20,
-          isAvailable: true,
+          available: true,
           requiresPreparation: 'Please bring your prescription and any questions about the new medication.',
           estimatedCost: {
             min: 2000,
@@ -141,7 +141,7 @@ class PatientPortalService {
           name: 'Vaccination Service',
           description: 'Administration of vaccines including flu shots, travel vaccines, and routine immunizations.',
           duration: 15,
-          isAvailable: true,
+          available: true,
           requiresPreparation: 'Please bring your vaccination record and valid ID.',
           estimatedCost: {
             min: 1000,
@@ -154,7 +154,7 @@ class PatientPortalService {
           name: 'Health Screening',
           description: 'Basic health screening including blood pressure, blood sugar, and BMI measurements.',
           duration: 25,
-          isAvailable: true,
+          available: true,
           requiresPreparation: 'Fast for 8-12 hours if blood sugar testing is requested.',
           estimatedCost: {
             min: 1500,
@@ -167,7 +167,7 @@ class PatientPortalService {
           name: 'Smoking Cessation Counseling',
           description: 'Personalized counseling and support to help you quit smoking successfully.',
           duration: 30,
-          isAvailable: true,
+          available: true,
           requiresPreparation: 'Think about your smoking habits and previous quit attempts.',
           estimatedCost: {
             min: 2500,
@@ -180,7 +180,7 @@ class PatientPortalService {
           name: 'General Follow-up',
           description: 'Follow-up consultation to monitor your progress and address any concerns.',
           duration: 20,
-          isAvailable: true,
+          available: true,
           requiresPreparation: 'Please bring any relevant medical records or test results.',
           estimatedCost: {
             min: 2000,

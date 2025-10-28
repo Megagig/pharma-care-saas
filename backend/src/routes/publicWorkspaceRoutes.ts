@@ -1,7 +1,9 @@
 import express, { Request, Response } from 'express';
 import { query, validationResult } from 'express-validator';
+import mongoose from 'mongoose';
 import { Workplace } from '../models/Workplace';
 import { generalRateLimiters } from '../middlewares/rateLimiting';
+import PatientPortalService from '../services/PatientPortalService';
 
 const router = express.Router();
 
@@ -17,6 +19,127 @@ router.get('/test', (req: Request, res: Response) => {
     timestamp: new Date().toISOString(),
   });
 });
+
+/**
+ * @route GET /api/public/workspaces/appointment-types
+ * @desc Get available appointment types for a workspace (public endpoint)
+ * @access Public
+ */
+router.get(
+  '/appointment-types',
+  generalRateLimiters.api,
+  [
+    query('workplaceId')
+      .notEmpty()
+      .withMessage('Workplace ID is required')
+      .isMongoId()
+      .withMessage('Invalid workplace ID'),
+  ],
+  async (req: Request, res: Response) => {
+    try {
+      // Check for validation errors
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Validation failed',
+          errors: errors.array(),
+        });
+      }
+
+      const { workplaceId } = req.query;
+
+      const appointmentTypes = await PatientPortalService.getAppointmentTypes(
+        new mongoose.Types.ObjectId(workplaceId as string)
+      );
+
+      res.json({
+        success: true,
+        data: appointmentTypes,
+        message: 'Appointment types retrieved successfully',
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error('Get appointment types error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve appointment types',
+        error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined,
+      });
+    }
+  }
+);
+
+/**
+ * @route GET /api/public/workspaces/available-slots
+ * @desc Get available appointment slots for a workspace (public endpoint)
+ * @access Public
+ */
+router.get(
+  '/available-slots',
+  generalRateLimiters.api,
+  [
+    query('workplaceId')
+      .notEmpty()
+      .withMessage('Workplace ID is required')
+      .isMongoId()
+      .withMessage('Invalid workplace ID'),
+    query('date')
+      .notEmpty()
+      .withMessage('Date is required')
+      .isISO8601()
+      .withMessage('Invalid date format'),
+  ],
+  async (req: Request, res: Response) => {
+    try {
+      // Check for validation errors
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({
+          success: false,
+          message: 'Validation failed',
+          errors: errors.array(),
+        });
+      }
+
+      const { 
+        workplaceId, 
+        date, 
+        type, 
+        duration = '30', 
+        pharmacistId, 
+        locationId 
+      } = req.query;
+
+      const targetDate = new Date(date as string);
+      
+      const availableSlots = await PatientPortalService.getAvailableSlots(
+        new mongoose.Types.ObjectId(workplaceId as string),
+        targetDate,
+        {
+          type: type as string,
+          duration: parseInt(duration as string),
+          pharmacistId: pharmacistId ? new mongoose.Types.ObjectId(pharmacistId as string) : undefined,
+          locationId: locationId as string,
+        }
+      );
+
+      res.json({
+        success: true,
+        data: availableSlots,
+        message: 'Available slots retrieved successfully',
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      console.error('Get available slots error:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to retrieve available slots',
+        error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined,
+      });
+    }
+  }
+);
 
 /**
  * @route GET /api/public/workspaces/search

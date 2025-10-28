@@ -8,8 +8,7 @@ import {
   cancelAppointment,
   confirmAppointment,
 } from '../controllers/patientPortalController';
-import { auth, authOptionalSubscription } from '../middlewares/auth';
-import { authWithWorkspace } from '../middlewares/authWithWorkspace';
+import { patientAuth, patientAuthOptional } from '../middlewares/patientPortalAuth';
 import { generalRateLimiters, createRateLimiter } from '../middlewares/rateLimiting';
 import {
   validateRequest,
@@ -83,10 +82,6 @@ router.get(
 // AUTHENTICATED ENDPOINTS
 // ===============================
 
-// Apply authentication and workspace context to authenticated routes
-router.use(auth);
-router.use(authWithWorkspace);
-
 /**
  * POST /api/patient-portal/appointments
  * Book a new appointment
@@ -94,6 +89,7 @@ router.use(authWithWorkspace);
  */
 router.post(
   '/appointments',
+  patientAuth,
   bookingRateLimit,
   validateRequest(bookAppointmentSchema, 'body'),
   bookAppointment
@@ -106,6 +102,7 @@ router.post(
  */
 router.get(
   '/appointments',
+  patientAuth,
   generalRateLimiters.api,
   validateRequest(myAppointmentsQuerySchema, 'query'),
   getMyAppointments
@@ -118,6 +115,7 @@ router.get(
  */
 router.post(
   '/appointments/:id/reschedule',
+  patientAuth,
   modificationRateLimit,
   validateRequest(appointmentParamsSchema, 'params'),
   validateRequest(rescheduleAppointmentSchema, 'body'),
@@ -131,6 +129,7 @@ router.post(
  */
 router.post(
   '/appointments/:id/cancel',
+  patientAuth,
   modificationRateLimit,
   validateRequest(appointmentParamsSchema, 'params'),
   validateRequest(cancelAppointmentSchema, 'body'),
@@ -145,7 +144,7 @@ router.post(
 router.post(
   '/appointments/:id/confirm',
   // Use optional auth middleware - allows both authenticated and token-based confirmation
-  authOptionalSubscription,
+  patientAuthOptional,
   modificationRateLimit,
   validateRequest(appointmentParamsSchema, 'params'),
   validateRequest(confirmAppointmentSchema, 'body'),
