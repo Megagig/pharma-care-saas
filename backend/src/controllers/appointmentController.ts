@@ -6,8 +6,10 @@
 import { Response } from 'express';
 import { AuthRequest } from '../types/auth';
 import logger from '../utils/logger';
+import mongoose from 'mongoose';
 import Appointment, { IAppointment } from '../models/Appointment';
-import { startOfDay, endOfDay, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, parse } from 'date-fns';
+import { startOfDay, endOfDay, addDays, startOfWeek, endOfWeek, startOfMonth, endOfMonth, parse, addMinutes } from 'date-fns';
+import { SlotGenerationService } from '../services/SlotGenerationService';
 
 class AppointmentController {
   /**
@@ -98,11 +100,11 @@ class AppointmentController {
   }
 
   /**
-   * Get available appointment slots
+   * Get available appointment slots using enhanced slot generation service
    */
   async getAvailableSlots(req: AuthRequest, res: Response) {
     try {
-      const { date, pharmacistId, duration = 30, type } = req.query;
+      const { date, pharmacistId, duration = 30, type, includeUnavailable = false } = req.query;
       const workplaceId = req.user?.workplaceId;
 
       if (!workplaceId || !date) {
@@ -112,76 +114,107 @@ class AppointmentController {
         });
       }
 
+      // Validate and parse date
       const targetDate = new Date(date as string);
-      const startTime = startOfDay(targetDate);
-      const endTime = endOfDay(targetDate);
+      if (isNaN(targetDate.getTime())) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid date format'
+        });
+      }
 
-      // Fetch existing appointments for the day
-      const query: any = {
-        workplaceId,
-        scheduledDate: {
-          $gte: startTime,
-          $lte: endTime
-        },
-        status: { $in: ['scheduled', 'confirmed', 'in_progress'] },
-        isDeleted: false
-      };
+      // Validate date is not in the past
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const requestDate = new Date(targetDate);
+      requestDate.setHours(0, 0, 0, 0);
 
-      if (pharmacistId) query.assignedTo = pharmacistId;
+      if (requestDate < today) {
+        return res.status(400).json({
+          success: false,
+          message: 'Cannot get slots for past dates'
+        });
+      }
 
-      const existingAppointments = await Appointment.find(query)
-        .select('scheduledTime duration assignedTo')
-        .lean();
+      // Validate duration
+      const durationNum = Number(duration);
+      if (durationNum < 5 || durationNum > 480) {
+        return res.status(400).json({
+          success: false,
+          message: 'Duration must be between 5 and 480 minutes'
+        });
+      }
 
-      // Generate time slots (8 AM to 6 PM in 15-minute intervals)
-      const slots = [];
-      const workHoursStart = 8; // 8 AM
-      const workHoursEnd = 18; // 6 PM
-
-      for (let hour = workHoursStart; hour < workHoursEnd; hour++) {
-        for (let minute = 0; minute < 60; minute += 15) {
-          const time = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-          
-          // Check if slot is available
-          const isAvailable = !existingAppointments.some((apt: any) => {
-            const aptStart = parse(apt.scheduledTime, 'HH:mm', targetDate);
-            const slotStart = parse(time, 'HH:mm', targetDate);
-            const slotEnd = addMinutes(slotStart, Number(duration));
-            const aptEnd = addMinutes(aptStart, apt.duration);
-
-            // Check for overlap
-            return (slotStart < aptEnd && slotEnd > aptStart);
+      // Parse pharmacist ID if provided
+      let pharmacistObjectId: mongoose.Types.ObjectId | undefined;
+      if (pharmacistId) {
+        try {
+          pharmacistObjectId = new mongoose.Types.ObjectId(pharmacistId as string);
+        } catch (error) {
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid pharmacist ID format'
           });
-
-          if (isAvailable) {
-            slots.push({
-              time,
-              available: true,
-              duration: Number(duration)
-            });
-          }
         }
       }
+
+      logger.info('Getting available slots', {
+        date: targetDate.toISOString(),
+        pharmacistId: pharmacistObjectId?.toString(),
+        duration: durationNum,
+        appointmentType: type,
+        workplaceId: workplaceId.toString()
+      });
+
+      // Convert workplaceId to ObjectId
+      const workplaceObjectId = new mongoose.Types.ObjectId(workplaceId);
+
+      // Generate slots using the enhanced service
+      const result = await SlotGenerationService.generateAvailableSlots({
+        date: targetDate,
+        pharmacistId: pharmacistObjectId,
+        duration: durationNum,
+        appointmentType: type as string,
+        workplaceId: workplaceObjectId,
+        includeUnavailable: includeUnavailable === 'true'
+      });
+
+      // Log the results for debugging
+      logger.info('Generated slots result', {
+        totalSlots: result.summary.totalSlots,
+        availableSlots: result.summary.availableSlots,
+        pharmacistsCount: result.pharmacists.length,
+        utilizationRate: result.summary.utilizationRate
+      });
 
       res.json({
         success: true,
         data: {
           date: targetDate,
-          slots,
-          totalAvailable: slots.length
-        }
+          slots: result.slots,
+          pharmacists: result.pharmacists,
+          summary: result.summary,
+          totalAvailable: result.summary.availableSlots,
+          // Legacy compatibility
+          totalSlots: result.summary.totalSlots
+        },
+        message: result.summary.availableSlots === 0
+          ? 'No available slots found for the selected criteria'
+          : `Found ${result.summary.availableSlots} available slots`
       });
+
     } catch (error) {
       logger.error('Error getting available slots:', error);
       res.status(500).json({
         success: false,
-        message: 'Failed to get available slots'
+        message: 'Failed to get available slots',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
   }
 
   /**
-   * Create new appointment
+   * Create new appointment with enhanced slot validation
    */
   async createAppointment(req: AuthRequest, res: Response) {
     try {
@@ -195,64 +228,168 @@ class AppointmentController {
         });
       }
 
-      const appointmentData = {
-        ...req.body,
-        workplaceId,
-        createdBy: userId,
-        confirmationStatus: 'pending',
-        status: 'scheduled',
-        isRecurring: req.body.isRecurring || false,
-        isRecurringException: false,
-        reminders: [],
-        relatedRecords: {},
-        metadata: {
-          source: 'manual'
-        }
-      };
+      const {
+        patientId,
+        type,
+        scheduledDate,
+        scheduledTime,
+        duration = 30,
+        assignedTo,
+        title,
+        description,
+        isRecurring = false,
+        recurrencePattern,
+        patientPreferences
+      } = req.body;
 
-      // Check for conflicts
-      if (appointmentData.assignedTo) {
-        const conflict = await Appointment.findOne({
-          workplaceId,
-          assignedTo: appointmentData.assignedTo,
-          scheduledDate: appointmentData.scheduledDate,
-          scheduledTime: appointmentData.scheduledTime,
-          status: { $in: ['scheduled', 'confirmed', 'in_progress'] },
-          isDeleted: false
+      // Validate required fields
+      if (!patientId || !type || !scheduledDate || !scheduledTime) {
+        return res.status(400).json({
+          success: false,
+          message: 'Patient ID, type, scheduled date, and time are required'
         });
+      }
 
-        if (conflict) {
+      // Parse and validate date
+      const appointmentDate = new Date(scheduledDate);
+      if (isNaN(appointmentDate.getTime())) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid scheduled date format'
+        });
+      }
+
+      // Validate date is not in the past
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const requestDate = new Date(appointmentDate);
+      requestDate.setHours(0, 0, 0, 0);
+
+      if (requestDate < today) {
+        return res.status(400).json({
+          success: false,
+          message: 'Cannot schedule appointments in the past'
+        });
+      }
+
+      // Validate time format
+      const timeRegex = /^([0-1][0-9]|2[0-3]):[0-5][0-9]$/;
+      if (!timeRegex.test(scheduledTime)) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid time format. Use HH:mm format'
+        });
+      }
+
+      // Convert workplaceId to ObjectId
+      const workplaceObjectId = new mongoose.Types.ObjectId(workplaceId);
+
+      // Parse pharmacist ID
+      let pharmacistObjectId: mongoose.Types.ObjectId | undefined;
+      if (assignedTo) {
+        try {
+          pharmacistObjectId = new mongoose.Types.ObjectId(assignedTo);
+        } catch (error) {
+          return res.status(400).json({
+            success: false,
+            message: 'Invalid pharmacist ID format'
+          });
+        }
+
+        // Validate slot availability using our enhanced service
+        const slotValidation = await SlotGenerationService.validateSlotAvailability(
+          pharmacistObjectId,
+          appointmentDate,
+          scheduledTime,
+          duration,
+          workplaceObjectId,
+          type
+        );
+
+        if (!slotValidation.available) {
           return res.status(409).json({
             success: false,
-            message: 'Time slot conflict detected'
+            message: `Time slot not available: ${slotValidation.reason}`,
+            conflictingAppointment: slotValidation.conflictingAppointment ? {
+              id: slotValidation.conflictingAppointment._id,
+              title: slotValidation.conflictingAppointment.title,
+              time: slotValidation.conflictingAppointment.scheduledTime
+            } : undefined
           });
         }
       }
 
+      // Prepare appointment data
+      const appointmentData = {
+        workplaceId: workplaceObjectId,
+        patientId: new mongoose.Types.ObjectId(patientId),
+        type,
+        scheduledDate: appointmentDate,
+        scheduledTime,
+        duration,
+        assignedTo: pharmacistObjectId,
+        title: title || `${type.replace('_', ' ')} appointment`,
+        description,
+        timezone: 'Africa/Lagos',
+        status: 'scheduled' as const,
+        confirmationStatus: 'pending' as const,
+        isRecurring,
+        recurrencePattern,
+        patientPreferences,
+        reminders: [],
+        relatedRecords: {},
+        metadata: {
+          source: 'manual',
+          createdVia: 'appointment_management'
+        },
+        createdBy: userId,
+        isDeleted: false
+      };
+
+      // Create the appointment
       const appointment = await Appointment.create(appointmentData);
-      
-      // Populate relations
+
+      // Populate relations for response
       await appointment.populate([
-        { path: 'patientId', select: 'name email phone' },
-        { path: 'assignedTo', select: 'name email role' }
+        { path: 'patientId', select: 'firstName lastName email phone dateOfBirth' },
+        { path: 'assignedTo', select: 'firstName lastName email role' },
+        { path: 'createdBy', select: 'firstName lastName email' }
       ]);
 
-      logger.info(`Appointment created: ${appointment._id}`, {
-        appointmentId: appointment._id,
+      logger.info('Appointment created successfully', {
+        appointmentId: appointment._id.toString(),
         patientId: appointment.patientId,
-        workplaceId
+        assignedTo: appointment.assignedTo,
+        scheduledDate: appointmentDate.toISOString(),
+        scheduledTime,
+        type,
+        workplaceId: workplaceId.toString()
       });
 
       res.status(201).json({
         success: true,
         message: 'Appointment created successfully',
-        data: { appointment }
+        data: {
+          appointment,
+          reminders: appointment.reminders || []
+        }
       });
+
     } catch (error: any) {
       logger.error('Error creating appointment:', error);
+
+      // Handle specific MongoDB errors
+      if (error.code === 11000) {
+        return res.status(409).json({
+          success: false,
+          message: 'Appointment conflict detected'
+        });
+      }
+
       res.status(500).json({
         success: false,
-        message: error.message || 'Failed to create appointment'
+        message: error.message || 'Failed to create appointment',
+        error: process.env.NODE_ENV === 'development' ? error.stack : undefined
       });
     }
   }
@@ -388,7 +525,7 @@ class AppointmentController {
       }
 
       appointment.status = status;
-      
+
       if (status === 'completed') {
         appointment.completedAt = new Date();
       }
@@ -969,11 +1106,166 @@ class AppointmentController {
       });
     }
   }
+
+  /**
+   * Get next available slot for a pharmacist
+   */
+  async getNextAvailableSlot(req: AuthRequest, res: Response) {
+    try {
+      const { pharmacistId, duration = 30, type, daysAhead = 14 } = req.query;
+      const workplaceId = req.user?.workplaceId;
+
+      if (!workplaceId || !pharmacistId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Workplace ID and pharmacist ID are required'
+        });
+      }
+
+      const pharmacistObjectId = new mongoose.Types.ObjectId(pharmacistId as string);
+      const workplaceObjectId = new mongoose.Types.ObjectId(workplaceId);
+
+      const nextSlot = await SlotGenerationService.getNextAvailableSlot(
+        pharmacistObjectId,
+        workplaceObjectId,
+        Number(duration),
+        type as string,
+        Number(daysAhead)
+      );
+
+      if (!nextSlot) {
+        return res.json({
+          success: true,
+          data: null,
+          message: `No available slots found in the next ${daysAhead} days`
+        });
+      }
+
+      res.json({
+        success: true,
+        data: nextSlot,
+        message: 'Next available slot found'
+      });
+
+    } catch (error) {
+      logger.error('Error getting next available slot:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get next available slot'
+      });
+    }
+  }
+
+  /**
+   * Validate slot availability
+   */
+  async validateSlot(req: AuthRequest, res: Response) {
+    try {
+      const { pharmacistId, date, time, duration = 30, type } = req.body;
+      const workplaceId = req.user?.workplaceId;
+
+      if (!workplaceId || !pharmacistId || !date || !time) {
+        return res.status(400).json({
+          success: false,
+          message: 'Workplace ID, pharmacist ID, date, and time are required'
+        });
+      }
+
+      const pharmacistObjectId = new mongoose.Types.ObjectId(pharmacistId);
+      const appointmentDate = new Date(date);
+      const workplaceObjectId = new mongoose.Types.ObjectId(workplaceId);
+
+      const validation = await SlotGenerationService.validateSlotAvailability(
+        pharmacistObjectId,
+        appointmentDate,
+        time,
+        Number(duration),
+        workplaceObjectId,
+        type
+      );
+
+      res.json({
+        success: true,
+        data: validation,
+        message: validation.available ? 'Slot is available' : 'Slot is not available'
+      });
+
+    } catch (error) {
+      logger.error('Error validating slot:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to validate slot'
+      });
+    }
+  }
+
+  /**
+   * Get pharmacist availability summary
+   */
+  async getPharmacistAvailability(req: AuthRequest, res: Response) {
+    try {
+      const { pharmacistId, startDate, endDate, duration = 30 } = req.query;
+      const workplaceId = req.user?.workplaceId;
+
+      if (!workplaceId || !pharmacistId || !startDate || !endDate) {
+        return res.status(400).json({
+          success: false,
+          message: 'Workplace ID, pharmacist ID, start date, and end date are required'
+        });
+      }
+
+      const start = new Date(startDate as string);
+      const end = new Date(endDate as string);
+      const pharmacistObjectId = new mongoose.Types.ObjectId(pharmacistId as string);
+      const workplaceObjectId = new mongoose.Types.ObjectId(workplaceId);
+
+      const availabilitySummary = [];
+      const currentDate = new Date(start);
+
+      while (currentDate <= end) {
+        const result = await SlotGenerationService.generateAvailableSlots({
+          date: new Date(currentDate),
+          pharmacistId: pharmacistObjectId,
+          duration: Number(duration),
+          workplaceId: workplaceObjectId
+        });
+
+        availabilitySummary.push({
+          date: new Date(currentDate),
+          totalSlots: result.summary.totalSlots,
+          availableSlots: result.summary.availableSlots,
+          utilizationRate: result.summary.utilizationRate,
+          firstAvailableSlot: result.slots.find(s => s.available)?.time || null,
+          lastAvailableSlot: result.slots.filter(s => s.available).pop()?.time || null
+        });
+
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
+
+      res.json({
+        success: true,
+        data: {
+          pharmacistId,
+          period: { startDate: start, endDate: end },
+          availability: availabilitySummary,
+          summary: {
+            totalDays: availabilitySummary.length,
+            daysWithAvailability: availabilitySummary.filter(day => day.availableSlots > 0).length,
+            averageUtilization: availabilitySummary.reduce((sum, day) => sum + day.utilizationRate, 0) / availabilitySummary.length
+          }
+        }
+      });
+
+    } catch (error) {
+      logger.error('Error getting pharmacist availability:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get pharmacist availability'
+      });
+    }
+  }
 }
 
-// Helper function
-function addMinutes(date: Date, minutes: number): Date {
-  return new Date(date.getTime() + minutes * 60000);
-}
+// Helper functions removed - using date-fns addMinutes instead
 
 export default new AppointmentController();

@@ -445,4 +445,96 @@ router.post(
   appointmentController.bookAppointmentPortal
 );
 
+/**
+ * @route   GET /api/appointments/next-available-slot
+ * @desc    Get next available slot for a pharmacist
+ * @access  Private (Pharmacist, Manager, Admin)
+ */
+router.get(
+  '/next-available-slot',
+  requireAppointmentScheduling,
+  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
+  [
+    query('pharmacistId')
+      .isMongoId()
+      .withMessage('Pharmacist ID is required and must be valid'),
+    query('duration')
+      .optional()
+      .isInt({ min: 5, max: 480 })
+      .withMessage('Duration must be between 5 and 480 minutes'),
+    query('type')
+      .optional()
+      .isIn(['mtm_session', 'chronic_disease_review', 'new_medication_consultation', 
+             'vaccination', 'health_check', 'smoking_cessation', 'general_followup'])
+      .withMessage('Invalid appointment type'),
+    query('daysAhead')
+      .optional()
+      .isInt({ min: 1, max: 90 })
+      .withMessage('Days ahead must be between 1 and 90'),
+  ],
+  validateRequest,
+  appointmentController.getNextAvailableSlot
+);
+
+/**
+ * @route   POST /api/appointments/validate-slot
+ * @desc    Validate slot availability
+ * @access  Private (Pharmacist, Manager, Admin)
+ */
+router.post(
+  '/validate-slot',
+  requireAppointmentScheduling,
+  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
+  [
+    body('pharmacistId')
+      .isMongoId()
+      .withMessage('Pharmacist ID is required and must be valid'),
+    body('date')
+      .isISO8601()
+      .withMessage('Date is required and must be in ISO format'),
+    body('time')
+      .matches(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/)
+      .withMessage('Time must be in HH:mm format'),
+    body('duration')
+      .optional()
+      .isInt({ min: 5, max: 480 })
+      .withMessage('Duration must be between 5 and 480 minutes'),
+    body('type')
+      .optional()
+      .isIn(['mtm_session', 'chronic_disease_review', 'new_medication_consultation', 
+             'vaccination', 'health_check', 'smoking_cessation', 'general_followup'])
+      .withMessage('Invalid appointment type'),
+  ],
+  validateRequest,
+  appointmentController.validateSlot
+);
+
+/**
+ * @route   GET /api/appointments/pharmacist-availability
+ * @desc    Get pharmacist availability summary for a date range
+ * @access  Private (Pharmacist, Manager, Admin)
+ */
+router.get(
+  '/pharmacist-availability',
+  requireAppointmentScheduling,
+  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
+  [
+    query('pharmacistId')
+      .isMongoId()
+      .withMessage('Pharmacist ID is required and must be valid'),
+    query('startDate')
+      .isISO8601()
+      .withMessage('Start date is required and must be in ISO format'),
+    query('endDate')
+      .isISO8601()
+      .withMessage('End date is required and must be in ISO format'),
+    query('duration')
+      .optional()
+      .isInt({ min: 5, max: 480 })
+      .withMessage('Duration must be between 5 and 480 minutes'),
+  ],
+  validateRequest,
+  appointmentController.getPharmacistAvailability
+);
+
 export default router;

@@ -92,7 +92,8 @@
     "load-test:full": "npm run load-test:appointments && npm run load-test:followups && npm run load-test:websockets",
     "load-test:report": "ts-node tests/load/scripts/generateLoadTestReport.ts",
     "load-test:setup": "ts-node tests/load/scripts/setupLoadTestData.ts",
-    "load-test:cleanup": "ts-node tests/load/scripts/cleanupLoadTestData.ts"
+    "load-test:cleanup": "ts-node tests/load/scripts/cleanupLoadTestData.ts",
+    "test:slot-generation": "ts-node src/scripts/testSlotGeneration.ts"
   },
   "keywords": [
     "pharmacy",

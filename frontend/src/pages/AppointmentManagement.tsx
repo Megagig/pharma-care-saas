@@ -34,7 +34,6 @@ import PharmacistScheduleView from '../components/appointments/PharmacistSchedul
 import CapacityUtilizationChart from '../components/appointments/CapacityUtilizationChart';
 import ReminderEffectivenessChart from '../components/appointments/ReminderEffectivenessChart';
 import CreateAppointmentDialog from '../components/appointments/CreateAppointmentDialog';
-import { useAuth } from '../hooks/useAuth';
 import { useAppointments } from '../hooks/useAppointments';
 import { format, endOfWeek } from 'date-fns';
 
@@ -82,16 +81,6 @@ const AppointmentManagement: React.FC = () => {
   };
 
   // Animation variants
-  const containerVariants = {
-    hidden: { opacity: 0 },
-    visible: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1,
-      },
-    },
-  };
-
   const itemVariants = {
     hidden: { opacity: 0, y: 20 },
     visible: {
@@ -196,7 +185,7 @@ const AppointmentManagement: React.FC = () => {
 
       {/* Quick Stats Cards */}
       <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={4}>
+        <Grid item xs={12} sm={6} md={4} component="div">
           <MotionCard
             initial="hidden"
             animate="visible"
@@ -241,7 +230,7 @@ const AppointmentManagement: React.FC = () => {
           </MotionCard>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={4}>
+        <Grid item xs={12} sm={6} md={4} component="div">
           <MotionCard
             initial="hidden"
             animate="visible"
@@ -286,7 +275,7 @@ const AppointmentManagement: React.FC = () => {
           </MotionCard>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={4}>
+        <Grid item xs={12} sm={6} md={4} component="div">
           <MotionCard
             initial="hidden"
             animate="visible"
@@ -335,7 +324,7 @@ const AppointmentManagement: React.FC = () => {
       {/* Main Content Grid */}
       <Grid container spacing={3}>
         {/* Appointment Calendar - Full Width */}
-        <Grid item xs={12}>
+        <Grid item xs={12} component="div">
           <Fade in timeout={600}>
             <MotionCard
               initial={{ opacity: 0, y: 20 }}
@@ -384,7 +373,7 @@ const AppointmentManagement: React.FC = () => {
         </Grid>
 
         {/* Analytics Dashboard */}
-        <Grid item xs={12} lg={8}>
+        <Grid item xs={12} lg={8} component="div">
           <Fade in timeout={800}>
             <MotionCard
               initial={{ opacity: 0, x: -20 }}
@@ -433,7 +422,7 @@ const AppointmentManagement: React.FC = () => {
         </Grid>
 
         {/* Pharmacist Schedule */}
-        <Grid item xs={12} lg={4}>
+        <Grid item xs={12} lg={4} component="div">
           <Fade in timeout={1000}>
             <MotionCard
               initial={{ opacity: 0, x: 20 }}
@@ -484,7 +473,7 @@ const AppointmentManagement: React.FC = () => {
         </Grid>
 
         {/* Capacity Utilization Chart */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={6} component="div">
           <Fade in timeout={1200}>
             <MotionCard
               initial={{ opacity: 0, y: 20 }}
@@ -537,7 +526,7 @@ const AppointmentManagement: React.FC = () => {
         </Grid>
 
         {/* Reminder Effectiveness Chart */}
-        <Grid item xs={12} md={6}>
+        <Grid item xs={12} md={6} component="div">
           <Fade in timeout={1400}>
             <MotionCard
               initial={{ opacity: 0, y: 20 }}

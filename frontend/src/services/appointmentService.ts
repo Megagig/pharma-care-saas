@@ -251,14 +251,26 @@ class AppointmentService {
   }
 
   /**
-   * Get available time slots
+   * Get available time slots with enhanced response
    */
   async getAvailableSlots(params: {
     date: string;
     pharmacistId?: string;
     duration?: number;
     type?: string;
-  }): Promise<ApiResponse<{ slots: AvailableSlot[]; pharmacists: any[] }>> {
+    includeUnavailable?: boolean;
+  }): Promise<ApiResponse<{ 
+    slots: AvailableSlot[]; 
+    pharmacists: any[];
+    summary: {
+      totalSlots: number;
+      availableSlots: number;
+      unavailableSlots: number;
+      utilizationRate: number;
+    };
+    totalAvailable: number;
+    message?: string;
+  }>> {
     const searchParams = new URLSearchParams();
 
     Object.entries(params).forEach(([key, value]) => {
@@ -267,7 +279,18 @@ class AppointmentService {
       }
     });
 
-    return this.makeRequest<ApiResponse<{ slots: AvailableSlot[]; pharmacists: any[] }>>(
+    return this.makeRequest<ApiResponse<{ 
+      slots: AvailableSlot[]; 
+      pharmacists: any[];
+      summary: {
+        totalSlots: number;
+        availableSlots: number;
+        unavailableSlots: number;
+        utilizationRate: number;
+      };
+      totalAvailable: number;
+      message?: string;
+    }>>(
       `/appointments/available-slots?${searchParams.toString()}`
     );
   }

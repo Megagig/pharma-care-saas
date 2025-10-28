@@ -47,7 +47,7 @@ import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { format, addDays, isWeekend, isBefore, startOfDay } from 'date-fns';
 
 import { AppointmentFormData, AppointmentType } from '../../stores/appointmentTypes';
-import { useCreateAppointment, useAvailableSlots } from '../../hooks/useAppointments';
+import { useCreateAppointment, useAvailableSlots, useValidateSlot, useNextAvailableSlot } from '../../hooks/useAppointments';
 import { useSearchPatients } from '../../queries/usePatients';
 import { Patient } from '../../types/patientManagement';
 import PatientAutocomplete from './PatientAutocomplete';
@@ -229,6 +229,7 @@ const CreateAppointmentDialog: React.FC<CreateAppointmentDialogProps> = ({
   const watchedIsRecurring = watch('isRecurring');
   const watchedPatientSearch = watch('patientSearch');
   const watchedPharmacistSearch = watch('pharmacistSearch');
+  const watchedSelectedPatient = watch('selectedPatient');
   const watchedSelectedPharmacist = watch('selectedPharmacist');
 
   // Local state
@@ -238,6 +239,7 @@ const CreateAppointmentDialog: React.FC<CreateAppointmentDialogProps> = ({
 
   // Mutations and queries
   const createAppointmentMutation = useCreateAppointment();
+  const validateSlotMutation = useValidateSlot();
 
   // Available slots query
   const {
@@ -252,6 +254,25 @@ const CreateAppointmentDialog: React.FC<CreateAppointmentDialogProps> = ({
       type: watchedType,
     },
     !!availableSlotsDate
+  );
+
+  // Get available time slots
+  const availableSlots = useMemo(() => {
+    return availableSlotsData?.data?.slots || [];
+  }, [availableSlotsData]);
+
+  // Next available slot query (only when no slots are available)
+  const {
+    data: nextAvailableSlot,
+    isLoading: loadingNextSlot,
+  } = useNextAvailableSlot(
+    {
+      pharmacistId: watchedSelectedPharmacist?._id || '',
+      duration: watchedDuration,
+      type: watchedType,
+      daysAhead: 14
+    },
+    !!watchedSelectedPharmacist && availableSlots.length === 0 && !loadingSlots
   );
 
   // Update duration when appointment type changes
@@ -270,18 +291,30 @@ const CreateAppointmentDialog: React.FC<CreateAppointmentDialogProps> = ({
     }
   }, [watchedDate]);
 
-
-
-  // Get available time slots
-  const availableSlots = useMemo(() => {
-    return availableSlotsData?.data?.slots || [];
-  }, [availableSlotsData]);
-
-  // Handle form submission
+  // Handle form submission with enhanced validation
   const onSubmit = async (data: FormData) => {
     try {
       if (!data.selectedPatient) {
         throw new Error('Please select a patient');
+      }
+
+      if (!data.selectedPharmacist) {
+        throw new Error('Please select a pharmacist');
+      }
+
+      // Validate slot availability before creating appointment
+      const slotValidation = await validateSlotMutation.mutateAsync({
+        pharmacistId: data.selectedPharmacist._id,
+        date: format(data.scheduledDate, 'yyyy-MM-dd'),
+        time: data.scheduledTime,
+        duration: data.duration,
+        type: data.type
+      });
+
+      if (!slotValidation.data.available) {
+        throw new Error(
+          `Time slot is no longer available: ${slotValidation.data.reason || 'Unknown reason'}`
+        );
       }
 
       const appointmentData: AppointmentFormData = {
@@ -290,7 +323,7 @@ const CreateAppointmentDialog: React.FC<CreateAppointmentDialogProps> = ({
         scheduledDate: data.scheduledDate,
         scheduledTime: data.scheduledTime,
         duration: data.duration,
-        assignedTo: data.selectedPharmacist?._id || '',
+        assignedTo: data.selectedPharmacist._id,
         description: data.description,
         isRecurring: data.isRecurring,
         recurrencePattern: data.isRecurring ? data.recurrencePattern : undefined,
@@ -304,6 +337,8 @@ const CreateAppointmentDialog: React.FC<CreateAppointmentDialogProps> = ({
       onClose();
     } catch (error) {
       console.error('Failed to create appointment:', error);
+      // You might want to show a toast notification here
+      alert(error instanceof Error ? error.message : 'Failed to create appointment');
     }
   };
 
@@ -576,7 +611,7 @@ const CreateAppointmentDialog: React.FC<CreateAppointmentDialogProps> = ({
                 </CardContent>
               </Card>
 
-              {/* Available Slots Display */}
+              {/* Enhanced Available Slots Display */}
               {availableSlotsDate && (
                 <Card variant="outlined">
                   <CardContent>
@@ -587,29 +622,162 @@ const CreateAppointmentDialog: React.FC<CreateAppointmentDialogProps> = ({
                     {loadingSlots ? (
                       <Box display="flex" justifyContent="center" p={2}>
                         <CircularProgress />
+                        <Typography variant="body2" sx={{ ml: 2 }}>
+                          Loading available slots...
+                        </Typography>
                       </Box>
-                    ) : availableSlots.length > 0 ? (
-                      <Box display="flex" flexWrap="wrap" gap={1}>
-                        {availableSlots.map((slot) => (
-                          <Chip
-                            key={slot.time}
-                            label={slot.time}
-                            color={slot.available ? 'success' : 'error'}
-                            variant={slot.time === watchedTime ? 'filled' : 'outlined'}
-                            onClick={() => {
-                              if (slot.available) {
-                                setValue('scheduledTime', slot.time);
+                    ) : availableSlotsData?.data ? (
+                      <Box>
+                        {/* Slots Summary */}
+                        {availableSlotsData.data.summary && (
+                          <Box mb={2}>
+                            <Typography variant="body2" color="text.secondary">
+                              {availableSlotsData.data.summary.availableSlots} of {availableSlotsData.data.summary.totalSlots} slots available
+                              {availableSlotsData.data.summary.utilizationRate > 0 && (
+                                <> • {availableSlotsData.data.summary.utilizationRate}% utilized</>
+                              )}
+                            </Typography>
+                          </Box>
+                        )}
+
+                        {/* Pharmacist Information */}
+                        {availableSlotsData.data.pharmacists && availableSlotsData.data.pharmacists.length > 0 && (
+                          <Box mb={2}>
+                            <Typography variant="subtitle2" gutterBottom>
+                              Pharmacist Availability:
+                            </Typography>
+                            {availableSlotsData.data.pharmacists.map((pharmacist) => (
+                              <Box key={pharmacist._id} mb={1}>
+                                <Typography variant="body2">
+                                  <strong>{pharmacist.name}</strong> - {pharmacist.availableSlots} slots available
+                                  {pharmacist.workingHours && (
+                                    <> • Working hours: {pharmacist.workingHours}</>
+                                  )}
+                                </Typography>
+                              </Box>
+                            ))}
+                          </Box>
+                        )}
+
+                        {/* Available Slots */}
+                        {availableSlots.length > 0 ? (
+                          <Box>
+                            <Typography variant="subtitle2" gutterBottom>
+                              Select a time slot:
+                            </Typography>
+                            <Box display="flex" flexWrap="wrap" gap={1}>
+                              {availableSlots.map((slot) => (
+                                <Tooltip
+                                  key={`${slot.pharmacistId}-${slot.time}`}
+                                  title={
+                                    slot.available 
+                                      ? `Available with ${slot.pharmacistName || 'pharmacist'}`
+                                      : slot.conflictReason || 'Not available'
+                                  }
+                                >
+                                  <Chip
+                                    label={slot.time}
+                                    color={slot.available ? 'success' : 'error'}
+                                    variant={slot.time === watchedTime ? 'filled' : 'outlined'}
+                                    onClick={() => {
+                                      if (slot.available) {
+                                        setValue('scheduledTime', slot.time);
+                                        // Auto-select pharmacist if not already selected
+                                        if (!watchedSelectedPharmacist && slot.pharmacistId) {
+                                          // Find pharmacist data and set it
+                                          const pharmacistData = availableSlotsData.data.pharmacists?.find(
+                                            p => p._id === slot.pharmacistId
+                                          );
+                                          if (pharmacistData) {
+                                            setValue('selectedPharmacist', {
+                                              _id: pharmacistData._id,
+                                              firstName: pharmacistData.name.split(' ')[0],
+                                              lastName: pharmacistData.name.split(' ').slice(1).join(' '),
+                                              email: pharmacistData.email
+                                            });
+                                          }
+                                        }
+                                      }
+                                    }}
+                                    sx={{
+                                      cursor: slot.available ? 'pointer' : 'not-allowed',
+                                      opacity: slot.available ? 1 : 0.6,
+                                    }}
+                                  />
+                                </Tooltip>
+                              ))}
+                            </Box>
+                          </Box>
+                        ) : (
+                          <Box>
+                            <Alert 
+                              severity="warning" 
+                              action={
+                                <Button 
+                                  color="inherit" 
+                                  size="small"
+                                  onClick={() => refetchSlots()}
+                                >
+                                  Refresh
+                                </Button>
                               }
-                            }}
-                            sx={{
-                              cursor: slot.available ? 'pointer' : 'not-allowed',
-                            }}
-                          />
-                        ))}
+                            >
+                              No available slots found for the selected date and criteria.
+                              {availableSlotsData?.data?.message && (
+                                <Box mt={1}>
+                                  <Typography variant="body2">
+                                    {availableSlotsData.data.message}
+                                  </Typography>
+                                </Box>
+                              )}
+                            </Alert>
+
+                            {/* Next Available Slot Suggestion */}
+                            {watchedSelectedPharmacist && (
+                              <Box mt={2}>
+                                {loadingNextSlot ? (
+                                  <Box display="flex" alignItems="center" gap={1}>
+                                    <CircularProgress size={16} />
+                                    <Typography variant="body2" color="text.secondary">
+                                      Finding next available slot...
+                                    </Typography>
+                                  </Box>
+                                ) : nextAvailableSlot?.data ? (
+                                  <Alert 
+                                    severity="info"
+                                    action={
+                                      <Button
+                                        color="inherit"
+                                        size="small"
+                                        onClick={() => {
+                                          setValue('scheduledDate', new Date(nextAvailableSlot.data.date));
+                                          setValue('scheduledTime', nextAvailableSlot.data.time);
+                                        }}
+                                      >
+                                        Use This Slot
+                                      </Button>
+                                    }
+                                  >
+                                    <Typography variant="body2">
+                                      <strong>Next available:</strong> {format(new Date(nextAvailableSlot.data.date), 'MMMM dd, yyyy')} at {nextAvailableSlot.data.time}
+                                      {nextAvailableSlot.data.pharmacistName && (
+                                        <> with {nextAvailableSlot.data.pharmacistName}</>
+                                      )}
+                                    </Typography>
+                                  </Alert>
+                                ) : (
+                                  <Alert severity="error">
+                                    No available slots found in the next 14 days. Please try a different pharmacist or contact support.
+                                  </Alert>
+                                )}
+                              </Box>
+                            )}
+                          </Box>
+                        )}
                       </Box>
                     ) : (
-                      <Alert severity="warning">
-                        No available slots found for the selected date and criteria.
+                      <Alert severity="info">
+                        Select a date and pharmacist to view available time slots.
                       </Alert>
                     )}
                   </CardContent>
@@ -794,16 +962,34 @@ const CreateAppointmentDialog: React.FC<CreateAppointmentDialogProps> = ({
           </DialogContent>
 
           <DialogActions sx={{ p: 2, gap: 1 }}>
-            <Button onClick={handleClose} disabled={isSubmitting}>
+            <Button 
+              onClick={handleClose} 
+              disabled={isSubmitting || validateSlotMutation.isPending}
+            >
               Cancel
             </Button>
             <Button
               type="submit"
               variant="contained"
-              disabled={isSubmitting}
-              startIcon={isSubmitting ? <CircularProgress size={20} /> : <EventIcon />}
+              disabled={
+                isSubmitting || 
+                validateSlotMutation.isPending ||
+                !watchedSelectedPatient ||
+                !watchedSelectedPharmacist ||
+                !watchedTime
+              }
+              startIcon={
+                isSubmitting || validateSlotMutation.isPending ? 
+                  <CircularProgress size={20} /> : 
+                  <EventIcon />
+              }
             >
-              {isSubmitting ? 'Creating...' : 'Create Appointment'}
+              {validateSlotMutation.isPending 
+                ? 'Validating...' 
+                : isSubmitting 
+                  ? 'Creating...' 
+                  : 'Create Appointment'
+              }
             </Button>
           </DialogActions>
         </form>

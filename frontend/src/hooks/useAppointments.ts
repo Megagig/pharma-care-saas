@@ -211,7 +211,7 @@ export const useUpcomingAppointments = (
 };
 
 /**
- * Hook to fetch available time slots
+ * Hook to fetch available time slots with enhanced response handling
  */
 export const useAvailableSlots = (
   params: {
@@ -219,6 +219,7 @@ export const useAvailableSlots = (
     pharmacistId?: string;
     duration?: number;
     type?: string;
+    includeUnavailable?: boolean;
   },
   enabled = true
 ) => {
@@ -231,16 +232,41 @@ export const useAvailableSlots = (
       try {
         const response = await appointmentService.getAvailableSlots(params);
         
-        // Update available slots in store
+        // Update available slots in store with enhanced data
         if (response.data?.slots) {
           setAvailableSlots(response.data.slots);
         }
         
         setError('fetchSlots', null);
-        return response;
+        
+        // Return enhanced response with additional metadata
+        return {
+          ...response,
+          data: {
+            ...response.data,
+            // Ensure backward compatibility
+            totalAvailable: response.data?.summary?.availableSlots || response.data?.totalAvailable || 0,
+            // Add new enhanced data
+            pharmacists: response.data?.pharmacists || [],
+            summary: response.data?.summary || {
+              totalSlots: response.data?.slots?.length || 0,
+              availableSlots: response.data?.slots?.filter((s: any) => s.available)?.length || 0,
+              unavailableSlots: response.data?.slots?.filter((s: any) => !s.available)?.length || 0,
+              utilizationRate: 0
+            }
+          }
+        };
       } catch (error) {
         const errorMessage = error instanceof Error ? error.message : 'Failed to fetch available slots';
         setError('fetchSlots', errorMessage);
+        
+        // Enhanced error handling
+        console.error('Available slots fetch error:', {
+          error: errorMessage,
+          params,
+          timestamp: new Date().toISOString()
+        });
+        
         throw error;
       } finally {
         setLoading('fetchSlots', false);
@@ -249,6 +275,111 @@ export const useAvailableSlots = (
     enabled: enabled && !!params.date,
     staleTime: 1 * 60 * 1000, // 1 minute for slot availability
     gcTime: 2 * 60 * 1000, // 2 minutes
+    retry: (failureCount, error: any) => {
+      // Don't retry on validation errors (4xx)
+      if (error?.response?.status >= 400 && error?.response?.status < 500) {
+        return false;
+      }
+      return failureCount < 2;
+    },
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
+  });
+};
+
+/**
+ * Hook to get next available slot for a pharmacist
+ */
+export const useNextAvailableSlot = (
+  params: {
+    pharmacistId: string;
+    duration?: number;
+    type?: string;
+    daysAhead?: number;
+  },
+  enabled = true
+) => {
+  return useQuery({
+    queryKey: [...appointmentKeys.all, 'next-available-slot', params],
+    queryFn: async () => {
+      const searchParams = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          searchParams.append(key, String(value));
+        }
+      });
+
+      const { default: apiClient } = await import('../services/apiClient');
+      const response = await apiClient({
+        url: `/appointments/next-available-slot?${searchParams.toString()}`,
+        method: 'GET',
+      });
+
+      return response.data;
+    },
+    enabled: enabled && !!params.pharmacistId,
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    gcTime: 5 * 60 * 1000, // 5 minutes
+    retry: 2,
+  });
+};
+
+/**
+ * Hook to validate slot availability
+ */
+export const useValidateSlot = () => {
+  return useMutation({
+    mutationFn: async (slotData: {
+      pharmacistId: string;
+      date: string;
+      time: string;
+      duration?: number;
+      type?: string;
+    }) => {
+      const { default: apiClient } = await import('../services/apiClient');
+      const response = await apiClient({
+        url: '/appointments/validate-slot',
+        method: 'POST',
+        data: slotData,
+      });
+
+      return response.data;
+    },
+  });
+};
+
+/**
+ * Hook to get pharmacist availability summary
+ */
+export const usePharmacistAvailability = (
+  params: {
+    pharmacistId: string;
+    startDate: string;
+    endDate: string;
+    duration?: number;
+  },
+  enabled = true
+) => {
+  return useQuery({
+    queryKey: [...appointmentKeys.all, 'pharmacist-availability', params],
+    queryFn: async () => {
+      const searchParams = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined && value !== null) {
+          searchParams.append(key, String(value));
+        }
+      });
+
+      const { default: apiClient } = await import('../services/apiClient');
+      const response = await apiClient({
+        url: `/appointments/pharmacist-availability?${searchParams.toString()}`,
+        method: 'GET',
+      });
+
+      return response.data;
+    },
+    enabled: enabled && !!params.pharmacistId && !!params.startDate && !!params.endDate,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    gcTime: 10 * 60 * 1000, // 10 minutes
     retry: 2,
   });
 };

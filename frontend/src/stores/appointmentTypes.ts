@@ -140,6 +140,71 @@ export interface AvailableSlot {
   available: boolean;
   pharmacistId: string;
   pharmacistName?: string;
+  conflictReason?: string;
+  conflictingAppointment?: Appointment;
+  slotType?: 'regular' | 'break' | 'buffer';
+}
+
+export interface PharmacistSlotStats {
+  _id: string;
+  name: string;
+  email: string;
+  totalSlots: number;
+  availableSlots: number;
+  utilizationRate: number;
+  workingHours: string;
+  nextAvailableSlot?: string;
+}
+
+export interface SlotSummary {
+  totalSlots: number;
+  availableSlots: number;
+  unavailableSlots: number;
+  utilizationRate: number;
+}
+
+export interface AvailableSlotsResponse {
+  date: Date;
+  slots: AvailableSlot[];
+  pharmacists: PharmacistSlotStats[];
+  summary: SlotSummary;
+  totalAvailable: number;
+  message?: string;
+}
+
+export interface NextAvailableSlotResponse {
+  date: Date;
+  time: string;
+  pharmacistName: string;
+}
+
+export interface SlotValidationResponse {
+  available: boolean;
+  reason?: string;
+  conflictingAppointment?: Appointment;
+}
+
+export interface PharmacistAvailabilityDay {
+  date: Date;
+  totalSlots: number;
+  availableSlots: number;
+  utilizationRate: number;
+  firstAvailableSlot: string | null;
+  lastAvailableSlot: string | null;
+}
+
+export interface PharmacistAvailabilityResponse {
+  pharmacistId: string;
+  period: {
+    startDate: Date;
+    endDate: Date;
+  };
+  availability: PharmacistAvailabilityDay[];
+  summary: {
+    totalDays: number;
+    daysWithAvailability: number;
+    averageUtilization: number;
+  };
 }
 
 export interface AppointmentSummary {
