@@ -362,6 +362,157 @@ class AppointmentService {
       }
     );
   }
+
+  // =============================================
+  // WAITLIST MANAGEMENT
+  // =============================================
+
+  /**
+   * Get waitlist entries with filtering
+   */
+  async getWaitlist(filters: {
+    status?: 'active' | 'fulfilled' | 'expired' | 'cancelled';
+    urgencyLevel?: 'low' | 'medium' | 'high' | 'urgent';
+    appointmentType?: string;
+    search?: string;
+  } = {}): Promise<ApiResponse<{ 
+    entries: any[]; 
+    total: number; 
+  }>> {
+    const searchParams = new URLSearchParams();
+
+    Object.entries(filters).forEach(([key, value]) => {
+      if (value !== undefined && value !== null) {
+        searchParams.append(key, String(value));
+      }
+    });
+
+    return this.makeRequest<ApiResponse<{ 
+      entries: any[]; 
+      total: number; 
+    }>>(
+      `/appointments/waitlist?${searchParams.toString()}`
+    );
+  }
+
+  /**
+   * Get waitlist statistics
+   */
+  async getWaitlistStats(): Promise<ApiResponse<{
+    totalActive: number;
+    byUrgency: Record<string, number>;
+    byAppointmentType: Record<string, number>;
+    averageWaitTime: number;
+    fulfillmentRate: number;
+  }>> {
+    return this.makeRequest<ApiResponse<{
+      totalActive: number;
+      byUrgency: Record<string, number>;
+      byAppointmentType: Record<string, number>;
+      averageWaitTime: number;
+      fulfillmentRate: number;
+    }>>(
+      '/appointments/waitlist/stats'
+    );
+  }
+
+  /**
+   * Add patient to waitlist
+   */
+  async addToWaitlist(waitlistData: {
+    patientId: string;
+    appointmentType: string;
+    duration: number;
+    urgencyLevel: 'low' | 'medium' | 'high' | 'urgent';
+    maxWaitDays: number;
+    preferredPharmacistId?: string;
+    preferredTimeSlots?: string[];
+    preferredDays?: number[];
+    notificationPreferences: {
+      email: boolean;
+      sms: boolean;
+      push: boolean;
+    };
+  }): Promise<ApiResponse<{ waitlistEntry: any }>> {
+    return this.makeRequest<ApiResponse<{ waitlistEntry: any }>>(
+      '/appointments/waitlist',
+      {
+        method: 'POST',
+        body: JSON.stringify(waitlistData),
+      }
+    );
+  }
+
+  /**
+   * Cancel waitlist entry
+   */
+  async cancelWaitlistEntry(entryId: string): Promise<ApiResponse<{ message: string }>> {
+    return this.makeRequest<ApiResponse<{ message: string }>>(
+      `/appointments/waitlist/${entryId}/cancel`,
+      {
+        method: 'POST',
+      }
+    );
+  }
+
+  /**
+   * Process waitlist - check for available slots and notify patients
+   */
+  async processWaitlist(): Promise<ApiResponse<{
+    processed: number;
+    notified: number;
+    fulfilled: number;
+    expired: number;
+  }>> {
+    return this.makeRequest<ApiResponse<{
+      processed: number;
+      notified: number;
+      fulfilled: number;
+      expired: number;
+    }>>(
+      '/appointments/waitlist/process',
+      {
+        method: 'POST',
+      }
+    );
+  }
+
+  /**
+   * Notify waitlist patient of available slots
+   */
+  async notifyWaitlistPatient(entryId: string): Promise<ApiResponse<{ message: string }>> {
+    return this.makeRequest<ApiResponse<{ message: string }>>(
+      `/appointments/waitlist/${entryId}/notify`,
+      {
+        method: 'POST',
+      }
+    );
+  }
+
+  /**
+   * Get patients for waitlist autocomplete
+   */
+  async getPatients(search?: string): Promise<any[]> {
+    const searchParams = new URLSearchParams();
+    if (search) {
+      searchParams.append('search', search);
+    }
+
+    const response = await this.makeRequest<ApiResponse<{ patients: any[] }>>(
+      `/patients?${searchParams.toString()}`
+    );
+    return response.data?.patients || [];
+  }
+
+  /**
+   * Get pharmacists for waitlist selection
+   */
+  async getPharmacists(): Promise<any[]> {
+    const response = await this.makeRequest<ApiResponse<{ pharmacists: any[] }>>(
+      '/pharmacists'
+    );
+    return response.data?.pharmacists || [];
+  }
 }
 
 // Create a singleton instance

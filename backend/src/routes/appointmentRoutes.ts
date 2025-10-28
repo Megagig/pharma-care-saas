@@ -537,4 +537,244 @@ router.get(
   appointmentController.getPharmacistAvailability
 );
 
+/**
+ * @route   POST /api/appointments/smart-suggestions
+ * @desc    Get smart appointment suggestions
+ * @access  Private (Pharmacist, Manager, Admin)
+ */
+router.post(
+  '/smart-suggestions',
+  requireAppointmentScheduling,
+  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
+  [
+    body('patientId')
+      .isMongoId()
+      .withMessage('Patient ID is required and must be valid'),
+    body('appointmentType')
+      .isIn(['mtm_session', 'chronic_disease_review', 'new_medication_consultation', 
+             'vaccination', 'health_check', 'smoking_cessation', 'general_followup'])
+      .withMessage('Valid appointment type is required'),
+    body('duration')
+      .optional()
+      .isInt({ min: 5, max: 480 })
+      .withMessage('Duration must be between 5 and 480 minutes'),
+    body('urgencyLevel')
+      .optional()
+      .isIn(['low', 'medium', 'high', 'urgent'])
+      .withMessage('Invalid urgency level'),
+    body('maxDaysAhead')
+      .optional()
+      .isInt({ min: 1, max: 90 })
+      .withMessage('Max days ahead must be between 1 and 90'),
+  ],
+  validateRequest,
+  appointmentController.getSmartSuggestions
+);
+
+/**
+ * @route   POST /api/appointments/auto-schedule
+ * @desc    Auto-schedule appointment using smart suggestions
+ * @access  Private (Pharmacist, Manager, Admin)
+ */
+router.post(
+  '/auto-schedule',
+  requireAppointmentScheduling,
+  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
+  [
+    body('patientId')
+      .isMongoId()
+      .withMessage('Patient ID is required and must be valid'),
+    body('appointmentType')
+      .isIn(['mtm_session', 'chronic_disease_review', 'new_medication_consultation', 
+             'vaccination', 'health_check', 'smoking_cessation', 'general_followup'])
+      .withMessage('Valid appointment type is required'),
+    body('duration')
+      .optional()
+      .isInt({ min: 5, max: 480 })
+      .withMessage('Duration must be between 5 and 480 minutes'),
+    body('urgencyLevel')
+      .optional()
+      .isIn(['low', 'medium', 'high', 'urgent'])
+      .withMessage('Invalid urgency level'),
+    body('acceptTopSuggestion')
+      .optional()
+      .isBoolean()
+      .withMessage('Accept top suggestion must be boolean'),
+  ],
+  validateRequest,
+  appointmentController.autoScheduleAppointment
+);
+
+/**
+ * @route   GET /api/appointments/optimization-report
+ * @desc    Get scheduling optimization report
+ * @access  Private (Manager, Admin)
+ */
+router.get(
+  '/optimization-report',
+  requireAppointmentScheduling,
+  rbac.requireRole('pharmacy_manager', 'admin'),
+  [
+    query('startDate')
+      .isISO8601()
+      .withMessage('Start date is required and must be in ISO format'),
+    query('endDate')
+      .isISO8601()
+      .withMessage('End date is required and must be in ISO format'),
+  ],
+  validateRequest,
+  appointmentController.getOptimizationReport
+);
+
+/**
+ * WAITLIST MANAGEMENT ROUTES
+ */
+
+/**
+ * @route   GET /api/appointments/waitlist
+ * @desc    Get waitlist entries with filtering
+ * @access  Private (Pharmacist, Manager, Admin)
+ */
+router.get(
+  '/waitlist',
+  requireAppointmentScheduling,
+  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
+  [
+    query('status')
+      .optional()
+      .isIn(['active', 'fulfilled', 'expired', 'cancelled'])
+      .withMessage('Invalid status filter'),
+    query('urgencyLevel')
+      .optional()
+      .isIn(['low', 'medium', 'high', 'urgent'])
+      .withMessage('Invalid urgency level filter'),
+    query('appointmentType')
+      .optional()
+      .isIn(['mtm_session', 'chronic_disease_review', 'new_medication_consultation', 
+             'vaccination', 'health_check', 'smoking_cessation', 'general_followup'])
+      .withMessage('Invalid appointment type filter'),
+    query('search')
+      .optional()
+      .isString()
+      .withMessage('Search must be a string'),
+  ],
+  validateRequest,
+  appointmentController.getWaitlist
+);
+
+/**
+ * @route   GET /api/appointments/waitlist/stats
+ * @desc    Get waitlist statistics
+ * @access  Private (Pharmacist, Manager, Admin)
+ */
+router.get(
+  '/waitlist/stats',
+  requireAppointmentScheduling,
+  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
+  appointmentController.getWaitlistStats
+);
+
+/**
+ * @route   POST /api/appointments/waitlist
+ * @desc    Add patient to waitlist
+ * @access  Private (Pharmacist, Manager, Admin)
+ */
+router.post(
+  '/waitlist',
+  requireAppointmentScheduling,
+  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
+  [
+    body('patientId')
+      .isMongoId()
+      .withMessage('Patient ID is required and must be valid'),
+    body('appointmentType')
+      .isIn(['mtm_session', 'chronic_disease_review', 'new_medication_consultation', 
+             'vaccination', 'health_check', 'smoking_cessation', 'general_followup'])
+      .withMessage('Valid appointment type is required'),
+    body('duration')
+      .isInt({ min: 5, max: 480 })
+      .withMessage('Duration must be between 5 and 480 minutes'),
+    body('urgencyLevel')
+      .isIn(['low', 'medium', 'high', 'urgent'])
+      .withMessage('Valid urgency level is required'),
+    body('maxWaitDays')
+      .isInt({ min: 1, max: 90 })
+      .withMessage('Max wait days must be between 1 and 90'),
+    body('preferredPharmacistId')
+      .optional()
+      .isMongoId()
+      .withMessage('Preferred pharmacist ID must be valid'),
+    body('preferredTimeSlots')
+      .optional()
+      .isArray()
+      .withMessage('Preferred time slots must be an array'),
+    body('preferredDays')
+      .optional()
+      .isArray()
+      .withMessage('Preferred days must be an array'),
+    body('notificationPreferences')
+      .isObject()
+      .withMessage('Notification preferences are required'),
+    body('notificationPreferences.email')
+      .isBoolean()
+      .withMessage('Email notification preference must be boolean'),
+    body('notificationPreferences.sms')
+      .isBoolean()
+      .withMessage('SMS notification preference must be boolean'),
+    body('notificationPreferences.push')
+      .isBoolean()
+      .withMessage('Push notification preference must be boolean'),
+  ],
+  validateRequest,
+  appointmentController.addToWaitlist
+);
+
+/**
+ * @route   POST /api/appointments/waitlist/:id/cancel
+ * @desc    Cancel waitlist entry
+ * @access  Private (Pharmacist, Manager, Admin)
+ */
+router.post(
+  '/waitlist/:id/cancel',
+  requireAppointmentScheduling,
+  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
+  [
+    param('id')
+      .isMongoId()
+      .withMessage('Waitlist entry ID must be valid'),
+  ],
+  validateRequest,
+  appointmentController.cancelWaitlistEntry
+);
+
+/**
+ * @route   POST /api/appointments/waitlist/process
+ * @desc    Process waitlist - check for available slots and notify patients
+ * @access  Private (Pharmacist, Manager, Admin)
+ */
+router.post(
+  '/waitlist/process',
+  requireAppointmentScheduling,
+  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
+  appointmentController.processWaitlist
+);
+
+/**
+ * @route   POST /api/appointments/waitlist/:id/notify
+ * @desc    Notify waitlist patient of available slots
+ * @access  Private (Pharmacist, Manager, Admin)
+ */
+router.post(
+  '/waitlist/:id/notify',
+  requireAppointmentScheduling,
+  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
+  [
+    param('id')
+      .isMongoId()
+      .withMessage('Waitlist entry ID must be valid'),
+  ],
+  validateRequest,
+  appointmentController.notifyWaitlistPatient
+);
+
 export default router;

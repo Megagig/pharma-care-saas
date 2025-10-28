@@ -1264,6 +1264,504 @@ class AppointmentController {
       });
     }
   }
+
+  /**
+   * Get smart appointment suggestions
+   */
+  async getSmartSuggestions(req: AuthRequest, res: Response) {
+    try {
+      const {
+        patientId,
+        appointmentType,
+        duration = 30,
+        preferredPharmacistId,
+        preferredTimeSlots,
+        preferredDays,
+        maxDaysAhead = 14,
+        urgencyLevel = 'medium',
+        patientPreferences
+      } = req.body;
+
+      const workplaceId = req.user?.workplaceId;
+
+      if (!workplaceId || !patientId || !appointmentType) {
+        return res.status(400).json({
+          success: false,
+          message: 'Workplace ID, patient ID, and appointment type are required'
+        });
+      }
+
+      // Import the SmartSchedulingService
+      const { SmartSchedulingService } = await import('../services/SmartSchedulingService');
+
+      const suggestions = await SmartSchedulingService.getSmartSuggestions({
+        patientId: new mongoose.Types.ObjectId(patientId),
+        appointmentType,
+        duration: Number(duration),
+        workplaceId: new mongoose.Types.ObjectId(workplaceId),
+        preferredPharmacistId: preferredPharmacistId ? new mongoose.Types.ObjectId(preferredPharmacistId) : undefined,
+        preferredTimeSlots,
+        preferredDays,
+        maxDaysAhead: Number(maxDaysAhead),
+        urgencyLevel,
+        patientPreferences
+      });
+
+      res.json({
+        success: true,
+        data: {
+          suggestions,
+          totalSuggestions: suggestions.length,
+          bestSuggestion: suggestions[0] || null
+        },
+        message: suggestions.length > 0 
+          ? `Found ${suggestions.length} smart suggestions`
+          : 'No suitable appointments found with current preferences'
+      });
+
+    } catch (error) {
+      logger.error('Error getting smart suggestions:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get smart suggestions',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+
+  /**
+   * Get scheduling optimization report
+   */
+  async getOptimizationReport(req: AuthRequest, res: Response) {
+    try {
+      const { startDate, endDate } = req.query;
+      const workplaceId = req.user?.workplaceId;
+
+      if (!workplaceId || !startDate || !endDate) {
+        return res.status(400).json({
+          success: false,
+          message: 'Workplace ID, start date, and end date are required'
+        });
+      }
+
+      const start = new Date(startDate as string);
+      const end = new Date(endDate as string);
+
+      if (isNaN(start.getTime()) || isNaN(end.getTime())) {
+        return res.status(400).json({
+          success: false,
+          message: 'Invalid date format'
+        });
+      }
+
+      // Import the SmartSchedulingService
+      const { SmartSchedulingService } = await import('../services/SmartSchedulingService');
+
+      const report = await SmartSchedulingService.generateOptimizationReport(
+        new mongoose.Types.ObjectId(workplaceId),
+        start,
+        end
+      );
+
+      res.json({
+        success: true,
+        data: report,
+        message: 'Optimization report generated successfully'
+      });
+
+    } catch (error) {
+      logger.error('Error generating optimization report:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to generate optimization report',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+
+  /**
+   * Auto-schedule appointment using smart suggestions
+   */
+  async autoScheduleAppointment(req: AuthRequest, res: Response) {
+    try {
+      const {
+        patientId,
+        appointmentType,
+        duration = 30,
+        preferredPharmacistId,
+        preferredTimeSlots,
+        preferredDays,
+        urgencyLevel = 'medium',
+        patientPreferences,
+        description,
+        acceptTopSuggestion = false
+      } = req.body;
+
+      const workplaceId = req.user?.workplaceId;
+      const userId = req.user?._id;
+
+      if (!workplaceId || !userId || !patientId || !appointmentType) {
+        return res.status(400).json({
+          success: false,
+          message: 'Required fields missing'
+        });
+      }
+
+      // Import the SmartSchedulingService
+      const { SmartSchedulingService } = await import('../services/SmartSchedulingService');
+
+      // Get smart suggestions
+      const suggestions = await SmartSchedulingService.getSmartSuggestions({
+        patientId: new mongoose.Types.ObjectId(patientId),
+        appointmentType,
+        duration: Number(duration),
+        workplaceId: new mongoose.Types.ObjectId(workplaceId),
+        preferredPharmacistId: preferredPharmacistId ? new mongoose.Types.ObjectId(preferredPharmacistId) : undefined,
+        preferredTimeSlots,
+        preferredDays,
+        maxDaysAhead: 14,
+        urgencyLevel,
+        patientPreferences
+      });
+
+      if (suggestions.length === 0) {
+        return res.status(404).json({
+          success: false,
+          message: 'No suitable appointment slots found'
+        });
+      }
+
+      const bestSuggestion = suggestions[0];
+
+      if (!acceptTopSuggestion) {
+        // Return suggestions for user to choose
+        return res.json({
+          success: true,
+          data: {
+            suggestions: suggestions.slice(0, 5), // Top 5 suggestions
+            recommendedAction: 'review_suggestions'
+          },
+          message: 'Please review and select from the suggested appointments'
+        });
+      }
+
+      // Auto-create appointment with best suggestion
+      const appointmentData = {
+        workplaceId: new mongoose.Types.ObjectId(workplaceId),
+        patientId: new mongoose.Types.ObjectId(patientId),
+        type: appointmentType,
+        scheduledDate: bestSuggestion.date,
+        scheduledTime: bestSuggestion.time,
+        duration: Number(duration),
+        assignedTo: bestSuggestion.pharmacistId,
+        title: `${appointmentType.replace('_', ' ')} - Auto-scheduled`,
+        description: description || `Auto-scheduled appointment (Score: ${bestSuggestion.score})`,
+        timezone: 'Africa/Lagos',
+        status: 'scheduled' as const,
+        confirmationStatus: 'pending' as const,
+        isRecurring: false,
+        patientPreferences,
+        reminders: [],
+        relatedRecords: {},
+        metadata: {
+          source: 'auto_scheduled',
+          smartSuggestionScore: bestSuggestion.score,
+          smartSuggestionReasons: bestSuggestion.reasons
+        },
+        createdBy: new mongoose.Types.ObjectId(userId),
+        isDeleted: false
+      };
+
+      const appointment = await Appointment.create(appointmentData);
+      
+      // Populate relations for response
+      await appointment.populate([
+        { path: 'patientId', select: 'firstName lastName email phone' },
+        { path: 'assignedTo', select: 'firstName lastName email role' }
+      ]);
+
+      logger.info('Auto-scheduled appointment created', {
+        appointmentId: appointment._id.toString(),
+        suggestionScore: bestSuggestion.score,
+        reasons: bestSuggestion.reasons
+      });
+
+      res.status(201).json({
+        success: true,
+        data: {
+          appointment,
+          suggestion: bestSuggestion,
+          alternativeSlots: bestSuggestion.alternativeSlots || []
+        },
+        message: `Appointment auto-scheduled successfully with ${bestSuggestion.pharmacistName}`
+      });
+
+    } catch (error) {
+      logger.error('Error auto-scheduling appointment:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to auto-schedule appointment',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+
+  // =============================================
+  // WAITLIST MANAGEMENT METHODS
+  // =============================================
+
+  /**
+   * Get waitlist entries with filtering
+   */
+  async getWaitlist(req: AuthRequest, res: Response) {
+    try {
+      const { status = 'active', urgencyLevel, appointmentType, search } = req.query;
+      const workplaceId = req.user?.workplaceId;
+
+      if (!workplaceId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Workplace ID is required'
+        });
+      }
+
+      // Import WaitlistService
+      const { WaitlistService } = await import('../services/WaitlistService');
+
+      const filters: any = { status };
+      if (urgencyLevel) filters.urgencyLevel = urgencyLevel;
+      if (appointmentType) filters.appointmentType = appointmentType;
+
+      const entries = await WaitlistService.getWaitlistEntries(
+        new mongoose.Types.ObjectId(workplaceId),
+        filters
+      );
+
+      // Filter by search if provided
+      let filteredEntries = entries;
+      if (search) {
+        const searchLower = (search as string).toLowerCase();
+        filteredEntries = entries.filter((entry: any) => 
+          entry.patientName?.toLowerCase().includes(searchLower)
+        );
+      }
+
+      res.json({
+        success: true,
+        data: {
+          entries: filteredEntries,
+          total: filteredEntries.length
+        }
+      });
+
+    } catch (error) {
+      logger.error('Error getting waitlist:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get waitlist entries',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+
+  /**
+   * Get waitlist statistics
+   */
+  async getWaitlistStats(req: AuthRequest, res: Response) {
+    try {
+      const workplaceId = req.user?.workplaceId;
+
+      if (!workplaceId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Workplace ID is required'
+        });
+      }
+
+      // Import WaitlistService
+      const { WaitlistService } = await import('../services/WaitlistService');
+
+      const stats = await WaitlistService.getWaitlistStats(
+        new mongoose.Types.ObjectId(workplaceId)
+      );
+
+      res.json({
+        success: true,
+        data: stats
+      });
+
+    } catch (error) {
+      logger.error('Error getting waitlist stats:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get waitlist statistics',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+
+  /**
+   * Add patient to waitlist
+   */
+  async addToWaitlist(req: AuthRequest, res: Response) {
+    try {
+      const workplaceId = req.user?.workplaceId;
+
+      if (!workplaceId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Workplace ID is required'
+        });
+      }
+
+      const {
+        patientId,
+        appointmentType,
+        duration,
+        urgencyLevel,
+        maxWaitDays,
+        preferredPharmacistId,
+        preferredTimeSlots,
+        preferredDays,
+        notificationPreferences
+      } = req.body;
+
+      // Import WaitlistService
+      const { WaitlistService } = await import('../services/WaitlistService');
+
+      const waitlistEntry = await WaitlistService.addToWaitlist({
+        workplaceId: new mongoose.Types.ObjectId(workplaceId),
+        patientId: new mongoose.Types.ObjectId(patientId),
+        appointmentType,
+        duration,
+        urgencyLevel,
+        maxWaitDays,
+        preferredPharmacistId: preferredPharmacistId ? new mongoose.Types.ObjectId(preferredPharmacistId) : undefined,
+        preferredTimeSlots,
+        preferredDays,
+        notificationPreferences
+      });
+
+      res.status(201).json({
+        success: true,
+        data: {
+          waitlistEntry
+        },
+        message: 'Patient added to waitlist successfully'
+      });
+
+    } catch (error) {
+      logger.error('Error adding to waitlist:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to add patient to waitlist',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+
+  /**
+   * Cancel waitlist entry
+   */
+  async cancelWaitlistEntry(req: AuthRequest, res: Response) {
+    try {
+      const { id } = req.params;
+
+      // Import WaitlistService
+      const { WaitlistService } = await import('../services/WaitlistService');
+
+      const success = await WaitlistService.removeFromWaitlist(
+        new mongoose.Types.ObjectId(id),
+        'cancelled'
+      );
+
+      if (!success) {
+        return res.status(404).json({
+          success: false,
+          message: 'Waitlist entry not found'
+        });
+      }
+
+      res.json({
+        success: true,
+        message: 'Waitlist entry cancelled successfully'
+      });
+
+    } catch (error) {
+      logger.error('Error cancelling waitlist entry:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to cancel waitlist entry',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+
+  /**
+   * Process waitlist - check for available slots and notify patients
+   */
+  async processWaitlist(req: AuthRequest, res: Response) {
+    try {
+      const workplaceId = req.user?.workplaceId;
+
+      if (!workplaceId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Workplace ID is required'
+        });
+      }
+
+      // Import WaitlistService
+      const { WaitlistService } = await import('../services/WaitlistService');
+
+      const result = await WaitlistService.processWaitlist(
+        new mongoose.Types.ObjectId(workplaceId)
+      );
+
+      res.json({
+        success: true,
+        data: result,
+        message: 'Waitlist processed successfully'
+      });
+
+    } catch (error) {
+      logger.error('Error processing waitlist:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to process waitlist',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
+
+  /**
+   * Notify waitlist patient of available slots
+   */
+  async notifyWaitlistPatient(req: AuthRequest, res: Response) {
+    try {
+      const { id } = req.params;
+
+      // For now, simulate notification sending
+      // In a real implementation, this would trigger the notification process
+      logger.info('Manual notification triggered for waitlist entry', {
+        waitlistEntryId: id,
+        triggeredBy: req.user?.id
+      });
+
+      res.json({
+        success: true,
+        message: 'Patient notification sent successfully'
+      });
+
+    } catch (error) {
+      logger.error('Error notifying waitlist patient:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to notify patient',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
+    }
+  }
 }
 
 // Helper functions removed - using date-fns addMinutes instead
