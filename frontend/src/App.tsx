@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, lazy } from 'react';
 import {
   BrowserRouter as Router,
   Routes,
@@ -79,6 +79,9 @@ import {
   LazyPatientAuth,
   LazyPublicPatientPortal,
 } from './components/LazyComponents';
+
+// Additional lazy imports
+const LazyScheduleManagement = lazy(() => import('./pages/ScheduleManagement'));
 
 import { LazyWrapper, useRoutePreloading } from './components/LazyWrapper';
 import { useRoutePrefetching, useBackgroundSync, useCacheWarming } from './hooks/useRoutePrefetching';
@@ -502,6 +505,21 @@ function App(): JSX.Element {
                                 <AppLayout>
                                   <LazyWrapper fallback={PageSkeleton}>
                                     <LazyAppointmentManagement />
+                                  </LazyWrapper>
+                                </AppLayout>
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/schedule"
+                            element={
+                              <ProtectedRoute
+                                requiredFeature="patient_engagement"
+                                requiresActiveSubscription
+                              >
+                                <AppLayout>
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyScheduleManagement />
                                   </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>

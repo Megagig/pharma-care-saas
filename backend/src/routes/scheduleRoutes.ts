@@ -1,101 +1,118 @@
+/**
+ * Schedule Management Routes
+ * 
+ * Routes for managing pharmacist schedules and availability
+ */
+
 import express from 'express';
-import {
-  getPharmacistSchedule,
-  updatePharmacistSchedule,
-  requestTimeOff,
-  updateTimeOffStatus,
-  getCapacityReport,
-  getAllPharmacistSchedules,
-} from '../controllers/scheduleController';
+import { body, query } from 'express-validator';
 import { auth } from '../middlewares/auth';
-import { authWithWorkspace } from '../middlewares/authWithWorkspace';
-import { requireDynamicPermission } from '../middlewares/rbac';
-import {
-  validateRequest,
-  updateScheduleSchema,
-  createTimeOffSchema,
-  updateTimeOffSchema,
-  scheduleParamsSchema,
-  timeOffParamsSchema,
-  capacityQuerySchema,
-} from '../validators/scheduleValidators';
+import { validateRequest } from '../middlewares/validation';
+import scheduleController from '../controllers/scheduleController';
 
 const router = express.Router();
 
-// Apply authentication and workspace context to all routes
+// Apply authentication to all routes
 router.use(auth);
-router.use(authWithWorkspace);
-
-// ===============================
-// SCHEDULE MANAGEMENT ROUTES
-// ===============================
 
 /**
- * GET /api/schedules/capacity
- * Get capacity report
+ * @route   GET /api/schedules/test
+ * @desc    Test authentication
+ * @access  Private (All authenticated users)
  */
 router.get(
-  '/capacity',
-  requireDynamicPermission('schedule.capacity_view'),
-  validateRequest(capacityQuerySchema, 'query'),
-  getCapacityReport
+  '/test',
+  (req: any, res: any) => {
+    res.json({
+      success: true,
+      user: {
+        id: req.user?._id,
+        email: req.user?.email,
+        workplaceId: req.user?.workplaceId
+      }
+    });
+  }
 );
 
 /**
- * GET /api/schedules/pharmacists
- * Get all pharmacist schedules
+ * @route   GET /api/schedules/my-schedule
+ * @desc    Get current user's schedule
+ * @access  Private (All authenticated users)
+ */
+router.get(
+  '/my-schedule',
+  scheduleController.getMySchedule
+);
+
+/**
+ * @route   POST /api/schedules/my-schedule
+ * @desc    Create or update current user's schedule
+ * @access  Private (All authenticated users)
+ */
+router.post(
+  '/my-schedule',
+  scheduleController.createOrUpdateMySchedule
+);
+
+/**
+ * @route   GET /api/schedules/pharmacists
+ * @desc    Get all pharmacist schedules (for admin/managers)
+ * @access  Private (All authenticated users)
  */
 router.get(
   '/pharmacists',
-  requireDynamicPermission('schedule.read'),
-  getAllPharmacistSchedules
+  [
+    query('date')
+      .optional()
+      .isISO8601()
+      .withMessage('Date must be in ISO format'),
+  ],
+  validateRequest,
+  scheduleController.getPharmacistSchedules
 );
 
 /**
- * GET /api/schedules/pharmacist/:pharmacistId
- * Get pharmacist schedule
+ * @route   GET /api/schedules/availability/:pharmacistId
+ * @desc    Get pharmacist availability for a specific date range
+ * @access  Private (All authenticated users)
  */
 router.get(
-  '/pharmacist/:pharmacistId',
-  requireDynamicPermission('schedule.read'),
-  validateRequest(scheduleParamsSchema, 'params'),
-  getPharmacistSchedule
+  '/availability/:pharmacistId',
+  [
+    query('startDate')
+      .isISO8601()
+      .withMessage('Start date is required and must be in ISO format'),
+    query('endDate')
+      .isISO8601()
+      .withMessage('End date is required and must be in ISO format'),
+  ],
+  validateRequest,
+  scheduleController.getPharmacistAvailability
 );
 
 /**
- * PUT /api/schedules/pharmacist/:pharmacistId
- * Update pharmacist schedule
- */
-router.put(
-  '/pharmacist/:pharmacistId',
-  requireDynamicPermission('schedule.update'),
-  validateRequest(scheduleParamsSchema, 'params'),
-  validateRequest(updateScheduleSchema, 'body'),
-  updatePharmacistSchedule
-);
-
-/**
- * POST /api/schedules/pharmacist/:pharmacistId/time-off
- * Request time off
+ * @route   POST /api/schedules/time-off
+ * @desc    Request time off
+ * @access  Private (All authenticated users)
  */
 router.post(
-  '/pharmacist/:pharmacistId/time-off',
-  requireDynamicPermission('schedule.time_off_request'),
-  validateRequest(scheduleParamsSchema, 'params'),
-  validateRequest(createTimeOffSchema, 'body'),
-  requestTimeOff
-);
-
-/**
- * PATCH /api/schedules/pharmacist/:pharmacistId/time-off/:timeOffId
- * Update time-off status (approve/reject)
- */
-router.patch(
-  '/pharmacist/:pharmacistId/time-off/:timeOffId',
-  requireDynamicPermission('schedule.time_off_approve'),
-  validateRequest(timeOffParamsSchema, 'params'),
-  validateRequest(updateTimeOffSchema, 'body'),
-  updateTimeOffStatus
+  '/time-off',
+  [
+    body('startDate')
+      .isISO8601()
+      .withMessage('Start date is required and must be in ISO format'),
+    body('endDate')
+      .isISO8601()
+      .withMessage('End date is required and must be in ISO format'),
+    body('reason')
+      .notEmpty()
+      .withMessage('Reason is required'),
+    body('type')
+      .isIn(['vacation', 'sick_leave', 'personal', 'training', 'other'])
+      .withMessage('Valid time off type is required'),
+  ],
+  validateRequest,
+  scheduleController.requestTimeOff
 );
 
 export default router;

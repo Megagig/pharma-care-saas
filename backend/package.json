@@ -82,6 +82,8 @@
     "patient-engagement:rollout": "ts-node src/scripts/managePatientEngagementRollout.ts",
     "patient-engagement:monitor": "ts-node src/scripts/monitorPatientEngagementRollout.ts",
     "patient-engagement:test": "ts-node src/scripts/testPatientEngagementRollout.ts",
+    "enable-appointments": "ts-node src/scripts/enableAppointmentFeatures.ts",
+    "create-default-schedules": "ts-node src/scripts/createDefaultPharmacistSchedules.ts",
     "rollout": "npm run patient-engagement:rollout",
     "monitor-rollout": "npm run patient-engagement:monitor",
     "test-rollout": "npm run patient-engagement:test",

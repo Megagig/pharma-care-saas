@@ -6,6 +6,7 @@ import {
   Typography,
   Avatar,
   Chip,
+  CircularProgress,
 } from '@mui/material';
 import { 
   Person as PersonIcon,
@@ -13,7 +14,10 @@ import {
   School as SchoolIcon,
 } from '@mui/icons-material';
 
-// Mock pharmacist data - in real app, this would come from an API
+import { useWorkspaceMembers } from '../../queries/useWorkspaceTeam';
+import type { Member } from '../../types/workspace';
+
+// Pharmacist interface based on workspace member
 interface Pharmacist {
   _id: string;
   firstName: string;
@@ -57,49 +61,32 @@ const PharmacistSelector: React.FC<PharmacistSelectorProps> = ({
   appointmentDate,
   appointmentTime,
 }) => {
-  // Mock pharmacists data - in real app, this would come from usePharmacists hook
-  const allPharmacists: Pharmacist[] = useMemo(() => [
-    {
-      _id: '1',
-      firstName: 'Dr. John',
-      lastName: 'Smith',
-      role: 'Senior Pharmacist',
-      email: 'john.smith@pharmacy.com',
-      specializations: ['Clinical Pharmacy', 'MTM', 'Diabetes Care'],
-      isAvailable: true,
-      workingHours: { start: '08:00', end: '17:00' },
-    },
-    {
-      _id: '2',
-      firstName: 'Dr. Sarah',
-      lastName: 'Johnson',
-      role: 'Clinical Pharmacist',
-      email: 'sarah.johnson@pharmacy.com',
-      specializations: ['Chronic Disease Management', 'Immunizations'],
-      isAvailable: true,
-      workingHours: { start: '09:00', end: '18:00' },
-    },
-    {
-      _id: '3',
-      firstName: 'Dr. Michael',
-      lastName: 'Brown',
-      role: 'Pharmacist',
-      email: 'michael.brown@pharmacy.com',
-      specializations: ['General Pharmacy', 'Patient Counseling'],
-      isAvailable: false,
-      workingHours: { start: '08:30', end: '16:30' },
-    },
-    {
-      _id: '4',
-      firstName: 'Dr. Emily',
-      lastName: 'Davis',
-      role: 'Intern Pharmacist',
-      email: 'emily.davis@pharmacy.com',
-      specializations: ['General Pharmacy'],
-      isAvailable: true,
-      workingHours: { start: '10:00', end: '19:00' },
-    },
-  ], []);
+  // Fetch workspace members (pharmacists and staff)
+  const { data: membersData, isLoading: loadingMembers } = useWorkspaceMembers(
+    { status: 'active' }, // Only fetch active members
+    { page: 1, limit: 100 }
+  );
+
+  // Transform workspace members to pharmacist format
+  const allPharmacists: Pharmacist[] = useMemo(() => {
+    if (!membersData?.members) return [];
+    
+    return membersData.members
+      .filter((member: Member) => 
+        // Include Pharmacists, Staff, and Owners (they can handle appointments)
+        ['Pharmacist', 'Staff', 'Owner'].includes(member.workplaceRole)
+      )
+      .map((member: Member) => ({
+        _id: member._id,
+        firstName: member.firstName,
+        lastName: member.lastName,
+        role: member.workplaceRole,
+        email: member.email,
+        isAvailable: member.status === 'active',
+        // Default working hours - in real app, this would come from user preferences
+        workingHours: { start: '08:00', end: '18:00' },
+      }));
+  }, [membersData]);
 
   // Filter pharmacists based on availability if needed
   const availablePharmacists = useMemo(() => {
@@ -226,6 +213,15 @@ const PharmacistSelector: React.FC<PharmacistSelectorProps> = ({
       error={error}
       helperText={helperText}
       required={required}
+      InputProps={{
+        ...params.InputProps,
+        endAdornment: (
+          <>
+            {loadingMembers && <CircularProgress size={20} />}
+            {params.InputProps.endAdornment}
+          </>
+        ),
+      }}
     />
   );
 
@@ -239,14 +235,17 @@ const PharmacistSelector: React.FC<PharmacistSelectorProps> = ({
       value={value}
       onChange={handleChange}
       options={availablePharmacists}
+      loading={loadingMembers}
       getOptionLabel={getOptionLabel}
       isOptionEqualToValue={isOptionEqualToValue}
       renderOption={renderOption}
       renderInput={renderInput}
       fullWidth={fullWidth}
-      disabled={disabled}
+      disabled={disabled || loadingMembers}
       noOptionsText={
-        filterByAvailability 
+        loadingMembers
+          ? 'Loading pharmacists...'
+          : filterByAvailability 
           ? 'No pharmacists available for the selected time'
           : 'No pharmacists found'
       }

@@ -13,6 +13,98 @@ import { SlotGenerationService } from '../services/SlotGenerationService';
 
 class AppointmentController {
   /**
+   * Get appointments list with filtering and pagination
+   */
+  async getAppointments(req: AuthRequest, res: Response) {
+    try {
+      const { 
+        page = 1, 
+        limit = 50, 
+        status, 
+        pharmacistId, 
+        patientId, 
+        startDate, 
+        endDate 
+      } = req.query;
+      const workplaceId = req.user?.workplaceId;
+
+      if (!workplaceId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Workplace ID is required'
+        });
+      }
+
+      // Build query
+      const query: any = {
+        workplaceId,
+        isDeleted: false
+      };
+
+      if (status) query.status = status;
+      if (pharmacistId) query.assignedTo = pharmacistId;
+      if (patientId) query.patientId = patientId;
+
+      // Date range filtering
+      if (startDate || endDate) {
+        query.scheduledDate = {};
+        if (startDate) query.scheduledDate.$gte = new Date(startDate as string);
+        if (endDate) query.scheduledDate.$lte = new Date(endDate as string);
+      }
+
+      const skip = (Number(page) - 1) * Number(limit);
+
+      // Fetch appointments with population
+      const [appointments, total] = await Promise.all([
+        Appointment.find(query)
+          .populate('patientId', 'firstName lastName email phone dateOfBirth')
+          .populate('assignedTo', 'firstName lastName email role')
+          .sort({ scheduledDate: -1, scheduledTime: -1 })
+          .limit(Number(limit))
+          .skip(skip)
+          .lean(),
+        Appointment.countDocuments(query)
+      ]);
+
+      // Calculate summary statistics
+      const summary = {
+        total: appointments.length,
+        byStatus: appointments.reduce((acc: any, apt: any) => {
+          acc[apt.status] = (acc[apt.status] || 0) + 1;
+          return acc;
+        }, {}),
+        byType: appointments.reduce((acc: any, apt: any) => {
+          acc[apt.type] = (acc[apt.type] || 0) + 1;
+          return acc;
+        }, {})
+      };
+
+      res.json({
+        success: true,
+        data: {
+          results: appointments,
+        },
+        meta: {
+          total,
+          page: Number(page),
+          limit: Number(limit),
+          totalPages: Math.ceil(total / Number(limit)),
+          hasNext: skip + appointments.length < total,
+          hasPrev: Number(page) > 1,
+        },
+        summary,
+        timestamp: new Date().toISOString(),
+      });
+    } catch (error) {
+      logger.error('Error getting appointments:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get appointments'
+      });
+    }
+  }
+
+  /**
    * Get appointments for calendar view
    */
   async getCalendarAppointments(req: AuthRequest, res: Response) {

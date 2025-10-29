@@ -27,14 +27,55 @@ router.use(auth);
 router.use(requirePatientEngagementModule);
 
 /**
+ * @route   GET /api/appointments
+ * @desc    Get appointments list with filtering and pagination
+ * @access  Private (All authenticated users)
+ */
+router.get(
+  '/',
+  requireAppointmentScheduling,
+  [
+    query('page')
+      .optional()
+      .isInt({ min: 1 })
+      .withMessage('Page must be a positive integer'),
+    query('limit')
+      .optional()
+      .isInt({ min: 1, max: 100 })
+      .withMessage('Limit must be between 1 and 100'),
+    query('status')
+      .optional()
+      .isIn(['scheduled', 'confirmed', 'in_progress', 'completed', 'cancelled', 'no_show'])
+      .withMessage('Invalid status filter'),
+    query('pharmacistId')
+      .optional()
+      .isMongoId()
+      .withMessage('Pharmacist ID must be valid'),
+    query('patientId')
+      .optional()
+      .isMongoId()
+      .withMessage('Patient ID must be valid'),
+    query('startDate')
+      .optional()
+      .isISO8601()
+      .withMessage('Start date must be in ISO format'),
+    query('endDate')
+      .optional()
+      .isISO8601()
+      .withMessage('End date must be in ISO format'),
+  ],
+  validateRequest,
+  appointmentController.getAppointments
+);
+
+/**
  * @route   GET /api/appointments/calendar
  * @desc    Get appointments for calendar view
- * @access  Private (Pharmacist, Manager, Admin)
+ * @access  Private (All authenticated users)
  */
 router.get(
   '/calendar',
   requireAppointmentScheduling,
-  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
   [
     query('view')
       .optional()
@@ -60,7 +101,7 @@ router.get(
 /**
  * @route   GET /api/appointments/available-slots
  * @desc    Get available appointment slots
- * @access  Private (Pharmacist, Manager, Admin) + Public (Patient Portal)
+ * @access  Private (All authenticated users)
  */
 router.get(
   '/available-slots',
@@ -90,12 +131,11 @@ router.get(
 /**
  * @route   POST /api/appointments
  * @desc    Create new appointment
- * @access  Private (Pharmacist, Manager, Admin)
+ * @access  Private (All authenticated users)
  */
 router.post(
   '/',
   requireAppointmentScheduling,
-  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
   [
     body('patientId')
       .isMongoId()
@@ -141,12 +181,11 @@ router.post(
 /**
  * @route   GET /api/appointments/:id
  * @desc    Get single appointment
- * @access  Private (Pharmacist, Manager, Admin)
+ * @access  Private (All authenticated users)
  */
 router.get(
   '/:id',
   requireAppointmentScheduling,
-  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
   [
     param('id')
       .isMongoId()
@@ -159,12 +198,11 @@ router.get(
 /**
  * @route   PUT /api/appointments/:id
  * @desc    Update appointment
- * @access  Private (Pharmacist, Manager, Admin)
+ * @access  Private (All authenticated users)
  */
 router.put(
   '/:id',
   requireAppointmentScheduling,
-  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
   [
     param('id')
       .isMongoId()
@@ -197,12 +235,11 @@ router.put(
 /**
  * @route   PATCH /api/appointments/:id/status
  * @desc    Update appointment status
- * @access  Private (Pharmacist, Manager, Admin)
+ * @access  Private (All authenticated users)
  */
 router.patch(
   '/:id/status',
   requireAppointmentScheduling,
-  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
   [
     param('id')
       .isMongoId()
@@ -226,12 +263,11 @@ router.patch(
 /**
  * @route   POST /api/appointments/:id/reschedule
  * @desc    Reschedule appointment
- * @access  Private (Pharmacist, Manager, Admin)
+ * @access  Private (All authenticated users)
  */
 router.post(
   '/:id/reschedule',
   requireAppointmentScheduling,
-  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
   [
     param('id')
       .isMongoId()
@@ -257,12 +293,11 @@ router.post(
 /**
  * @route   POST /api/appointments/:id/cancel
  * @desc    Cancel appointment
- * @access  Private (Pharmacist, Manager, Admin)
+ * @access  Private (All authenticated users)
  */
 router.post(
   '/:id/cancel',
   requireAppointmentScheduling,
-  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
   [
     param('id')
       .isMongoId()
@@ -307,12 +342,11 @@ router.post(
 /**
  * @route   GET /api/appointments/patient/:patientId
  * @desc    Get appointments for a specific patient
- * @access  Private (Pharmacist, Manager, Admin)
+ * @access  Private (All authenticated users)
  */
 router.get(
   '/patient/:patientId',
   requireAppointmentScheduling,
-  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
   [
     param('patientId')
       .isMongoId()
@@ -337,12 +371,11 @@ router.get(
 /**
  * @route   GET /api/appointments/upcoming
  * @desc    Get upcoming appointments
- * @access  Private (Pharmacist, Manager, Admin)
+ * @access  Private (All authenticated users)
  */
 router.get(
   '/upcoming',
   requireAppointmentScheduling,
-  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
   [
     query('days')
       .optional()
@@ -364,12 +397,11 @@ router.get(
 /**
  * @route   POST /api/appointments/:id/recurring/update
  * @desc    Update recurring appointment series
- * @access  Private (Pharmacist, Manager, Admin)
+ * @access  Private (All authenticated users)
  */
 router.post(
   '/:id/recurring/update',
   requireRecurringAppointments,
-  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
   [
     param('id')
       .isMongoId()
@@ -388,12 +420,11 @@ router.post(
 /**
  * @route   GET /api/appointments/:id/recurring/series
  * @desc    Get all appointments in recurring series
- * @access  Private (Pharmacist, Manager, Admin)
+ * @access  Private (All authenticated users)
  */
 router.get(
   '/:id/recurring/series',
   requireRecurringAppointments,
-  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
   [
     param('id')
       .isMongoId()
@@ -448,12 +479,11 @@ router.post(
 /**
  * @route   GET /api/appointments/next-available-slot
  * @desc    Get next available slot for a pharmacist
- * @access  Private (Pharmacist, Manager, Admin)
+ * @access  Private (All authenticated users)
  */
 router.get(
   '/next-available-slot',
   requireAppointmentScheduling,
-  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
   [
     query('pharmacistId')
       .isMongoId()
@@ -479,12 +509,11 @@ router.get(
 /**
  * @route   POST /api/appointments/validate-slot
  * @desc    Validate slot availability
- * @access  Private (Pharmacist, Manager, Admin)
+ * @access  Private (All authenticated users)
  */
 router.post(
   '/validate-slot',
   requireAppointmentScheduling,
-  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
   [
     body('pharmacistId')
       .isMongoId()
@@ -512,12 +541,11 @@ router.post(
 /**
  * @route   GET /api/appointments/pharmacist-availability
  * @desc    Get pharmacist availability summary for a date range
- * @access  Private (Pharmacist, Manager, Admin)
+ * @access  Private (All authenticated users)
  */
 router.get(
   '/pharmacist-availability',
   requireAppointmentScheduling,
-  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
   [
     query('pharmacistId')
       .isMongoId()
@@ -540,12 +568,11 @@ router.get(
 /**
  * @route   POST /api/appointments/smart-suggestions
  * @desc    Get smart appointment suggestions
- * @access  Private (Pharmacist, Manager, Admin)
+ * @access  Private (All authenticated users)
  */
 router.post(
   '/smart-suggestions',
   requireAppointmentScheduling,
-  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
   [
     body('patientId')
       .isMongoId()
@@ -574,12 +601,11 @@ router.post(
 /**
  * @route   POST /api/appointments/auto-schedule
  * @desc    Auto-schedule appointment using smart suggestions
- * @access  Private (Pharmacist, Manager, Admin)
+ * @access  Private (All authenticated users)
  */
 router.post(
   '/auto-schedule',
   requireAppointmentScheduling,
-  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
   [
     body('patientId')
       .isMongoId()
@@ -633,12 +659,11 @@ router.get(
 /**
  * @route   GET /api/appointments/waitlist
  * @desc    Get waitlist entries with filtering
- * @access  Private (Pharmacist, Manager, Admin)
+ * @access  Private (All authenticated users)
  */
 router.get(
   '/waitlist',
   requireAppointmentScheduling,
-  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
   [
     query('status')
       .optional()
@@ -665,24 +690,22 @@ router.get(
 /**
  * @route   GET /api/appointments/waitlist/stats
  * @desc    Get waitlist statistics
- * @access  Private (Pharmacist, Manager, Admin)
+ * @access  Private (All authenticated users)
  */
 router.get(
   '/waitlist/stats',
   requireAppointmentScheduling,
-  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
   appointmentController.getWaitlistStats
 );
 
 /**
  * @route   POST /api/appointments/waitlist
  * @desc    Add patient to waitlist
- * @access  Private (Pharmacist, Manager, Admin)
+ * @access  Private (All authenticated users)
  */
 router.post(
   '/waitlist',
   requireAppointmentScheduling,
-  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
   [
     body('patientId')
       .isMongoId()
@@ -732,12 +755,11 @@ router.post(
 /**
  * @route   POST /api/appointments/waitlist/:id/cancel
  * @desc    Cancel waitlist entry
- * @access  Private (Pharmacist, Manager, Admin)
+ * @access  Private (All authenticated users)
  */
 router.post(
   '/waitlist/:id/cancel',
   requireAppointmentScheduling,
-  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
   [
     param('id')
       .isMongoId()
@@ -750,24 +772,22 @@ router.post(
 /**
  * @route   POST /api/appointments/waitlist/process
  * @desc    Process waitlist - check for available slots and notify patients
- * @access  Private (Pharmacist, Manager, Admin)
+ * @access  Private (All authenticated users)
  */
 router.post(
   '/waitlist/process',
   requireAppointmentScheduling,
-  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
   appointmentController.processWaitlist
 );
 
 /**
  * @route   POST /api/appointments/waitlist/:id/notify
  * @desc    Notify waitlist patient of available slots
- * @access  Private (Pharmacist, Manager, Admin)
+ * @access  Private (All authenticated users)
  */
 router.post(
   '/waitlist/:id/notify',
   requireAppointmentScheduling,
-  rbac.requireRole('pharmacist', 'pharmacy_manager', 'admin'),
   [
     param('id')
       .isMongoId()

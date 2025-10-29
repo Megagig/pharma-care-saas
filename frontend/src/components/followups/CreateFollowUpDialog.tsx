@@ -35,6 +35,7 @@ import { DatePicker } from '@mui/x-date-pickers';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { addDays, startOfDay, isBefore } from 'date-fns';
+import toast from 'react-hot-toast';
 
 import { FollowUpFormData, FollowUpType, FollowUpPriority, TriggerType } from '../../stores/followUpTypes';
 import { useCreateFollowUpTask } from '../../hooks/useFollowUps';
@@ -227,7 +228,8 @@ const CreateFollowUpDialog: React.FC<CreateFollowUpDialogProps> = ({
   const onSubmit = async (data: ExtendedFormData) => {
     try {
       if (!data.selectedPatient) {
-        throw new Error('Please select a patient');
+        toast.error('Please select a patient');
+        return;
       }
 
       const followUpData: FollowUpFormData = {
@@ -245,11 +247,24 @@ const CreateFollowUpDialog: React.FC<CreateFollowUpDialogProps> = ({
 
       await createFollowUpMutation.mutateAsync(followUpData);
       
+      toast.success('Follow-up task created successfully!');
+      
       // Reset form and close dialog
       reset();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create follow-up task:', error);
+      
+      // Extract error message from different error formats
+      let errorMessage = 'Failed to create follow-up task';
+      
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
     }
   };
 

@@ -56,14 +56,14 @@ export class SlotGenerationService {
     };
   }> {
     try {
-      const { 
-        date, 
-        pharmacistId, 
-        duration, 
-        appointmentType, 
-        workplaceId, 
+      const {
+        date,
+        pharmacistId,
+        duration,
+        appointmentType,
+        workplaceId,
         slotInterval = 15,
-        includeUnavailable = false 
+        includeUnavailable = false
       } = options;
 
       logger.info('Generating available slots', {
@@ -96,8 +96,8 @@ export class SlotGenerationService {
 
       if (schedules.length === 0) {
         logger.warn('No pharmacist schedules found', { query: scheduleQuery });
-        return { 
-          slots: [], 
+        return {
+          slots: [],
           pharmacists: [],
           summary: {
             totalSlots: 0,
@@ -125,7 +125,7 @@ export class SlotGenerationService {
 
       const existingAppointments = await Appointment.find(appointmentQuery).lean();
 
-      logger.info('Found existing appointments', { 
+      logger.info('Found existing appointments', {
         count: existingAppointments.length,
         date: format(date, 'yyyy-MM-dd')
       });
@@ -136,7 +136,7 @@ export class SlotGenerationService {
 
       for (const schedule of schedules) {
         const pharmacist = schedule.pharmacistId as any;
-        
+
         // Check if pharmacist can handle this appointment type
         if (appointmentType && !schedule.appointmentPreferences.appointmentTypes.includes(appointmentType)) {
           logger.debug('Pharmacist cannot handle appointment type', {
@@ -183,10 +183,10 @@ export class SlotGenerationService {
         const availableCount = slotsWithPharmacist.filter(s => s.available).length;
         const totalCount = slotsWithPharmacist.length;
         const utilizationRate = totalCount > 0 ? Math.round(((totalCount - availableCount) / totalCount) * 100) : 0;
-        
+
         // Find next available slot
         const nextAvailable = slotsWithPharmacist.find(s => s.available);
-        
+
         // Get working hours summary
         const workingHours = this.getWorkingHoursSummary(schedule, date);
 
@@ -248,11 +248,11 @@ export class SlotGenerationService {
     includeUnavailable: boolean
   ): Promise<Omit<TimeSlot, 'pharmacistId' | 'pharmacistName'>[]> {
     const slots: Omit<TimeSlot, 'pharmacistId' | 'pharmacistName'>[] = [];
-    
+
     // Get shifts for the date
     const dayOfWeek = date.getDay();
     const daySchedule = schedule.workingHours.find(wh => wh.dayOfWeek === dayOfWeek);
-    
+
     if (!daySchedule || !daySchedule.isWorkingDay || !daySchedule.shifts) {
       return slots;
     }
@@ -477,10 +477,10 @@ export class SlotGenerationService {
   } | null> {
     try {
       const today = new Date();
-      
+
       for (let i = 0; i < daysAhead; i++) {
         const checkDate = addMinutes(today, i * 24 * 60); // Add days
-        
+
         const result = await this.generateAvailableSlots({
           date: checkDate,
           pharmacistId,
@@ -531,7 +531,7 @@ export class SlotGenerationService {
         includeUnavailable: true
       });
 
-      const slot = result.slots.find(s => 
+      const slot = result.slots.find(s =>
         s.time === time && s.pharmacistId.toString() === pharmacistId.toString()
       );
 
@@ -551,6 +551,82 @@ export class SlotGenerationService {
     } catch (error) {
       logger.error('Error validating slot availability:', error);
       throw error;
+    }
+  }
+
+  /**
+   * Create a default schedule for a pharmacist
+   */
+  private static async createDefaultScheduleForPharmacist(
+    pharmacistId: mongoose.Types.ObjectId,
+    workplaceId: mongoose.Types.ObjectId,
+    pharmacist: any
+  ): Promise<any> {
+    try {
+      const defaultWorkingHours = [
+        // Sunday (0) - Not working
+        { dayOfWeek: 0, isWorkingDay: false, shifts: [] },
+        // Monday (1) - Working
+        { dayOfWeek: 1, isWorkingDay: true, shifts: [{ startTime: '09:00', endTime: '17:00', breakStart: '12:00', breakEnd: '13:00' }] },
+        // Tuesday (2) - Working
+        { dayOfWeek: 2, isWorkingDay: true, shifts: [{ startTime: '09:00', endTime: '17:00', breakStart: '12:00', breakEnd: '13:00' }] },
+        // Wednesday (3) - Working
+        { dayOfWeek: 3, isWorkingDay: true, shifts: [{ startTime: '09:00', endTime: '17:00', breakStart: '12:00', breakEnd: '13:00' }] },
+        // Thursday (4) - Working
+        { dayOfWeek: 4, isWorkingDay: true, shifts: [{ startTime: '09:00', endTime: '17:00', breakStart: '12:00', breakEnd: '13:00' }] },
+        // Friday (5) - Working
+        { dayOfWeek: 5, isWorkingDay: true, shifts: [{ startTime: '09:00', endTime: '17:00', breakStart: '12:00', breakEnd: '13:00' }] },
+        // Saturday (6) - Not working
+        { dayOfWeek: 6, isWorkingDay: false, shifts: [] }
+      ];
+
+      const defaultAppointmentPreferences = {
+        maxAppointmentsPerDay: 16,
+        maxConcurrentAppointments: 1,
+        appointmentTypes: [
+          'mtm_session',
+          'chronic_disease_review',
+          'new_medication_consultation',
+          'vaccination',
+          'health_check',
+          'smoking_cessation',
+          'general_followup'
+        ],
+        defaultDuration: 30,
+        bufferBetweenAppointments: 0
+      };
+
+      const scheduleData = {
+        workplaceId,
+        pharmacistId,
+        workingHours: defaultWorkingHours,
+        timeOff: [],
+        appointmentPreferences: defaultAppointmentPreferences,
+        capacityStats: {
+          totalSlotsAvailable: 0,
+          slotsBooked: 0,
+          utilizationRate: 0,
+          lastCalculatedAt: new Date()
+        },
+        isActive: true,
+        effectiveFrom: new Date(),
+        createdBy: pharmacistId,
+        isDeleted: false
+      };
+
+      const schedule = await PharmacistSchedule.create(scheduleData);
+
+      // Populate the pharmacist data for consistency with the query
+      const populatedSchedule = await PharmacistSchedule.findById(schedule._id)
+        .populate('pharmacistId', 'firstName lastName email')
+        .lean();
+
+      logger.info(`Created default schedule for pharmacist: ${pharmacist.firstName} ${pharmacist.lastName}`);
+
+      return populatedSchedule;
+    } catch (error) {
+      logger.error(`Failed to create default schedule for pharmacist ${pharmacistId}:`, error);
+      return null;
     }
   }
 }

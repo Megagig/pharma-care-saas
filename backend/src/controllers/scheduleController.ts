@@ -1,278 +1,330 @@
+/**
+ * Schedule Controller
+ * 
+ * Handles pharmacist schedule management operations
+ */
+
 import { Response } from 'express';
+import { AuthRequest } from '../types/auth';
+import logger from '../utils/logger';
 import mongoose from 'mongoose';
-import { AuthRequest } from '../middlewares/auth';
-import CalendarService from '../services/CalendarService';
 import PharmacistSchedule from '../models/PharmacistSchedule';
-import {
-  sendSuccess,
-  sendError,
-  asyncHandler,
-  getRequestContext,
-} from '../utils/responseHelpers';
+import User from '../models/User';
 
-/**
- * Pharmacist Schedule Management Controller
- * Handles all schedule-related HTTP requests
- */
+class ScheduleController {
+  /**
+   * Get current user's schedule
+   */
+  async getMySchedule(req: AuthRequest, res: Response) {
+    try {
+      const userId = req.user?._id;
+      const workplaceId = req.user?.workplaceId;
 
-/**
- * GET /api/schedules/pharmacist/:pharmacistId
- * Get pharmacist schedule
- */
-export const getPharmacistSchedule = asyncHandler(
-  async (req: AuthRequest, res: Response) => {
-    const context = getRequestContext(req);
-    const { pharmacistId } = req.params;
+      if (!userId || !workplaceId) {
+        return res.status(400).json({
+          success: false,
+          message: 'User ID and workplace ID are required'
+        });
+      }
 
-    const availability = await CalendarService.getPharmacistAvailability(
-      new mongoose.Types.ObjectId(pharmacistId),
-      new Date(),
-      new mongoose.Types.ObjectId(context.workplaceId)
-    );
+      const schedule = await PharmacistSchedule.findOne({
+        pharmacistId: userId,
+        workplaceId,
+        isActive: true
+      });
 
-    if (!availability) {
-      return sendError(res, 'NOT_FOUND', 'Pharmacist schedule not found', 404);
+      if (!schedule) {
+        return res.status(404).json({
+          success: false,
+          message: 'No schedule found'
+        });
+      }
+
+      res.json({
+        success: true,
+        data: schedule
+      });
+    } catch (error) {
+      logger.error('Error getting user schedule:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get schedule'
+      });
     }
-
-    // Get pharmacist schedule for time-off information
-    const schedule = await PharmacistSchedule.findOne({
-      pharmacistId: new mongoose.Types.ObjectId(pharmacistId),
-      workplaceId: new mongoose.Types.ObjectId(context.workplaceId),
-    });
-
-    // Get upcoming time-off
-    const upcomingTimeOff = schedule?.timeOff?.filter((timeOff: any) => {
-      return new Date(timeOff.endDate) >= new Date() && timeOff.status === 'approved';
-    }) || [];
-
-    sendSuccess(res, {
-      schedule: availability,
-      upcomingTimeOff,
-      utilizationRate: availability.utilizationRate,
-    }, 'Pharmacist schedule retrieved successfully');
   }
-);
 
-/**
- * PUT /api/schedules/pharmacist/:pharmacistId
- * Update pharmacist schedule
- */
-export const updatePharmacistSchedule = asyncHandler(
-  async (req: AuthRequest, res: Response) => {
-    const context = getRequestContext(req);
-    const { pharmacistId } = req.params;
-    const { workingHours, appointmentPreferences, locationId, isActive } = req.body;
+  /**
+   * Create or update current user's schedule
+   */
+  async createOrUpdateMySchedule(req: AuthRequest, res: Response) {
+    try {
+      const userId = req.user?._id;
+      const workplaceId = req.user?.workplaceId;
 
-    // Find existing schedule or create new one
-    let schedule = await PharmacistSchedule.findOne({
-      workplaceId: context.workplaceId,
-      pharmacistId,
-      isActive: true,
-    });
+      logger.info('Schedule save request received', {
+        userId: userId?.toString(),
+        workplaceId: workplaceId?.toString(),
+        body: req.body
+      });
 
-    if (!schedule) {
-      // Create new schedule
-      schedule = new PharmacistSchedule({
-        workplaceId: context.workplaceId,
-        pharmacistId,
-        locationId,
-        workingHours: workingHours || [],
-        appointmentPreferences: appointmentPreferences || {
-          appointmentTypes: [],
-          defaultDuration: 30,
+      if (!userId || !workplaceId) {
+        logger.error('Missing user ID or workplace ID', { userId, workplaceId });
+        return res.status(400).json({
+          success: false,
+          message: 'User ID and workplace ID are required'
+        });
+      }
+
+      const { workingHours, appointmentPreferences } = req.body;
+
+      logger.info('Extracted request data', {
+        workingHours: JSON.stringify(workingHours),
+        appointmentPreferences: JSON.stringify(appointmentPreferences)
+      });
+
+      // Find existing schedule or create new one
+      let schedule = await PharmacistSchedule.findOne({
+        pharmacistId: userId,
+        workplaceId,
+        isActive: true
+      });
+
+      logger.info('Existing schedule found:', { scheduleExists: !!schedule });
+
+      const scheduleData = {
+        workplaceId,
+        pharmacistId: userId,
+        workingHours,
+        appointmentPreferences,
+        timeOff: schedule?.timeOff || [],
+        capacityStats: schedule?.capacityStats || {
+          totalSlotsAvailable: 0,
+          slotsBooked: 0,
+          utilizationRate: 0,
+          lastCalculatedAt: new Date()
         },
         isActive: true,
-        effectiveFrom: new Date(),
-        createdBy: context.userId,
+        effectiveFrom: schedule?.effectiveFrom || new Date(),
+        createdBy: schedule?.createdBy || userId,
+        updatedBy: userId,
+        isDeleted: false
+      };
+
+      if (schedule) {
+        // Update existing schedule
+        logger.info('Updating existing schedule');
+        Object.assign(schedule, scheduleData);
+        await schedule.save();
+        logger.info('Schedule updated successfully');
+      } else {
+        // Create new schedule
+        logger.info('Creating new schedule', { scheduleData: JSON.stringify(scheduleData) });
+        schedule = await PharmacistSchedule.create(scheduleData);
+        logger.info('Schedule created successfully');
+      }
+
+      logger.info('Schedule saved successfully', {
+        userId: userId.toString(),
+        workplaceId: workplaceId.toString(),
+        scheduleId: schedule._id.toString()
       });
-    } else {
-      // Update existing schedule
-      if (workingHours) schedule.workingHours = workingHours;
-      if (appointmentPreferences) schedule.appointmentPreferences = appointmentPreferences;
-      if (locationId !== undefined) schedule.locationId = locationId;
-      if (isActive !== undefined) schedule.isActive = isActive;
-      schedule.updatedBy = context.userId;
+
+      res.json({
+        success: true,
+        message: 'Schedule saved successfully',
+        data: schedule
+      });
+    } catch (error) {
+      logger.error('Error saving schedule:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to save schedule',
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      });
     }
-
-    await schedule.save();
-
-    sendSuccess(res, { schedule }, 'Pharmacist schedule updated successfully');
   }
-);
 
-/**
- * POST /api/schedules/pharmacist/:pharmacistId/time-off
- * Request time off
- */
-export const requestTimeOff = asyncHandler(
-  async (req: AuthRequest, res: Response) => {
-    const context = getRequestContext(req);
-    const { pharmacistId } = req.params;
-    const { startDate, endDate, reason, type } = req.body;
+  /**
+   * Get all pharmacist schedules
+   */
+  async getPharmacistSchedules(req: AuthRequest, res: Response) {
+    try {
+      const workplaceId = req.user?.workplaceId;
+      const { date } = req.query;
 
-    // Find pharmacist schedule
-    const schedule = await PharmacistSchedule.findOne({
-      workplaceId: context.workplaceId,
-      pharmacistId,
-      isActive: true,
-    });
+      if (!workplaceId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Workplace ID is required'
+        });
+      }
 
-    if (!schedule) {
-      return sendError(res, 'NOT_FOUND', 'Pharmacist schedule not found', 404);
+      const query: any = {
+        workplaceId,
+        isActive: true
+      };
+
+      // If date is provided, filter by effective dates
+      if (date) {
+        const targetDate = new Date(date as string);
+        query.effectiveFrom = { $lte: targetDate };
+        query.$or = [
+          { effectiveTo: { $exists: false } },
+          { effectiveTo: null },
+          { effectiveTo: { $gte: targetDate } }
+        ];
+      }
+
+      const schedules = await PharmacistSchedule.find(query)
+        .populate('pharmacistId', 'firstName lastName email role')
+        .sort({ 'pharmacistId.firstName': 1 });
+
+      res.json({
+        success: true,
+        data: schedules
+      });
+    } catch (error) {
+      logger.error('Error getting pharmacist schedules:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get pharmacist schedules'
+      });
     }
-
-    // Add time-off request
-    const timeOffRequest = {
-      startDate: new Date(startDate),
-      endDate: new Date(endDate),
-      reason,
-      type,
-      status: 'pending' as const,
-    };
-
-    schedule.timeOff = schedule.timeOff || [];
-    schedule.timeOff.push(timeOffRequest);
-    schedule.updatedBy = context.userId;
-    await schedule.save();
-
-    // Check for affected appointments
-    const Appointment = (await import('../models/Appointment')).default;
-    const affectedAppointments = await Appointment.find({
-      workplaceId: context.workplaceId,
-      assignedTo: pharmacistId,
-      scheduledDate: {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate),
-      },
-      status: { $in: ['scheduled', 'confirmed'] },
-      isDeleted: { $ne: true },
-    }).select('_id scheduledDate scheduledTime patientId type');
-
-    sendSuccess(res, {
-      timeOff: timeOffRequest,
-      affectedAppointments,
-    }, 'Time-off request created successfully', 201);
   }
-);
 
-/**
- * PATCH /api/schedules/pharmacist/:pharmacistId/time-off/:timeOffId
- * Update time-off status (approve/reject)
- */
-export const updateTimeOffStatus = asyncHandler(
-  async (req: AuthRequest, res: Response) => {
-    const context = getRequestContext(req);
-    const { pharmacistId, timeOffId } = req.params;
-    const { status, reason } = req.body;
+  /**
+   * Get pharmacist availability for a date range
+   */
+  async getPharmacistAvailability(req: AuthRequest, res: Response) {
+    try {
+      const { pharmacistId } = req.params;
+      const { startDate, endDate } = req.query;
+      const workplaceId = req.user?.workplaceId;
 
-    // Find pharmacist schedule
-    const schedule = await PharmacistSchedule.findOne({
-      workplaceId: context.workplaceId,
-      pharmacistId,
-      isActive: true,
-    });
+      if (!workplaceId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Workplace ID is required'
+        });
+      }
 
-    if (!schedule) {
-      return sendError(res, 'NOT_FOUND', 'Pharmacist schedule not found', 404);
-    }
+      const schedule = await PharmacistSchedule.findOne({
+        pharmacistId: new mongoose.Types.ObjectId(pharmacistId),
+        workplaceId,
+        isActive: true
+      });
 
-    // Find and update time-off request
-    const timeOffIndex = schedule.timeOff?.findIndex(
-      (to: any) => to._id.toString() === timeOffId
-    );
+      if (!schedule) {
+        return res.status(404).json({
+          success: false,
+          message: 'Schedule not found for pharmacist'
+        });
+      }
 
-    if (timeOffIndex === undefined || timeOffIndex === -1) {
-      return sendError(res, 'NOT_FOUND', 'Time-off request not found', 404);
-    }
+      // Generate availability for the date range
+      const start = new Date(startDate as string);
+      const end = new Date(endDate as string);
+      const availability = [];
 
-    schedule.timeOff![timeOffIndex].status = status;
-    if (status === 'approved') {
-      schedule.timeOff![timeOffIndex].approvedBy = context.userId;
-    }
-    schedule.updatedBy = context.userId;
-    await schedule.save();
+      for (let date = new Date(start); date <= end; date.setDate(date.getDate() + 1)) {
+        const dayOfWeek = date.getDay();
+        const workingHour = schedule.workingHours.find(wh => wh.dayOfWeek === dayOfWeek);
+        
+        const isAvailable = workingHour?.isWorkingDay && 
+          !schedule.timeOff.some(timeOff => 
+            timeOff.status === 'approved' &&
+            date >= timeOff.startDate && 
+            date <= timeOff.endDate
+          );
 
-    sendSuccess(res, {
-      timeOff: schedule.timeOff![timeOffIndex],
-    }, `Time-off request ${status} successfully`);
-  }
-);
+        availability.push({
+          date: new Date(date),
+          isAvailable,
+          workingHours: workingHour?.shifts || [],
+          reason: !isAvailable ? (workingHour?.isWorkingDay ? 'Time off' : 'Not working day') : null
+        });
+      }
 
-/**
- * GET /api/schedules/capacity
- * Get capacity report
- */
-export const getCapacityReport = asyncHandler(
-  async (req: AuthRequest, res: Response) => {
-    const context = getRequestContext(req);
-    const { startDate, endDate, pharmacistId, locationId } = req.query as any;
-
-    const capacityMetrics = await CalendarService.getCapacityMetrics(
-      new Date(startDate),
-      new Date(endDate),
-      new mongoose.Types.ObjectId(context.workplaceId),
-      pharmacistId ? [new mongoose.Types.ObjectId(pharmacistId)] : undefined
-    );
-
-    // Generate recommendations based on capacity data
-    const recommendations: string[] = [];
-    
-    if (capacityMetrics.overall.utilizationRate < 50) {
-      recommendations.push('Overall utilization is low. Consider marketing campaigns or reducing available slots.');
-    }
-    
-    if (capacityMetrics.overall.utilizationRate > 90) {
-      recommendations.push('High utilization detected. Consider adding more pharmacists or extending working hours.');
-    }
-
-    // Check for underutilized pharmacists
-    if (capacityMetrics.byPharmacist) {
-      capacityMetrics.byPharmacist.forEach((pharma: any) => {
-        if (pharma.utilizationRate < 40) {
-          recommendations.push(`Pharmacist ${pharma.pharmacistName} is underutilized (${pharma.utilizationRate}% utilization).`);
+      res.json({
+        success: true,
+        data: {
+          pharmacistId,
+          availability,
+          schedule: {
+            workingHours: schedule.workingHours,
+            appointmentPreferences: schedule.appointmentPreferences
+          }
         }
       });
+    } catch (error) {
+      logger.error('Error getting pharmacist availability:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get pharmacist availability'
+      });
     }
+  }
 
-    // Check for busy days
-    if (capacityMetrics.byDay) {
-      const busyDays = capacityMetrics.byDay.filter((day: any) => day.utilizationRate > 85);
-      if (busyDays.length > 0) {
-        const dayNames = busyDays.map((d: any) => d.dayName).join(', ');
-        recommendations.push(`Consider adding more slots on: ${dayNames}`);
+  /**
+   * Request time off
+   */
+  async requestTimeOff(req: AuthRequest, res: Response) {
+    try {
+      const userId = req.user?._id;
+      const workplaceId = req.user?.workplaceId;
+      const { startDate, endDate, reason, type } = req.body;
+
+      if (!userId || !workplaceId) {
+        return res.status(400).json({
+          success: false,
+          message: 'User ID and workplace ID are required'
+        });
       }
+
+      const schedule = await PharmacistSchedule.findOne({
+        pharmacistId: userId,
+        workplaceId,
+        isActive: true
+      });
+
+      if (!schedule) {
+        return res.status(404).json({
+          success: false,
+          message: 'No active schedule found'
+        });
+      }
+
+      // Add time off request
+      schedule.timeOff.push({
+        startDate: new Date(startDate),
+        endDate: new Date(endDate),
+        reason,
+        type,
+        status: 'pending'
+      });
+
+      await schedule.save();
+
+      logger.info('Time off requested', {
+        userId: userId.toString(),
+        startDate,
+        endDate,
+        type
+      });
+
+      res.json({
+        success: true,
+        message: 'Time off request submitted successfully',
+        data: schedule.timeOff[schedule.timeOff.length - 1]
+      });
+    } catch (error) {
+      logger.error('Error requesting time off:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to request time off'
+      });
     }
-
-    sendSuccess(res, {
-      ...capacityMetrics,
-      recommendations,
-    }, 'Capacity report retrieved successfully');
   }
-);
+}
 
-/**
- * GET /api/schedules/pharmacists
- * Get all pharmacist schedules for the workplace
- */
-export const getAllPharmacistSchedules = asyncHandler(
-  async (req: AuthRequest, res: Response) => {
-    const context = getRequestContext(req);
-    const { locationId } = req.query as any;
-
-    const query: any = {
-      workplaceId: context.workplaceId,
-      isActive: true,
-      isDeleted: { $ne: true },
-    };
-
-    if (locationId) {
-      query.locationId = locationId;
-    }
-
-    const schedules = await PharmacistSchedule.find(query)
-      .populate('pharmacistId', 'firstName lastName email')
-      .sort({ createdAt: -1 });
-
-    sendSuccess(res, { schedules }, 'Pharmacist schedules retrieved successfully');
-  }
-);
+export default new ScheduleController();

@@ -232,9 +232,9 @@ import { unifiedAuditMiddleware } from './middlewares/unifiedAuditMiddleware';
 app.use('/api/', unifiedAuditMiddleware);
 
 // Clinical Intervention Sync Middleware (creates follow-up tasks automatically)
-import { 
-  clinicalInterventionSyncMiddleware, 
-  followUpCompletionSyncMiddleware 
+import {
+  clinicalInterventionSyncMiddleware,
+  followUpCompletionSyncMiddleware
 } from './middlewares/clinicalInterventionSync';
 app.use('/api/', clinicalInterventionSyncMiddleware);
 app.use('/api/', followUpCompletionSyncMiddleware);
@@ -262,6 +262,56 @@ app.get('/api/health', (req: Request, res: Response) => {
     timestamp: new Date().toISOString(),
     environment: process.env.NODE_ENV,
   });
+});
+
+// Debug endpoint to check user role and feature flags
+import { auth } from './middlewares/auth';
+app.get('/api/debug/user-info', auth, async (req: any, res: Response) => {
+  try {
+    const user = req.user;
+    const workspaceContext = req.workspaceContext;
+
+    // Check feature flags
+    const FeatureFlagService = (await import('./services/FeatureFlagService')).default;
+    const patientEngagementModule = await FeatureFlagService.isFeatureEnabled(
+      'patient_engagement_module',
+      user._id.toString(),
+      user.workplaceId?.toString() || 'no-workspace'
+    );
+    const appointmentScheduling = await FeatureFlagService.isFeatureEnabled(
+      'appointment_scheduling',
+      user._id.toString(),
+      user.workplaceId?.toString() || 'no-workspace'
+    );
+
+    res.json({
+      status: 'OK',
+      user: {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+        workplaceRole: user.workplaceRole,
+        status: user.status,
+        workplaceId: user.workplaceId,
+      },
+      workspaceContext: workspaceContext ? {
+        workspaceId: workspaceContext.workspace?._id,
+        planName: workspaceContext.plan?.name,
+        subscriptionStatus: workspaceContext.workspace?.subscriptionStatus,
+      } : null,
+      featureFlags: {
+        patient_engagement_module: patientEngagementModule,
+        appointment_scheduling: appointmentScheduling,
+      },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'ERROR',
+      error: error.message,
+      timestamp: new Date().toISOString(),
+    });
+  }
 });
 
 // System integration health endpoint

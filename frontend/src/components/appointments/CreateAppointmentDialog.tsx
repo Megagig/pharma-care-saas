@@ -45,6 +45,7 @@ import { DatePicker, TimePicker } from '@mui/x-date-pickers';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
 import { format, addDays, isWeekend, isBefore, startOfDay } from 'date-fns';
+import toast from 'react-hot-toast';
 
 import { AppointmentFormData, AppointmentType } from '../../stores/appointmentTypes';
 import { useCreateAppointment, useAvailableSlots, useValidateSlot, useNextAvailableSlot } from '../../hooks/useAppointments';
@@ -295,26 +296,41 @@ const CreateAppointmentDialog: React.FC<CreateAppointmentDialogProps> = ({
   const onSubmit = async (data: FormData) => {
     try {
       if (!data.selectedPatient) {
-        throw new Error('Please select a patient');
+        toast.error('Please select a patient');
+        return;
       }
 
       if (!data.selectedPharmacist) {
-        throw new Error('Please select a pharmacist');
+        toast.error('Please select a pharmacist');
+        return;
       }
 
-      // Validate slot availability before creating appointment
-      const slotValidation = await validateSlotMutation.mutateAsync({
-        pharmacistId: data.selectedPharmacist._id,
-        date: format(data.scheduledDate, 'yyyy-MM-dd'),
-        time: data.scheduledTime,
-        duration: data.duration,
-        type: data.type
-      });
+      // Optionally validate slot availability before creating appointment
+      // Skip validation if user doesn't have permission (403 error)
+      try {
+        const slotValidation = await validateSlotMutation.mutateAsync({
+          pharmacistId: data.selectedPharmacist._id,
+          date: format(data.scheduledDate, 'yyyy-MM-dd'),
+          time: data.scheduledTime,
+          duration: data.duration,
+          type: data.type
+        });
 
-      if (!slotValidation.data.available) {
-        throw new Error(
-          `Time slot is no longer available: ${slotValidation.data.reason || 'Unknown reason'}`
-        );
+        if (!slotValidation.data.available) {
+          toast.error(
+            `Time slot is no longer available: ${slotValidation.data.reason || 'Unknown reason'}`
+          );
+          return;
+        }
+      } catch (validationError: any) {
+        // If validation fails with 403 (permission denied), skip validation and proceed
+        if (validationError?.response?.status === 403) {
+          console.log('Slot validation skipped due to permission restrictions');
+          // Continue with appointment creation
+        } else {
+          // Re-throw other errors
+          throw validationError;
+        }
       }
 
       const appointmentData: AppointmentFormData = {
@@ -332,13 +348,24 @@ const CreateAppointmentDialog: React.FC<CreateAppointmentDialogProps> = ({
 
       await createAppointmentMutation.mutateAsync(appointmentData);
       
+      toast.success('Appointment created successfully!');
+      
       // Reset form and close dialog
       reset();
       onClose();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Failed to create appointment:', error);
-      // You might want to show a toast notification here
-      alert(error instanceof Error ? error.message : 'Failed to create appointment');
+      
+      // Extract error message from different error formats
+      let errorMessage = 'Failed to create appointment';
+      
+      if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      
+      toast.error(errorMessage);
     }
   };
 

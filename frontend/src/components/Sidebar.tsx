@@ -29,6 +29,7 @@ import AdminPanelSettings from '@mui/icons-material/AdminPanelSettings';
 import Assignment from '@mui/icons-material/Assignment';
 // Patient Engagement icons
 import CalendarTodayIcon from '@mui/icons-material/CalendarToday';
+import ScheduleIcon from '@mui/icons-material/Schedule';
 import TaskIcon from '@mui/icons-material/Task';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import EventAvailableIcon from '@mui/icons-material/EventAvailable';
@@ -180,6 +181,12 @@ const Sidebar = () => {
       name: 'Appointments',
       path: '/appointments',
       icon: CalendarTodayIcon,
+      show: hasFeature('patient_engagement'),
+    },
+    {
+      name: 'Schedule',
+      path: '/schedule',
+      icon: ScheduleIcon,
       show: hasFeature('patient_engagement'),
     },
     {

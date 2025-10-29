@@ -51,7 +51,7 @@ const PatientAutocomplete: React.FC<PatientAutocompleteProps> = ({
 
   // Get available patients for autocomplete
   const availablePatients = useMemo(() => {
-    return patientSearchResults?.data?.patients || [];
+    return patientSearchResults?.data?.results || [];
   }, [patientSearchResults]);
 
   // Handle input change
