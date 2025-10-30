@@ -13,14 +13,14 @@ mongoose.connect(MONGODB_URI, {
 
 // Use the correct schema that matches the actual model
 const AppointmentWaitlistSchema = new mongoose.Schema({
-  workplaceId: { 
-    type: mongoose.Schema.Types.ObjectId, 
+  workplaceId: {
+    type: mongoose.Schema.Types.ObjectId,
     ref: 'Workplace',
     required: true,
     index: true
   },
-  patientId: { 
-    type: mongoose.Schema.Types.ObjectId, 
+  patientId: {
+    type: mongoose.Schema.Types.ObjectId,
     ref: 'Patient',
     required: true,
     index: true
@@ -100,7 +100,7 @@ async function debugWaitlist() {
     console.log('=== DEBUGGING WAITLIST ===');
     console.log('Connection state:', mongoose.connection.readyState);
     console.log('Database name:', mongoose.connection.name);
-    
+
     // Wait for connection to be ready
     if (mongoose.connection.readyState !== 1) {
       console.log('Waiting for database connection...');
@@ -108,18 +108,18 @@ async function debugWaitlist() {
         mongoose.connection.once('connected', resolve);
       });
     }
-    
+
     // List all collections to verify database structure
     const collections = await mongoose.connection.db.listCollections().toArray();
     console.log('\nAvailable collections:');
     collections.forEach(col => {
       console.log(`- ${col.name}`);
     });
-    
+
     // Get all waitlist entries
     const allEntries = await AppointmentWaitlist.find({}).lean();
     console.log('\nTotal entries in database:', allEntries.length);
-    
+
     if (allEntries.length > 0) {
       console.log('\nFirst entry details:');
       const firstEntry = allEntries[0];
@@ -133,41 +133,41 @@ async function debugWaitlist() {
       console.log('- duration:', firstEntry.duration);
       console.log('- createdAt:', firstEntry.createdAt);
       console.log('- expiresAt:', firstEntry.expiresAt);
-      
+
       // Show all unique workplace IDs
       const workplaceIds = [...new Set(allEntries.map(entry => entry.workplaceId.toString()))];
       console.log('\nUnique workplace IDs in database:');
       workplaceIds.forEach(id => console.log(`- ${id}`));
-      
+
       // Check the specific workplace ID from the logs
       const targetWorkplaceId = '68b5cd85f1f0f9758b8afbbf';
       console.log('\n=== TESTING QUERIES ===');
       console.log('Target workplaceId:', targetWorkplaceId);
-      
+
       // Test if target workplace ID exists in our list
       const hasTargetWorkplace = workplaceIds.includes(targetWorkplaceId);
       console.log('Target workplace exists in database:', hasTargetWorkplace);
-      
+
       if (hasTargetWorkplace) {
         // Test query with string
-        const entriesWithString = await AppointmentWaitlist.find({ 
-          workplaceId: targetWorkplaceId 
+        const entriesWithString = await AppointmentWaitlist.find({
+          workplaceId: targetWorkplaceId
         }).lean();
         console.log('Entries found with string query:', entriesWithString.length);
-        
+
         // Test query with ObjectId
-        const entriesWithObjectId = await AppointmentWaitlist.find({ 
-          workplaceId: new mongoose.Types.ObjectId(targetWorkplaceId) 
+        const entriesWithObjectId = await AppointmentWaitlist.find({
+          workplaceId: new mongoose.Types.ObjectId(targetWorkplaceId)
         }).lean();
         console.log('Entries found with ObjectId query:', entriesWithObjectId.length);
-        
+
         // Test with status filter
-        const entriesWithStatus = await AppointmentWaitlist.find({ 
+        const entriesWithStatus = await AppointmentWaitlist.find({
           workplaceId: new mongoose.Types.ObjectId(targetWorkplaceId),
           status: 'active'
         }).lean();
         console.log('Entries found with ObjectId + status=active:', entriesWithStatus.length);
-        
+
         // Show all entries for this workplace
         console.log('\nAll entries for this workplace:');
         const workplaceEntries = allEntries.filter(entry => entry.workplaceId.toString() === targetWorkplaceId);
@@ -187,13 +187,13 @@ async function debugWaitlist() {
         console.log('\nTarget workplace ID not found. Using first available workplace ID for testing...');
         const testWorkplaceId = workplaceIds[0];
         console.log('Test workplaceId:', testWorkplaceId);
-        
-        const testEntries = await AppointmentWaitlist.find({ 
+
+        const testEntries = await AppointmentWaitlist.find({
           workplaceId: new mongoose.Types.ObjectId(testWorkplaceId),
           status: 'active'
         }).lean();
         console.log('Test entries found:', testEntries.length);
-        
+
         if (testEntries.length > 0) {
           console.log('Sample entry:', {
             id: testEntries[0]._id,
@@ -210,45 +210,45 @@ async function debugWaitlist() {
       console.log('1. The collection is empty');
       console.log('2. The collection name is different');
       console.log('3. Connected to wrong database');
-      
+
       // Try to find any collection with "waitlist" in the name
-      const waitlistCollections = collections.filter(col => 
-        col.name.toLowerCase().includes('waitlist') || 
+      const waitlistCollections = collections.filter(col =>
+        col.name.toLowerCase().includes('waitlist') ||
         col.name.toLowerCase().includes('appointment')
       );
-      
+
       if (waitlistCollections.length > 0) {
         console.log('\nFound related collections:');
         waitlistCollections.forEach(col => console.log(`- ${col.name}`));
       }
     }
-    
+
     // Test the WaitlistService query logic
     console.log('\n=== TESTING WAITLIST SERVICE LOGIC ===');
     const testWorkplaceId = '68b5cd85f1f0f9758b8afbbf';
     const workplaceObjectId = new mongoose.Types.ObjectId(testWorkplaceId);
-    
+
     const query = { workplaceId: workplaceObjectId, status: 'active' };
     console.log('Service query:', query);
-    
+
     const totalCount = await AppointmentWaitlist.countDocuments({});
     const workplaceCount = await AppointmentWaitlist.countDocuments({ workplaceId: workplaceObjectId });
-    
+
     console.log('Database counts:', { totalCount, workplaceCount });
-    
+
     const allEntriesForWorkplace = await AppointmentWaitlist.find({ workplaceId: workplaceObjectId })
       .select('status urgencyLevel appointmentType createdAt workplaceId patientId preferredPharmacistId')
       .lean();
-    
+
     console.log('All entries for workplace (with refs):', allEntriesForWorkplace);
-    
+
     // Test the populate query step by step
     console.log('\n=== TESTING POPULATE QUERIES ===');
-    
+
     // First, try without populate
     const entriesWithoutPopulate = await AppointmentWaitlist.find(query).lean();
     console.log('Entries without populate:', entriesWithoutPopulate.length);
-    
+
     if (entriesWithoutPopulate.length > 0) {
       console.log('First entry without populate:', {
         id: entriesWithoutPopulate[0]._id,
@@ -256,7 +256,7 @@ async function debugWaitlist() {
         preferredPharmacistId: entriesWithoutPopulate[0].preferredPharmacistId,
         status: entriesWithoutPopulate[0].status
       });
-      
+
       // Check if the referenced patient exists
       const Patient = mongoose.model('Patient', new mongoose.Schema({}, { strict: false }));
       const patientExists = await Patient.findById(entriesWithoutPopulate[0].patientId);
@@ -269,7 +269,7 @@ async function debugWaitlist() {
           email: patientExists.email
         });
       }
-      
+
       // Check if the referenced pharmacist exists (if set)
       if (entriesWithoutPopulate[0].preferredPharmacistId) {
         const User = mongoose.model('User', new mongoose.Schema({}, { strict: false }));
@@ -284,7 +284,7 @@ async function debugWaitlist() {
         }
       }
     }
-    
+
     // Now try with populate
     console.log('\n=== TESTING WITH POPULATE ===');
     try {
@@ -292,9 +292,9 @@ async function debugWaitlist() {
         .populate('patientId', 'firstName lastName email phone')
         .populate('preferredPharmacistId', 'firstName lastName')
         .lean();
-      
+
       console.log('Entries with populate:', entriesWithPopulate.length);
-      
+
       if (entriesWithPopulate.length > 0) {
         console.log('First entry with populate:', {
           id: entriesWithPopulate[0]._id,
@@ -306,7 +306,7 @@ async function debugWaitlist() {
     } catch (populateError) {
       console.error('Populate error:', populateError.message);
     }
-    
+
     // Try populate one field at a time
     console.log('\n=== TESTING INDIVIDUAL POPULATES ===');
     try {
@@ -317,7 +317,7 @@ async function debugWaitlist() {
     } catch (error) {
       console.error('Patient populate error:', error.message);
     }
-    
+
     try {
       const entriesWithPharmacistPopulate = await AppointmentWaitlist.find(query)
         .populate('preferredPharmacistId', 'firstName lastName')
@@ -326,7 +326,7 @@ async function debugWaitlist() {
     } catch (error) {
       console.error('Pharmacist populate error:', error.message);
     }
-    
+
   } catch (error) {
     console.error('Error:', error);
     console.error('Stack trace:', error.stack);

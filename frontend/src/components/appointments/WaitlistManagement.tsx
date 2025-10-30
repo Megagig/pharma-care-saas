@@ -397,9 +397,19 @@ const WaitlistManagement: React.FC = () => {
     },
     onError: (error: any) => {
       console.error('Schedule appointment mutation failed:', error);
+      console.error('Error response:', error.response?.data);
+      
+      let errorMessage = 'Failed to schedule appointment';
+      
+      if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       setSnackbar({
         open: true,
-        message: error.response?.data?.message || 'Failed to schedule appointment',
+        message: errorMessage,
         severity: 'error'
       });
     }
@@ -462,10 +472,15 @@ const WaitlistManagement: React.FC = () => {
   const handleScheduleNow = (entry: WaitlistEntry) => {
     console.log('Schedule now clicked for entry:', entry);
     setSelectedWaitlistEntry(entry);
+    
+    // Set default pharmacist - prefer the entry's preferred pharmacist, or first available
+    const defaultPharmacist = entry.preferredPharmacistId || 
+      (pharmacists && pharmacists.length > 0 ? pharmacists[0]._id : '');
+    
     setSchedulingData({
       selectedDate: '',
       selectedTime: '',
-      selectedPharmacist: entry.preferredPharmacistId || '',
+      selectedPharmacist: defaultPharmacist,
       notes: ''
     });
     setScheduleDialogOpen(true);
@@ -476,6 +491,16 @@ const WaitlistManagement: React.FC = () => {
       setSnackbar({
         open: true,
         message: 'Please select both date and time for the appointment',
+        severity: 'warning'
+      });
+      return;
+    }
+
+    // Ensure we have a pharmacist assigned
+    if (!schedulingData.selectedPharmacist) {
+      setSnackbar({
+        open: true,
+        message: 'Please select a pharmacist for the appointment',
         severity: 'warning'
       });
       return;
@@ -498,16 +523,18 @@ const WaitlistManagement: React.FC = () => {
 
     const appointmentData = {
       patientId,
-      appointmentType: selectedWaitlistEntry.appointmentType,
+      type: selectedWaitlistEntry.appointmentType, // Backend expects 'type', not 'appointmentType'
       scheduledDate: schedulingData.selectedDate,
       scheduledTime: schedulingData.selectedTime,
       duration: selectedWaitlistEntry.duration,
-      assignedTo: schedulingData.selectedPharmacist || undefined,
+      assignedTo: schedulingData.selectedPharmacist, // Required field
       title: `${selectedWaitlistEntry.appointmentType.replace('_', ' ')} - ${selectedWaitlistEntry.patientName}`,
       description: schedulingData.notes || `Scheduled from waitlist. Urgency: ${selectedWaitlistEntry.urgencyLevel}`
     };
 
     console.log('Scheduling appointment with data:', appointmentData);
+    console.log('Selected waitlist entry:', selectedWaitlistEntry);
+    console.log('Scheduling data:', schedulingData);
     scheduleAppointmentMutation.mutate(appointmentData);
   };
 
@@ -1205,10 +1232,11 @@ const WaitlistManagement: React.FC = () => {
                             variant={schedulingData.selectedTime === slot.time ? "contained" : "outlined"}
                             size="small"
                             onClick={() => {
+                              console.log('Selected slot:', slot);
                               setSchedulingData(prev => ({ 
                                 ...prev, 
                                 selectedTime: slot.time,
-                                selectedPharmacist: slot.pharmacistId 
+                                selectedPharmacist: slot.pharmacistId || prev.selectedPharmacist
                               }));
                             }}
                             sx={{ minWidth: 80 }}
