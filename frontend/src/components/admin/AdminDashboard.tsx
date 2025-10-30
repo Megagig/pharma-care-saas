@@ -82,16 +82,21 @@ import WebhookManagement from './WebhookManagement';
 import AdvancedSubscriptionAnalytics from '../subscription/AdvancedSubscriptionAnalytics';
 
 interface License {
-  _id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  userRole: string;
+  workplaceName?: string;
   licenseNumber: string;
-  licenseDocument?: {
+  licenseStatus?: string;
+  pharmacySchool?: string;
+  yearOfGraduation?: number;
+  expirationDate?: string;
+  documentInfo?: {
     fileName: string;
     uploadedAt: string;
+    fileSize?: number;
   };
-  createdAt: string;
 }
 
 interface Analytics {
@@ -124,6 +129,11 @@ const AdminDashboard: React.FC = () => {
     status: '',
     licenseStatus: '',
   });
+  const [licenseFilters, setLicenseFilters] = useState({
+    status: '',
+    search: '',
+  });
+  const [pendingLicenseCount, setPendingLicenseCount] = useState(0);
 
   // Bulk operation states
   const [bulkAssignDialogOpen, setBulkAssignDialogOpen] = useState(false);
@@ -143,7 +153,7 @@ const AdminDashboard: React.FC = () => {
   useEffect(() => {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, filters]);
+  }, [activeTab, filters, licenseFilters]);
 
   useEffect(() => {
     if (activeTab === 0) {
@@ -195,10 +205,20 @@ const AdminDashboard: React.FC = () => {
 
   const loadLicenses = async () => {
     try {
-      const response = await getPendingLicenses();
+      // Fetch all licenses with current filters
+      const response = await getPendingLicenses({
+        status: licenseFilters.status || undefined,
+        search: licenseFilters.search || undefined,
+      });
 
       if (response.success) {
         setLicenses(response.data.licenses as License[]);
+      }
+
+      // Fetch pending count for badge
+      const pendingResponse = await getPendingLicenses({ status: 'pending' });
+      if (pendingResponse.success) {
+        setPendingLicenseCount(pendingResponse.data.licenses.length);
       }
     } catch (error) {
       console.error('Failed to load licenses:', error);
@@ -526,6 +546,58 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  const getLicenseStatusColor = (
+    status: string
+  ):
+    | 'default'
+    | 'primary'
+    | 'secondary'
+    | 'error'
+    | 'info'
+    | 'success'
+    | 'warning' => {
+    switch (status) {
+      case 'approved':
+        return 'success';
+      case 'pending':
+        return 'warning';
+      case 'rejected':
+        return 'error';
+      case 'not_required':
+        return 'default';
+      default:
+        return 'default';
+    }
+  };
+
+  const getSubscriptionColor = (
+    tier: string | undefined
+  ):
+    | 'default'
+    | 'primary'
+    | 'secondary'
+    | 'error'
+    | 'info'
+    | 'success'
+    | 'warning' => {
+    switch (tier) {
+      case 'enterprise':
+        return 'error';
+      case 'pro':
+      case 'network':
+        return 'primary';
+      case 'basic':
+        return 'info';
+      case 'free_trial':
+      case 'trial':
+        return 'warning';
+      case 'active':
+        return 'success';
+      default:
+        return 'default';
+    }
+  };
+
   if (loading && !users.length && !licenses.length && !analytics) {
     return <LoadingSpinner message="Loading admin dashboard..." />;
   }
@@ -550,7 +622,7 @@ const AdminDashboard: React.FC = () => {
           />
           <Tab
             icon={
-              <Badge badgeContent={licenses.length} color="error">
+              <Badge badgeContent={pendingLicenseCount} color="error">
                 <AssignmentIcon />
               </Badge>
             }
@@ -695,30 +767,31 @@ const AdminDashboard: React.FC = () => {
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
                       <Chip
-                        label={(user.systemRole || 'unknown').replace('_', ' ')}
-                        color={getRoleColor(user.systemRole || 'unknown')}
+                        label={(user.role || user.systemRole || 'No Role').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        color={getRoleColor(user.role || user.systemRole || 'unknown')}
                         size="small"
                       />
                     </TableCell>
                     <TableCell>
                       <Chip
-                        label={user.status}
+                        label={user.status || 'Unknown'}
                         color={getStatusColor(user.status)}
                         size="small"
                       />
                     </TableCell>
                     <TableCell>
                       <Chip
-                        label="not_required"
-                        color={getStatusColor('not_required')}
+                        label={(user.licenseStatus || 'not_required').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        color={getLicenseStatusColor(user.licenseStatus || 'not_required')}
                         size="small"
                       />
                     </TableCell>
                     <TableCell>
                       <Chip
-                        label="free_trial"
+                        label={(user.subscriptionTier || user.subscriptionStatus || 'No Subscription').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                         variant="outlined"
                         size="small"
+                        color={getSubscriptionColor(user.subscriptionTier || user.subscriptionStatus)}
                       />
                     </TableCell>
                     <TableCell>
@@ -761,39 +834,84 @@ const AdminDashboard: React.FC = () => {
 
       {/* Licenses Tab */}
       {activeTab === 1 && (
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Name</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>License Number</TableCell>
-                <TableCell>Document</TableCell>
-                <TableCell>Submitted</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
+        <>
+          {/* License Filters */}
+          <Grid container spacing={2} sx={{ mb: 3 }}>
+            <Grid size={{ xs: 12, md: 3 }}>
+              <FormControl fullWidth>
+                <InputLabel>Status</InputLabel>
+                <Select
+                  value={licenseFilters.status}
+                  onChange={(e) =>
+                    setLicenseFilters({
+                      ...licenseFilters,
+                      status: e.target.value,
+                    })
+                  }
+                >
+                  <MenuItem value="">All Licenses</MenuItem>
+                  <MenuItem value="pending">Pending</MenuItem>
+                  <MenuItem value="approved">Approved</MenuItem>
+                  <MenuItem value="rejected">Rejected</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <TextField
+                fullWidth
+                placeholder="Search by name, email, or license number"
+                value={licenseFilters.search}
+                onChange={(e) =>
+                  setLicenseFilters({
+                    ...licenseFilters,
+                    search: e.target.value,
+                  })
+                }
+              />
+            </Grid>
+          </Grid>
+
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Name</TableCell>
+                  <TableCell>Email</TableCell>
+                  <TableCell>License Number</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Document</TableCell>
+                  <TableCell>Submitted</TableCell>
+                  <TableCell>Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
               {licenses.map((license) => (
-                <TableRow key={license._id}>
+                <TableRow key={license.userId}>
                   <TableCell>
-                    {license.firstName} {license.lastName}
+                    {license.userName}
                   </TableCell>
-                  <TableCell>{license.email}</TableCell>
+                  <TableCell>{license.userEmail}</TableCell>
                   <TableCell>{license.licenseNumber}</TableCell>
                   <TableCell>
-                    {license.licenseDocument ? (
+                    <Chip
+                      label={(license.licenseStatus || 'pending').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                      color={getLicenseStatusColor(license.licenseStatus || 'pending')}
+                      size="small"
+                    />
+                  </TableCell>
+                  <TableCell>
+                    {license.documentInfo ? (
                       <Button
                         startIcon={<DownloadIcon />}
                         size="small"
                         onClick={() => {
                           window.open(
-                            `/api/license/document/${license._id}`,
+                            `/api/license/document/${license.userId}`,
                             '_blank'
                           );
                         }}
                       >
-                        {license.licenseDocument.fileName}
+                        {license.documentInfo.fileName}
                       </Button>
                     ) : (
                       <Typography variant="caption" color="text.secondary">
@@ -802,13 +920,16 @@ const AdminDashboard: React.FC = () => {
                     )}
                   </TableCell>
                   <TableCell>
-                    {new Date(license.createdAt).toLocaleDateString()}
+                    {license.documentInfo?.uploadedAt
+                      ? new Date(license.documentInfo.uploadedAt).toLocaleDateString()
+                      : '-'}
                   </TableCell>
                   <TableCell>
                     <Tooltip title="Approve License">
                       <IconButton
-                        onClick={() => handleApproveLicense(license._id)}
+                        onClick={() => handleApproveLicense(license.userId)}
                         color="success"
+                        disabled={license.licenseStatus === 'approved'}
                       >
                         <CheckCircleIcon />
                       </IconButton>
@@ -816,10 +937,11 @@ const AdminDashboard: React.FC = () => {
                     <Tooltip title="Reject License">
                       <IconButton
                         onClick={() => {
-                          setSelectedLicense(license);
+                          setSelectedLicense(license as any);
                           setLicenseDialogOpen(true);
                         }}
                         color="error"
+                        disabled={license.licenseStatus === 'rejected'}
                       >
                         <CancelIcon />
                       </IconButton>
@@ -827,9 +949,10 @@ const AdminDashboard: React.FC = () => {
                   </TableCell>
                 </TableRow>
               ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </>
       )}
 
       {/* Analytics Tab */}
