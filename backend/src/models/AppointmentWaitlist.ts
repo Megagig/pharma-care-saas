@@ -148,20 +148,20 @@ AppointmentWaitlistSchema.index({ workplaceId: 1, urgencyLevel: 1, createdAt: 1 
 AppointmentWaitlistSchema.index({ workplaceId: 1, appointmentType: 1, status: 1 });
 AppointmentWaitlistSchema.index({ expiresAt: 1, status: 1 }); // For cleanup jobs
 
-// Auto-expire entries
-AppointmentWaitlistSchema.pre('find', function() {
-  // Automatically mark expired entries
-  const now = new Date();
-  this.updateMany(
-    {
-      status: 'active',
-      expiresAt: { $lt: now },
-    },
-    {
-      $set: { status: 'expired' },
-    }
-  );
-});
+// Auto-expire entries - commented out as it was causing issues with queries
+// AppointmentWaitlistSchema.pre('find', function() {
+//   // Automatically mark expired entries
+//   const now = new Date();
+//   this.updateMany(
+//     {
+//       status: 'active',
+//       expiresAt: { $lt: now },
+//     },
+//     {
+//       $set: { status: 'expired' },
+//     }
+//   );
+// });
 
 export const AppointmentWaitlist = mongoose.model<IAppointmentWaitlist>(
   'AppointmentWaitlist',

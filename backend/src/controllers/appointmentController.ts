@@ -17,14 +17,14 @@ class AppointmentController {
    */
   async getAppointments(req: AuthRequest, res: Response) {
     try {
-      const { 
-        page = 1, 
-        limit = 50, 
-        status, 
-        pharmacistId, 
-        patientId, 
-        startDate, 
-        endDate 
+      const {
+        page = 1,
+        limit = 50,
+        status,
+        pharmacistId,
+        patientId,
+        startDate,
+        endDate
       } = req.query;
       const workplaceId = req.user?.workplaceId;
 
@@ -1406,7 +1406,7 @@ class AppointmentController {
           totalSuggestions: suggestions.length,
           bestSuggestion: suggestions[0] || null
         },
-        message: suggestions.length > 0 
+        message: suggestions.length > 0
           ? `Found ${suggestions.length} smart suggestions`
           : 'No suitable appointments found with current preferences'
       });
@@ -1565,7 +1565,7 @@ class AppointmentController {
       };
 
       const appointment = await Appointment.create(appointmentData);
-      
+
       // Populate relations for response
       await appointment.populate([
         { path: 'patientId', select: 'firstName lastName email phone' },
@@ -1607,6 +1607,11 @@ class AppointmentController {
    */
   async getWaitlist(req: AuthRequest, res: Response) {
     try {
+      console.log('=== WAITLIST REQUEST RECEIVED ===');
+      console.log('Query params:', req.query);
+      console.log('User:', req.user?.email);
+      console.log('WorkplaceId:', req.user?.workplaceId?.toString());
+
       const { status = 'active', urgencyLevel, appointmentType, search } = req.query;
       const workplaceId = req.user?.workplaceId;
 
@@ -1635,11 +1640,17 @@ class AppointmentController {
         filters
       );
 
+      logger.info('Waitlist entries retrieved', {
+        entriesCount: entries.length,
+        filters,
+        workplaceId: workplaceId.toString()
+      });
+
       // Transform entries to include patientName and preferredPharmacistName
       const transformedEntries = entries.map((entry: any) => {
         const patient = entry.patientId;
         const pharmacist = entry.preferredPharmacistId;
-        
+
         // Safely extract patient name
         let patientName = 'Unknown Patient';
         if (patient) {
@@ -1649,13 +1660,13 @@ class AppointmentController {
             patientName = `Patient ${patient._id.toString().substring(0, 8)}`;
           }
         }
-        
+
         // Safely extract pharmacist name
         let preferredPharmacistName = undefined;
         if (pharmacist && typeof pharmacist === 'object' && pharmacist.firstName && pharmacist.lastName) {
           preferredPharmacistName = `${pharmacist.firstName} ${pharmacist.lastName}`;
         }
-        
+
         return {
           ...entry,
           patientName,
@@ -1667,7 +1678,7 @@ class AppointmentController {
       let filteredEntries = transformedEntries;
       if (search) {
         const searchLower = (search as string).toLowerCase();
-        filteredEntries = transformedEntries.filter((entry: any) => 
+        filteredEntries = transformedEntries.filter((entry: any) =>
           entry.patientName?.toLowerCase().includes(searchLower)
         );
       }
@@ -1733,6 +1744,11 @@ class AppointmentController {
     try {
       const workplaceId = req.user?.workplaceId;
 
+      logger.info('Add to waitlist request', {
+        workplaceId: workplaceId?.toString(),
+        body: req.body
+      });
+
       if (!workplaceId) {
         return res.status(400).json({
           success: false,
@@ -1766,6 +1782,13 @@ class AppointmentController {
         preferredTimeSlots,
         preferredDays,
         notificationPreferences
+      });
+
+      logger.info('Waitlist entry created successfully', {
+        waitlistEntryId: waitlistEntry._id?.toString(),
+        workplaceId: workplaceId.toString(),
+        patientId,
+        status: waitlistEntry.status
       });
 
       res.status(201).json({
@@ -1888,6 +1911,9 @@ class AppointmentController {
       });
     }
   }
+
+
+
 }
 
 // Helper functions removed - using date-fns addMinutes instead

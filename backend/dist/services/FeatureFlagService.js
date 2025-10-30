@@ -21,6 +21,32 @@ class FeatureFlagService {
                 this.updateMetrics(featureName, cached.enabled);
                 return cached;
             }
+            const isPatientEngagementFlag = [
+                'patient_engagement_module',
+                'appointment_scheduling',
+                'followup_task_management',
+                'smart_reminder_system',
+                'patient_portal',
+                'recurring_appointments',
+                'clinical_alerts',
+                'engagement_analytics',
+                'schedule_management',
+                'engagement_module_integration'
+            ].includes(featureName);
+            if (isPatientEngagementFlag) {
+                const dbFlag = await this.getDatabaseFeatureFlag(featureName);
+                if (dbFlag !== null) {
+                    const result = {
+                        enabled: dbFlag,
+                        reason: dbFlag ? 'Database flag enabled' : 'Database flag disabled',
+                        rolloutPercentage: 100,
+                        lastEvaluated: new Date(),
+                    };
+                    this.cache.set(cacheKey, result);
+                    this.updateMetrics(featureName, dbFlag);
+                    return result;
+                }
+            }
             const globalFlags = (0, featureFlags_1.getPerformanceFeatureFlags)();
             const isGloballyEnabled = this.getGlobalFeatureFlag(globalFlags, featureName);
             if (!isGloballyEnabled) {
@@ -148,6 +174,17 @@ class FeatureFlagService {
                 return flags.virtualization;
             case 'reactQueryOptimization':
                 return flags.reactQueryOptimization;
+            case 'patient_engagement_module':
+            case 'appointment_scheduling':
+            case 'followup_task_management':
+            case 'smart_reminder_system':
+            case 'patient_portal':
+            case 'recurring_appointments':
+            case 'clinical_alerts':
+            case 'engagement_analytics':
+            case 'schedule_management':
+            case 'engagement_module_integration':
+                return true;
             default:
                 return false;
         }
@@ -183,6 +220,22 @@ class FeatureFlagService {
         }
         catch (error) {
             logger_1.default.error('Error getting workspace feature override:', error);
+            return null;
+        }
+    }
+    async getDatabaseFeatureFlag(featureName) {
+        try {
+            const flag = await FeatureFlag_1.FeatureFlag.findOne({
+                key: featureName,
+                $or: [
+                    { expiresAt: { $exists: false } },
+                    { expiresAt: { $gt: new Date() } }
+                ]
+            });
+            return flag ? flag.isActive : null;
+        }
+        catch (error) {
+            logger_1.default.error('Error getting database feature flag:', error);
             return null;
         }
     }

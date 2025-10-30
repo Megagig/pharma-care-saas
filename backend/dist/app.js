@@ -232,6 +232,44 @@ app.get('/api/health', (req, res) => {
         environment: process.env.NODE_ENV,
     });
 });
+const auth_1 = require("./middlewares/auth");
+app.get('/api/debug/user-info', auth_1.auth, async (req, res) => {
+    try {
+        const user = req.user;
+        const workspaceContext = req.workspaceContext;
+        const FeatureFlagService = (await Promise.resolve().then(() => __importStar(require('./services/FeatureFlagService')))).default;
+        const patientEngagementModule = await FeatureFlagService.isFeatureEnabled('patient_engagement_module', user._id.toString(), user.workplaceId?.toString() || 'no-workspace');
+        const appointmentScheduling = await FeatureFlagService.isFeatureEnabled('appointment_scheduling', user._id.toString(), user.workplaceId?.toString() || 'no-workspace');
+        res.json({
+            status: 'OK',
+            user: {
+                id: user._id,
+                email: user.email,
+                role: user.role,
+                workplaceRole: user.workplaceRole,
+                status: user.status,
+                workplaceId: user.workplaceId,
+            },
+            workspaceContext: workspaceContext ? {
+                workspaceId: workspaceContext.workspace?._id,
+                planName: workspaceContext.plan?.name,
+                subscriptionStatus: workspaceContext.workspace?.subscriptionStatus,
+            } : null,
+            featureFlags: {
+                patient_engagement_module: patientEngagementModule,
+                appointment_scheduling: appointmentScheduling,
+            },
+            timestamp: new Date().toISOString(),
+        });
+    }
+    catch (error) {
+        res.status(500).json({
+            status: 'ERROR',
+            error: error.message,
+            timestamp: new Date().toISOString(),
+        });
+    }
+});
 app.get('/api/health/integration', async (req, res) => {
     try {
         const health = await systemIntegration.getIntegrationHealth();

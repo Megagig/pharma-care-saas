@@ -144,7 +144,12 @@ export class WaitlistService {
     }
   ): Promise<WaitlistEntry[]> {
     try {
-      const query: any = { workplaceId };
+      // Ensure workplaceId is properly converted to ObjectId
+      const workplaceObjectId = workplaceId instanceof mongoose.Types.ObjectId 
+        ? workplaceId 
+        : new mongoose.Types.ObjectId(workplaceId);
+
+      const query: any = { workplaceId: workplaceObjectId };
 
       if (filters?.status) {
         query.status = filters.status;
@@ -158,11 +163,51 @@ export class WaitlistService {
         query.appointmentType = filters.appointmentType;
       }
 
+      console.log('=== WAITLIST SERVICE CALLED ===');
+      console.log('Query:', query);
+      console.log('WorkplaceId:', workplaceObjectId.toString());
+      
+      logger.info('Querying waitlist with:', { 
+        query: {
+          ...query,
+          workplaceId: workplaceObjectId.toString()
+        }
+      });
+
+      // First, let's check if there are ANY waitlist entries at all
+      const totalCount = await AppointmentWaitlist.countDocuments({});
+      const workplaceCount = await AppointmentWaitlist.countDocuments({ workplaceId: workplaceObjectId });
+      
+      // Let's see what entries exist for this workplace (without filters first)
+      const allEntriesForWorkplace = await AppointmentWaitlist.find({ workplaceId: workplaceObjectId })
+        .select('status urgencyLevel appointmentType createdAt workplaceId')
+        .lean();
+      
+      console.log('Database counts:', { totalCount, workplaceCount });
+      console.log('All entries for workplace:', allEntriesForWorkplace);
+      
+      logger.info('Waitlist counts:', { 
+        totalInDatabase: totalCount,
+        forThisWorkplace: workplaceCount,
+        workplaceId: workplaceObjectId.toString()
+      });
+
+      // Now run the actual query with filters
       const entries = await AppointmentWaitlist.find(query)
         .populate('patientId', 'firstName lastName email phone')
         .populate('preferredPharmacistId', 'firstName lastName')
         .sort({ urgencyLevel: -1, createdAt: 1 })
         .lean();
+
+      logger.info('Waitlist query result:', { 
+        entriesFound: entries.length,
+        entries: entries.map(e => ({ 
+          id: e._id, 
+          status: e.status, 
+          workplaceId: e.workplaceId,
+          patientId: e.patientId 
+        }))
+      });
 
       return entries as WaitlistEntry[];
 

@@ -4,8 +4,9 @@ export declare const paginationSchema: z.ZodObject<{
     limit: z.ZodPipe<z.ZodDefault<z.ZodOptional<z.ZodString>>, z.ZodTransform<number, string>>;
     sort: z.ZodDefault<z.ZodOptional<z.ZodString>>;
 }, z.core.$strip>;
-export declare const searchSchema: z.ZodObject<{
+export declare const searchSchema: z.ZodPipe<z.ZodObject<{
     q: z.ZodOptional<z.ZodString>;
+    search: z.ZodOptional<z.ZodString>;
     name: z.ZodOptional<z.ZodString>;
     mrn: z.ZodOptional<z.ZodString>;
     phone: z.ZodOptional<z.ZodString>;
@@ -21,7 +22,31 @@ export declare const searchSchema: z.ZodObject<{
     page: z.ZodPipe<z.ZodDefault<z.ZodOptional<z.ZodString>>, z.ZodTransform<number, string>>;
     limit: z.ZodPipe<z.ZodDefault<z.ZodOptional<z.ZodString>>, z.ZodTransform<number, string>>;
     sort: z.ZodDefault<z.ZodOptional<z.ZodString>>;
-}, z.core.$strip>;
+}, z.core.$strip>, z.ZodTransform<{
+    q: string;
+    sort: string;
+    search?: string;
+    name?: string;
+    mrn?: string;
+    phone?: string;
+    state?: string;
+    bloodGroup?: string;
+    genotype?: string;
+    page?: number;
+    limit?: number;
+}, {
+    sort: string;
+    q?: string;
+    search?: string;
+    name?: string;
+    mrn?: string;
+    phone?: string;
+    state?: string;
+    bloodGroup?: string;
+    genotype?: string;
+    page?: number;
+    limit?: number;
+}>>;
 export declare const createPatientSchema: z.ZodObject<{
     firstName: z.ZodString;
     lastName: z.ZodString;
