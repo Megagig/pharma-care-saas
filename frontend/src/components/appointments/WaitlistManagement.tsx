@@ -110,6 +110,8 @@ const WaitlistManagement: React.FC = () => {
   const queryClient = useQueryClient();
   const [addDialogOpen, setAddDialogOpen] = useState(false);
   const [selectedEntry, setSelectedEntry] = useState<WaitlistEntry | null>(null);
+  const [scheduleDialogOpen, setScheduleDialogOpen] = useState(false);
+  const [selectedWaitlistEntry, setSelectedWaitlistEntry] = useState<WaitlistEntry | null>(null);
   const [filters, setFilters] = useState({
     status: 'active' as const,
     urgencyLevel: '',
@@ -135,6 +137,14 @@ const WaitlistManagement: React.FC = () => {
       sms: true,
       push: true
     }
+  });
+
+  // Scheduling state
+  const [schedulingData, setSchedulingData] = useState({
+    selectedDate: '',
+    selectedTime: '',
+    selectedPharmacist: '',
+    notes: ''
   });
 
   // Fetch waitlist data
@@ -204,6 +214,18 @@ const WaitlistManagement: React.FC = () => {
     enabled: addDialogOpen,
   });
 
+  // Fetch available slots for scheduling
+  const { data: availableSlots, isLoading: isLoadingSlots } = useQuery({
+    queryKey: ['available-slots', schedulingData.selectedDate, selectedWaitlistEntry?.duration, selectedWaitlistEntry?.appointmentType],
+    queryFn: () => appointmentService.getAvailableSlots({
+      date: schedulingData.selectedDate,
+      duration: selectedWaitlistEntry?.duration || 30,
+      type: selectedWaitlistEntry?.appointmentType || 'general_followup'
+    }),
+    enabled: scheduleDialogOpen && !!schedulingData.selectedDate && !!selectedWaitlistEntry,
+    staleTime: 30000,
+  });
+
   const getUrgencyColor = (level: string) => {
     switch (level) {
       case 'urgent': return 'error';
@@ -268,6 +290,7 @@ const WaitlistManagement: React.FC = () => {
   const cancelWaitlistMutation = useMutation({
     mutationFn: (entryId: string) => appointmentService.cancelWaitlistEntry(entryId),
     onSuccess: () => {
+      console.log('Cancel waitlist mutation succeeded');
       queryClient.invalidateQueries({ queryKey: ['waitlist'] });
       queryClient.invalidateQueries({ queryKey: ['waitlist-stats'] });
       setSnackbar({
@@ -277,6 +300,7 @@ const WaitlistManagement: React.FC = () => {
       });
     },
     onError: (error: any) => {
+      console.error('Cancel waitlist mutation failed:', error);
       setSnackbar({
         open: true,
         message: error.response?.data?.message || 'Failed to cancel waitlist entry',
@@ -309,6 +333,7 @@ const WaitlistManagement: React.FC = () => {
   const notifyPatientMutation = useMutation({
     mutationFn: (entryId: string) => appointmentService.notifyWaitlistPatient(entryId),
     onSuccess: () => {
+      console.log('Notify patient mutation succeeded');
       setSnackbar({
         open: true,
         message: 'Patient notified successfully',
@@ -316,9 +341,65 @@ const WaitlistManagement: React.FC = () => {
       });
     },
     onError: (error: any) => {
+      console.error('Notify patient mutation failed:', error);
       setSnackbar({
         open: true,
         message: error.response?.data?.message || 'Failed to notify patient',
+        severity: 'error'
+      });
+    }
+  });
+
+  const scheduleAppointmentMutation = useMutation({
+    mutationFn: async (data: {
+      patientId: string;
+      appointmentType: string;
+      scheduledDate: string;
+      scheduledTime: string;
+      duration: number;
+      assignedTo?: string;
+      title: string;
+      description?: string;
+    }) => {
+      const response = await appointmentService.createAppointment(data);
+      return response;
+    },
+    onSuccess: async (response, variables) => {
+      console.log('Schedule appointment mutation succeeded');
+      
+      // Mark waitlist entry as fulfilled
+      if (selectedWaitlistEntry) {
+        try {
+          await appointmentService.cancelWaitlistEntry(selectedWaitlistEntry._id);
+        } catch (error) {
+          console.warn('Failed to mark waitlist entry as fulfilled:', error);
+        }
+      }
+      
+      // Refresh data
+      await queryClient.refetchQueries({ queryKey: ['waitlist'] });
+      await queryClient.refetchQueries({ queryKey: ['waitlist-stats'] });
+      
+      setScheduleDialogOpen(false);
+      setSelectedWaitlistEntry(null);
+      setSchedulingData({
+        selectedDate: '',
+        selectedTime: '',
+        selectedPharmacist: '',
+        notes: ''
+      });
+      
+      setSnackbar({
+        open: true,
+        message: `Appointment scheduled successfully for ${selectedWaitlistEntry?.patientName}`,
+        severity: 'success'
+      });
+    },
+    onError: (error: any) => {
+      console.error('Schedule appointment mutation failed:', error);
+      setSnackbar({
+        open: true,
+        message: error.response?.data?.message || 'Failed to schedule appointment',
         severity: 'error'
       });
     }
@@ -365,6 +446,7 @@ const WaitlistManagement: React.FC = () => {
   };
 
   const handleCancelWaitlist = (entryId: string) => {
+    console.log('Cancel waitlist clicked for entry:', entryId);
     cancelWaitlistMutation.mutate(entryId);
   };
 
@@ -373,7 +455,60 @@ const WaitlistManagement: React.FC = () => {
   };
 
   const handleNotifyPatient = (entryId: string) => {
+    console.log('Notify patient clicked for entry:', entryId);
     notifyPatientMutation.mutate(entryId);
+  };
+
+  const handleScheduleNow = (entry: WaitlistEntry) => {
+    console.log('Schedule now clicked for entry:', entry);
+    setSelectedWaitlistEntry(entry);
+    setSchedulingData({
+      selectedDate: '',
+      selectedTime: '',
+      selectedPharmacist: entry.preferredPharmacistId || '',
+      notes: ''
+    });
+    setScheduleDialogOpen(true);
+  };
+
+  const handleScheduleAppointment = () => {
+    if (!selectedWaitlistEntry || !schedulingData.selectedDate || !schedulingData.selectedTime) {
+      setSnackbar({
+        open: true,
+        message: 'Please select both date and time for the appointment',
+        severity: 'warning'
+      });
+      return;
+    }
+
+    // Extract patient ID safely
+    let patientId: string;
+    if (typeof selectedWaitlistEntry.patientId === 'string') {
+      patientId = selectedWaitlistEntry.patientId;
+    } else if (selectedWaitlistEntry.patientId && typeof selectedWaitlistEntry.patientId === 'object') {
+      patientId = selectedWaitlistEntry.patientId._id;
+    } else {
+      setSnackbar({
+        open: true,
+        message: 'Invalid patient data. Please try again.',
+        severity: 'error'
+      });
+      return;
+    }
+
+    const appointmentData = {
+      patientId,
+      appointmentType: selectedWaitlistEntry.appointmentType,
+      scheduledDate: schedulingData.selectedDate,
+      scheduledTime: schedulingData.selectedTime,
+      duration: selectedWaitlistEntry.duration,
+      assignedTo: schedulingData.selectedPharmacist || undefined,
+      title: `${selectedWaitlistEntry.appointmentType.replace('_', ' ')} - ${selectedWaitlistEntry.patientName}`,
+      description: schedulingData.notes || `Scheduled from waitlist. Urgency: ${selectedWaitlistEntry.urgencyLevel}`
+    };
+
+    console.log('Scheduling appointment with data:', appointmentData);
+    scheduleAppointmentMutation.mutate(appointmentData);
   };
 
   const filteredEntries = waitlistData?.entries?.filter((entry: WaitlistEntry) => {
@@ -704,7 +839,11 @@ const WaitlistManagement: React.FC = () => {
                             </IconButton>
                           </Tooltip>
                           <Tooltip title="Schedule now">
-                            <IconButton size="small" color="success">
+                            <IconButton 
+                              size="small" 
+                              color="success"
+                              onClick={() => handleScheduleNow(entry)}
+                            >
                               <ScheduleIcon />
                             </IconButton>
                           </Tooltip>
@@ -991,6 +1130,125 @@ const WaitlistManagement: React.FC = () => {
             disabled={!newEntry.patientId || addToWaitlistMutation.isPending}
           >
             {addToWaitlistMutation.isPending ? 'Adding...' : 'Add to Waitlist'}
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Schedule Appointment Dialog */}
+      <Dialog
+        open={scheduleDialogOpen}
+        onClose={() => setScheduleDialogOpen(false)}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>
+          Schedule Appointment
+          {selectedWaitlistEntry && (
+            <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
+              Patient: {selectedWaitlistEntry.patientName} • 
+              Type: {selectedWaitlistEntry.appointmentType.replace('_', ' ')} • 
+              Duration: {selectedWaitlistEntry.duration} min
+            </Typography>
+          )}
+        </DialogTitle>
+        <DialogContent>
+          <Grid container spacing={3} sx={{ mt: 1 }}>
+            <Grid item xs={12} sm={6}>
+              <TextField
+                fullWidth
+                label="Appointment Date"
+                type="date"
+                value={schedulingData.selectedDate}
+                onChange={(e) => setSchedulingData(prev => ({ ...prev, selectedDate: e.target.value }))}
+                InputLabelProps={{ shrink: true }}
+                inputProps={{
+                  min: new Date().toISOString().split('T')[0] // Prevent past dates
+                }}
+                required
+              />
+            </Grid>
+
+            <Grid item xs={12} sm={6}>
+              <FormControl fullWidth>
+                <InputLabel>Pharmacist</InputLabel>
+                <Select
+                  value={schedulingData.selectedPharmacist}
+                  label="Pharmacist"
+                  onChange={(e) => setSchedulingData(prev => ({ ...prev, selectedPharmacist: e.target.value }))}
+                >
+                  <MenuItem value="">Any Available</MenuItem>
+                  {pharmacists?.map((pharmacist) => (
+                    <MenuItem key={pharmacist._id} value={pharmacist._id}>
+                      {pharmacist.firstName} {pharmacist.lastName}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+            </Grid>
+
+            {schedulingData.selectedDate && (
+              <Grid item xs={12}>
+                <Typography variant="h6" gutterBottom>
+                  Available Time Slots
+                </Typography>
+                {isLoadingSlots ? (
+                  <Box display="flex" justifyContent="center" p={2}>
+                    <CircularProgress size={24} />
+                  </Box>
+                ) : availableSlots?.data?.slots?.length > 0 ? (
+                  <Grid container spacing={1}>
+                    {availableSlots.data.slots
+                      .filter((slot: any) => slot.available)
+                      .map((slot: any) => (
+                        <Grid item key={`${slot.pharmacistId}-${slot.time}`}>
+                          <Button
+                            variant={schedulingData.selectedTime === slot.time ? "contained" : "outlined"}
+                            size="small"
+                            onClick={() => {
+                              setSchedulingData(prev => ({ 
+                                ...prev, 
+                                selectedTime: slot.time,
+                                selectedPharmacist: slot.pharmacistId 
+                              }));
+                            }}
+                            sx={{ minWidth: 80 }}
+                          >
+                            {slot.time}
+                          </Button>
+                        </Grid>
+                      ))}
+                  </Grid>
+                ) : (
+                  <Alert severity="info">
+                    No available slots for the selected date. Please choose a different date.
+                  </Alert>
+                )}
+              </Grid>
+            )}
+
+            <Grid item xs={12}>
+              <TextField
+                fullWidth
+                label="Notes (Optional)"
+                multiline
+                rows={3}
+                value={schedulingData.notes}
+                onChange={(e) => setSchedulingData(prev => ({ ...prev, notes: e.target.value }))}
+                placeholder="Add any additional notes for this appointment..."
+              />
+            </Grid>
+          </Grid>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setScheduleDialogOpen(false)}>
+            Cancel
+          </Button>
+          <Button
+            variant="contained"
+            onClick={handleScheduleAppointment}
+            disabled={scheduleAppointmentMutation.isPending || !schedulingData.selectedDate || !schedulingData.selectedTime}
+          >
+            {scheduleAppointmentMutation.isPending ? 'Scheduling...' : 'Schedule Appointment'}
           </Button>
         </DialogActions>
       </Dialog>
