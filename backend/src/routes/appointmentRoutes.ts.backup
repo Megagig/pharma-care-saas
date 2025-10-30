@@ -129,151 +129,6 @@ router.get(
 );
 
 /**
- * WAITLIST MANAGEMENT ROUTES - Must be before /:id routes
- */
-
-/**
- * @route   GET /api/appointments/waitlist
- * @desc    Get waitlist entries with filtering
- * @access  Private (All authenticated users)
- */
-router.get(
-  '/waitlist',
-  requireAppointmentScheduling,
-  [
-    query('status')
-      .optional({ values: 'null' })
-      .notEmpty()
-      .isIn(['active', 'fulfilled', 'expired', 'cancelled'])
-      .withMessage('Invalid status value'),
-    query('urgencyLevel')
-      .optional({ values: 'null' })
-      .custom((value) => !value || ['low', 'medium', 'high', 'urgent'].includes(value))
-      .withMessage('Invalid urgency level'),
-    query('appointmentType')
-      .optional({ values: 'null' })
-      .isString()
-      .withMessage('Appointment type must be a string'),
-    query('search')
-      .optional({ values: 'null' })
-      .isString()
-      .withMessage('Search must be a string'),
-  ],
-  validateRequest,
-  appointmentController.getWaitlist
-);
-
-/**
- * @route   GET /api/appointments/waitlist/stats
- * @desc    Get waitlist statistics
- * @access  Private (All authenticated users)
- */
-router.get(
-  '/waitlist/stats',
-  requireAppointmentScheduling,
-  appointmentController.getWaitlistStats
-);
-
-/**
- * @route   POST /api/appointments/waitlist
- * @desc    Add patient to waitlist
- * @access  Private (All authenticated users)
- */
-router.post(
-  '/waitlist',
-  requireAppointmentScheduling,
-  [
-    body('patientId')
-      .isMongoId()
-      .withMessage('Patient ID is required and must be valid'),
-    body('appointmentType')
-      .isIn(['mtm_session', 'chronic_disease_review', 'new_medication_consultation', 
-             'vaccination', 'health_check', 'smoking_cessation', 'general_followup'])
-      .withMessage('Valid appointment type is required'),
-    body('duration')
-      .isInt({ min: 5, max: 480 })
-      .withMessage('Duration must be between 5 and 480 minutes'),
-    body('urgencyLevel')
-      .isIn(['low', 'medium', 'high', 'urgent'])
-      .withMessage('Valid urgency level is required'),
-    body('maxWaitDays')
-      .isInt({ min: 1, max: 90 })
-      .withMessage('Max wait days must be between 1 and 90'),
-    body('preferredPharmacistId')
-      .optional()
-      .isMongoId()
-      .withMessage('Preferred pharmacist ID must be valid'),
-    body('preferredTimeSlots')
-      .optional()
-      .isArray()
-      .withMessage('Preferred time slots must be an array'),
-    body('preferredDays')
-      .optional()
-      .isArray()
-      .withMessage('Preferred days must be an array'),
-    body('notificationPreferences')
-      .isObject()
-      .withMessage('Notification preferences are required'),
-    body('notificationPreferences.email')
-      .isBoolean()
-      .withMessage('Email notification preference must be boolean'),
-    body('notificationPreferences.sms')
-      .isBoolean()
-      .withMessage('SMS notification preference must be boolean'),
-    body('notificationPreferences.push')
-      .isBoolean()
-      .withMessage('Push notification preference must be boolean'),
-  ],
-  validateRequest,
-  appointmentController.addToWaitlist
-);
-
-/**
- * @route   POST /api/appointments/waitlist/:id/cancel
- * @desc    Cancel waitlist entry
- * @access  Private (All authenticated users)
- */
-router.post(
-  '/waitlist/:id/cancel',
-  requireAppointmentScheduling,
-  [
-    param('id')
-      .isMongoId()
-      .withMessage('Waitlist entry ID must be valid'),
-  ],
-  validateRequest,
-  appointmentController.cancelWaitlistEntry
-);
-
-/**
- * @route   POST /api/appointments/waitlist/process
- * @desc    Process waitlist - check for available slots and notify patients
- * @access  Private (All authenticated users)
- */
-router.post(
-  '/waitlist/process',
-  requireAppointmentScheduling,
-  appointmentController.processWaitlist
-);
-
-/**
- * @route   POST /api/appointments/waitlist/:id/notify
- * @desc    Notify waitlist patient of available slots
- * @access  Private (All authenticated users)
- */
-router.post(
-  '/waitlist/:id/notify',
-  requireAppointmentScheduling,
-  [
-    param('id')
-      .isMongoId()
-      .withMessage('Waitlist entry ID must be valid'),
-  ],
-  validateRequest,
-  appointmentController.notifyWaitlistPatient
-);
-
-/**
  * @route   POST /api/appointments
  * @desc    Create new appointment
  * @access  Private (All authenticated users)
@@ -795,6 +650,151 @@ router.get(
   ],
   validateRequest,
   appointmentController.getOptimizationReport
+);
+
+/**
+ * WAITLIST MANAGEMENT ROUTES
+ */
+
+/**
+ * @route   GET /api/appointments/waitlist
+ * @desc    Get waitlist entries with filtering
+ * @access  Private (All authenticated users)
+ */
+router.get(
+  '/waitlist',
+  requireAppointmentScheduling,
+  [
+    query('status')
+      .optional({ values: 'null' })
+      .notEmpty()
+      .isIn(['active', 'fulfilled', 'expired', 'cancelled'])
+      .withMessage('Invalid status value'),
+    query('urgencyLevel')
+      .optional({ values: 'null' })
+      .custom((value) => !value || ['low', 'medium', 'high', 'urgent'].includes(value))
+      .withMessage('Invalid urgency level'),
+    query('appointmentType')
+      .optional({ values: 'null' })
+      .isString()
+      .withMessage('Appointment type must be a string'),
+    query('search')
+      .optional({ values: 'null' })
+      .isString()
+      .withMessage('Search must be a string'),
+  ],
+  validateRequest,
+  appointmentController.getWaitlist
+);
+
+/**
+ * @route   GET /api/appointments/waitlist/stats
+ * @desc    Get waitlist statistics
+ * @access  Private (All authenticated users)
+ */
+router.get(
+  '/waitlist/stats',
+  requireAppointmentScheduling,
+  appointmentController.getWaitlistStats
+);
+
+/**
+ * @route   POST /api/appointments/waitlist
+ * @desc    Add patient to waitlist
+ * @access  Private (All authenticated users)
+ */
+router.post(
+  '/waitlist',
+  requireAppointmentScheduling,
+  [
+    body('patientId')
+      .isMongoId()
+      .withMessage('Patient ID is required and must be valid'),
+    body('appointmentType')
+      .isIn(['mtm_session', 'chronic_disease_review', 'new_medication_consultation', 
+             'vaccination', 'health_check', 'smoking_cessation', 'general_followup'])
+      .withMessage('Valid appointment type is required'),
+    body('duration')
+      .isInt({ min: 5, max: 480 })
+      .withMessage('Duration must be between 5 and 480 minutes'),
+    body('urgencyLevel')
+      .isIn(['low', 'medium', 'high', 'urgent'])
+      .withMessage('Valid urgency level is required'),
+    body('maxWaitDays')
+      .isInt({ min: 1, max: 90 })
+      .withMessage('Max wait days must be between 1 and 90'),
+    body('preferredPharmacistId')
+      .optional()
+      .isMongoId()
+      .withMessage('Preferred pharmacist ID must be valid'),
+    body('preferredTimeSlots')
+      .optional()
+      .isArray()
+      .withMessage('Preferred time slots must be an array'),
+    body('preferredDays')
+      .optional()
+      .isArray()
+      .withMessage('Preferred days must be an array'),
+    body('notificationPreferences')
+      .isObject()
+      .withMessage('Notification preferences are required'),
+    body('notificationPreferences.email')
+      .isBoolean()
+      .withMessage('Email notification preference must be boolean'),
+    body('notificationPreferences.sms')
+      .isBoolean()
+      .withMessage('SMS notification preference must be boolean'),
+    body('notificationPreferences.push')
+      .isBoolean()
+      .withMessage('Push notification preference must be boolean'),
+  ],
+  validateRequest,
+  appointmentController.addToWaitlist
+);
+
+/**
+ * @route   POST /api/appointments/waitlist/:id/cancel
+ * @desc    Cancel waitlist entry
+ * @access  Private (All authenticated users)
+ */
+router.post(
+  '/waitlist/:id/cancel',
+  requireAppointmentScheduling,
+  [
+    param('id')
+      .isMongoId()
+      .withMessage('Waitlist entry ID must be valid'),
+  ],
+  validateRequest,
+  appointmentController.cancelWaitlistEntry
+);
+
+/**
+ * @route   POST /api/appointments/waitlist/process
+ * @desc    Process waitlist - check for available slots and notify patients
+ * @access  Private (All authenticated users)
+ */
+router.post(
+  '/waitlist/process',
+  requireAppointmentScheduling,
+  appointmentController.processWaitlist
+);
+
+/**
+ * @route   POST /api/appointments/waitlist/:id/notify
+ * @desc    Notify waitlist patient of available slots
+ * @access  Private (All authenticated users)
+ */
+router.post(
+  '/waitlist/:id/notify',
+  requireAppointmentScheduling,
+  [
+    param('id')
+      .isMongoId()
+      .withMessage('Waitlist entry ID must be valid'),
+  ],
+  validateRequest,
+  appointmentController.notifyWaitlistPatient
 );
 
 export default router;

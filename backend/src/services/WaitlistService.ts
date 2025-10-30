@@ -6,6 +6,8 @@
 import mongoose from 'mongoose';
 import { addDays, format, isBefore } from 'date-fns';
 import { SlotGenerationService } from './SlotGenerationService';
+import { AppointmentWaitlist } from '../models/AppointmentWaitlist';
+import Patient from '../models/Patient';
 import logger from '../utils/logger';
 
 export interface WaitlistEntry {
@@ -51,20 +53,34 @@ export class WaitlistService {
    */
   static async addToWaitlist(entry: Omit<WaitlistEntry, '_id' | 'status' | 'createdAt' | 'expiresAt'>): Promise<WaitlistEntry> {
     try {
-      const waitlistEntry: WaitlistEntry = {
+      // Check if patient exists
+      const patient = await Patient.findById(entry.patientId);
+      if (!patient) {
+        throw new Error('Patient not found');
+      }
+
+      // Check for existing active entry
+      const existingEntry = await AppointmentWaitlist.findOne({
+        workplaceId: entry.workplaceId,
+        patientId: entry.patientId,
+        status: 'active',
+      });
+
+      if (existingEntry) {
+        throw new Error('Patient already on active waitlist');
+      }
+
+      // Create waitlist entry in database
+      const waitlistDoc = await AppointmentWaitlist.create({
         ...entry,
         status: 'active',
-        createdAt: new Date(),
         expiresAt: addDays(new Date(), entry.maxWaitDays)
-      };
+      });
 
-      // In a real implementation, this would be stored in MongoDB
-      // For now, we'll simulate the storage
-      const entryId = new mongoose.Types.ObjectId();
-      waitlistEntry._id = entryId;
+      const waitlistEntry = waitlistDoc.toObject() as WaitlistEntry;
 
       logger.info('Added patient to waitlist', {
-        waitlistEntryId: entryId.toString(),
+        waitlistEntryId: waitlistDoc._id.toString(),
         patientId: entry.patientId.toString(),
         appointmentType: entry.appointmentType,
         urgencyLevel: entry.urgencyLevel
@@ -89,7 +105,20 @@ export class WaitlistService {
     reason: 'fulfilled' | 'cancelled' | 'expired'
   ): Promise<boolean> {
     try {
-      // In a real implementation, this would update the MongoDB document
+      const result = await AppointmentWaitlist.findByIdAndUpdate(
+        waitlistEntryId,
+        { 
+          status: reason,
+          fulfilledAt: reason === 'fulfilled' ? new Date() : undefined,
+        },
+        { new: true }
+      );
+
+      if (!result) {
+        logger.warn('Waitlist entry not found', { waitlistEntryId: waitlistEntryId.toString() });
+        return false;
+      }
+
       logger.info('Removed from waitlist', {
         waitlistEntryId: waitlistEntryId.toString(),
         reason
@@ -115,9 +144,27 @@ export class WaitlistService {
     }
   ): Promise<WaitlistEntry[]> {
     try {
-      // In a real implementation, this would query MongoDB
-      // For now, return empty array
-      return [];
+      const query: any = { workplaceId };
+
+      if (filters?.status) {
+        query.status = filters.status;
+      }
+
+      if (filters?.urgencyLevel) {
+        query.urgencyLevel = filters.urgencyLevel;
+      }
+
+      if (filters?.appointmentType) {
+        query.appointmentType = filters.appointmentType;
+      }
+
+      const entries = await AppointmentWaitlist.find(query)
+        .populate('patientId', 'firstName lastName email phone')
+        .populate('preferredPharmacistId', 'firstName lastName')
+        .sort({ urgencyLevel: -1, createdAt: 1 })
+        .lean();
+
+      return entries as WaitlistEntry[];
 
     } catch (error) {
       logger.error('Error getting waitlist entries:', error);
@@ -448,13 +495,55 @@ export class WaitlistService {
     fulfillmentRate: number;
   }> {
     try {
-      // In a real implementation, this would query actual data
+      const activeEntries = await AppointmentWaitlist.find({
+        workplaceId,
+        status: 'active',
+      });
+
+      const byUrgency: Record<string, number> = {
+        low: 0,
+        medium: 0,
+        high: 0,
+        urgent: 0,
+      };
+
+      const byAppointmentType: Record<string, number> = {};
+      let totalWaitTime = 0;
+
+      activeEntries.forEach((entry) => {
+        // Count by urgency
+        byUrgency[entry.urgencyLevel] = (byUrgency[entry.urgencyLevel] || 0) + 1;
+
+        // Count by appointment type
+        byAppointmentType[entry.appointmentType] = 
+          (byAppointmentType[entry.appointmentType] || 0) + 1;
+
+        // Calculate wait time
+        const waitTime = Date.now() - entry.createdAt.getTime();
+        totalWaitTime += waitTime;
+      });
+
+      const averageWaitTime = activeEntries.length > 0
+        ? totalWaitTime / activeEntries.length / (1000 * 60 * 60 * 24) // Convert to days
+        : 0;
+
+      // Calculate fulfillment rate
+      const totalEntries = await AppointmentWaitlist.countDocuments({ workplaceId });
+      const fulfilledEntries = await AppointmentWaitlist.countDocuments({
+        workplaceId,
+        status: 'fulfilled',
+      });
+
+      const fulfillmentRate = totalEntries > 0
+        ? (fulfilledEntries / totalEntries) * 100
+        : 0;
+
       return {
-        totalActive: 0,
-        byUrgency: { low: 0, medium: 0, high: 0, urgent: 0 },
-        byAppointmentType: {},
-        averageWaitTime: 0,
-        fulfillmentRate: 0
+        totalActive: activeEntries.length,
+        byUrgency,
+        byAppointmentType,
+        averageWaitTime,
+        fulfillmentRate,
       };
 
     } catch (error) {

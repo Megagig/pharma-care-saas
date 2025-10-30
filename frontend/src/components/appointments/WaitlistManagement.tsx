@@ -141,10 +141,27 @@ const WaitlistManagement: React.FC = () => {
   const { data: waitlistData, isLoading, error, refetch } = useQuery({
     queryKey: ['waitlist', filters],
     queryFn: async () => {
-      const response = await appointmentService.getWaitlist(filters);
-      return response.data;
+      try {
+        const response = await appointmentService.getWaitlist(filters);
+        return response.data;
+      } catch (err: any) {
+        // Provide more helpful error messages
+        if (err.message === 'Validation failed') {
+          throw new Error('Invalid filter parameters. Please check your search criteria.');
+        }
+        if (err.response?.status === 403) {
+          throw new Error('This feature is not available in your current plan or you need to join a workspace.');
+        }
+        if (err.response?.status === 400 && err.response?.data?.message?.includes('Workplace')) {
+          throw new Error('You must be part of a workspace to access the waitlist feature.');
+        }
+        throw err;
+      }
     },
     refetchInterval: 30000, // Refresh every 30 seconds
+    retry: false, // Don't retry on error
+    staleTime: 0, // Always treat data as stale
+    gcTime: 0, // Don't cache
   });
 
   // Fetch waitlist stats
@@ -157,11 +174,27 @@ const WaitlistManagement: React.FC = () => {
     refetchInterval: 60000, // Refresh every minute
   });
 
-  // Fetch patients for autocomplete
-  const { data: patients } = useQuery({
-    queryKey: ['patients'],
-    queryFn: () => appointmentService.getPatients(),
-    enabled: addDialogOpen,
+  // Patient search state for autocomplete
+  const [patientSearchText, setPatientSearchText] = useState('');
+  const [patientInputValue, setPatientInputValue] = useState('');
+  const [debouncedSearchText, setDebouncedSearchText] = useState('');
+
+  // Debounce search text
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearchText(patientInputValue);
+    }, 500);
+
+    return () => clearTimeout(timer);
+  }, [patientInputValue]);
+
+  // Fetch patients for autocomplete with search
+  const { data: patients = [], isFetching: isFetchingPatients } = useQuery({
+    queryKey: ['patients-search', debouncedSearchText],
+    queryFn: () => appointmentService.getPatients(debouncedSearchText),
+    enabled: addDialogOpen && debouncedSearchText.length >= 2,
+    staleTime: 30000, // Cache for 30 seconds
+    gcTime: 30000, // Keep data in cache
   });
 
   // Fetch pharmacists for selection
@@ -194,9 +227,10 @@ const WaitlistManagement: React.FC = () => {
   // Mutations
   const addToWaitlistMutation = useMutation({
     mutationFn: (data: any) => appointmentService.addToWaitlist(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['waitlist'] });
-      queryClient.invalidateQueries({ queryKey: ['waitlist-stats'] });
+    onSuccess: async () => {
+      // Force refetch instead of just invalidating
+      await queryClient.refetchQueries({ queryKey: ['waitlist'] });
+      await queryClient.refetchQueries({ queryKey: ['waitlist-stats'] });
       setAddDialogOpen(false);
       setSnackbar({
         open: true,
@@ -206,9 +240,26 @@ const WaitlistManagement: React.FC = () => {
       resetForm();
     },
     onError: (error: any) => {
+      console.error('Add to waitlist error:', error);
+      console.error('Error response:', error.response?.data);
+      
+      let errorMessage = 'Failed to add patient to waitlist';
+      
+      // Check for validation error with details
+      if (error.response?.data?.error?.details) {
+        const details = error.response.data.error.details
+          .map((d: any) => `${d.field}: ${d.message}`)
+          .join(', ');
+        errorMessage = `Validation failed: ${details}`;
+      } else if (error.message) {
+        errorMessage = error.message;
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      }
+      
       setSnackbar({
         open: true,
-        message: error.response?.data?.message || 'Failed to add patient to waitlist',
+        message: errorMessage,
         severity: 'error'
       });
     }
@@ -292,7 +343,25 @@ const WaitlistManagement: React.FC = () => {
   };
 
   const handleAddToWaitlist = () => {
-    addToWaitlistMutation.mutate(newEntry);
+    // Clean up the data before sending - remove empty preferredPharmacistId
+    const cleanedEntry: any = {
+      patientId: newEntry.patientId,
+      appointmentType: newEntry.appointmentType,
+      duration: newEntry.duration,
+      urgencyLevel: newEntry.urgencyLevel,
+      maxWaitDays: newEntry.maxWaitDays,
+      preferredTimeSlots: newEntry.preferredTimeSlots,
+      preferredDays: newEntry.preferredDays,
+      notificationPreferences: newEntry.notificationPreferences,
+    };
+    
+    // Only include preferredPharmacistId if it's not empty
+    if (newEntry.preferredPharmacistId) {
+      cleanedEntry.preferredPharmacistId = newEntry.preferredPharmacistId;
+    }
+    
+    console.log('Sending waitlist data:', cleanedEntry);
+    addToWaitlistMutation.mutate(cleanedEntry);
   };
 
   const handleCancelWaitlist = (entryId: string) => {
@@ -552,7 +621,7 @@ const WaitlistManagement: React.FC = () => {
             </Box>
           ) : error ? (
             <Alert severity="error">
-              Failed to load waitlist data. Please try again.
+              {(error as Error)?.message || 'Failed to load waitlist data. Please try again.'}
             </Alert>
           ) : filteredEntries.length > 0 ? (
             <TableContainer>
@@ -679,13 +748,31 @@ const WaitlistManagement: React.FC = () => {
                 options={patients || []}
                 getOptionLabel={(option) => `${option.firstName} ${option.lastName} (${option.email})`}
                 value={patients?.find(p => p._id === newEntry.patientId) || null}
-                onChange={(_, value) => setNewEntry(prev => ({ ...prev, patientId: value?._id || '' }))}
+                inputValue={patientInputValue}
+                onChange={(_, value) => {
+                  setNewEntry(prev => ({ ...prev, patientId: value?._id || '' }));
+                }}
+                onInputChange={(_, value, reason) => {
+                  if (reason !== 'reset') {
+                    setPatientInputValue(value);
+                  }
+                }}
+                filterOptions={(x) => x}
+                loading={isFetchingPatients}
+                disableClearable={false}
+                includeInputInList
+                selectOnFocus
+                handleHomeEndKeys
+                blurOnSelect="touch"
+                forcePopupIcon
+                noOptionsText={patientInputValue.length < 2 ? "Type at least 2 characters to search" : "No patients found"}
                 renderInput={(params) => (
                   <TextField
                     {...params}
                     label="Patient"
-                    placeholder="Search and select patient"
+                    placeholder="Type to search patients..."
                     required
+                    helperText={isFetchingPatients ? 'Searching...' : 'Type at least 2 characters to search'}
                   />
                 )}
                 renderOption={(props, option) => (

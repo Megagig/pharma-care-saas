@@ -37,12 +37,21 @@ class AppointmentService {
       if (error.response) {
         // The request was made and the server responded with a status code
         // that falls out of the range of 2xx
-        const enhancedError = new Error(
-          error.response?.data?.error?.message ||
+        
+        // Handle validation errors with details
+        let errorMessage = error.response?.data?.error?.message ||
           error.response?.data?.message ||
           error.message ||
-          'An error occurred'
-        );
+          'An error occurred';
+        
+        if (error.response?.data?.error?.code === 'VALIDATION_ERROR' && error.response?.data?.error?.details) {
+          const validationDetails = error.response.data.error.details
+            .map((d: any) => `${d.field}: ${d.message}`)
+            .join('; ');
+          errorMessage = `${errorMessage} - ${validationDetails}`;
+        }
+        
+        const enhancedError = new Error(errorMessage);
         // Preserve the response for status code checking
         (enhancedError as any).response = error.response;
         throw enhancedError;
@@ -372,7 +381,7 @@ class AppointmentService {
    */
   async getWaitlist(filters: {
     status?: 'active' | 'fulfilled' | 'expired' | 'cancelled';
-    urgencyLevel?: 'low' | 'medium' | 'high' | 'urgent';
+    urgencyLevel?: 'low' | 'medium' | 'high' | 'urgent' | '';
     appointmentType?: string;
     search?: string;
   } = {}): Promise<ApiResponse<{ 
@@ -381,8 +390,9 @@ class AppointmentService {
   }>> {
     const searchParams = new URLSearchParams();
 
+    // Only add non-empty values to query params
     Object.entries(filters).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
+      if (value !== undefined && value !== null && value !== '') {
         searchParams.append(key, String(value));
       }
     });
@@ -493,25 +503,67 @@ class AppointmentService {
    * Get patients for waitlist autocomplete
    */
   async getPatients(search?: string): Promise<any[]> {
-    const searchParams = new URLSearchParams();
-    if (search) {
-      searchParams.append('search', search);
-    }
+    try {
+      const searchParams = new URLSearchParams();
+      if (search) {
+        searchParams.append('search', search);
+      }
+      // Add limit for autocomplete
+      searchParams.append('limit', '50');
+      searchParams.append('page', '1');
 
-    const response = await this.makeRequest<ApiResponse<{ patients: any[] }>>(
-      `/patients?${searchParams.toString()}`
-    );
-    return response.data?.patients || [];
+      const response = await this.makeRequest<any>(
+        `/patients?${searchParams.toString()}`
+      );
+      
+      // Handle different response structures
+      const patients = response.data?.results || response.data?.patients || response.data || [];
+      return Array.isArray(patients) ? patients : [];
+    } catch (error) {
+      console.error('Error fetching patients:', error);
+      return [];
+    }
   }
 
   /**
    * Get pharmacists for waitlist selection
    */
   async getPharmacists(): Promise<any[]> {
-    const response = await this.makeRequest<ApiResponse<{ pharmacists: any[] }>>(
-      '/pharmacists'
-    );
-    return response.data?.pharmacists || [];
+    try {
+      // Try multiple endpoints in fallback order
+      try {
+        // First try: workspace team members endpoint
+        const response = await this.makeRequest<any>(
+          '/workspace/team/members?role=Pharmacist&status=active&limit=100'
+        );
+        const members = response.data?.members || response.members || [];
+        return members.map((member: any) => ({
+          _id: member._id,
+          firstName: member.firstName,
+          lastName: member.lastName,
+          email: member.email,
+          specialties: member.specialties || [],
+        }));
+      } catch (workspaceError) {
+        console.warn('Workspace members endpoint failed, trying users endpoint:', workspaceError);
+        
+        // Fallback: Try users endpoint filtered by role
+        const response = await this.makeRequest<any>(
+          '/users?role=pharmacist&limit=100'
+        );
+        const users = response.data?.users || response.users || response.data || [];
+        return users.map((user: any) => ({
+          _id: user._id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          specialties: user.specialties || [],
+        }));
+      }
+    } catch (error) {
+      console.error('Error fetching pharmacists from all endpoints:', error);
+      return [];
+    }
   }
 }
 

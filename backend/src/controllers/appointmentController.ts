@@ -1610,6 +1610,12 @@ class AppointmentController {
       const { status = 'active', urgencyLevel, appointmentType, search } = req.query;
       const workplaceId = req.user?.workplaceId;
 
+      logger.info('Waitlist request received', {
+        query: req.query,
+        workplaceId: workplaceId?.toString(),
+        userId: req.user?._id?.toString()
+      });
+
       if (!workplaceId) {
         return res.status(400).json({
           success: false,
@@ -1629,11 +1635,39 @@ class AppointmentController {
         filters
       );
 
+      // Transform entries to include patientName and preferredPharmacistName
+      const transformedEntries = entries.map((entry: any) => {
+        const patient = entry.patientId;
+        const pharmacist = entry.preferredPharmacistId;
+        
+        // Safely extract patient name
+        let patientName = 'Unknown Patient';
+        if (patient) {
+          if (typeof patient === 'object' && patient.firstName && patient.lastName) {
+            patientName = `${patient.firstName} ${patient.lastName}`;
+          } else if (patient._id) {
+            patientName = `Patient ${patient._id.toString().substring(0, 8)}`;
+          }
+        }
+        
+        // Safely extract pharmacist name
+        let preferredPharmacistName = undefined;
+        if (pharmacist && typeof pharmacist === 'object' && pharmacist.firstName && pharmacist.lastName) {
+          preferredPharmacistName = `${pharmacist.firstName} ${pharmacist.lastName}`;
+        }
+        
+        return {
+          ...entry,
+          patientName,
+          preferredPharmacistName,
+        };
+      });
+
       // Filter by search if provided
-      let filteredEntries = entries;
+      let filteredEntries = transformedEntries;
       if (search) {
         const searchLower = (search as string).toLowerCase();
-        filteredEntries = entries.filter((entry: any) => 
+        filteredEntries = transformedEntries.filter((entry: any) => 
           entry.patientName?.toLowerCase().includes(searchLower)
         );
       }

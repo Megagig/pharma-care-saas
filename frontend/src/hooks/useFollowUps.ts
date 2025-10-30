@@ -245,7 +245,7 @@ export const useCreateFollowUpTask = () => {
       return { previousTasks, tempTask };
     },
 
-    onSuccess: (response, _variables, _context) => {
+    onSuccess: (response, variables, _context) => {
       setLoading('createTask', false);
       
       if (response.data?.task) {
@@ -268,7 +268,7 @@ export const useCreateFollowUpTask = () => {
       }
     },
 
-    onError: (error, _variables, _context) => {
+    onError: (error, _variables, context) => {
       const errorMessage = error instanceof Error ? error.message : 'Failed to create follow-up task';
       setError('createTask', errorMessage);
       setLoading('createTask', false);

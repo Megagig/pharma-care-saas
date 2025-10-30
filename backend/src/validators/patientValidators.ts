@@ -40,6 +40,7 @@ export const paginationSchema = z.object({
 export const searchSchema = z
   .object({
     q: z.string().optional(),
+    search: z.string().optional(), // Alias for q
     name: z.string().optional(),
     mrn: z.string().optional(),
     phone: z.string().optional(),
@@ -47,7 +48,12 @@ export const searchSchema = z
     bloodGroup: z.enum(BLOOD_GROUPS as [string, ...string[]]).optional(),
     genotype: z.enum(GENOTYPES as [string, ...string[]]).optional(),
   })
-  .merge(paginationSchema);
+  .merge(paginationSchema)
+  .transform((data) => ({
+    ...data,
+    // Use 'search' as alias for 'q' if provided
+    q: data.q || data.search,
+  }));
 
 // ===============================
 // PATIENT SCHEMAS
