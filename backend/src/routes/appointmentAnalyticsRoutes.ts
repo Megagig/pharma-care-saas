@@ -43,7 +43,7 @@ router.get(
  */
 router.get(
   '/follow-ups/analytics',
-  rbac.requirePermission("view_analytics"),
+  rbac.requirePermission('view_followup_analytics'),
   validateRequest,
   getFollowUpAnalytics
 );
@@ -55,7 +55,7 @@ router.get(
  */
 router.get(
   '/reminders/analytics',
-  rbac.requirePermission("view_analytics"),
+  rbac.requirePermission('view_reminder_analytics'),
   validateRequest,
   getReminderAnalytics
 );
@@ -67,7 +67,7 @@ router.get(
  */
 router.get(
   '/schedules/capacity',
-  rbac.requirePermission("view_analytics"),
+  rbac.requirePermission('view_capacity_analytics'),
   validateRequest,
   getCapacityAnalytics
 );
@@ -79,7 +79,7 @@ router.get(
  */
 router.post(
   '/appointments/analytics/export',
-  rbac.requirePermission("view_analytics"),
+  rbac.requirePermission('export_analytics'),
   validateRequest,
   rateLimiting.createRateLimiter({
     windowMs: 60 * 60 * 1000, // 1 hour

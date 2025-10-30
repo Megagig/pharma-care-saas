@@ -125,15 +125,7 @@ const ReminderEffectivenessChart: React.FC<ReminderEffectivenessChartProps> = ({
   // Memoized chart data
   const chartData = useMemo(() => {
     if (!analyticsData?.data) {
-      // Return fallback data when API is not available
-      return {
-        summary: { totalReminders: 0, deliverySuccessRate: 0, patientResponseRate: 0, impactOnNoShowRate: 0 },
-        channels: [],
-        timing: [],
-        templates: [],
-        trends: [],
-        insights: ['No reminder data available for the selected period.']
-      };
+      return null;
     }
 
     const { summary, byChannel = [], byTiming = [], templatePerformance = [], trends = {} } = analyticsData.data;
@@ -265,6 +257,10 @@ const ReminderEffectivenessChart: React.FC<ReminderEffectivenessChartProps> = ({
     return (
       <Alert severity="info">
         No reminder data available for the selected period.
+        <br />
+        <Typography variant="caption" color="text.secondary">
+          This could be due to insufficient permissions or no reminder data in the selected date range.
+        </Typography>
       </Alert>
     );
   }

@@ -526,6 +526,42 @@ class AppointmentService {
   }
 
   /**
+   * Get upcoming appointments
+   */
+  async getUpcomingAppointments(params: {
+    days?: number;
+    pharmacistId?: string;
+  } = {}): Promise<ApiResponse<{
+    appointments: Appointment[];
+    summary: {
+      total: number;
+      thisWeek: number;
+      nextWeek: number;
+      byStatus: Record<string, number>;
+    };
+  }>> {
+    const searchParams = new URLSearchParams();
+    
+    // Provide default values to avoid validation errors
+    const days = params.days || 7;
+    searchParams.append('days', String(days));
+    
+    if (params.pharmacistId) {
+      searchParams.append('pharmacistId', params.pharmacistId);
+    }
+
+    return this.makeRequest<ApiResponse<{
+      appointments: Appointment[];
+      summary: {
+        total: number;
+        thisWeek: number;
+        nextWeek: number;
+        byStatus: Record<string, number>;
+      };
+    }>>(`/appointments/upcoming?${searchParams.toString()}`);
+  }
+
+  /**
    * Get pharmacists for waitlist selection
    */
   async getPharmacists(): Promise<any[]> {

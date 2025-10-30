@@ -119,15 +119,7 @@ const AppointmentAnalyticsDashboard: React.FC<AppointmentAnalyticsDashboardProps
   // Memoized chart data
   const chartData = useMemo(() => {
     if (!analyticsData?.data) {
-      // Return fallback data when API is not available
-      return {
-        summary: { totalAppointments: 0, completionRate: 0, noShowRate: 0, cancellationRate: 0, averageWaitTime: 0, averageDuration: 0 },
-        trends: [],
-        types: [],
-        statuses: [],
-        hourly: [],
-        daily: []
-      };
+      return null;
     }
 
     const { summary, byType = [], byStatus = [], trends = { daily: [] }, peakTimes = { hourlyDistribution: [], dailyDistribution: [] } } = analyticsData.data;
@@ -250,6 +242,10 @@ const AppointmentAnalyticsDashboard: React.FC<AppointmentAnalyticsDashboardProps
     return (
       <Alert severity="info">
         No appointment data available for the selected period.
+        <br />
+        <Typography variant="caption" color="text.secondary">
+          This could be due to insufficient permissions or no data in the selected date range.
+        </Typography>
       </Alert>
     );
   }

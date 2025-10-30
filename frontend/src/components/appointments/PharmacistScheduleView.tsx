@@ -31,6 +31,7 @@ import {
   Divider,
   Paper,
   LinearProgress,
+  Avatar,
 } from '@mui/material';
 import {
   Schedule as ScheduleIcon,
@@ -59,6 +60,7 @@ import {
 import { useUpcomingAppointments } from '../../hooks/useAppointments';
 import { useNotification } from '../../hooks/useNotification';
 import { PharmacistSchedule, TimeOffRequest } from '../../services/pharmacistScheduleService';
+import { usePharmacistSelection } from '../../hooks/usePharmacistSelection';
 
 interface PharmacistScheduleViewProps {
   pharmacistId?: string;
@@ -87,17 +89,31 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index, ...other })
 };
 
 const PharmacistScheduleView: React.FC<PharmacistScheduleViewProps> = ({
-  pharmacistId,
+  pharmacistId: propPharmacistId,
   canEdit = false,
   showCapacityMetrics = true,
 }) => {
-  // Handle case where no pharmacistId is provided
+  const [internalPharmacistId, setInternalPharmacistId] = useState<string>('');
+  
+  // Use prop pharmacistId if provided, otherwise use internal state
+  const pharmacistId = propPharmacistId || internalPharmacistId;
+
+  // Handle case where no pharmacistId is provided - show selection
   if (!pharmacistId) {
     return (
       <Box sx={{ p: 3, textAlign: 'center' }}>
-        <Typography variant="body2" color="text.secondary">
+        <Typography variant="h6" gutterBottom>
+          Schedule Management
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
           Please select a pharmacist to view their schedule
         </Typography>
+        
+        {/* Pharmacist Selection */}
+        <PharmacistSelector 
+          onSelect={setInternalPharmacistId}
+          selectedId={internalPharmacistId}
+        />
       </Box>
     );
   }
@@ -843,6 +859,57 @@ const PharmacistScheduleView: React.FC<PharmacistScheduleViewProps> = ({
         </Dialog>
       </Box>
     </LocalizationProvider>
+  );
+};
+
+// Pharmacist Selector Component
+interface PharmacistSelectorProps {
+  onSelect: (pharmacistId: string) => void;
+  selectedId: string;
+}
+
+const PharmacistSelector: React.FC<PharmacistSelectorProps> = ({ onSelect, selectedId }) => {
+  const { pharmacists, isLoading } = usePharmacistSelection();
+
+  if (isLoading) {
+    return <CircularProgress size={24} />;
+  }
+
+  if (pharmacists.length === 0) {
+    return (
+      <Alert severity="info">
+        No pharmacists found. Please ensure pharmacists are added to your workspace.
+      </Alert>
+    );
+  }
+
+  return (
+    <Box sx={{ maxWidth: 400, mx: 'auto' }}>
+      <FormControl fullWidth>
+        <InputLabel>Select Pharmacist</InputLabel>
+        <Select
+          value={selectedId}
+          label="Select Pharmacist"
+          onChange={(e) => onSelect(e.target.value)}
+        >
+          {pharmacists.map((pharmacist) => (
+            <MenuItem key={pharmacist.id} value={pharmacist.id}>
+              <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                <Avatar sx={{ width: 32, height: 32 }}>
+                  {pharmacist.name.charAt(0)}
+                </Avatar>
+                <Box>
+                  <Typography variant="body1">{pharmacist.name}</Typography>
+                  <Typography variant="caption" color="text.secondary">
+                    {pharmacist.role} • {pharmacist.email}
+                  </Typography>
+                </Box>
+              </Box>
+            </MenuItem>
+          ))}
+        </Select>
+      </FormControl>
+    </Box>
   );
 };
 

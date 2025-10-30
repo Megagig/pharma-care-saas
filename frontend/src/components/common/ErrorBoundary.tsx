@@ -1,16 +1,19 @@
 import React, { Component, ErrorInfo, ReactNode } from 'react';
 import {
-  Alert,
-  Button,
   Box,
+  Card,
+  CardContent,
   Typography,
+  Button,
+  Alert,
   Stack,
-  Paper,
-  Divider,
+  Chip,
 } from '@mui/material';
-import ErrorIcon from '@mui/icons-material/Error';
-import RefreshIcon from '@mui/icons-material/Refresh';
-import BugReportIcon from '@mui/icons-material/BugReport';
+import {
+  ErrorOutline,
+  Refresh,
+  BugReport,
+} from '@mui/icons-material';
 
 interface Props {
   children: ReactNode;
@@ -20,62 +23,52 @@ interface Props {
 
 interface State {
   hasError: boolean;
-  error?: Error;
-  errorInfo?: ErrorInfo;
+  error: Error | null;
+  errorInfo: ErrorInfo | null;
 }
 
-/**
- * Error Boundary component that catches JavaScript errors in child components
- * and displays a fallback UI with options to retry or report the error
- */
 class ErrorBoundary extends Component<Props, State> {
-  constructor(props: Props) {
-    super(props);
-    this.state = { hasError: false };
+  public state: State = {
+    hasError: false,
+    error: null,
+    errorInfo: null,
+  };
+
+  public static getDerivedStateFromError(error: Error): State {
+    return {
+      hasError: true,
+      error,
+      errorInfo: null,
+    };
   }
 
-  static getDerivedStateFromError(error: Error): State {
-    // Update state so the next render will show the fallback UI
-    return { hasError: true, error };
-  }
-
-  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+  public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('ErrorBoundary caught an error:', error, errorInfo);
-
+    
     this.setState({
       error,
       errorInfo,
     });
 
-    // Call the optional error handler
+    // Call the onError callback if provided
     if (this.props.onError) {
       this.props.onError(error, errorInfo);
     }
   }
 
   private handleRetry = () => {
-    this.setState({ hasError: false, error: undefined, errorInfo: undefined });
+    this.setState({
+      hasError: false,
+      error: null,
+      errorInfo: null,
+    });
   };
 
-  private handleReportError = () => {
-    // In a real app, this would send the error to a logging service
-    const errorReport = {
-      message: this.state.error?.message,
-      stack: this.state.error?.stack,
-      componentStack: this.state.errorInfo?.componentStack,
-      timestamp: new Date().toISOString(),
-      userAgent: navigator.userAgent,
-      url: window.location.href,
-    };
-
-    console.log('Error Report:', errorReport);
-    // TODO: Integrate with error reporting service (e.g., Sentry, LogRocket)
-    alert(
-      'Error report logged to console. In production, this would be sent to our error tracking service.'
-    );
+  private handleReload = () => {
+    window.location.reload();
   };
 
-  render() {
+  public render() {
     if (this.state.hasError) {
       // Custom fallback UI
       if (this.props.fallback) {
@@ -84,69 +77,81 @@ class ErrorBoundary extends Component<Props, State> {
 
       // Default error UI
       return (
-        <Box sx={{ p: 3, maxWidth: 600, mx: 'auto' }}>
-          <Paper elevation={2} sx={{ p: 4 }}>
-            <Stack spacing={3} alignItems="center" textAlign="center">
-              <ErrorIcon color="error" sx={{ fontSize: 64 }} />
+        <Box
+          sx={{
+            display: 'flex',
+            justifyContent: 'center',
+            alignItems: 'center',
+            minHeight: '400px',
+            p: 3,
+          }}
+        >
+          <Card sx={{ maxWidth: 600, width: '100%' }}>
+            <CardContent>
+              <Stack spacing={3} alignItems="center">
+                <ErrorOutline sx={{ fontSize: 64, color: 'error.main' }} />
+                
+                <Box textAlign="center">
+                  <Typography variant="h5" gutterBottom>
+                    Something went wrong
+                  </Typography>
+                  <Typography variant="body1" color="text.secondary" paragraph>
+                    We encountered an unexpected error. This has been logged and our team will investigate.
+                  </Typography>
+                </Box>
 
-              <Typography variant="h5" color="error" gutterBottom>
-                Something went wrong
-              </Typography>
-
-              <Typography variant="body1" color="text.secondary">
-                An unexpected error occurred while rendering this component.
-                Please try refreshing the page or contact support if the problem
-                persists.
-              </Typography>
-
-              {process.env.NODE_ENV === 'development' && this.state.error && (
-                <>
-                  <Divider sx={{ width: '100%' }} />
-                  <Alert
-                    severity="error"
-                    sx={{ width: '100%', textAlign: 'left' }}
-                  >
-                    <Typography variant="subtitle2" gutterBottom>
-                      Error Details (Development Mode):
+                {this.state.error && (
+                  <Alert severity="error" sx={{ width: '100%' }}>
+                    <Typography variant="body2" component="div">
+                      <strong>Error:</strong> {this.state.error.message}
                     </Typography>
-                    <Typography
-                      variant="body2"
-                      component="pre"
-                      sx={{
-                        fontFamily: 'monospace',
-                        fontSize: '0.8rem',
-                        overflow: 'auto',
-                        maxHeight: 200,
-                        whiteSpace: 'pre-wrap',
-                      }}
-                    >
-                      {this.state.error.message}
-                      {'\n\n'}
-                      {this.state.error.stack}
-                    </Typography>
+                    {process.env.NODE_ENV === 'development' && (
+                      <Box sx={{ mt: 1 }}>
+                        <Chip
+                          icon={<BugReport />}
+                          label="Development Mode"
+                          size="small"
+                          color="warning"
+                          variant="outlined"
+                        />
+                        <Typography
+                          variant="caption"
+                          component="pre"
+                          sx={{
+                            mt: 1,
+                            p: 1,
+                            bgcolor: 'grey.100',
+                            borderRadius: 1,
+                            fontSize: '0.75rem',
+                            overflow: 'auto',
+                            maxHeight: 200,
+                          }}
+                        >
+                          {this.state.error.stack}
+                        </Typography>
+                      </Box>
+                    )}
                   </Alert>
-                </>
-              )}
+                )}
 
-              <Stack direction="row" spacing={2}>
-                <Button
-                  variant="contained"
-                  startIcon={<RefreshIcon />}
-                  onClick={this.handleRetry}
-                >
-                  Try Again
-                </Button>
-
-                <Button
-                  variant="outlined"
-                  startIcon={<BugReportIcon />}
-                  onClick={this.handleReportError}
-                >
-                  Report Issue
-                </Button>
+                <Stack direction="row" spacing={2}>
+                  <Button
+                    variant="contained"
+                    startIcon={<Refresh />}
+                    onClick={this.handleRetry}
+                  >
+                    Try Again
+                  </Button>
+                  <Button
+                    variant="outlined"
+                    onClick={this.handleReload}
+                  >
+                    Reload Page
+                  </Button>
+                </Stack>
               </Stack>
-            </Stack>
-          </Paper>
+            </CardContent>
+          </Card>
         </Box>
       );
     }
@@ -155,4 +160,4 @@ class ErrorBoundary extends Component<Props, State> {
   }
 }
 
-export { ErrorBoundary };
+export default ErrorBoundary;

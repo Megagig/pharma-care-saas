@@ -128,16 +128,7 @@ const CapacityUtilizationChart: React.FC<CapacityUtilizationChartProps> = ({
   // Memoized chart data
   const chartData = useMemo(() => {
     if (!capacityData?.data) {
-      // Return fallback data when API is not available
-      return {
-        overall: { totalSlots: 0, bookedSlots: 0, utilizationRate: 0, availableSlots: 0 },
-        pharmacists: [],
-        daily: [],
-        hourly: [],
-        utilizationDistribution: [],
-        overbookingIncidents: [],
-        recommendations: ['No capacity data available for the selected period.']
-      };
+      return null;
     }
 
     const { overall, byPharmacist = [], byDay = [], byHour = [], recommendations = [] } = capacityData.data;
@@ -315,6 +306,10 @@ const CapacityUtilizationChart: React.FC<CapacityUtilizationChartProps> = ({
     return (
       <Alert severity="info">
         No capacity data available for the selected period.
+        <br />
+        <Typography variant="caption" color="text.secondary">
+          This could be due to insufficient permissions or no capacity data in the selected date range.
+        </Typography>
       </Alert>
     );
   }

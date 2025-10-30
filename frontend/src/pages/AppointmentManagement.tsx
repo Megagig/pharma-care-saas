@@ -42,8 +42,10 @@ import CreateAppointmentDialog from '../components/appointments/CreateAppointmen
 import WaitlistManagement from '../components/appointments/WaitlistManagement';
 import SmartSchedulingDialog from '../components/appointments/SmartSchedulingDialog';
 import { useAppointments } from '../hooks/useAppointments';
+import { usePharmacistSelection } from '../hooks/usePharmacistSelection';
 import { format, endOfWeek } from 'date-fns';
 import { useLocation, useNavigate } from 'react-router-dom';
+import ErrorBoundary from '../components/common/ErrorBoundary';
 
 const MotionCard = motion(Card);
 const MotionBox = motion(Box);
@@ -64,6 +66,9 @@ const AppointmentManagement: React.FC = () => {
   const [currentTab, setCurrentTab] = useState(
     location.pathname.includes('/waitlist') ? 1 : 0
   );
+
+  // Pharmacist selection for schedule management
+  const { selectedPharmacistId, selectedPharmacist, setSelectedPharmacistId, pharmacists } = usePharmacistSelection();
 
   // Fetch appointments data
   const { data: appointmentsData, refetch } = useAppointments({ limit: 100 });
@@ -519,9 +524,11 @@ const AppointmentManagement: React.FC = () => {
                 </Stack>
               </Box>
               <CardContent sx={{ p: 3 }}>
-                <React.Suspense fallback={<CircularProgress />}>
-                  <AppointmentAnalyticsDashboard />
-                </React.Suspense>
+                <ErrorBoundary>
+                  <React.Suspense fallback={<CircularProgress />}>
+                    <AppointmentAnalyticsDashboard />
+                  </React.Suspense>
+                </ErrorBoundary>
               </CardContent>
             </MotionCard>
           </Fade>
@@ -572,7 +579,13 @@ const AppointmentManagement: React.FC = () => {
                 </Stack>
               </Box>
               <CardContent sx={{ p: 3, flex: 1, overflow: 'auto' }}>
-                <PharmacistScheduleView />
+                <ErrorBoundary>
+                  <PharmacistScheduleView 
+                    pharmacistId={selectedPharmacistId}
+                    canEdit={true}
+                    showCapacityMetrics={true}
+                  />
+                </ErrorBoundary>
               </CardContent>
             </MotionCard>
           </Fade>
@@ -624,9 +637,11 @@ const AppointmentManagement: React.FC = () => {
               </Box>
               <CardContent sx={{ p: 2.5, flex: 1, overflow: 'hidden' }}>
                 <Box sx={{ height: '100%' }}>
-                  <React.Suspense fallback={<CircularProgress />}>
-                    <CapacityUtilizationChart />
-                  </React.Suspense>
+                  <ErrorBoundary>
+                    <React.Suspense fallback={<CircularProgress />}>
+                      <CapacityUtilizationChart />
+                    </React.Suspense>
+                  </ErrorBoundary>
                 </Box>
               </CardContent>
             </MotionCard>
@@ -679,9 +694,11 @@ const AppointmentManagement: React.FC = () => {
               </Box>
               <CardContent sx={{ p: 2.5, flex: 1, overflow: 'hidden' }}>
                 <Box sx={{ height: '100%' }}>
-                  <React.Suspense fallback={<CircularProgress />}>
-                    <ReminderEffectivenessChart />
-                  </React.Suspense>
+                  <ErrorBoundary>
+                    <React.Suspense fallback={<CircularProgress />}>
+                      <ReminderEffectivenessChart />
+                    </React.Suspense>
+                  </ErrorBoundary>
                 </Box>
               </CardContent>
             </MotionCard>
@@ -700,6 +717,8 @@ const AppointmentManagement: React.FC = () => {
           </Box>
         </Fade>
       )}
+
+
 
       {/* Create Appointment Dialog */}
       <CreateAppointmentDialog

@@ -87,8 +87,8 @@ export const useAppointmentStore = create<AppointmentStore>()(
         // Initial state
         appointments: [],
         selectedAppointment: null,
-        selectedDate: new Date(),
-        selectedView: 'week',
+        selectedDate: new Date(), // Always start with current date
+        selectedView: 'month', // Start with month view for better overview
         filters: DEFAULT_FILTERS,
         availableSlots: [],
         summary: null,
@@ -397,10 +397,10 @@ export const useAppointmentStore = create<AppointmentStore>()(
       {
         name: 'appointment-store',
         partialize: (state) => ({
-          selectedDate: state.selectedDate,
+          // Don't persist selectedDate so it always starts with today
           selectedView: state.selectedView,
           filters: state.filters,
-          selectedAppointment: state.selectedAppointment,
+          // Don't persist selectedAppointment to avoid stale selections
         }),
       }
     ),

@@ -110,6 +110,42 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     goToToday,
   } = useCalendarStore();
 
+  // Simple initialization - set to today once on mount
+  useEffect(() => {
+    const today = new Date();
+    console.log('🗓️ Calendar component mounted, setting to today:', today);
+    setSelectedDate(today);
+  }, []); // Run only once on mount
+
+  // Sync FullCalendar with store state changes
+  useEffect(() => {
+    if (calendarRef.current) {
+      const calendarApi = calendarRef.current.getApi();
+      
+      // Update calendar date if it differs from selected date
+      const currentCalendarDate = calendarApi.getDate();
+      const selectedDateOnly = new Date(selectedDate);
+      selectedDateOnly.setHours(0, 0, 0, 0);
+      currentCalendarDate.setHours(0, 0, 0, 0);
+      
+      if (currentCalendarDate.getTime() !== selectedDateOnly.getTime()) {
+        console.log('🗓️ Syncing calendar date:', selectedDate);
+        calendarApi.gotoDate(selectedDate);
+      }
+      
+      // Update calendar view if it differs from selected view
+      const currentView = calendarApi.view.type;
+      const targetView = selectedView === 'day' ? 'timeGridDay' : 
+                        selectedView === 'week' ? 'timeGridWeek' : 
+                        'dayGridMonth';
+      
+      if (currentView !== targetView) {
+        console.log('🗓️ Syncing calendar view:', targetView);
+        calendarApi.changeView(targetView);
+      }
+    }
+  }, [selectedDate, selectedView]);
+
   const { selectedAppointment, selectAppointment } = useAppointmentStore();
 
   // Local state
@@ -120,13 +156,18 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
 
   // Memoize API parameters to prevent unnecessary re-renders
   const calendarParams = useMemo(() => {
+    const dateToUse = selectedDate || new Date();
+    const dateString = format(dateToUse, 'yyyy-MM-dd');
+    
     const params = {
       view: selectedView,
-      date: format(selectedDate, 'yyyy-MM-dd'),
+      date: dateString,
       pharmacistId,
       locationId,
     };
-    console.log('🗓️ AppointmentCalendar params:', params);
+    
+    console.log('🗓️ AppointmentCalendar API params:', params);
+    
     return params;
   }, [selectedView, selectedDate, pharmacistId, locationId]);
 
@@ -153,9 +194,14 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
 
   // Convert appointments to FullCalendar events
   const calendarEvents: EventInput[] = useMemo(() => {
-    if (!appointments || appointments.length === 0) return [];
+    console.log('🗓️ Converting appointments to events:', appointments?.length || 0);
     
-    return appointments.map((appointment) => {
+    if (!appointments || appointments.length === 0) {
+      console.log('🗓️ No appointments to display');
+      return [];
+    }
+    
+    const events = appointments.map((appointment) => {
       const appointmentDate = new Date(appointment.scheduledDate);
       const [hours, minutes] = appointment.scheduledTime.split(':').map(Number);
       const startTime = new Date(appointmentDate);
@@ -188,6 +234,9 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
         ...statusStyle,
       };
     });
+    
+    console.log('🗓️ Generated calendar events:', events.length);
+    return events;
   }, [appointments]);
 
   // Handle view change
@@ -279,18 +328,11 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     }
   }, [refetch]);
 
-  // Handle calendar date change (when user navigates) - Re-enabled with proper date comparison
+  // Handle calendar date change (when user navigates) - Simplified to prevent loops
   const handleDatesSet = useCallback((dateInfo: any) => {
-    // Only update if the date actually changed to prevent loops
-    const newDate = new Date(dateInfo.start);
-    const currentDate = new Date(selectedDate);
-    
-    // Compare dates without time to avoid unnecessary updates
-    if (newDate.toDateString() !== currentDate.toDateString()) {
-      console.log('Calendar date changed:', newDate);
-      setSelectedDate(newDate);
-    }
-  }, [selectedDate, setSelectedDate]);
+    // Only log the change, don't update state to prevent loops
+    console.log('Calendar date changed to:', dateInfo.start);
+  }, []);
 
   // Mobile-specific configurations
   const mobileConfig = useMemo(() => {
@@ -343,23 +385,34 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     },
   }), []);
 
-  const dynamicCalendarConfig = useMemo(() => ({
-    initialView: selectedView === 'day' ? 'timeGridDay' : 
-                selectedView === 'week' ? 'timeGridWeek' : 
-                'dayGridMonth',
-    initialDate: selectedDate,
-    headerToolbar: showToolbar ? {
-      left: isMobile ? 'prev,next' : 'prev,next today',
-      center: 'title',
-      right: isMobile ? 'dayGridMonth,timeGridDay' : 'dayGridMonth,timeGridWeek,timeGridDay',
-    } : false,
-    height,
-    editable: enableDragDrop,
-    droppable: enableDragDrop,
-    ...mobileConfig,
-  }), [selectedView, selectedDate, showToolbar, height, enableDragDrop, isMobile, mobileConfig]);
+  const dynamicCalendarConfig = useMemo(() => {
+    // Map view names to FullCalendar view types
+    const viewMap = {
+      'day': 'timeGridDay',
+      'week': 'timeGridWeek',
+      'month': 'dayGridMonth'
+    };
+    
+    const initialView = viewMap[selectedView] || 'dayGridMonth';
+    
+    return {
+      initialView,
+      initialDate: selectedDate, // Use store date
+      headerToolbar: showToolbar ? {
+        left: isMobile ? 'prev,next' : 'prev,next today',
+        center: 'title',
+        right: isMobile ? 'dayGridMonth,timeGridDay' : 'dayGridMonth,timeGridWeek,timeGridDay',
+      } : false,
+      height,
+      editable: enableDragDrop,
+      droppable: enableDragDrop,
+      ...mobileConfig,
+    };
+  }, [selectedView, selectedDate, showToolbar, height, enableDragDrop, isMobile, mobileConfig]);
 
-  // Full calendar configuration - restored with proper dependencies
+
+
+  // Full calendar configuration - simplified to prevent loops
   const calendarConfig = useMemo(() => ({
     ...staticCalendarConfig,
     ...dynamicCalendarConfig,
@@ -439,7 +492,7 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
                   Today
                 </Button>
                 <Typography variant="h6" sx={{ ml: 2 }}>
-                  {format(selectedDate, 'MMMM yyyy')}
+                  {format(new Date(), 'MMMM yyyy')}
                 </Typography>
               </Box>
 
@@ -469,6 +522,26 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
                   </Button>
                 </ButtonGroup>
 
+                <Tooltip title="Go to Today">
+                  <Button
+                    variant="outlined"
+                    size="small"
+                    startIcon={<Today />}
+                    onClick={() => {
+                      const today = new Date();
+                      console.log('🗓️ Manual reset to today:', today);
+                      setSelectedDate(today);
+                      if (calendarRef.current) {
+                        const calendarApi = calendarRef.current.getApi();
+                        calendarApi.gotoDate(today);
+                        calendarApi.today(); // Also call the built-in today method
+                      }
+                    }}
+                  >
+                    Reset to Today
+                  </Button>
+                </Tooltip>
+
                 <Tooltip title="Refresh calendar">
                   <IconButton 
                     onClick={handleRefresh} 
@@ -489,8 +562,11 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
         <CardContent sx={{ p: 1 }}>
           <FullCalendar
             ref={calendarRef}
+            key={`calendar-${selectedView}`}
             {...calendarConfig}
           />
+          
+
         </CardContent>
       </Card>
 
