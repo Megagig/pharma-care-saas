@@ -543,12 +543,13 @@ import scheduleRoutes from './routes/scheduleRoutes';
 import queueMonitoringRoutes from './routes/queueMonitoringRoutes';
 import alertRoutes from './routes/alertRoutes';
 import patientPortalRoutes from './routes/patientPortalRoutes';
+
+// Appointment Analytics routes - MUST come before /api/appointments to avoid /:id matching
+app.use('/api', appointmentAnalyticsRoutes);
+
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/follow-ups', followUpRoutes);
 app.use('/api/schedules', scheduleRoutes);
-
-// Appointment Analytics routes
-app.use('/api', appointmentAnalyticsRoutes);
 app.use('/api/queue-monitoring', queueMonitoringRoutes);
 app.use('/api/alerts', alertRoutes);
 app.use('/api/patient-portal', patientPortalRoutes);

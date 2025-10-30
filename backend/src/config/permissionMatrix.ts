@@ -215,25 +215,25 @@ export const PERMISSION_MATRIX: PermissionMatrix = {
     // APPOINTMENT MANAGEMENT
     // ========================================
     'appointment.create': {
-        workplaceRoles: ['Owner', 'Pharmacist'],
+        workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet'],
         features: ['appointmentScheduling'],
         requiresActiveSubscription: true,
         allowTrialAccess: true,
     },
     'appointment.read': {
-        workplaceRoles: ['Owner', 'Pharmacist', 'Technician', 'Assistant'],
+        workplaceRoles: ['Owner', 'Pharmacist', 'Technician', 'Assistant', 'pharmacy_outlet'],
         features: ['appointmentScheduling'],
         requiresActiveSubscription: true,
         allowTrialAccess: true,
     },
     'appointment.update': {
-        workplaceRoles: ['Owner', 'Pharmacist'],
+        workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet'],
         features: ['appointmentScheduling'],
         requiresActiveSubscription: true,
         allowTrialAccess: true,
     },
     'appointment.delete': {
-        workplaceRoles: ['Owner', 'Pharmacist'],
+        workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet'],
         features: ['appointmentScheduling'],
         requiresActiveSubscription: true,
         allowTrialAccess: false,
@@ -263,7 +263,7 @@ export const PERMISSION_MATRIX: PermissionMatrix = {
         allowTrialAccess: true,
     },
     'appointment.manage': {
-        workplaceRoles: ['Owner'],
+        workplaceRoles: ['Owner', 'pharmacy_outlet'],
         features: ['appointmentScheduling'],
         requiresActiveSubscription: true,
         allowTrialAccess: true,
@@ -708,27 +708,27 @@ export const PERMISSION_MATRIX: PermissionMatrix = {
         allowTrialAccess: true,
     },
     'view_appointment_analytics': {
-        workplaceRoles: ['Owner', 'Pharmacist'],
+        workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet'],
         requiresActiveSubscription: true,
         allowTrialAccess: true,
     },
     'view_followup_analytics': {
-        workplaceRoles: ['Owner', 'Pharmacist'],
+        workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet'],
         requiresActiveSubscription: true,
         allowTrialAccess: true,
     },
     'view_reminder_analytics': {
-        workplaceRoles: ['Owner', 'Pharmacist'],
+        workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet'],
         requiresActiveSubscription: true,
         allowTrialAccess: true,
     },
     'view_capacity_analytics': {
-        workplaceRoles: ['Owner', 'Pharmacist'],
+        workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet'],
         requiresActiveSubscription: true,
         allowTrialAccess: true,
     },
     'export_analytics': {
-        workplaceRoles: ['Owner', 'Pharmacist'],
+        workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet'],
         features: ['dataExport'],
         requiresActiveSubscription: true,
         allowTrialAccess: false,
@@ -831,6 +831,7 @@ export const ROLE_HIERARCHY: Record<UserRole, UserRole[]> = {
  */
 export const WORKPLACE_ROLE_HIERARCHY: Record<WorkplaceRole, WorkplaceRole[]> = {
     Owner: ['Owner', 'Pharmacist', 'Staff', 'Technician', 'Cashier', 'Assistant'],
+    pharmacy_outlet: ['pharmacy_outlet', 'Owner', 'Pharmacist', 'Staff', 'Technician', 'Cashier', 'Assistant'],
     Pharmacist: ['Pharmacist', 'Technician', 'Assistant'],
     Staff: ['Staff', 'Technician', 'Assistant'],
     Technician: ['Technician', 'Assistant'],

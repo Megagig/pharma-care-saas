@@ -42,6 +42,7 @@ import { format, parseISO, isToday, isTomorrow } from 'date-fns';
 import { useAppointmentCalendar } from '../../hooks/useAppointments';
 import { useAppointmentStore, useAppointmentCalendar as useCalendarStore } from '../../stores/appointmentStore';
 import { useRescheduleAppointment } from '../../hooks/useAppointments';
+import { appointmentService } from '../../services/appointmentService';
 import { Appointment, AppointmentType, AppointmentStatus, CalendarView } from '../../stores/appointmentTypes';
 
 // Components (to be created in subsequent tasks)
@@ -179,41 +180,52 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
     refetch,
   } = useAppointmentCalendar(calendarParams, true); // Enabled with error handling
 
+
+
+
+
   const rescheduleAppointment = useRescheduleAppointment();
 
   // Get appointments from calendar data
   const appointments = useMemo(() => {
-    console.log('📅 Calendar data received:', calendarData);
+    console.log('📅 Calendar data received:', calendarData?.data?.appointments?.length || 0, 'appointments');
+    
     if (!calendarData?.data?.appointments) {
       console.log('📅 No appointments in calendar data');
       return [];
     }
-    console.log('📅 Found appointments:', calendarData.data.appointments.length);
     return calendarData.data.appointments;
   }, [calendarData]);
 
   // Convert appointments to FullCalendar events
   const calendarEvents: EventInput[] = useMemo(() => {
-    console.log('🗓️ Converting appointments to events:', appointments?.length || 0);
-    
     if (!appointments || appointments.length === 0) {
-      console.log('🗓️ No appointments to display');
       return [];
     }
     
-    const events = appointments.map((appointment) => {
+    const events = appointments.map((appointment, index) => {
+
+
+      // Fix timezone issue by using the date part from scheduledDate and time from scheduledTime
       const appointmentDate = new Date(appointment.scheduledDate);
       const [hours, minutes] = appointment.scheduledTime.split(':').map(Number);
-      const startTime = new Date(appointmentDate);
-      startTime.setHours(hours, minutes, 0, 0);
       
+      // Create start time using the date part and scheduled time
+      // Use the local date but set the time correctly
+      const year = appointmentDate.getFullYear();
+      const month = appointmentDate.getMonth();
+      const day = appointmentDate.getDate();
+      
+      const startTime = new Date(year, month, day, hours, minutes, 0, 0);
       const endTime = new Date(startTime);
-      endTime.setMinutes(endTime.getMinutes() + appointment.duration);
+      endTime.setMinutes(endTime.getMinutes() + (appointment.duration || 30));
 
-      const typeColor = APPOINTMENT_TYPE_COLORS[appointment.type];
-      const statusStyle = APPOINTMENT_STATUS_STYLES[appointment.status];
 
-      return {
+
+      const typeColor = APPOINTMENT_TYPE_COLORS[appointment.type] || '#1976d2';
+      const statusStyle = APPOINTMENT_STATUS_STYLES[appointment.status] || { opacity: 1, borderStyle: 'solid' };
+
+      const event = {
         id: appointment._id,
         title: appointment.title || `${appointment.type.replace('_', ' ')} - ${appointment.patientId}`,
         start: startTime,
@@ -233,9 +245,10 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
         // Apply status-based styling
         ...statusStyle,
       };
+
+      return event;
     });
     
-    console.log('🗓️ Generated calendar events:', events.length);
     return events;
   }, [appointments]);
 
@@ -560,13 +573,13 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
       {/* Calendar */}
       <Card>
         <CardContent sx={{ p: 1 }}>
+
+          
           <FullCalendar
             ref={calendarRef}
             key={`calendar-${selectedView}`}
             {...calendarConfig}
           />
-          
-
         </CardContent>
       </Card>
 

@@ -115,4 +115,14 @@ router.post(
   scheduleController.requestTimeOff
 );
 
+/**
+ * @route   GET /api/schedules/pharmacist/:pharmacistId
+ * @desc    Get a specific pharmacist's schedule with appointments
+ * @access  Private (All authenticated users)
+ */
+router.get(
+  '/pharmacist/:pharmacistId',
+  scheduleController.getPharmacistSchedule
+);
+
 export default router;

@@ -10,6 +10,7 @@ import logger from '../utils/logger';
 import mongoose from 'mongoose';
 import PharmacistSchedule from '../models/PharmacistSchedule';
 import User from '../models/User';
+import Appointment from '../models/Appointment';
 
 class ScheduleController {
   /**
@@ -322,6 +323,130 @@ class ScheduleController {
       res.status(500).json({
         success: false,
         message: 'Failed to request time off'
+      });
+    }
+  }
+
+  /**
+   * Get a specific pharmacist's schedule with appointments
+   */
+  async getPharmacistSchedule(req: AuthRequest, res: Response) {
+    try {
+      const { pharmacistId } = req.params;
+      const workplaceId = req.user?.workplaceId;
+
+      if (!workplaceId) {
+        return res.status(400).json({
+          success: false,
+          message: 'Workplace ID is required'
+        });
+      }
+
+      // Get the pharmacist's schedule from PharmacistSchedule collection
+      const schedule = await PharmacistSchedule.findOne({
+        pharmacistId: new mongoose.Types.ObjectId(pharmacistId),
+        workplaceId,
+        isActive: true
+      }).populate('pharmacistId', 'firstName lastName email');
+
+      // Get appointments assigned to this pharmacist
+      const now = new Date();
+      const appointments = await Appointment.find({
+        assignedTo: new mongoose.Types.ObjectId(pharmacistId),
+        workplaceId,
+        isDeleted: false,
+        scheduledDate: { $gte: now }
+      })
+        .populate('patientId', 'firstName lastName email phone')
+        .sort({ scheduledDate: 1, scheduledTime: 1 })
+        .lean();
+
+      // Group appointments by date
+      const scheduleByDate: Record<string, any[]> = {};
+      appointments.forEach((appointment: any) => {
+        const dateKey = appointment.scheduledDate.toISOString().split('T')[0];
+        if (!scheduleByDate[dateKey]) {
+          scheduleByDate[dateKey] = [];
+        }
+        scheduleByDate[dateKey].push({
+          id: appointment._id,
+          time: appointment.scheduledTime,
+          duration: appointment.duration || 30,
+          type: appointment.type,
+          status: appointment.status,
+          patient: appointment.patientId ? {
+            id: appointment.patientId._id,
+            name: `${appointment.patientId.firstName} ${appointment.patientId.lastName}`,
+            email: appointment.patientId.email,
+            phone: appointment.patientId.phone
+          } : null,
+          title: appointment.title || `${appointment.type.replace(/_/g, ' ')} appointment`,
+          notes: appointment.notes
+        });
+      });
+
+      // Calculate stats
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const todayEnd = new Date(today);
+      todayEnd.setHours(23, 59, 59, 999);
+
+      const weekFromNow = new Date();
+      weekFromNow.setDate(weekFromNow.getDate() + 7);
+
+      const todayAppointments = appointments.filter((apt: any) => {
+        const aptDate = new Date(apt.scheduledDate);
+        return aptDate >= today && aptDate <= todayEnd;
+      });
+
+      const weekAppointments = appointments.filter((apt: any) => {
+        return new Date(apt.scheduledDate) <= weekFromNow;
+      });
+
+      // Get upcoming time off
+      const upcomingTimeOff = schedule?.timeOff?.filter((timeOff: any) => {
+        return new Date(timeOff.endDate) >= now && timeOff.status === 'approved';
+      }) || [];
+
+      // Calculate utilization rate if schedule exists
+      let utilizationRate = 0;
+      if (schedule && schedule.capacityStats) {
+        utilizationRate = schedule.capacityStats.utilizationRate || 0;
+      }
+
+      res.json({
+        success: true,
+        data: {
+          schedule: schedule || null,
+          scheduleByDate,
+          upcomingTimeOff,
+          utilizationRate,
+          summary: {
+            totalUpcoming: appointments.length,
+            today: todayAppointments.length,
+            thisWeek: weekAppointments.length
+          },
+          workingHours: schedule?.workingHours || [
+            { dayOfWeek: 1, isWorkingDay: true, shifts: [{ startTime: '09:00', endTime: '17:00' }] },
+            { dayOfWeek: 2, isWorkingDay: true, shifts: [{ startTime: '09:00', endTime: '17:00' }] },
+            { dayOfWeek: 3, isWorkingDay: true, shifts: [{ startTime: '09:00', endTime: '17:00' }] },
+            { dayOfWeek: 4, isWorkingDay: true, shifts: [{ startTime: '09:00', endTime: '17:00' }] },
+            { dayOfWeek: 5, isWorkingDay: true, shifts: [{ startTime: '09:00', endTime: '17:00' }] },
+            { dayOfWeek: 6, isWorkingDay: true, shifts: [{ startTime: '09:00', endTime: '13:00' }] },
+            { dayOfWeek: 0, isWorkingDay: false, shifts: [] }
+          ]
+        }
+      });
+
+      logger.info('Pharmacist schedule retrieved', {
+        pharmacistId,
+        appointmentsCount: appointments.length
+      });
+    } catch (error) {
+      logger.error('Error getting pharmacist schedule:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to get pharmacist schedule'
       });
     }
   }

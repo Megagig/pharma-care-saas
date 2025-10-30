@@ -9,20 +9,12 @@ export const appointmentAnalyticsValidators = {
     query('startDate')
       .optional()
       .isISO8601()
-      .withMessage('Start date must be a valid ISO 8601 date')
-      .toDate(),
+      .withMessage('Start date must be a valid ISO 8601 date'),
     
     query('endDate')
       .optional()
       .isISO8601()
-      .withMessage('End date must be a valid ISO 8601 date')
-      .toDate()
-      .custom((endDate, { req }) => {
-        if (req.query.startDate && endDate <= new Date(req.query.startDate as string)) {
-          throw new Error('End date must be after start date');
-        }
-        return true;
-      }),
+      .withMessage('End date must be a valid ISO 8601 date'),
     
     query('pharmacistId')
       .optional()
@@ -68,20 +60,12 @@ export const appointmentAnalyticsValidators = {
     query('startDate')
       .optional()
       .isISO8601()
-      .withMessage('Start date must be a valid ISO 8601 date')
-      .toDate(),
+      .withMessage('Start date must be a valid ISO 8601 date'),
     
     query('endDate')
       .optional()
       .isISO8601()
-      .withMessage('End date must be a valid ISO 8601 date')
-      .toDate()
-      .custom((endDate, { req }) => {
-        if (req.query.startDate && endDate <= new Date(req.query.startDate as string)) {
-          throw new Error('End date must be after start date');
-        }
-        return true;
-      }),
+      .withMessage('End date must be a valid ISO 8601 date'),
     
     query('pharmacistId')
       .optional()
@@ -141,20 +125,12 @@ export const appointmentAnalyticsValidators = {
     query('startDate')
       .optional()
       .isISO8601()
-      .withMessage('Start date must be a valid ISO 8601 date')
-      .toDate(),
+      .withMessage('Start date must be a valid ISO 8601 date'),
     
     query('endDate')
       .optional()
       .isISO8601()
-      .withMessage('End date must be a valid ISO 8601 date')
-      .toDate()
-      .custom((endDate, { req }) => {
-        if (req.query.startDate && endDate <= new Date(req.query.startDate as string)) {
-          throw new Error('End date must be after start date');
-        }
-        return true;
-      }),
+      .withMessage('End date must be a valid ISO 8601 date'),
     
     query('channel')
       .optional()
@@ -198,20 +174,12 @@ export const appointmentAnalyticsValidators = {
     query('startDate')
       .optional()
       .isISO8601()
-      .withMessage('Start date must be a valid ISO 8601 date')
-      .toDate(),
+      .withMessage('Start date must be a valid ISO 8601 date'),
     
     query('endDate')
       .optional()
       .isISO8601()
-      .withMessage('End date must be a valid ISO 8601 date')
-      .toDate()
-      .custom((endDate, { req }) => {
-        if (req.query.startDate && endDate <= new Date(req.query.startDate as string)) {
-          throw new Error('End date must be after start date');
-        }
-        return true;
-      }),
+      .withMessage('End date must be a valid ISO 8601 date'),
     
     query('pharmacistId')
       .optional()

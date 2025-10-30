@@ -6,7 +6,7 @@ import {
   getCapacityAnalytics,
   exportAppointmentAnalytics
 } from '../controllers/appointmentAnalyticsController';
-import { auth } from '../middlewares/auth';
+import { authWithWorkspace } from '../middlewares/authWithWorkspace';
 import rbac from '../middlewares/rbac';
 import { appointmentAnalyticsValidators } from '../validators/appointmentAnalyticsValidators';
 import { validateRequest } from '../middlewares/validation';
@@ -14,8 +14,8 @@ import rateLimiting from '../middlewares/rateLimiting';
 
 const router = express.Router();
 
-// Apply authentication to all routes
-router.use(auth);
+// Apply authentication with workspace context to all routes
+router.use(authWithWorkspace);
 
 // Apply rate limiting
 router.use(rateLimiting.createRateLimiter({
@@ -31,6 +31,7 @@ router.use(rateLimiting.createRateLimiter({
  */
 router.get(
   '/appointments/analytics',
+  appointmentAnalyticsValidators.getAppointmentAnalytics,
   rbac.requirePermission('view_appointment_analytics'),
   validateRequest,
   getAppointmentAnalytics
@@ -43,6 +44,7 @@ router.get(
  */
 router.get(
   '/follow-ups/analytics',
+  appointmentAnalyticsValidators.getFollowUpAnalytics,
   rbac.requirePermission('view_followup_analytics'),
   validateRequest,
   getFollowUpAnalytics
@@ -55,6 +57,7 @@ router.get(
  */
 router.get(
   '/reminders/analytics',
+  appointmentAnalyticsValidators.getReminderAnalytics,
   rbac.requirePermission('view_reminder_analytics'),
   validateRequest,
   getReminderAnalytics
@@ -67,6 +70,7 @@ router.get(
  */
 router.get(
   '/schedules/capacity',
+  appointmentAnalyticsValidators.getCapacityAnalytics,
   rbac.requirePermission('view_capacity_analytics'),
   validateRequest,
   getCapacityAnalytics
@@ -79,6 +83,7 @@ router.get(
  */
 router.post(
   '/appointments/analytics/export',
+  appointmentAnalyticsValidators.exportAnalytics,
   rbac.requirePermission('export_analytics'),
   validateRequest,
   rateLimiting.createRateLimiter({

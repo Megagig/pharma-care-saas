@@ -21,7 +21,8 @@ export type WorkplaceRole =
   | 'Pharmacist'
   | 'Cashier'
   | 'Technician'
-  | 'Assistant';
+  | 'Assistant'
+  | 'pharmacy_outlet';
 
 // Define subscription tiers
 export type SubscriptionTier =

@@ -106,6 +106,63 @@ class WorkspaceTeamController {
   }
 
   /**
+   * Get workspace settings
+   * @route GET /api/workspace/settings
+   */
+  async getWorkspaceSettings(req: AuthRequest, res: Response): Promise<void> {
+    try {
+      const workplaceId = req.user?.workplaceId || (req as any).workplaceId;
+
+      if (!workplaceId) {
+        res.status(400).json({
+          success: false,
+          message: 'No workspace associated with user',
+        });
+        return;
+      }
+
+      // Get workspace details
+      const workspace = await Workplace.findById(workplaceId)
+        .select('name address phone email settings type licenseNumber state lga')
+        .lean();
+
+      if (!workspace) {
+        res.status(404).json({
+          success: false,
+          message: 'Workspace not found',
+        });
+        return;
+      }
+
+      res.status(200).json({
+        success: true,
+        data: {
+          id: workspace._id,
+          name: workspace.name,
+          type: workspace.type,
+          address: workspace.address,
+          phone: workspace.phone,
+          email: workspace.email,
+          state: workspace.state,
+          lga: workspace.lga,
+          licenseNumber: workspace.licenseNumber,
+          settings: workspace.settings || {
+            maxPendingInvites: 20,
+            allowSharedPatients: false,
+          },
+        },
+      });
+    } catch (error: any) {
+      console.error('Error fetching workspace settings:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch workspace settings',
+        error: error.message,
+      });
+    }
+  }
+
+  /**
    * Get workspace statistics
    * @route GET /api/workspace/team/stats
    */
