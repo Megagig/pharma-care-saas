@@ -127,39 +127,50 @@ const CapacityUtilizationChart: React.FC<CapacityUtilizationChartProps> = ({
 
   // Memoized chart data
   const chartData = useMemo(() => {
-    if (!capacityData?.data) return null;
+    if (!capacityData?.data) {
+      // Return fallback data when API is not available
+      return {
+        overall: { totalSlots: 0, bookedSlots: 0, utilizationRate: 0, availableSlots: 0 },
+        pharmacists: [],
+        daily: [],
+        hourly: [],
+        utilizationDistribution: [],
+        overbookingIncidents: [],
+        recommendations: ['No capacity data available for the selected period.']
+      };
+    }
 
-    const { overall, byPharmacist, byDay, byHour, recommendations } = capacityData.data;
+    const { overall, byPharmacist = [], byDay = [], byHour = [], recommendations = [] } = capacityData.data;
 
     // Prepare pharmacist utilization data
-    const pharmacistData = byPharmacist.map(pharmacist => ({
-      name: pharmacist.pharmacistName,
-      totalSlots: pharmacist.totalSlots,
-      bookedSlots: pharmacist.bookedSlots,
-      availableSlots: pharmacist.totalSlots - pharmacist.bookedSlots,
-      utilizationRate: pharmacist.utilizationRate,
-      workingHours: pharmacist.workingHours,
-      efficiency: pharmacist.bookedSlots / pharmacist.workingHours,
+    const pharmacistData = (byPharmacist || []).map(pharmacist => ({
+      name: pharmacist.pharmacistName || 'Unknown',
+      totalSlots: pharmacist.totalSlots || 0,
+      bookedSlots: pharmacist.bookedSlots || 0,
+      availableSlots: (pharmacist.totalSlots || 0) - (pharmacist.bookedSlots || 0),
+      utilizationRate: pharmacist.utilizationRate || 0,
+      workingHours: pharmacist.workingHours || 0,
+      efficiency: (pharmacist.workingHours || 0) > 0 ? (pharmacist.bookedSlots || 0) / pharmacist.workingHours : 0,
     }));
 
     // Prepare daily capacity data
-    const dailyData = byDay.map(day => ({
-      day: day.day.substring(0, 3), // Mon, Tue, etc.
-      totalSlots: day.totalSlots,
-      bookedSlots: day.bookedSlots,
-      availableSlots: day.totalSlots - day.bookedSlots,
-      utilizationRate: day.utilizationRate,
-      overbooking: day.bookedSlots > day.totalSlots ? day.bookedSlots - day.totalSlots : 0,
+    const dailyData = (byDay || []).map(day => ({
+      day: (day.day || '').substring(0, 3), // Mon, Tue, etc.
+      totalSlots: day.totalSlots || 0,
+      bookedSlots: day.bookedSlots || 0,
+      availableSlots: (day.totalSlots || 0) - (day.bookedSlots || 0),
+      utilizationRate: day.utilizationRate || 0,
+      overbooking: (day.bookedSlots || 0) > (day.totalSlots || 0) ? (day.bookedSlots || 0) - (day.totalSlots || 0) : 0,
     }));
 
     // Prepare hourly capacity data
-    const hourlyData = byHour.map(hour => ({
-      hour: `${hour.hour.toString().padStart(2, '0')}:00`,
-      totalSlots: hour.totalSlots,
-      bookedSlots: hour.bookedSlots,
-      availableSlots: hour.totalSlots - hour.bookedSlots,
-      utilizationRate: hour.utilizationRate,
-      overbooking: hour.bookedSlots > hour.totalSlots ? hour.bookedSlots - hour.totalSlots : 0,
+    const hourlyData = (byHour || []).map(hour => ({
+      hour: `${(hour.hour || 0).toString().padStart(2, '0')}:00`,
+      totalSlots: hour.totalSlots || 0,
+      bookedSlots: hour.bookedSlots || 0,
+      availableSlots: (hour.totalSlots || 0) - (hour.bookedSlots || 0),
+      utilizationRate: hour.utilizationRate || 0,
+      overbooking: (hour.bookedSlots || 0) > (hour.totalSlots || 0) ? (hour.bookedSlots || 0) - (hour.totalSlots || 0) : 0,
     }));
 
     // Calculate utilization distribution for pie chart
@@ -172,8 +183,8 @@ const CapacityUtilizationChart: React.FC<CapacityUtilizationChartProps> = ({
       { range: '>100%', count: 0, color: CHART_COLORS.secondary },
     ];
 
-    byPharmacist.forEach(pharmacist => {
-      const rate = pharmacist.utilizationRate;
+    (byPharmacist || []).forEach(pharmacist => {
+      const rate = pharmacist.utilizationRate || 0;
       if (rate <= 25) utilizationRanges[0].count++;
       else if (rate <= 50) utilizationRanges[1].count++;
       else if (rate <= 75) utilizationRanges[2].count++;

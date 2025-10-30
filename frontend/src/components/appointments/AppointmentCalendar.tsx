@@ -140,13 +140,16 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
 
   const rescheduleAppointment = useRescheduleAppointment();
 
-  // Get appointments from store - using empty array for now
+  // Get appointments from calendar data
   const appointments = useMemo(() => {
-    // Temporarily return empty array to prevent infinite loops
-    return [];
-    // if (!calendarData?.data?.appointments) return [];
-    // return calendarData.data.appointments;
-  }, []);
+    console.log('📅 Calendar data received:', calendarData);
+    if (!calendarData?.data?.appointments) {
+      console.log('📅 No appointments in calendar data');
+      return [];
+    }
+    console.log('📅 Found appointments:', calendarData.data.appointments.length);
+    return calendarData.data.appointments;
+  }, [calendarData]);
 
   // Convert appointments to FullCalendar events
   const calendarEvents: EventInput[] = useMemo(() => {

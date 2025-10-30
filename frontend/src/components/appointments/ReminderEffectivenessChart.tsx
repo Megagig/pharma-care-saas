@@ -124,27 +124,37 @@ const ReminderEffectivenessChart: React.FC<ReminderEffectivenessChartProps> = ({
 
   // Memoized chart data
   const chartData = useMemo(() => {
-    if (!analyticsData?.data) return null;
+    if (!analyticsData?.data) {
+      // Return fallback data when API is not available
+      return {
+        summary: { totalReminders: 0, deliverySuccessRate: 0, patientResponseRate: 0, impactOnNoShowRate: 0 },
+        channels: [],
+        timing: [],
+        templates: [],
+        trends: [],
+        insights: ['No reminder data available for the selected period.']
+      };
+    }
 
-    const { summary, byChannel, byTiming, templatePerformance, trends } = analyticsData.data;
+    const { summary, byChannel = [], byTiming = [], templatePerformance = [], trends = {} } = analyticsData.data;
 
     // Prepare channel comparison data
-    const channelData = byChannel.map(channel => ({
-      name: channel.channel.charAt(0).toUpperCase() + channel.channel.slice(1),
-      channel: channel.channel,
-      sent: channel.sent,
-      delivered: channel.delivered,
-      failed: channel.failed,
-      deliveryRate: channel.deliveryRate,
-      responseRate: channel.responseRate,
-      successRate: channel.deliveryRate,
+    const channelData = (byChannel || []).map(channel => ({
+      name: (channel.channel || '').charAt(0).toUpperCase() + (channel.channel || '').slice(1),
+      channel: channel.channel || '',
+      sent: channel.sent || 0,
+      delivered: channel.delivered || 0,
+      failed: channel.failed || 0,
+      deliveryRate: channel.deliveryRate || 0,
+      responseRate: channel.responseRate || 0,
+      successRate: channel.deliveryRate || 0,
     }));
 
     // Prepare timing effectiveness data
-    const timingData = byTiming.map(timing => ({
-      name: timing.timingLabel,
-      sent: timing.sent,
-      effectiveness: timing.effectiveness,
+    const timingData = (byTiming || []).map(timing => ({
+      name: timing.timingLabel || '',
+      sent: timing.sent || 0,
+      effectiveness: timing.effectiveness || 0,
     }));
 
     // Prepare template performance data

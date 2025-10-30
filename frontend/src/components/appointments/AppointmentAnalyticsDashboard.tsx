@@ -118,43 +118,53 @@ const AppointmentAnalyticsDashboard: React.FC<AppointmentAnalyticsDashboardProps
 
   // Memoized chart data
   const chartData = useMemo(() => {
-    if (!analyticsData?.data) return null;
+    if (!analyticsData?.data) {
+      // Return fallback data when API is not available
+      return {
+        summary: { totalAppointments: 0, completionRate: 0, noShowRate: 0, cancellationRate: 0, averageWaitTime: 0, averageDuration: 0 },
+        trends: [],
+        types: [],
+        statuses: [],
+        hourly: [],
+        daily: []
+      };
+    }
 
-    const { summary, byType, byStatus, trends, peakTimes } = analyticsData.data;
+    const { summary, byType = [], byStatus = [], trends = { daily: [] }, peakTimes = { hourlyDistribution: [], dailyDistribution: [] } } = analyticsData.data;
 
     // Prepare trend data for line chart
-    const trendData = trends.daily.map(day => ({
+    const trendData = (trends.daily || []).map(day => ({
       date: format(new Date(day.date), 'MMM dd'),
-      appointments: day.appointments,
-      completed: day.completed,
-      cancelled: day.cancelled,
-      noShow: day.noShow,
-      completionRate: day.appointments > 0 ? Math.round((day.completed / day.appointments) * 100) : 0,
+      appointments: day.appointments || 0,
+      completed: day.completed || 0,
+      cancelled: day.cancelled || 0,
+      noShow: day.noShow || 0,
+      completionRate: (day.appointments || 0) > 0 ? Math.round(((day.completed || 0) / day.appointments) * 100) : 0,
     }));
 
     // Prepare type distribution for pie chart
-    const typeData = byType.map(type => ({
-      name: type.type.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-      value: type.count,
-      completionRate: type.completionRate,
+    const typeData = (byType || []).map(type => ({
+      name: (type.type || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+      value: type.count || 0,
+      completionRate: type.completionRate || 0,
     }));
 
     // Prepare status distribution for bar chart
-    const statusData = byStatus.map(status => ({
-      name: status.status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
-      count: status.count,
-      percentage: status.percentage,
+    const statusData = (byStatus || []).map(status => ({
+      name: (status.status || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase()),
+      count: status.count || 0,
+      percentage: status.percentage || 0,
     }));
 
     // Prepare peak times data
-    const hourlyData = peakTimes.hourlyDistribution.map(hour => ({
-      hour: `${hour.hour.toString().padStart(2, '0')}:00`,
-      count: hour.count,
+    const hourlyData = (peakTimes.hourlyDistribution || []).map(hour => ({
+      hour: `${(hour.hour || 0).toString().padStart(2, '0')}:00`,
+      count: hour.count || 0,
     }));
 
-    const dailyData = peakTimes.dailyDistribution.map(day => ({
-      day: day.day.substring(0, 3),
-      count: day.count,
+    const dailyData = (peakTimes.dailyDistribution || []).map(day => ({
+      day: (day.day || '').substring(0, 3),
+      count: day.count || 0,
     }));
 
     return {

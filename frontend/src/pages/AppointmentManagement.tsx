@@ -18,6 +18,7 @@ import {
   Button,
   Tabs,
   Tab,
+  CircularProgress,
 } from '@mui/material';
 import CalendarMonthIcon from '@mui/icons-material/CalendarMonth';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
@@ -70,22 +71,28 @@ const AppointmentManagement: React.FC = () => {
   // Calculate stats - data.results is the appointments array
   const appointments = appointmentsData?.data?.results || [];
   
+  const today = new Date();
+  const todayStr = format(today, 'yyyy-MM-dd');
+  
   const todayAppointments = appointments.filter(
-    (apt: any) => format(new Date(apt.scheduledDate), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd')
+    (apt: any) => {
+      const aptDateStr = format(new Date(apt.scheduledDate), 'yyyy-MM-dd');
+      return aptDateStr === todayStr;
+    }
   ).length || 0;
 
   const completedToday = appointments.filter(
-    (apt: any) => 
-      format(new Date(apt.scheduledDate), 'yyyy-MM-dd') === format(new Date(), 'yyyy-MM-dd') &&
-      apt.status === 'completed'
+    (apt: any) => {
+      const aptDateStr = format(new Date(apt.scheduledDate), 'yyyy-MM-dd');
+      return aptDateStr === todayStr && apt.status === 'completed';
+    }
   ).length || 0;
 
   const upcomingThisWeek = appointments.filter(
     (apt: any) => {
       const aptDate = new Date(apt.scheduledDate);
-      const today = new Date();
       const weekEnd = endOfWeek(today);
-      return aptDate > today && aptDate <= weekEnd && apt.status === 'scheduled';
+      return aptDate >= today && aptDate <= weekEnd && ['scheduled', 'confirmed'].includes(apt.status);
     }
   ).length || 0;
 
@@ -512,7 +519,9 @@ const AppointmentManagement: React.FC = () => {
                 </Stack>
               </Box>
               <CardContent sx={{ p: 3 }}>
-                <AppointmentAnalyticsDashboard />
+                <React.Suspense fallback={<CircularProgress />}>
+                  <AppointmentAnalyticsDashboard />
+                </React.Suspense>
               </CardContent>
             </MotionCard>
           </Fade>
@@ -615,7 +624,9 @@ const AppointmentManagement: React.FC = () => {
               </Box>
               <CardContent sx={{ p: 2.5, flex: 1, overflow: 'hidden' }}>
                 <Box sx={{ height: '100%' }}>
-                  <CapacityUtilizationChart />
+                  <React.Suspense fallback={<CircularProgress />}>
+                    <CapacityUtilizationChart />
+                  </React.Suspense>
                 </Box>
               </CardContent>
             </MotionCard>
@@ -668,7 +679,9 @@ const AppointmentManagement: React.FC = () => {
               </Box>
               <CardContent sx={{ p: 2.5, flex: 1, overflow: 'hidden' }}>
                 <Box sx={{ height: '100%' }}>
-                  <ReminderEffectivenessChart />
+                  <React.Suspense fallback={<CircularProgress />}>
+                    <ReminderEffectivenessChart />
+                  </React.Suspense>
                 </Box>
               </CardContent>
             </MotionCard>
