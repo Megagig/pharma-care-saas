@@ -61,7 +61,7 @@ const AppointmentManagement: React.FC = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [createAppointmentOpen, setCreateAppointmentOpen] = useState(false);
   const [smartSchedulingOpen, setSmartSchedulingOpen] = useState(false);
-  
+
   // Set initial tab based on URL
   const [currentTab, setCurrentTab] = useState(
     location.pathname.includes('/waitlist') ? 1 : 0
@@ -75,10 +75,10 @@ const AppointmentManagement: React.FC = () => {
 
   // Calculate stats - data.results is the appointments array
   const appointments = appointmentsData?.data?.results || [];
-  
+
   const today = new Date();
   const todayStr = format(today, 'yyyy-MM-dd');
-  
+
   const todayAppointments = appointments.filter(
     (apt: any) => {
       const aptDateStr = format(new Date(apt.scheduledDate), 'yyyy-MM-dd');
@@ -294,417 +294,422 @@ const AppointmentManagement: React.FC = () => {
         <>
           {/* Quick Stats Cards */}
           <Grid container spacing={3} sx={{ mb: 4 }}>
-        <Grid item xs={12} sm={6} md={4} component="div">
-          <MotionCard
-            initial="hidden"
-            animate="visible"
-            variants={itemVariants}
-            whileHover={{ scale: 1.05, boxShadow: theme.shadows[8] }}
-            sx={{
-              height: '100%',
-              borderRadius: 3,
-              background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.9)} 0%, ${alpha(theme.palette.primary.dark, 0.9)} 100%)`,
-              color: 'white',
-              position: 'relative',
-              overflow: 'hidden',
-            }}
-          >
-            <Box
-              sx={{
-                position: 'absolute',
-                top: -30,
-                right: -30,
-                width: 120,
-                height: 120,
-                borderRadius: '50%',
-                bgcolor: alpha('#fff', 0.1),
-              }}
-            />
-            <CardContent>
-              <Stack spacing={2}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                  <EventIcon sx={{ fontSize: 40, opacity: 0.9 }} />
-                  <Chip label="Today" size="small" sx={{ bgcolor: alpha('#fff', 0.2), color: 'white' }} />
-                </Stack>
-                <Box>
-                  <Typography variant="h3" sx={{ fontWeight: 800 }}>
-                    {todayAppointments}
-                  </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500 }}>
-                    Appointments Today
-                  </Typography>
-                </Box>
-              </Stack>
-            </CardContent>
-          </MotionCard>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={4} component="div">
-          <MotionCard
-            initial="hidden"
-            animate="visible"
-            variants={itemVariants}
-            whileHover={{ scale: 1.05, boxShadow: theme.shadows[8] }}
-            sx={{
-              height: '100%',
-              borderRadius: 3,
-              background: `linear-gradient(135deg, ${alpha(theme.palette.success.main, 0.9)} 0%, ${alpha(theme.palette.success.dark, 0.9)} 100%)`,
-              color: 'white',
-              position: 'relative',
-              overflow: 'hidden',
-            }}
-          >
-            <Box
-              sx={{
-                position: 'absolute',
-                top: -30,
-                right: -30,
-                width: 120,
-                height: 120,
-                borderRadius: '50%',
-                bgcolor: alpha('#fff', 0.1),
-              }}
-            />
-            <CardContent>
-              <Stack spacing={2}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                  <CheckCircleIcon sx={{ fontSize: 40, opacity: 0.9 }} />
-                  <Chip label="Completed" size="small" sx={{ bgcolor: alpha('#fff', 0.2), color: 'white' }} />
-                </Stack>
-                <Box>
-                  <Typography variant="h3" sx={{ fontWeight: 800 }}>
-                    {completedToday}
-                  </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500 }}>
-                    Completed Today
-                  </Typography>
-                </Box>
-              </Stack>
-            </CardContent>
-          </MotionCard>
-        </Grid>
-
-        <Grid item xs={12} sm={6} md={4} component="div">
-          <MotionCard
-            initial="hidden"
-            animate="visible"
-            variants={itemVariants}
-            whileHover={{ scale: 1.05, boxShadow: theme.shadows[8] }}
-            sx={{
-              height: '100%',
-              borderRadius: 3,
-              background: `linear-gradient(135deg, ${alpha(theme.palette.info.main, 0.9)} 0%, ${alpha(theme.palette.info.dark, 0.9)} 100%)`,
-              color: 'white',
-              position: 'relative',
-              overflow: 'hidden',
-            }}
-          >
-            <Box
-              sx={{
-                position: 'absolute',
-                top: -30,
-                right: -30,
-                width: 120,
-                height: 120,
-                borderRadius: '50%',
-                bgcolor: alpha('#fff', 0.1),
-              }}
-            />
-            <CardContent>
-              <Stack spacing={2}>
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                  <CalendarMonthIcon sx={{ fontSize: 40, opacity: 0.9 }} />
-                  <Chip label="This Week" size="small" sx={{ bgcolor: alpha('#fff', 0.2), color: 'white' }} />
-                </Stack>
-                <Box>
-                  <Typography variant="h3" sx={{ fontWeight: 800 }}>
-                    {upcomingThisWeek}
-                  </Typography>
-                  <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500 }}>
-                    Upcoming This Week
-                  </Typography>
-                </Box>
-              </Stack>
-            </CardContent>
-          </MotionCard>
-        </Grid>
-      </Grid>
-
-      {/* Main Content Grid */}
-      <Grid container spacing={3}>
-        {/* Appointment Calendar - Full Width */}
-        <Grid item xs={12} component="div">
-          <Fade in timeout={600}>
-            <MotionCard
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.2 }}
-              whileHover={{ boxShadow: theme.shadows[12] }}
-              sx={{
-                borderRadius: 4,
-                boxShadow: theme.shadows[8],
-                background: theme.palette.background.paper,
-                border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
-                overflow: 'hidden',
-              }}
-            >
-              <Box
+            <Grid item xs={12} sm={6} md={4} component="div">
+              <MotionCard
+                initial="hidden"
+                animate="visible"
+                variants={itemVariants}
+                whileHover={{ scale: 1.05, boxShadow: theme.shadows[8] }}
                 sx={{
-                  p: 3,
-                  background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.05)} 0%, ${alpha(theme.palette.info.main, 0.05)} 100%)`,
-                  borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                  height: '100%',
+                  borderRadius: 3,
+                  background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.9)} 0%, ${alpha(theme.palette.primary.dark, 0.9)} 100%)`,
+                  color: 'white',
+                  position: 'relative',
+                  overflow: 'hidden',
                 }}
               >
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                  <Stack direction="row" spacing={2} alignItems="center">
-                    <Avatar sx={{ bgcolor: theme.palette.primary.main, width: 48, height: 48 }}>
-                      <CalendarMonthIcon />
-                    </Avatar>
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: -30,
+                    right: -30,
+                    width: 120,
+                    height: 120,
+                    borderRadius: '50%',
+                    bgcolor: alpha('#fff', 0.1),
+                  }}
+                />
+                <CardContent>
+                  <Stack spacing={2}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                      <EventIcon sx={{ fontSize: 40, opacity: 0.9 }} />
+                      <Chip label="Today" size="small" sx={{ bgcolor: alpha('#fff', 0.2), color: 'white' }} />
+                    </Stack>
                     <Box>
-                      <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                        Appointment Calendar
+                      <Typography variant="h3" sx={{ fontWeight: 800 }}>
+                        {todayAppointments}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        View and manage all patient appointments
+                      <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500 }}>
+                        Appointments Today
                       </Typography>
                     </Box>
                   </Stack>
-                  <IconButton size="small">
-                    <MoreVertIcon />
-                  </IconButton>
-                </Stack>
-              </Box>
-              <CardContent sx={{ p: 3 }}>
-                <ResponsiveAppointmentCalendar />
-              </CardContent>
-            </MotionCard>
-          </Fade>
-        </Grid>
+                </CardContent>
+              </MotionCard>
+            </Grid>
 
-        {/* Analytics Dashboard */}
-        <Grid item xs={12} lg={8} component="div">
-          <Fade in timeout={800}>
-            <MotionCard
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.3 }}
-              whileHover={{ boxShadow: theme.shadows[12] }}
-              sx={{
-                borderRadius: 4,
-                boxShadow: theme.shadows[8],
-                background: theme.palette.background.paper,
-                border: `1px solid ${alpha(theme.palette.success.main, 0.1)}`,
-                minHeight: '500px',
-              }}
-            >
-              <Box
+            <Grid item xs={12} sm={6} md={4} component="div">
+              <MotionCard
+                initial="hidden"
+                animate="visible"
+                variants={itemVariants}
+                whileHover={{ scale: 1.05, boxShadow: theme.shadows[8] }}
                 sx={{
-                  p: 3,
-                  background: `linear-gradient(135deg, ${alpha(theme.palette.success.main, 0.05)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
-                  borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                  height: '100%',
+                  borderRadius: 3,
+                  background: `linear-gradient(135deg, ${alpha(theme.palette.success.main, 0.9)} 0%, ${alpha(theme.palette.success.dark, 0.9)} 100%)`,
+                  color: 'white',
+                  position: 'relative',
+                  overflow: 'hidden',
                 }}
               >
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                  <Stack direction="row" spacing={2} alignItems="center">
-                    <Avatar sx={{ bgcolor: theme.palette.success.main, width: 48, height: 48 }}>
-                      <AnalyticsIcon />
-                    </Avatar>
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: -30,
+                    right: -30,
+                    width: 120,
+                    height: 120,
+                    borderRadius: '50%',
+                    bgcolor: alpha('#fff', 0.1),
+                  }}
+                />
+                <CardContent>
+                  <Stack spacing={2}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                      <CheckCircleIcon sx={{ fontSize: 40, opacity: 0.9 }} />
+                      <Chip label="Completed" size="small" sx={{ bgcolor: alpha('#fff', 0.2), color: 'white' }} />
+                    </Stack>
                     <Box>
-                      <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                        Appointment Analytics
+                      <Typography variant="h3" sx={{ fontWeight: 800 }}>
+                        {completedToday}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Key performance metrics and insights
+                      <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500 }}>
+                        Completed Today
                       </Typography>
                     </Box>
                   </Stack>
-                  <IconButton size="small">
-                    <MoreVertIcon />
-                  </IconButton>
-                </Stack>
-              </Box>
-              <CardContent sx={{ p: 3 }}>
-                <ErrorBoundary>
-                  <React.Suspense fallback={<CircularProgress />}>
-                    <AppointmentAnalyticsDashboard />
-                  </React.Suspense>
-                </ErrorBoundary>
-              </CardContent>
-            </MotionCard>
-          </Fade>
-        </Grid>
+                </CardContent>
+              </MotionCard>
+            </Grid>
 
-        {/* Pharmacist Schedule */}
-        <Grid item xs={12} lg={4} component="div">
-          <Fade in timeout={1000}>
-            <MotionCard
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: 0.4 }}
-              whileHover={{ boxShadow: theme.shadows[12] }}
-              sx={{
-                borderRadius: 4,
-                boxShadow: theme.shadows[8],
-                background: theme.palette.background.paper,
-                border: `1px solid ${alpha(theme.palette.info.main, 0.1)}`,
-                height: '500px',
-                display: 'flex',
-                flexDirection: 'column',
-              }}
-            >
-              <Box
+            <Grid item xs={12} sm={6} md={4} component="div">
+              <MotionCard
+                initial="hidden"
+                animate="visible"
+                variants={itemVariants}
+                whileHover={{ scale: 1.05, boxShadow: theme.shadows[8] }}
                 sx={{
-                  p: 3,
-                  background: `linear-gradient(135deg, ${alpha(theme.palette.info.main, 0.05)} 0%, ${alpha(theme.palette.secondary.main, 0.05)} 100%)`,
-                  borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                  height: '100%',
+                  borderRadius: 3,
+                  background: `linear-gradient(135deg, ${alpha(theme.palette.info.main, 0.9)} 0%, ${alpha(theme.palette.info.dark, 0.9)} 100%)`,
+                  color: 'white',
+                  position: 'relative',
+                  overflow: 'hidden',
                 }}
               >
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                  <Stack direction="row" spacing={2} alignItems="center">
-                    <Avatar sx={{ bgcolor: theme.palette.info.main, width: 48, height: 48 }}>
-                      <ScheduleIcon />
-                    </Avatar>
+                <Box
+                  sx={{
+                    position: 'absolute',
+                    top: -30,
+                    right: -30,
+                    width: 120,
+                    height: 120,
+                    borderRadius: '50%',
+                    bgcolor: alpha('#fff', 0.1),
+                  }}
+                />
+                <CardContent>
+                  <Stack spacing={2}>
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                      <CalendarMonthIcon sx={{ fontSize: 40, opacity: 0.9 }} />
+                      <Chip label="This Week" size="small" sx={{ bgcolor: alpha('#fff', 0.2), color: 'white' }} />
+                    </Stack>
                     <Box>
-                      <Typography variant="h6" sx={{ fontWeight: 700 }}>
-                        Schedule Management
+                      <Typography variant="h3" sx={{ fontWeight: 800 }}>
+                        {upcomingThisWeek}
                       </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Pharmacist availability and schedules
+                      <Typography variant="body2" sx={{ opacity: 0.9, fontWeight: 500 }}>
+                        Upcoming This Week
                       </Typography>
                     </Box>
                   </Stack>
-                  <IconButton size="small">
-                    <MoreVertIcon />
-                  </IconButton>
-                </Stack>
-              </Box>
-              <CardContent sx={{ p: 3, flex: 1, overflow: 'auto' }}>
-                <ErrorBoundary>
-                  <PharmacistScheduleView 
-                    pharmacistId={selectedPharmacistId}
-                    canEdit={true}
-                    showCapacityMetrics={true}
-                  />
-                </ErrorBoundary>
-              </CardContent>
-            </MotionCard>
-          </Fade>
-        </Grid>
+                </CardContent>
+              </MotionCard>
+            </Grid>
+          </Grid>
 
-        {/* Capacity Utilization Chart */}
-        <Grid item xs={12} md={6} component="div">
-          <Fade in timeout={1200}>
-            <MotionCard
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.5 }}
-              whileHover={{ boxShadow: theme.shadows[12] }}
-              sx={{
-                borderRadius: 4,
-                boxShadow: theme.shadows[8],
-                background: theme.palette.background.paper,
-                border: `1px solid ${alpha(theme.palette.warning.main, 0.1)}`,
-                height: '400px',
-                display: 'flex',
-                flexDirection: 'column',
-              }}
-            >
-              <Box
-                sx={{
-                  p: 2.5,
-                  background: `linear-gradient(135deg, ${alpha(theme.palette.warning.main, 0.05)} 0%, ${alpha(theme.palette.error.main, 0.05)} 100%)`,
-                  borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-                }}
-              >
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                  <Stack direction="row" spacing={2} alignItems="center">
-                    <Avatar sx={{ bgcolor: theme.palette.warning.main, width: 44, height: 44 }}>
-                      <TrendingUpIcon />
-                    </Avatar>
-                    <Box>
-                      <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.1rem' }}>
-                        Capacity Utilization
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Track appointment slot usage
-                      </Typography>
-                    </Box>
-                  </Stack>
-                  <IconButton size="small">
-                    <MoreVertIcon />
-                  </IconButton>
-                </Stack>
-              </Box>
-              <CardContent sx={{ p: 2.5, flex: 1, overflow: 'hidden' }}>
-                <Box sx={{ height: '100%' }}>
-                  <ErrorBoundary>
-                    <React.Suspense fallback={<CircularProgress />}>
-                      <CapacityUtilizationChart />
-                    </React.Suspense>
-                  </ErrorBoundary>
-                </Box>
-              </CardContent>
-            </MotionCard>
-          </Fade>
-        </Grid>
+          {/* Main Content Grid - Calendar and Analytics Side by Side */}
+          <Grid container spacing={3}>
+            {/* Left Column - Appointment Calendar */}
+            <Grid item xs={12} lg={6} component="div">
+              <Fade in timeout={600}>
+                <MotionCard
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.2 }}
+                  whileHover={{ boxShadow: theme.shadows[12] }}
+                  sx={{
+                    borderRadius: 4,
+                    boxShadow: theme.shadows[8],
+                    background: theme.palette.background.paper,
+                    border: `1px solid ${alpha(theme.palette.primary.main, 0.1)}`,
+                    overflow: 'hidden',
+                    height: '100%',
+                    minHeight: '700px',
+                  }}
+                >
+                  <Box
+                    sx={{
+                      p: 2.5,
+                      background: `linear-gradient(135deg, ${alpha(theme.palette.primary.main, 0.08)} 0%, ${alpha(theme.palette.info.main, 0.08)} 100%)`,
+                      borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                    }}
+                  >
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                      <Stack direction="row" spacing={2} alignItems="center">
+                        <Avatar sx={{ bgcolor: theme.palette.primary.main, width: 44, height: 44 }}>
+                          <CalendarMonthIcon />
+                        </Avatar>
+                        <Box>
+                          <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.1rem' }}>
+                            Appointment Calendar
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            View and manage all patient appointments
+                          </Typography>
+                        </Box>
+                      </Stack>
+                      <IconButton size="small">
+                        <MoreVertIcon />
+                      </IconButton>
+                    </Stack>
+                  </Box>
+                  <CardContent sx={{ p: 2.5 }}>
+                    <ResponsiveAppointmentCalendar />
+                  </CardContent>
+                </MotionCard>
+              </Fade>
+            </Grid>
 
-        {/* Reminder Effectiveness Chart */}
-        <Grid item xs={12} md={6} component="div">
-          <Fade in timeout={1400}>
-            <MotionCard
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: 0.6 }}
-              whileHover={{ boxShadow: theme.shadows[12] }}
-              sx={{
-                borderRadius: 4,
-                boxShadow: theme.shadows[8],
-                background: theme.palette.background.paper,
-                border: `1px solid ${alpha(theme.palette.secondary.main, 0.1)}`,
-                height: '400px',
-                display: 'flex',
-                flexDirection: 'column',
-              }}
-            >
-              <Box
-                sx={{
-                  p: 2.5,
-                  background: `linear-gradient(135deg, ${alpha(theme.palette.secondary.main, 0.05)} 0%, ${alpha(theme.palette.primary.main, 0.05)} 100%)`,
-                  borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
-                }}
-              >
-                <Stack direction="row" justifyContent="space-between" alignItems="center">
-                  <Stack direction="row" spacing={2} alignItems="center">
-                    <Avatar sx={{ bgcolor: theme.palette.secondary.main, width: 44, height: 44 }}>
-                      <NotificationsIcon />
-                    </Avatar>
-                    <Box>
-                      <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.1rem' }}>
-                        Reminder Effectiveness
-                      </Typography>
-                      <Typography variant="caption" color="text.secondary">
-                        Track reminder success rates
-                      </Typography>
+            {/* Right Column - Analytics Dashboard */}
+            <Grid item xs={12} lg={6} component="div">
+              <Fade in timeout={800}>
+                <MotionCard
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.3 }}
+                  whileHover={{ boxShadow: theme.shadows[12] }}
+                  sx={{
+                    borderRadius: 4,
+                    boxShadow: theme.shadows[8],
+                    background: theme.palette.background.paper,
+                    border: `1px solid ${alpha(theme.palette.success.main, 0.1)}`,
+                    height: '100%',
+                    minHeight: '700px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
+                >
+                  <Box
+                    sx={{
+                      p: 2.5,
+                      background: `linear-gradient(135deg, ${alpha(theme.palette.success.main, 0.08)} 0%, ${alpha(theme.palette.primary.main, 0.08)} 100%)`,
+                      borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                    }}
+                  >
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                      <Stack direction="row" spacing={2} alignItems="center">
+                        <Avatar sx={{ bgcolor: theme.palette.success.main, width: 44, height: 44 }}>
+                          <AnalyticsIcon />
+                        </Avatar>
+                        <Box>
+                          <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.1rem' }}>
+                            Appointment Analytics
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Key performance metrics and insights
+                          </Typography>
+                        </Box>
+                      </Stack>
+                      <IconButton size="small">
+                        <MoreVertIcon />
+                      </IconButton>
+                    </Stack>
+                  </Box>
+                  <CardContent sx={{ p: 2.5, flex: 1, overflow: 'auto' }}>
+                    <ErrorBoundary>
+                      <React.Suspense fallback={<CircularProgress />}>
+                        <AppointmentAnalyticsDashboard compact={true} />
+                      </React.Suspense>
+                    </ErrorBoundary>
+                  </CardContent>
+                </MotionCard>
+              </Fade>
+            </Grid>
+
+            {/* Bottom Row - Schedule, Capacity, and Reminder Charts */}
+            <Grid item xs={12} lg={4} component="div">
+              <Fade in timeout={1000}>
+                <MotionCard
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.4 }}
+                  whileHover={{ boxShadow: theme.shadows[12] }}
+                  sx={{
+                    borderRadius: 4,
+                    boxShadow: theme.shadows[8],
+                    background: theme.palette.background.paper,
+                    border: `1px solid ${alpha(theme.palette.info.main, 0.1)}`,
+                    height: '450px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
+                >
+                  <Box
+                    sx={{
+                      p: 2.5,
+                      background: `linear-gradient(135deg, ${alpha(theme.palette.info.main, 0.08)} 0%, ${alpha(theme.palette.secondary.main, 0.08)} 100%)`,
+                      borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                    }}
+                  >
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                      <Stack direction="row" spacing={2} alignItems="center">
+                        <Avatar sx={{ bgcolor: theme.palette.info.main, width: 44, height: 44 }}>
+                          <ScheduleIcon />
+                        </Avatar>
+                        <Box>
+                          <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.1rem' }}>
+                            Schedule Management
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Pharmacist availability
+                          </Typography>
+                        </Box>
+                      </Stack>
+                      <IconButton size="small">
+                        <MoreVertIcon />
+                      </IconButton>
+                    </Stack>
+                  </Box>
+                  <CardContent sx={{ p: 2.5, flex: 1, overflow: 'auto' }}>
+                    <ErrorBoundary>
+                      <PharmacistScheduleView
+                        pharmacistId={selectedPharmacistId}
+                        canEdit={true}
+                        showCapacityMetrics={true}
+                      />
+                    </ErrorBoundary>
+                  </CardContent>
+                </MotionCard>
+              </Fade>
+            </Grid>
+
+            {/* Capacity Utilization Chart */}
+            <Grid item xs={12} md={6} lg={4} component="div">
+              <Fade in timeout={1200}>
+                <MotionCard
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                  whileHover={{ boxShadow: theme.shadows[12] }}
+                  sx={{
+                    borderRadius: 4,
+                    boxShadow: theme.shadows[8],
+                    background: theme.palette.background.paper,
+                    border: `1px solid ${alpha(theme.palette.warning.main, 0.1)}`,
+                    height: '450px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
+                >
+                  <Box
+                    sx={{
+                      p: 2.5,
+                      background: `linear-gradient(135deg, ${alpha(theme.palette.warning.main, 0.08)} 0%, ${alpha(theme.palette.error.main, 0.08)} 100%)`,
+                      borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                    }}
+                  >
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                      <Stack direction="row" spacing={2} alignItems="center">
+                        <Avatar sx={{ bgcolor: theme.palette.warning.main, width: 44, height: 44 }}>
+                          <TrendingUpIcon />
+                        </Avatar>
+                        <Box>
+                          <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.1rem' }}>
+                            Capacity Utilization
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Appointment slot usage
+                          </Typography>
+                        </Box>
+                      </Stack>
+                      <IconButton size="small">
+                        <MoreVertIcon />
+                      </IconButton>
+                    </Stack>
+                  </Box>
+                  <CardContent sx={{ p: 2.5, flex: 1, overflow: 'hidden' }}>
+                    <Box sx={{ height: '100%' }}>
+                      <ErrorBoundary>
+                        <React.Suspense fallback={<CircularProgress />}>
+                          <CapacityUtilizationChart />
+                        </React.Suspense>
+                      </ErrorBoundary>
                     </Box>
-                  </Stack>
-                  <IconButton size="small">
-                    <MoreVertIcon />
-                  </IconButton>
-                </Stack>
-              </Box>
-              <CardContent sx={{ p: 2.5, flex: 1, overflow: 'hidden' }}>
-                <Box sx={{ height: '100%' }}>
-                  <ErrorBoundary>
-                    <React.Suspense fallback={<CircularProgress />}>
-                      <ReminderEffectivenessChart />
-                    </React.Suspense>
-                  </ErrorBoundary>
-                </Box>
-              </CardContent>
-            </MotionCard>
-          </Fade>
-        </Grid>
-      </Grid>
+                  </CardContent>
+                </MotionCard>
+              </Fade>
+            </Grid>
+
+            {/* Reminder Effectiveness Chart */}
+            <Grid item xs={12} md={6} lg={4} component="div">
+              <Fade in timeout={1400}>
+                <MotionCard
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.6 }}
+                  whileHover={{ boxShadow: theme.shadows[12] }}
+                  sx={{
+                    borderRadius: 4,
+                    boxShadow: theme.shadows[8],
+                    background: theme.palette.background.paper,
+                    border: `1px solid ${alpha(theme.palette.secondary.main, 0.1)}`,
+                    height: '450px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                  }}
+                >
+                  <Box
+                    sx={{
+                      p: 2.5,
+                      background: `linear-gradient(135deg, ${alpha(theme.palette.secondary.main, 0.08)} 0%, ${alpha(theme.palette.primary.main, 0.08)} 100%)`,
+                      borderBottom: `1px solid ${alpha(theme.palette.divider, 0.1)}`,
+                    }}
+                  >
+                    <Stack direction="row" justifyContent="space-between" alignItems="center">
+                      <Stack direction="row" spacing={2} alignItems="center">
+                        <Avatar sx={{ bgcolor: theme.palette.secondary.main, width: 44, height: 44 }}>
+                          <NotificationsIcon />
+                        </Avatar>
+                        <Box>
+                          <Typography variant="h6" sx={{ fontWeight: 700, fontSize: '1.1rem' }}>
+                            Reminder Effectiveness
+                          </Typography>
+                          <Typography variant="caption" color="text.secondary">
+                            Reminder success rates
+                          </Typography>
+                        </Box>
+                      </Stack>
+                      <IconButton size="small">
+                        <MoreVertIcon />
+                      </IconButton>
+                    </Stack>
+                  </Box>
+                  <CardContent sx={{ p: 2.5, flex: 1, overflow: 'hidden' }}>
+                    <Box sx={{ height: '100%' }}>
+                      <ErrorBoundary>
+                        <React.Suspense fallback={<CircularProgress />}>
+                          <ReminderEffectivenessChart />
+                        </React.Suspense>
+                      </ErrorBoundary>
+                    </Box>
+                  </CardContent>
+                </MotionCard>
+              </Fade>
+            </Grid>
+          </Grid>
 
         </>
       )}

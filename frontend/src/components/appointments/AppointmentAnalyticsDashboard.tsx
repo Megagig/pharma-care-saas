@@ -251,260 +251,247 @@ const AppointmentAnalyticsDashboard: React.FC<AppointmentAnalyticsDashboardProps
   }
 
   return (
-    <Box className={className} sx={{ p: 3 }}>
-      {/* Header */}
-      <Box sx={{ mb: 3 }}>
+    <Box className={className} sx={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
+      {/* Compact Header */}
+      <Box sx={{ mb: 2 }}>
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-          <Typography variant="h4" component="h1" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-            <Analytics color="primary" />
-            Appointment Analytics
-          </Typography>
-          <Box sx={{ display: 'flex', gap: 1 }}>
+          <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
             <Tooltip title="Refresh Data">
-              <IconButton onClick={handleRefresh} disabled={isLoading}>
+              <IconButton onClick={handleRefresh} disabled={isLoading} size="small">
                 <Refresh />
               </IconButton>
             </Tooltip>
-            <Button
-              variant="outlined"
-              startIcon={<Download />}
-              onClick={() => handleExport('pdf')}
-              disabled={isExporting}
-            >
-              Export PDF
-            </Button>
-            <Button
-              variant="outlined"
-              startIcon={<Download />}
-              onClick={() => handleExport('excel')}
-              disabled={isExporting}
-            >
-              Export Excel
-            </Button>
+            <Tooltip title="Export PDF">
+              <IconButton onClick={() => handleExport('pdf')} disabled={isExporting} size="small">
+                <Download />
+              </IconButton>
+            </Tooltip>
           </Box>
         </Box>
 
-        {/* Filters */}
-        <Paper sx={{ p: 2, mb: 3 }}>
-          <Typography variant="h6" sx={{ mb: 2, display: 'flex', alignItems: 'center', gap: 1 }}>
-            <FilterList />
-            Filters
-          </Typography>
-          <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, alignItems: 'center' }}>
-            {/* Quick date presets */}
-            <Box sx={{ display: 'flex', gap: 1, flexWrap: 'wrap' }}>
-              {['today', 'week', 'month', 'quarter', 'thisMonth'].map((preset) => (
+        {/* Compact Filters */}
+        {!compact && (
+          <Paper sx={{ p: 1.5, mb: 2 }}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
+              {/* Quick date presets */}
+              {['today', 'week', 'month'].map((preset) => (
                 <Chip
                   key={preset}
-                  label={preset === 'thisMonth' ? 'This Month' : preset.charAt(0).toUpperCase() + preset.slice(1)}
+                  label={preset.charAt(0).toUpperCase() + preset.slice(1)}
                   onClick={() => handleQuickDateRange(preset)}
                   variant="outlined"
                   size="small"
                 />
               ))}
+
+              <Divider orientation="vertical" flexItem />
+
+              {/* Date range pickers */}
+              <TextField
+                label="Start"
+                type="date"
+                size="small"
+                sx={{ minWidth: 120 }}
+                value={format(dateRange.startDate, 'yyyy-MM-dd')}
+                onChange={(e) => setDateRange(prev => ({ ...prev, startDate: new Date(e.target.value) }))}
+                InputLabelProps={{ shrink: true }}
+              />
+              <TextField
+                label="End"
+                type="date"
+                size="small"
+                sx={{ minWidth: 120 }}
+                value={format(dateRange.endDate, 'yyyy-MM-dd')}
+                onChange={(e) => setDateRange(prev => ({ ...prev, endDate: new Date(e.target.value) }))}
+                InputLabelProps={{ shrink: true }}
+              />
+
+              {/* Pharmacist filter */}
+              <FormControl size="small" sx={{ minWidth: 140 }}>
+                <InputLabel>Pharmacist</InputLabel>
+                <Select
+                  value={selectedPharmacist}
+                  label="Pharmacist"
+                  onChange={(e) => setSelectedPharmacist(e.target.value)}
+                >
+                  <MenuItem value="">All</MenuItem>
+                  {usersData?.data?.users?.map((user) => (
+                    <MenuItem key={user._id} value={user._id}>
+                      {user.firstName} {user.lastName}
+                    </MenuItem>
+                  ))}
+                </Select>
+              </FormControl>
+
+              {/* Appointment type filter */}
+              <FormControl size="small" sx={{ minWidth: 140 }}>
+                <InputLabel>Type</InputLabel>
+                <Select
+                  value={selectedType}
+                  label="Type"
+                  onChange={(e) => setSelectedType(e.target.value)}
+                >
+                  <MenuItem value="">All Types</MenuItem>
+                  <MenuItem value="mtm_session">MTM</MenuItem>
+                  <MenuItem value="chronic_disease_review">Disease Review</MenuItem>
+                  <MenuItem value="new_medication_consultation">Medication</MenuItem>
+                  <MenuItem value="vaccination">Vaccination</MenuItem>
+                  <MenuItem value="health_check">Health Check</MenuItem>
+                  <MenuItem value="smoking_cessation">Smoking</MenuItem>
+                  <MenuItem value="general_followup">Follow-up</MenuItem>
+                </Select>
+              </FormControl>
             </Box>
-
-            <Divider orientation="vertical" flexItem />
-
-            {/* Date range pickers */}
-            <TextField
-              label="Start Date"
-              type="date"
-              size="small"
-              sx={{ minWidth: 140 }}
-              value={format(dateRange.startDate, 'yyyy-MM-dd')}
-              onChange={(e) => setDateRange(prev => ({ ...prev, startDate: new Date(e.target.value) }))}
-              InputLabelProps={{ shrink: true }}
-            />
-            <TextField
-              label="End Date"
-              type="date"
-              size="small"
-              sx={{ minWidth: 140 }}
-              value={format(dateRange.endDate, 'yyyy-MM-dd')}
-              onChange={(e) => setDateRange(prev => ({ ...prev, endDate: new Date(e.target.value) }))}
-              InputLabelProps={{ shrink: true }}
-            />
-
-            {/* Pharmacist filter */}
-            <FormControl size="small" sx={{ minWidth: 180 }}>
-              <InputLabel>Pharmacist</InputLabel>
-              <Select
-                value={selectedPharmacist}
-                label="Pharmacist"
-                onChange={(e) => setSelectedPharmacist(e.target.value)}
-              >
-                <MenuItem value="">All Pharmacists</MenuItem>
-                {usersData?.data?.users?.map((user) => (
-                  <MenuItem key={user._id} value={user._id}>
-                    {user.firstName} {user.lastName}
-                  </MenuItem>
-                ))}
-              </Select>
-            </FormControl>
-
-            {/* Appointment type filter */}
-            <FormControl size="small" sx={{ minWidth: 180 }}>
-              <InputLabel>Appointment Type</InputLabel>
-              <Select
-                value={selectedType}
-                label="Appointment Type"
-                onChange={(e) => setSelectedType(e.target.value)}
-              >
-                <MenuItem value="">All Types</MenuItem>
-                <MenuItem value="mtm_session">MTM Session</MenuItem>
-                <MenuItem value="chronic_disease_review">Chronic Disease Review</MenuItem>
-                <MenuItem value="new_medication_consultation">New Medication Consultation</MenuItem>
-                <MenuItem value="vaccination">Vaccination</MenuItem>
-                <MenuItem value="health_check">Health Check</MenuItem>
-                <MenuItem value="smoking_cessation">Smoking Cessation</MenuItem>
-                <MenuItem value="general_followup">General Follow-up</MenuItem>
-              </Select>
-            </FormControl>
-          </Box>
-        </Paper>
+          </Paper>
+        )}
       </Box>
 
-      {/* Summary Statistics Cards */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 2, mb: 3 }}>
-        <Card>
-          <CardContent>
+      {/* Compact Summary Statistics Cards */}
+      <Box sx={{ display: 'grid', gridTemplateColumns: compact ? 'repeat(2, 1fr)' : 'repeat(auto-fit, minmax(180px, 1fr))', gap: 1.5, mb: 2 }}>
+        <Card sx={{ boxShadow: 1 }}>
+          <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Box>
-                <Typography color="textSecondary" gutterBottom variant="body2">
+                <Typography color="textSecondary" gutterBottom variant="caption" sx={{ fontSize: '0.7rem' }}>
                   Total Appointments
                 </Typography>
-                <Typography variant="h4" component="div">
+                <Typography variant="h5" component="div" sx={{ fontWeight: 700 }}>
                   {chartData.summary.totalAppointments.toLocaleString()}
                 </Typography>
               </Box>
-              <Calendar sx={{ fontSize: 40, color: CHART_COLORS.primary, opacity: 0.7 }} />
+              <Calendar sx={{ fontSize: 32, color: CHART_COLORS.primary, opacity: 0.6 }} />
             </Box>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent>
+        <Card sx={{ boxShadow: 1 }}>
+          <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Box>
-                <Typography color="textSecondary" gutterBottom variant="body2">
+                <Typography color="textSecondary" gutterBottom variant="caption" sx={{ fontSize: '0.7rem' }}>
                   Completion Rate
                 </Typography>
-                <Typography variant="h4" component="div" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="h5" component="div" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontWeight: 700 }}>
                   {chartData.summary.completionRate}%
                   {chartData.summary.completionRate >= 80 ? (
-                    <TrendingUp sx={{ color: CHART_COLORS.success }} />
+                    <TrendingUp sx={{ color: CHART_COLORS.success, fontSize: 20 }} />
                   ) : (
-                    <TrendingDown sx={{ color: CHART_COLORS.error }} />
+                    <TrendingDown sx={{ color: CHART_COLORS.error, fontSize: 20 }} />
                   )}
                 </Typography>
               </Box>
-              <CheckCircle sx={{ fontSize: 40, color: CHART_COLORS.success, opacity: 0.7 }} />
+              <CheckCircle sx={{ fontSize: 32, color: CHART_COLORS.success, opacity: 0.6 }} />
             </Box>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent>
+        <Card sx={{ boxShadow: 1 }}>
+          <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Box>
-                <Typography color="textSecondary" gutterBottom variant="body2">
+                <Typography color="textSecondary" gutterBottom variant="caption" sx={{ fontSize: '0.7rem' }}>
                   No-Show Rate
                 </Typography>
-                <Typography variant="h4" component="div" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                <Typography variant="h5" component="div" sx={{ display: 'flex', alignItems: 'center', gap: 0.5, fontWeight: 700 }}>
                   {chartData.summary.noShowRate}%
                   {chartData.summary.noShowRate <= 10 ? (
-                    <TrendingDown sx={{ color: CHART_COLORS.success }} />
+                    <TrendingDown sx={{ color: CHART_COLORS.success, fontSize: 20 }} />
                   ) : (
-                    <TrendingUp sx={{ color: CHART_COLORS.error }} />
+                    <TrendingUp sx={{ color: CHART_COLORS.error, fontSize: 20 }} />
                   )}
                 </Typography>
               </Box>
-              <Warning sx={{ fontSize: 40, color: CHART_COLORS.warning, opacity: 0.7 }} />
+              <Warning sx={{ fontSize: 32, color: CHART_COLORS.warning, opacity: 0.6 }} />
             </Box>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent>
+        <Card sx={{ boxShadow: 1 }}>
+          <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Box>
-                <Typography color="textSecondary" gutterBottom variant="body2">
+                <Typography color="textSecondary" gutterBottom variant="caption" sx={{ fontSize: '0.7rem' }}>
                   Cancellation Rate
                 </Typography>
-                <Typography variant="h4" component="div">
+                <Typography variant="h5" component="div" sx={{ fontWeight: 700 }}>
                   {chartData.summary.cancellationRate}%
                 </Typography>
               </Box>
-              <Cancel sx={{ fontSize: 40, color: CHART_COLORS.error, opacity: 0.7 }} />
+              <Cancel sx={{ fontSize: 32, color: CHART_COLORS.error, opacity: 0.6 }} />
             </Box>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent>
+        <Card sx={{ boxShadow: 1 }}>
+          <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Box>
-                <Typography color="textSecondary" gutterBottom variant="body2">
-                  Average Duration
+                <Typography color="textSecondary" gutterBottom variant="caption" sx={{ fontSize: '0.7rem' }}>
+                  Avg Duration
                 </Typography>
-                <Typography variant="h4" component="div">
+                <Typography variant="h5" component="div" sx={{ fontWeight: 700 }}>
                   {chartData.summary.averageDuration}
-                  <Typography variant="body2" component="span" sx={{ ml: 1 }}>
+                  <Typography variant="caption" component="span" sx={{ ml: 0.5 }}>
                     min
                   </Typography>
                 </Typography>
               </Box>
-              <Clock sx={{ fontSize: 40, color: CHART_COLORS.info, opacity: 0.7 }} />
+              <Clock sx={{ fontSize: 32, color: CHART_COLORS.info, opacity: 0.6 }} />
             </Box>
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent>
+        <Card sx={{ boxShadow: 1 }}>
+          <CardContent sx={{ p: 1.5, '&:last-child': { pb: 1.5 } }}>
             <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <Box>
-                <Typography color="textSecondary" gutterBottom variant="body2">
-                  Average Wait Time
+                <Typography color="textSecondary" gutterBottom variant="caption" sx={{ fontSize: '0.7rem' }}>
+                  Avg Wait Time
                 </Typography>
-                <Typography variant="h4" component="div">
+                <Typography variant="h5" component="div" sx={{ fontWeight: 700 }}>
                   {chartData.summary.averageWaitTime}
-                  <Typography variant="body2" component="span" sx={{ ml: 1 }}>
+                  <Typography variant="caption" component="span" sx={{ ml: 0.5 }}>
                     min
                   </Typography>
                 </Typography>
               </Box>
-              <Schedule sx={{ fontSize: 40, color: CHART_COLORS.purple, opacity: 0.7 }} />
+              <Schedule sx={{ fontSize: 32, color: CHART_COLORS.purple, opacity: 0.6 }} />
             </Box>
           </CardContent>
         </Card>
       </Box>
 
-      {/* Charts Grid */}
-      <Box sx={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: 3 }}>
+      {/* Compact Charts Grid */}
+      <Box sx={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        gap: 2,
+        flex: 1,
+        overflow: 'auto'
+      }}>
         {/* Appointment Trends Chart */}
-        <Card>
-          <CardContent>
-            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-              <TrendingUp />
+        <Card sx={{ boxShadow: 2 }}>
+          <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+            <Typography variant="subtitle1" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1, fontWeight: 600, mb: 1 }}>
+              <TrendingUp fontSize="small" />
               Appointment Trends
             </Typography>
-            <Box sx={{ height: 300 }}>
+            <Box sx={{ height: compact ? 200 : 250 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={chartData.trends}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 11 }} />
                   <RechartsTooltip />
-                  <Legend />
+                  {!compact && <Legend wrapperStyle={{ fontSize: '12px' }} />}
                   <Area
                     type="monotone"
                     dataKey="appointments"
                     stackId="1"
                     stroke={CHART_COLORS.primary}
                     fill={CHART_COLORS.primary}
-                    fillOpacity={0.6}
-                    name="Total Appointments"
+                    fillOpacity={0.7}
+                    name="Total"
                   />
                   <Area
                     type="monotone"
@@ -512,26 +499,8 @@ const AppointmentAnalyticsDashboard: React.FC<AppointmentAnalyticsDashboardProps
                     stackId="2"
                     stroke={CHART_COLORS.success}
                     fill={CHART_COLORS.success}
-                    fillOpacity={0.6}
+                    fillOpacity={0.7}
                     name="Completed"
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="cancelled"
-                    stackId="3"
-                    stroke={CHART_COLORS.error}
-                    fill={CHART_COLORS.error}
-                    fillOpacity={0.6}
-                    name="Cancelled"
-                  />
-                  <Area
-                    type="monotone"
-                    dataKey="noShow"
-                    stackId="4"
-                    stroke={CHART_COLORS.warning}
-                    fill={CHART_COLORS.warning}
-                    fillOpacity={0.6}
-                    name="No Show"
                   />
                 </AreaChart>
               </ResponsiveContainer>
@@ -540,12 +509,12 @@ const AppointmentAnalyticsDashboard: React.FC<AppointmentAnalyticsDashboardProps
         </Card>
 
         {/* Appointment Type Distribution */}
-        <Card>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
+        <Card sx={{ boxShadow: 2 }}>
+          <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+            <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600, mb: 1 }}>
               Appointment Type Distribution
             </Typography>
-            <Box sx={{ height: 300 }}>
+            <Box sx={{ height: compact ? 180 : 220 }}>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
@@ -553,8 +522,8 @@ const AppointmentAnalyticsDashboard: React.FC<AppointmentAnalyticsDashboardProps
                     cx="50%"
                     cy="50%"
                     labelLine={false}
-                    label={({ name, value, percent }) => `${name}: ${value} (${(percent * 100).toFixed(0)}%)`}
-                    outerRadius={80}
+                    label={({ name, percent }) => compact ? `${(percent * 100).toFixed(0)}%` : `${name}: ${(percent * 100).toFixed(0)}%`}
+                    outerRadius={compact ? 60 : 70}
                     fill="#8884d8"
                     dataKey="value"
                   >
@@ -569,125 +538,27 @@ const AppointmentAnalyticsDashboard: React.FC<AppointmentAnalyticsDashboardProps
           </CardContent>
         </Card>
 
-        {/* Completion Rate Gauge */}
-        <Card>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              Completion Rate
-            </Typography>
-            <Box sx={{ height: 300, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Box sx={{ position: 'relative', display: 'inline-flex' }}>
-                <CircularProgress
-                  variant="determinate"
-                  value={chartData.summary.completionRate}
-                  size={200}
-                  thickness={8}
-                  sx={{
-                    color: chartData.summary.completionRate >= 80 ? CHART_COLORS.success : 
-                           chartData.summary.completionRate >= 60 ? CHART_COLORS.warning : CHART_COLORS.error,
-                  }}
-                />
-                <Box
-                  sx={{
-                    top: 0,
-                    left: 0,
-                    bottom: 0,
-                    right: 0,
-                    position: 'absolute',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    flexDirection: 'column',
-                  }}
-                >
-                  <Typography variant="h3" component="div" color="text.secondary">
-                    {chartData.summary.completionRate}%
-                  </Typography>
-                  <Typography variant="body2" color="text.secondary">
-                    Completion Rate
-                  </Typography>
-                </Box>
+        {/* Peak Times - Hourly Distribution */}
+        {!compact && (
+          <Card sx={{ boxShadow: 2 }}>
+            <CardContent sx={{ p: 2, '&:last-child': { pb: 2 } }}>
+              <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600, mb: 1 }}>
+                Peak Times - Hourly
+              </Typography>
+              <Box sx={{ height: 200 }}>
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={chartData.hourly}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                    <XAxis dataKey="hour" tick={{ fontSize: 10 }} />
+                    <YAxis tick={{ fontSize: 11 }} />
+                    <RechartsTooltip />
+                    <Bar dataKey="count" fill={CHART_COLORS.info} radius={[4, 4, 0, 0]} />
+                  </BarChart>
+                </ResponsiveContainer>
               </Box>
-            </Box>
-          </CardContent>
-        </Card>
-
-        {/* No-Show Rate Trend */}
-        <Card>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              No-Show Rate Trend
-            </Typography>
-            <Box sx={{ height: 300 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={chartData.trends}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="date" />
-                  <YAxis />
-                  <RechartsTooltip />
-                  <Legend />
-                  <Line
-                    type="monotone"
-                    dataKey="noShow"
-                    stroke={CHART_COLORS.error}
-                    strokeWidth={3}
-                    dot={{ fill: CHART_COLORS.error, strokeWidth: 2, r: 4 }}
-                    name="No Shows"
-                  />
-                  <Line
-                    type="monotone"
-                    dataKey="cancelled"
-                    stroke={CHART_COLORS.warning}
-                    strokeWidth={2}
-                    strokeDasharray="5 5"
-                    dot={{ fill: CHART_COLORS.warning, strokeWidth: 2, r: 3 }}
-                    name="Cancelled"
-                  />
-                </LineChart>
-              </ResponsiveContainer>
-            </Box>
-          </CardContent>
-        </Card>
-
-        {/* Peak Times Heatmap - Hourly Distribution */}
-        <Card>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              Peak Times - Hourly Distribution
-            </Typography>
-            <Box sx={{ height: 300 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData.hourly}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="hour" />
-                  <YAxis />
-                  <RechartsTooltip />
-                  <Bar dataKey="count" fill={CHART_COLORS.info} />
-                </BarChart>
-              </ResponsiveContainer>
-            </Box>
-          </CardContent>
-        </Card>
-
-        {/* Peak Times Heatmap - Daily Distribution */}
-        <Card>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
-              Peak Times - Daily Distribution
-            </Typography>
-            <Box sx={{ height: 300 }}>
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={chartData.daily}>
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis dataKey="day" />
-                  <YAxis />
-                  <RechartsTooltip />
-                  <Bar dataKey="count" fill={CHART_COLORS.teal} />
-                </BarChart>
-              </ResponsiveContainer>
-            </Box>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        )}
       </Box>
     </Box>
   );

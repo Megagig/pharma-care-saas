@@ -87,7 +87,7 @@ interface License {
   lastName: string;
   email: string;
   licenseNumber: string;
-  licenseDocument: {
+  licenseDocument?: {
     fileName: string;
     uploadedAt: string;
   };
@@ -782,18 +782,24 @@ const AdminDashboard: React.FC = () => {
                   <TableCell>{license.email}</TableCell>
                   <TableCell>{license.licenseNumber}</TableCell>
                   <TableCell>
-                    <Button
-                      startIcon={<DownloadIcon />}
-                      size="small"
-                      onClick={() => {
-                        window.open(
-                          `/api/license/document/${license._id}`,
-                          '_blank'
-                        );
-                      }}
-                    >
-                      {license.licenseDocument.fileName}
-                    </Button>
+                    {license.licenseDocument ? (
+                      <Button
+                        startIcon={<DownloadIcon />}
+                        size="small"
+                        onClick={() => {
+                          window.open(
+                            `/api/license/document/${license._id}`,
+                            '_blank'
+                          );
+                        }}
+                      >
+                        {license.licenseDocument.fileName}
+                      </Button>
+                    ) : (
+                      <Typography variant="caption" color="text.secondary">
+                        No document
+                      </Typography>
+                    )}
                   </TableCell>
                   <TableCell>
                     {new Date(license.createdAt).toLocaleDateString()}
