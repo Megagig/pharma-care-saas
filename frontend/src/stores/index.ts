@@ -9,6 +9,10 @@ export * from './mtrStore';
 export * from './clinicalInterventionStore';
 export * from './communicationStore';
 export * from './sidebarHooks';
+export * from './appointmentTypes';
+export * from './followUpTypes';
+export * from './appointmentStore';
+export * from './followUpStore';
 
 // UI Store hooks now come from dedicated files
 export {
@@ -100,6 +104,28 @@ export {
   useUnreadConversationsCount,
   useTypingUsersForConversation,
 } from './communicationStore';
+
+export {
+  // Appointment Store hooks
+  useAppointmentStore,
+  useAppointmentCalendar,
+  useAppointmentSelection,
+  useAppointmentFilters,
+  useAppointmentList,
+  useAppointmentSlots,
+  useAppointmentActions,
+  useAppointmentQueries,
+} from './appointmentStore';
+
+export {
+  // Follow-up Store hooks
+  useFollowUpStore,
+  useFollowUpSelection,
+  useFollowUpFilters,
+  useFollowUpList,
+  useFollowUpActions,
+  useFollowUpQueries,
+} from './followUpStore';
 
 // Store reset function for clearing all stores (useful for logout)
 export const resetAllStores = () => {

@@ -212,6 +212,229 @@ export const PERMISSION_MATRIX: PermissionMatrix = {
     },
 
     // ========================================
+    // APPOINTMENT MANAGEMENT
+    // ========================================
+    'appointment.create': {
+        workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet'],
+        features: ['appointmentScheduling'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'appointment.read': {
+        workplaceRoles: ['Owner', 'Pharmacist', 'Technician', 'Assistant', 'pharmacy_outlet'],
+        features: ['appointmentScheduling'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'appointment.update': {
+        workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet'],
+        features: ['appointmentScheduling'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'appointment.delete': {
+        workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet'],
+        features: ['appointmentScheduling'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: false,
+    },
+    'appointment.reschedule': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['appointmentScheduling'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'appointment.cancel': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['appointmentScheduling'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'appointment.confirm': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['appointmentScheduling'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'appointment.complete': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['appointmentScheduling'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'appointment.manage': {
+        workplaceRoles: ['Owner', 'pharmacy_outlet'],
+        features: ['appointmentScheduling'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'appointment.calendar_view': {
+        workplaceRoles: ['Owner', 'Pharmacist', 'Technician', 'Assistant'],
+        features: ['appointmentScheduling'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'appointment.available_slots': {
+        workplaceRoles: ['Owner', 'Pharmacist', 'Technician', 'Assistant'],
+        features: ['appointmentScheduling'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'appointment.analytics': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['appointmentScheduling', 'advancedReports'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: false,
+    },
+
+    // ========================================
+    // FOLLOW-UP TASK MANAGEMENT
+    // ========================================
+    'followup.create': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['followUpManagement'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'followup.read': {
+        workplaceRoles: ['Owner', 'Pharmacist', 'Technician'],
+        features: ['followUpManagement'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'followup.update': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['followUpManagement'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'followup.delete': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['followUpManagement'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: false,
+    },
+    'followup.complete': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['followUpManagement'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'followup.escalate': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['followUpManagement'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'followup.convert_to_appointment': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['followUpManagement', 'appointmentScheduling'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'followup.assign': {
+        workplaceRoles: ['Owner'],
+        features: ['followUpManagement', 'teamManagement'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'followup.manage': {
+        workplaceRoles: ['Owner'],
+        features: ['followUpManagement'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'followup.analytics': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['followUpManagement', 'advancedReports'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: false,
+    },
+
+    // ========================================
+    // SCHEDULE MANAGEMENT
+    // ========================================
+    'schedule.create': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['scheduleManagement'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'schedule.read': {
+        workplaceRoles: ['Owner', 'Pharmacist', 'Technician'],
+        features: ['scheduleManagement'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'schedule.update': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['scheduleManagement'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'schedule.delete': {
+        workplaceRoles: ['Owner'],
+        features: ['scheduleManagement'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: false,
+    },
+    'schedule.time_off_request': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['scheduleManagement'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'schedule.time_off_approve': {
+        workplaceRoles: ['Owner'],
+        features: ['scheduleManagement'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'schedule.capacity_view': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['scheduleManagement'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+
+    // ========================================
+    // REMINDER MANAGEMENT
+    // ========================================
+    'reminder.create': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['appointmentScheduling'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'reminder.read': {
+        workplaceRoles: ['Owner', 'Pharmacist', 'Technician'],
+        features: ['appointmentScheduling'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'reminder.send': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['appointmentScheduling'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'reminder.template_manage': {
+        workplaceRoles: ['Owner'],
+        features: ['appointmentScheduling'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'reminder.analytics': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['appointmentScheduling', 'advancedReports'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: false,
+    },
+
+    // ========================================
     // SUBSCRIPTION MANAGEMENT
     // ========================================
     'subscription.manage': {
@@ -477,6 +700,41 @@ export const PERMISSION_MATRIX: PermissionMatrix = {
     },
 
     // ========================================
+    // ANALYTICS AND REPORTING
+    // ========================================
+    'view_analytics': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'view_appointment_analytics': {
+        workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'view_followup_analytics': {
+        workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'view_reminder_analytics': {
+        workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'view_capacity_analytics': {
+        workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'export_analytics': {
+        workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet'],
+        features: ['dataExport'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: false,
+    },
+
+    // ========================================
     // AUDIT AND COMPLIANCE
     // ========================================
     'audit.view': {
@@ -573,6 +831,7 @@ export const ROLE_HIERARCHY: Record<UserRole, UserRole[]> = {
  */
 export const WORKPLACE_ROLE_HIERARCHY: Record<WorkplaceRole, WorkplaceRole[]> = {
     Owner: ['Owner', 'Pharmacist', 'Staff', 'Technician', 'Cashier', 'Assistant'],
+    pharmacy_outlet: ['pharmacy_outlet', 'Owner', 'Pharmacist', 'Staff', 'Technician', 'Cashier', 'Assistant'],
     Pharmacist: ['Pharmacist', 'Technician', 'Assistant'],
     Staff: ['Staff', 'Technician', 'Assistant'],
     Technician: ['Technician', 'Assistant'],

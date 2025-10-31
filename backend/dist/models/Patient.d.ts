@@ -29,6 +29,7 @@ export interface IPatient extends Document {
     bloodGroup?: 'A+' | 'A-' | 'B+' | 'B-' | 'AB+' | 'AB-' | 'O+' | 'O-';
     genotype?: 'AA' | 'AS' | 'SS' | 'AC' | 'SC' | 'CC';
     weightKg?: number;
+    name?: string;
     latestVitals?: IPatientVitals;
     notificationPreferences?: {
         email: boolean;
@@ -36,6 +37,22 @@ export interface IPatient extends Document {
         push: boolean;
         resultNotifications: boolean;
         orderReminders: boolean;
+    };
+    appointmentPreferences?: {
+        preferredDays: number[];
+        preferredTimeSlots: Array<{
+            start: string;
+            end: string;
+        }>;
+        preferredPharmacist?: mongoose.Types.ObjectId;
+        reminderPreferences: {
+            email: boolean;
+            sms: boolean;
+            push: boolean;
+            whatsapp: boolean;
+        };
+        language: string;
+        timezone: string;
     };
     metadata?: {
         sharedAccess?: {
@@ -63,6 +80,21 @@ export interface IPatient extends Document {
                 completedBy: mongoose.Types.ObjectId;
             }>;
         };
+    };
+    engagementMetrics?: {
+        totalAppointments: number;
+        completedAppointments: number;
+        cancelledAppointments: number;
+        noShowAppointments: number;
+        completionRate: number;
+        totalFollowUps: number;
+        completedFollowUps: number;
+        overdueFollowUps: number;
+        followUpCompletionRate: number;
+        averageResponseTime: number;
+        lastEngagementDate?: Date;
+        engagementScore: number;
+        lastUpdated?: Date;
     };
     hasActiveDTP?: boolean;
     hasActiveInterventions?: boolean;

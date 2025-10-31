@@ -49,7 +49,37 @@ class FeatureFlagService {
         return cached as any;
       }
 
-      // Get global feature flag configuration
+      // Check if this is a patient engagement feature flag
+      const isPatientEngagementFlag = [
+        'patient_engagement_module',
+        'appointment_scheduling',
+        'followup_task_management',
+        'smart_reminder_system',
+        'patient_portal',
+        'recurring_appointments',
+        'clinical_alerts',
+        'engagement_analytics',
+        'schedule_management',
+        'engagement_module_integration'
+      ].includes(featureName);
+
+      if (isPatientEngagementFlag) {
+        // For patient engagement flags, check database first
+        const dbFlag = await this.getDatabaseFeatureFlag(featureName);
+        if (dbFlag !== null) {
+          const result = {
+            enabled: dbFlag,
+            reason: dbFlag ? 'Database flag enabled' : 'Database flag disabled',
+            rolloutPercentage: 100,
+            lastEvaluated: new Date(),
+          };
+          this.cache.set(cacheKey, result);
+          this.updateMetrics(featureName, dbFlag);
+          return result;
+        }
+      }
+
+      // Get global feature flag configuration for performance flags
       const globalFlags = getPerformanceFeatureFlags();
       const isGloballyEnabled = this.getGlobalFeatureFlag(globalFlags, featureName);
 
@@ -176,6 +206,7 @@ class FeatureFlagService {
    * Get global feature flag status
    */
   private getGlobalFeatureFlag(flags: PerformanceFeatureFlags, featureName: string): boolean {
+    // Performance feature flags
     switch (featureName) {
       case 'themeOptimization':
         return flags.themeOptimization;
@@ -197,6 +228,20 @@ class FeatureFlagService {
         return flags.virtualization;
       case 'reactQueryOptimization':
         return flags.reactQueryOptimization;
+      
+      // Patient engagement feature flags - check database instead of config
+      case 'patient_engagement_module':
+      case 'appointment_scheduling':
+      case 'followup_task_management':
+      case 'smart_reminder_system':
+      case 'patient_portal':
+      case 'recurring_appointments':
+      case 'clinical_alerts':
+      case 'engagement_analytics':
+      case 'schedule_management':
+      case 'engagement_module_integration':
+        return true; // Let database override handle the actual check
+      
       default:
         return false;
     }
@@ -240,6 +285,26 @@ class FeatureFlagService {
       return override ? override.isActive : null;
     } catch (error) {
       logger.error('Error getting workspace feature override:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Get database feature flag status (for patient engagement flags)
+   */
+  private async getDatabaseFeatureFlag(featureName: string): Promise<boolean | null> {
+    try {
+      const flag = await FeatureFlag.findOne({
+        key: featureName,
+        $or: [
+          { expiresAt: { $exists: false } },
+          { expiresAt: { $gt: new Date() } }
+        ]
+      });
+
+      return flag ? flag.isActive : null;
+    } catch (error) {
+      logger.error('Error getting database feature flag:', error);
       return null;
     }
   }
@@ -348,7 +413,7 @@ class FeatureFlagService {
 
       // Clear cache for this user
       const cachePattern = `${featureName}:${userId}:`;
-      for (const key of this.cache.keys()) {
+      for (const key of Array.from(this.cache.keys())) {
         if (key.startsWith(cachePattern)) {
           this.cache.delete(key);
         }
@@ -387,7 +452,7 @@ class FeatureFlagService {
 
       // Clear cache for this workspace
       const cachePattern = `${featureName}:`;
-      for (const key of this.cache.keys()) {
+      for (const key of Array.from(this.cache.keys())) {
         if (key.includes(`:${workspaceId}`)) {
           this.cache.delete(key);
         }
@@ -412,7 +477,7 @@ class FeatureFlagService {
       await FeatureFlag.deleteMany(query);
 
       // Clear relevant cache entries
-      for (const key of this.cache.keys()) {
+      for (const key of Array.from(this.cache.keys())) {
         if (key.startsWith(`${featureName}:`)) {
           if (!userId && !workspaceId) {
             this.cache.delete(key);

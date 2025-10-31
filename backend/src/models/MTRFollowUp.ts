@@ -55,6 +55,9 @@ export interface IMTRFollowUp extends Document {
     // Related interventions
     relatedInterventions: mongoose.Types.ObjectId[];
 
+    // Related appointment (for integration with appointment system)
+    appointmentId?: mongoose.Types.ObjectId;
+
     // Audit fields (added by addAuditFields)
     createdBy: mongoose.Types.ObjectId;
     updatedBy?: mongoose.Types.ObjectId;
@@ -256,6 +259,13 @@ const mtrFollowUpSchema = new Schema(
                 index: true,
             },
         ],
+
+        // Related appointment (for integration with appointment system)
+        appointmentId: {
+            type: Schema.Types.ObjectId,
+            ref: 'Appointment',
+            index: true,
+        },
     },
     {
         timestamps: true,
@@ -605,5 +615,8 @@ mtrFollowUpSchema.statics.getStatistics = async function (
         }
     );
 };
+
+// Note: Sync middleware for appointment integration will be added separately
+// to avoid circular dependency issues
 
 export default mongoose.model<IMTRFollowUp>('MTRFollowUp', mtrFollowUpSchema);

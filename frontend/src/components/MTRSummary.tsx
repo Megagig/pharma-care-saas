@@ -29,6 +29,7 @@ import LocalPharmacyIcon from '@mui/icons-material/LocalPharmacy';
 
 // Import store and types
 import { useMTRStore } from '../stores/mtrStore';
+import MTRLinkedAppointments from './mtr/MTRLinkedAppointments';
 // import type { MedicationTherapyReview } from '../types/mtr';
 
 const MTRSummary: React.FC = () => {
@@ -441,6 +442,16 @@ const MTRSummary: React.FC = () => {
             </Card>
           </Box>
         )}
+
+        {/* Linked Appointments & Follow-ups */}
+        <MTRLinkedAppointments
+          mtrSessionId={currentReview._id}
+          patientId={selectedPatient?._id || ''}
+          onAppointmentCreated={() => {
+            // Optionally refresh MTR data or show success message
+            console.log('Appointment created for MTR session');
+          }}
+        />
       </Box>
 
       {/* Action Buttons */}

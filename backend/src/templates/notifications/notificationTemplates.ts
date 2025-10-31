@@ -374,6 +374,261 @@ export class NotificationTemplateService {
             `,
             smsTemplate: 'PharmacyCopilot: {{notificationMessage}}',
         });
+
+        // Appointment Reminder Templates
+        this.templates.set('appointment_reminder', {
+            subject: 'Appointment Reminder: {{appointmentType}} {{reminderType}}',
+            content: 'Hi {{patientName}}, you have a {{appointmentType}} appointment {{reminderType}} on {{scheduledDate}} at {{scheduledTime}} with {{pharmacistName}}.',
+            htmlTemplate: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                        <h2 style="color: #2563eb; margin-top: 0;">📅 Appointment Reminder</h2>
+                        <p style="font-size: 16px; margin: 0;">
+                            Hi <strong>{{patientName}}</strong>, you have an upcoming appointment {{reminderType}}.
+                        </p>
+                    </div>
+                    
+                    <div style="background-color: #ffffff; border: 1px solid #e5e7eb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <h3 style="margin-top: 0; color: #1f2937;">Appointment Details</h3>
+                        <p style="margin: 8px 0;"><strong>Type:</strong> {{appointmentType}}</p>
+                        <p style="margin: 8px 0;"><strong>Date:</strong> {{scheduledDate}}</p>
+                        <p style="margin: 8px 0;"><strong>Time:</strong> {{scheduledTime}}</p>
+                        <p style="margin: 8px 0;"><strong>Duration:</strong> {{duration}} minutes</p>
+                        <p style="margin: 8px 0;"><strong>Pharmacist:</strong> {{pharmacistName}}</p>
+                    </div>
+                    
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="{{confirmationUrl}}" style="background-color: #10b981; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600; margin-right: 10px;">
+                            Confirm Appointment
+                        </a>
+                        <a href="{{rescheduleUrl}}" style="background-color: #f59e0b; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">
+                            Reschedule
+                        </a>
+                    </div>
+                    
+                    <p style="color: #6b7280; font-size: 14px; margin-top: 30px; text-align: center;">
+                        If you need to cancel or reschedule, please contact us as soon as possible.
+                    </p>
+                </div>
+            `,
+            smsTemplate: 'Reminder: {{appointmentType}} appointment {{reminderType}} on {{scheduledDate}} at {{scheduledTime}} with {{pharmacistName}}. Confirm: {{confirmationUrl}}',
+        });
+
+        // Appointment Confirmed Templates
+        this.templates.set('appointment_confirmed', {
+            subject: 'Appointment Confirmed: {{appointmentType}}',
+            content: 'Your {{appointmentType}} appointment has been confirmed for {{scheduledDate}} at {{scheduledTime}}',
+            htmlTemplate: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <div style="background-color: #f0fdf4; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                        <h2 style="color: #16a34a; margin-top: 0;">✅ Appointment Confirmed</h2>
+                        <p style="font-size: 16px; margin: 0;">
+                            Your appointment has been successfully confirmed.
+                        </p>
+                    </div>
+                    
+                    <div style="background-color: #ffffff; border: 1px solid #e5e7eb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <h3 style="margin-top: 0; color: #1f2937;">Confirmed Appointment Details</h3>
+                        <p style="margin: 8px 0;"><strong>Type:</strong> {{appointmentType}}</p>
+                        <p style="margin: 8px 0;"><strong>Date:</strong> {{scheduledDate}}</p>
+                        <p style="margin: 8px 0;"><strong>Time:</strong> {{scheduledTime}}</p>
+                        <p style="margin: 8px 0;"><strong>Duration:</strong> {{duration}} minutes</p>
+                        <p style="margin: 8px 0;"><strong>Pharmacist:</strong> {{pharmacistName}}</p>
+                    </div>
+                    
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="{{actionUrl}}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">
+                            View Appointment
+                        </a>
+                    </div>
+                </div>
+            `,
+            smsTemplate: 'Confirmed: {{appointmentType}} appointment on {{scheduledDate}} at {{scheduledTime}} with {{pharmacistName}}.',
+        });
+
+        // Appointment Rescheduled Templates
+        this.templates.set('appointment_rescheduled', {
+            subject: 'Appointment Rescheduled: {{appointmentType}}',
+            content: 'Your {{appointmentType}} appointment has been rescheduled from {{oldDate}} at {{oldTime}} to {{newDate}} at {{newTime}}',
+            htmlTemplate: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <div style="background-color: #fef3c7; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                        <h2 style="color: #d97706; margin-top: 0;">📅 Appointment Rescheduled</h2>
+                        <p style="font-size: 16px; margin: 0;">
+                            Your appointment has been rescheduled to a new date and time.
+                        </p>
+                    </div>
+                    
+                    <div style="background-color: #ffffff; border: 1px solid #e5e7eb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <h3 style="margin-top: 0; color: #1f2937;">Updated Appointment Details</h3>
+                        <p style="margin: 8px 0;"><strong>Type:</strong> {{appointmentType}}</p>
+                        <p style="margin: 8px 0;"><strong>New Date:</strong> {{newDate}}</p>
+                        <p style="margin: 8px 0;"><strong>New Time:</strong> {{newTime}}</p>
+                        <p style="margin: 8px 0;"><strong>Duration:</strong> {{duration}} minutes</p>
+                        <p style="margin: 8px 0;"><strong>Pharmacist:</strong> {{pharmacistName}}</p>
+                    </div>
+                    
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="{{actionUrl}}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">
+                            View Updated Appointment
+                        </a>
+                    </div>
+                </div>
+            `,
+            smsTemplate: 'Rescheduled: {{appointmentType}} moved from {{oldDate}} {{oldTime}} to {{newDate}} {{newTime}} with {{pharmacistName}}.',
+        });
+
+        // Appointment Cancelled Templates
+        this.templates.set('appointment_cancelled', {
+            subject: 'Appointment Cancelled: {{appointmentType}}',
+            content: 'Your {{appointmentType}} appointment scheduled for {{scheduledDate}} at {{scheduledTime}} has been cancelled',
+            htmlTemplate: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <div style="background-color: #fef2f2; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                        <h2 style="color: #dc2626; margin-top: 0;">❌ Appointment Cancelled</h2>
+                        <p style="font-size: 16px; margin: 0;">
+                            Your appointment has been cancelled.
+                        </p>
+                    </div>
+                    
+                    <div style="background-color: #ffffff; border: 1px solid #e5e7eb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <h3 style="margin-top: 0; color: #1f2937;">Cancelled Appointment Details</h3>
+                        <p style="margin: 8px 0;"><strong>Type:</strong> {{appointmentType}}</p>
+                        <p style="margin: 8px 0;"><strong>Date:</strong> {{scheduledDate}}</p>
+                        <p style="margin: 8px 0;"><strong>Time:</strong> {{scheduledTime}}</p>
+                        <p style="margin: 8px 0;"><strong>Pharmacist:</strong> {{pharmacistName}}</p>
+                    </div>
+                    
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="{{actionUrl}}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">
+                            Book New Appointment
+                        </a>
+                    </div>
+                </div>
+            `,
+            smsTemplate: 'Cancelled: {{appointmentType}} appointment on {{scheduledDate}} at {{scheduledTime}}.',
+        });
+
+        // Follow-up Task Assigned Templates
+        this.templates.set('followup_task_assigned', {
+            subject: 'New Follow-up Task Assigned: {{taskTitle}}',
+            content: 'You have been assigned a {{priority}} priority follow-up task for patient {{patientName}}',
+            htmlTemplate: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                        <h2 style="color: #2563eb; margin-top: 0;">📋 New Follow-up Task</h2>
+                        <p style="font-size: 16px; margin: 0;">
+                            You have been assigned a new follow-up task.
+                        </p>
+                    </div>
+                    
+                    <div style="background-color: #ffffff; border: 1px solid #e5e7eb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <h3 style="margin-top: 0; color: #1f2937;">Task Details</h3>
+                        <p style="margin: 8px 0;"><strong>Title:</strong> {{taskTitle}}</p>
+                        <p style="margin: 8px 0;"><strong>Type:</strong> {{taskType}}</p>
+                        <p style="margin: 8px 0;"><strong>Patient:</strong> {{patientName}}</p>
+                        <p style="margin: 8px 0;"><strong>Priority:</strong> {{priority}}</p>
+                        <p style="margin: 8px 0;"><strong>Due Date:</strong> {{dueDate}}</p>
+                    </div>
+                    
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="{{actionUrl}}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">
+                            View Task Details
+                        </a>
+                    </div>
+                </div>
+            `,
+            smsTemplate: 'New {{priority}} priority follow-up task assigned for patient {{patientName}}. Due: {{dueDate}}',
+        });
+
+        // Follow-up Task Overdue Templates
+        this.templates.set('followup_task_overdue', {
+            subject: 'Follow-up Task Overdue: {{taskTitle}}',
+            content: 'Follow-up task for patient {{patientName}} is {{daysOverdue}} day(s) overdue',
+            htmlTemplate: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <div style="background-color: #fef2f2; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                        <h2 style="color: #dc2626; margin-top: 0;">⚠️ Task Overdue</h2>
+                        <p style="font-size: 16px; margin: 0;">
+                            A follow-up task is overdue and requires immediate attention.
+                        </p>
+                    </div>
+                    
+                    <div style="background-color: #ffffff; border: 1px solid #e5e7eb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <h3 style="margin-top: 0; color: #1f2937;">Overdue Task Details</h3>
+                        <p style="margin: 8px 0;"><strong>Title:</strong> {{taskTitle}}</p>
+                        <p style="margin: 8px 0;"><strong>Patient:</strong> {{patientName}}</p>
+                        <p style="margin: 8px 0;"><strong>Days Overdue:</strong> {{daysOverdue}}</p>
+                        <p style="margin: 8px 0;"><strong>Due Date:</strong> {{dueDate}}</p>
+                    </div>
+                    
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="{{actionUrl}}" style="background-color: #dc2626; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">
+                            Complete Task Now
+                        </a>
+                    </div>
+                </div>
+            `,
+            smsTemplate: 'OVERDUE: Follow-up task for {{patientName}} is {{daysOverdue}} days overdue. Please complete immediately.',
+        });
+
+        // Medication Refill Due Templates
+        this.templates.set('medication_refill_due', {
+            subject: 'Medication Refill Due: {{medicationName}}',
+            content: 'Your {{medicationName}} prescription will need a refill in {{daysUntilDue}} day(s)',
+            htmlTemplate: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <div style="background-color: #fef3c7; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                        <h2 style="color: #d97706; margin-top: 0;">💊 Medication Refill Due</h2>
+                        <p style="font-size: 16px; margin: 0;">
+                            Hi <strong>{{patientName}}</strong>, your medication refill is due soon.
+                        </p>
+                    </div>
+                    
+                    <div style="background-color: #ffffff; border: 1px solid #e5e7eb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <h3 style="margin-top: 0; color: #1f2937;">Refill Details</h3>
+                        <p style="margin: 8px 0;"><strong>Medication:</strong> {{medicationName}}</p>
+                        <p style="margin: 8px 0;"><strong>Days Until Due:</strong> {{daysUntilDue}}</p>
+                    </div>
+                    
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="{{actionUrl}}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">
+                            Request Refill
+                        </a>
+                    </div>
+                </div>
+            `,
+            smsTemplate: 'Refill reminder: {{medicationName}} needs refill in {{daysUntilDue}} days. Contact pharmacy to refill.',
+        });
+
+        // Adherence Check Reminder Templates
+        this.templates.set('adherence_check_reminder', {
+            subject: 'Medication Adherence Check: {{medicationName}}',
+            content: 'Please confirm that you are taking your {{medicationName}} as prescribed',
+            htmlTemplate: `
+                <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+                    <div style="background-color: #f0f9ff; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+                        <h2 style="color: #2563eb; margin-top: 0;">💊 Medication Adherence Check</h2>
+                        <p style="font-size: 16px; margin: 0;">
+                            Hi <strong>{{patientName}}</strong>, we want to check on your medication adherence.
+                        </p>
+                    </div>
+                    
+                    <div style="background-color: #ffffff; border: 1px solid #e5e7eb; padding: 20px; border-radius: 8px; margin: 20px 0;">
+                        <h3 style="margin-top: 0; color: #1f2937;">Medication Check</h3>
+                        <p style="margin: 8px 0;"><strong>Medication:</strong> {{medicationName}}</p>
+                        <p style="margin: 8px 0;">Please confirm that you are taking this medication as prescribed by your healthcare provider.</p>
+                    </div>
+                    
+                    <div style="text-align: center; margin: 30px 0;">
+                        <a href="{{actionUrl}}" style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; font-weight: 600;">
+                            Confirm Adherence
+                        </a>
+                    </div>
+                </div>
+            `,
+            smsTemplate: 'Adherence check: Are you taking {{medicationName}} as prescribed? Reply YES/NO or contact pharmacy.',
+        });
     }
 
     /**
@@ -450,6 +705,39 @@ export class NotificationTemplateService {
                     ...baseVars,
                     conversationId: data.conversationId?.toString(),
                     senderId: data.senderId?.toString(),
+                    ...data.metadata,
+                };
+
+            case 'appointment_reminder':
+            case 'appointment_confirmed':
+            case 'appointment_rescheduled':
+            case 'appointment_cancelled':
+                return {
+                    ...baseVars,
+                    appointmentId: data.appointmentId?.toString(),
+                    patientId: data.patientId?.toString(),
+                    pharmacistId: data.pharmacistId?.toString(),
+                    scheduledTime: data.scheduledTime,
+                    ...data.metadata,
+                };
+
+            case 'followup_task_assigned':
+            case 'followup_task_overdue':
+                return {
+                    ...baseVars,
+                    followUpTaskId: data.followUpTaskId?.toString(),
+                    patientId: data.patientId?.toString(),
+                    pharmacistId: data.pharmacistId?.toString(),
+                    priority: data.priority,
+                    ...data.metadata,
+                };
+
+            case 'medication_refill_due':
+            case 'adherence_check_reminder':
+                return {
+                    ...baseVars,
+                    patientId: data.patientId?.toString(),
+                    medicationName: data.medicationName,
                     ...data.metadata,
                 };
 

@@ -13,6 +13,8 @@ import UsageAlertCronService from './services/UsageAlertCronService';
 import { emailDeliveryCronService } from './services/EmailDeliveryCronService';
 import CommunicationSocketService from './services/communicationSocketService';
 import SocketNotificationService from './services/socketNotificationService';
+import AppointmentSocketService from './services/AppointmentSocketService';
+import QueueService from './services/QueueService';
 
 // Import models to ensure they are registered with Mongoose
 import './models/Medication';
@@ -40,6 +42,20 @@ async function initializeServer() {
 
     // Start performance monitoring after DB is connected
     performanceCollector.startSystemMetricsCollection();
+
+    // Initialize Queue Service
+    try {
+      await QueueService.initialize();
+      console.log('✅ Queue Service initialized successfully');
+      
+      // Initialize job workers
+      const { initializeWorkers } = await import('./jobs/workers');
+      await initializeWorkers();
+      console.log('✅ Job workers initialized successfully');
+    } catch (error) {
+      console.error('⚠️ Queue Service initialization failed:', error);
+      // Don't exit - queues are not critical for basic functionality
+    }
   } catch (error) {
     console.error('❌ Database connection failed:', error);
     process.exit(1);
@@ -78,6 +94,7 @@ async function initializeServer() {
   // Initialize Socket.IO services
   const communicationSocketService = new CommunicationSocketService(io);
   const socketNotificationService = new SocketNotificationService(io);
+  const appointmentSocketService = new AppointmentSocketService(io);
 
   // Initialize new Chat Socket Service
   const { initializeChatSocketService } = await import('./services/chat/ChatSocketService');
@@ -112,6 +129,7 @@ async function initializeServer() {
   // Make socket services available globally for other services
   app.set('communicationSocket', communicationSocketService);
   app.set('socketNotification', socketNotificationService);
+  app.set('appointmentSocket', appointmentSocketService);
   app.set('chatSocket', chatSocketService);
 
   const server = httpServer.listen(PORT, () => {
@@ -154,7 +172,7 @@ async function initializeServer() {
 }
 
 // Graceful shutdown function
-const gracefulShutdown = (signal: string) => {
+const gracefulShutdown = async (signal: string) => {
   console.log(`Received ${signal}. Starting graceful shutdown...`);
 
   try {
@@ -163,6 +181,14 @@ const gracefulShutdown = (signal: string) => {
       server.close(() => {
         console.log('HTTP server closed');
       });
+    }
+
+    // Close queue service
+    try {
+      await QueueService.closeAll();
+      console.log('Queue Service closed');
+    } catch (error) {
+      console.error('Error closing Queue Service:', error);
     }
 
     // Close database connection

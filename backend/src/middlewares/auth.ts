@@ -1,4 +1,4 @@
-import jwt from 'jsonwebtoken';
+import * as jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import { Request, Response, NextFunction } from 'express';
 import User, { IUser } from '../models/User';

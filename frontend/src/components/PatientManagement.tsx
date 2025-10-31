@@ -26,9 +26,11 @@ import VisibilityIcon from '@mui/icons-material/Visibility';
 import EditNoteIcon from '@mui/icons-material/EditNote';
 import DescriptionIcon from '@mui/icons-material/Description';
 import BiotechIcon from '@mui/icons-material/Biotech';
+import EventIcon from '@mui/icons-material/Event';
 
 // Import existing components
 import PatientDashboard from './PatientDashboard';
+import { usePatientAppointments } from '../hooks/useAppointments';
 import { MTRStatusIndicator } from './MTRStatusIndicator';
 import AllergyManagement from './AllergyManagement';
 import ConditionManagement from './ConditionManagement';
@@ -41,6 +43,7 @@ import VisitManagement from './VisitManagement';
 import PatientMTRSessionsList from './PatientMTRSessionsList';
 import PatientClinicalNotes from './PatientClinicalNotes';
 import PatientDiagnosisList from './PatientDiagnosisList';
+import PatientAppointmentsList from './PatientAppointmentsList';
 
 import { usePatient } from '../queries/usePatients';
 import { useRBAC } from '../hooks/useRBAC';
@@ -88,7 +91,17 @@ const PatientManagement = () => {
     error,
   } = usePatient(patientId || '');
 
+  // Get upcoming appointments count for header
+  const {
+    data: appointmentsResponse,
+  } = usePatientAppointments(patientId || '', { limit: 10 });
+
   const patient = extractData(patientResponse)?.patient;
+  const appointments = appointmentsResponse?.data?.appointments || [];
+  const upcomingAppointments = appointments.filter(apt => 
+    new Date(`${apt.scheduledDate}T${apt.scheduledTime}`) > new Date() && 
+    apt.status !== 'cancelled'
+  ).length;
 
   // Handle tab changes
   const handleTabChange = (_: React.SyntheticEvent, newValue: number) => {
@@ -174,6 +187,7 @@ const PatientManagement = () => {
     const icons = [
       <DashboardIcon />,
       <DescriptionIcon />,
+      <EventIcon />,
       <PersonIcon />,
       <LocalHospitalIcon />,
       <MedicationIcon />,
@@ -190,6 +204,7 @@ const PatientManagement = () => {
   const tabLabels = [
     'Dashboard',
     'Clinical Notes',
+    'Appointments',
     'Allergies',
     'Conditions',
     'Medications',
@@ -249,15 +264,33 @@ const PatientManagement = () => {
                   variant="chip"
                   showActions={false}
                 />
+                {upcomingAppointments > 0 && (
+                  <Chip
+                    icon={<EventIcon />}
+                    label={`${upcomingAppointments} upcoming appointment${upcomingAppointments > 1 ? 's' : ''}`}
+                    color="primary"
+                    size="small"
+                  />
+                )}
               </Stack>
             </Box>
-            <Button
-              variant="outlined"
-              startIcon={<EditNoteIcon />}
-              onClick={() => navigate(`/patients/${patientId}/edit`)}
-            >
-              Edit Patient
-            </Button>
+            <Stack direction="row" spacing={1}>
+              <Button
+                variant="contained"
+                startIcon={<EventIcon />}
+                onClick={() => navigate(`/appointments/create?patientId=${patientId}`)}
+                color="primary"
+              >
+                Schedule Appointment
+              </Button>
+              <Button
+                variant="outlined"
+                startIcon={<EditNoteIcon />}
+                onClick={() => navigate(`/patients/${patientId}/edit`)}
+              >
+                Edit Patient
+              </Button>
+            </Stack>
           </Stack>
 
           {/* Navigation Tabs */}
@@ -319,53 +352,63 @@ const PatientManagement = () => {
 
         <TabPanel value={currentTab} index={2}>
           <Box sx={{ p: 3 }}>
-            <AllergyManagement patientId={patientId || ''} />
+            <PatientAppointmentsList 
+              patientId={patientId || ''} 
+              showCreateButton={true}
+              showHeader={false}
+            />
           </Box>
         </TabPanel>
 
         <TabPanel value={currentTab} index={3}>
           <Box sx={{ p: 3 }}>
-            <ConditionManagement patientId={patientId || ''} />
+            <AllergyManagement patientId={patientId || ''} />
           </Box>
         </TabPanel>
 
         <TabPanel value={currentTab} index={4}>
           <Box sx={{ p: 3 }}>
-            <MedicationManagement patientId={patientId || ''} />
+            <ConditionManagement patientId={patientId || ''} />
           </Box>
         </TabPanel>
 
         <TabPanel value={currentTab} index={5}>
           <Box sx={{ p: 3 }}>
-            <ClinicalAssessment patientId={patientId || ''} />
+            <MedicationManagement patientId={patientId || ''} />
           </Box>
         </TabPanel>
 
         <TabPanel value={currentTab} index={6}>
           <Box sx={{ p: 3 }}>
-            <DTPManagement patientId={patientId || ''} />
+            <ClinicalAssessment patientId={patientId || ''} />
           </Box>
         </TabPanel>
 
         <TabPanel value={currentTab} index={7}>
           <Box sx={{ p: 3 }}>
-            <CarePlanManagement patientId={patientId || ''} />
+            <DTPManagement patientId={patientId || ''} />
           </Box>
         </TabPanel>
 
         <TabPanel value={currentTab} index={8}>
           <Box sx={{ p: 3 }}>
-            <VisitManagement patientId={patientId || ''} />
+            <CarePlanManagement patientId={patientId || ''} />
           </Box>
         </TabPanel>
 
         <TabPanel value={currentTab} index={9}>
           <Box sx={{ p: 3 }}>
-            <PatientMTRSessionsList patientId={patientId || ''} />
+            <VisitManagement patientId={patientId || ''} />
           </Box>
         </TabPanel>
 
         <TabPanel value={currentTab} index={10}>
+          <Box sx={{ p: 3 }}>
+            <PatientMTRSessionsList patientId={patientId || ''} />
+          </Box>
+        </TabPanel>
+
+        <TabPanel value={currentTab} index={11}>
           <Box sx={{ p: 3 }}>
             <PatientDiagnosisList patientId={patientId || ''} />
           </Box>

@@ -33,6 +33,7 @@ import ClinicalInterventionDashboard from './ClinicalInterventionDashboard';
 import ClinicalInterventionsList from './ClinicalInterventionsList';
 import ClinicalInterventionForm from './ClinicalInterventionForm';
 import ClinicalInterventionDetails from './ClinicalInterventionDetails';
+import ScheduleInterventionFollowUp from './ScheduleInterventionFollowUp';
 import PatientInterventions from './PatientInterventions';
 import ClinicalInterventionReports from './ClinicalInterventionReports';
 import ClinicalInterventionComplianceReport from './ClinicalInterventionComplianceReport';
@@ -163,6 +164,7 @@ const ClinicalInterventionsLayout: React.FC = () => {
         <Route path="/list" element={<ClinicalInterventionsList />} />
         <Route path="/edit/:id" element={<ClinicalInterventionForm />} />
         <Route path="/details/:id" element={<ClinicalInterventionDetails />} />
+        <Route path="/:id/schedule-followup" element={<ScheduleInterventionFollowUp />} />
         <Route path="/patients" element={<PatientInterventions />} />
         <Route path="/patients/:patientId" element={<PatientInterventions />} />
         <Route path="/reports" element={<ClinicalInterventionReports />} />

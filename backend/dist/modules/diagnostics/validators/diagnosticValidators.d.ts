@@ -236,8 +236,8 @@ export declare const createInterventionSchema: z.ZodObject<{
     type: z.ZodEnum<{
         monitoring: "monitoring";
         medication_review: "medication_review";
-        counseling: "counseling";
         referral: "referral";
+        counseling: "counseling";
         lifestyle: "lifestyle";
     }>;
     title: z.ZodString;

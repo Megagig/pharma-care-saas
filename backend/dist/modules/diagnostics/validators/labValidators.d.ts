@@ -169,9 +169,9 @@ export declare const fhirBundleSchema: z.ZodObject<{
     resourceType: z.ZodLiteral<"Bundle">;
     id: z.ZodOptional<z.ZodString>;
     type: z.ZodEnum<{
+        message: "message";
         collection: "collection";
         transaction: "transaction";
-        message: "message";
         history: "history";
         document: "document";
         "transaction-response": "transaction-response";
@@ -191,9 +191,9 @@ export declare const importFHIRSchema: z.ZodObject<{
         resourceType: z.ZodLiteral<"Bundle">;
         id: z.ZodOptional<z.ZodString>;
         type: z.ZodEnum<{
+            message: "message";
             collection: "collection";
             transaction: "transaction";
-            message: "message";
             history: "history";
             document: "document";
             "transaction-response": "transaction-response";

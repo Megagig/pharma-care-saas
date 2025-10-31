@@ -35,6 +35,7 @@ export interface IMTRFollowUp extends Document {
     reminders: IFollowUpReminder[];
     outcome?: IFollowUpOutcome;
     relatedInterventions: mongoose.Types.ObjectId[];
+    appointmentId?: mongoose.Types.ObjectId;
     createdBy: mongoose.Types.ObjectId;
     updatedBy?: mongoose.Types.ObjectId;
     isDeleted: boolean;

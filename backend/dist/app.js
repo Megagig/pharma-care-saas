@@ -48,8 +48,10 @@ const hpp_1 = __importDefault(require("hpp"));
 const path_1 = __importDefault(require("path"));
 const errorHandler_1 = __importDefault(require("./middlewares/errorHandler"));
 const MemoryManagementService_1 = __importDefault(require("./services/MemoryManagementService"));
-const logger_1 = __importDefault(require("./utils/logger"));
+const logger_1 = __importStar(require("./utils/logger"));
+const performanceMonitoring_1 = require("./utils/performanceMonitoring");
 const authRoutes_1 = __importDefault(require("./routes/authRoutes"));
+const patientAuthRoutes_1 = __importDefault(require("./routes/patientAuthRoutes"));
 const userSettingsRoutes_1 = __importDefault(require("./routes/userSettingsRoutes"));
 const subscriptionRoutes_1 = __importDefault(require("./routes/subscriptionRoutes"));
 const patientRoutes_1 = __importDefault(require("./routes/patientRoutes"));
@@ -80,6 +82,8 @@ const auditRoutes_1 = __importDefault(require("./routes/auditRoutes"));
 const securityRoutes_1 = __importDefault(require("./routes/securityRoutes"));
 const invitationRoutes_1 = __importDefault(require("./routes/invitationRoutes"));
 const medicationManagementRoutes_1 = __importDefault(require("./routes/medicationManagementRoutes"));
+const healthRoutes_2 = __importDefault(require("./routes/healthRoutes"));
+const monitoringRoutes_1 = __importDefault(require("./routes/monitoringRoutes"));
 const medicationAnalyticsRoutes_1 = __importDefault(require("./routes/medicationAnalyticsRoutes"));
 const usageMonitoringRoutes_1 = __importDefault(require("./routes/usageMonitoringRoutes"));
 const locationRoutes_1 = __importDefault(require("./routes/locationRoutes"));
@@ -99,6 +103,7 @@ const diagnosticRoutes_1 = __importDefault(require("./routes/diagnosticRoutes"))
 const communicationRoutes_1 = __importDefault(require("./routes/communicationRoutes"));
 const notificationRoutes_1 = __importDefault(require("./routes/notificationRoutes"));
 const notificationManagementRoutes_1 = __importDefault(require("./routes/notificationManagementRoutes"));
+const engagementIntegrationRoutes_1 = __importDefault(require("./routes/engagementIntegrationRoutes"));
 const analyticsRoutes_1 = __importDefault(require("./routes/analyticsRoutes"));
 const reportsRoutes_1 = __importDefault(require("./routes/reportsRoutes"));
 const lighthouseRoutes_1 = __importDefault(require("./routes/lighthouseRoutes"));
@@ -109,11 +114,13 @@ const permissionRoutes_1 = __importDefault(require("./routes/permissionRoutes"))
 const rbacAudit_1 = __importDefault(require("./routes/rbacAudit"));
 const roleRoutes_1 = __importDefault(require("./routes/roleRoutes"));
 const pricingManagementRoutes_1 = __importDefault(require("./routes/pricingManagementRoutes"));
+const appointmentAnalyticsRoutes_1 = __importDefault(require("./routes/appointmentAnalyticsRoutes"));
 const saasRoutes_1 = __importDefault(require("./routes/saasRoutes"));
 const workspaceTeamRoutes_1 = __importDefault(require("./routes/workspaceTeamRoutes"));
 const dashboardRoutes_1 = __importDefault(require("./routes/dashboardRoutes"));
 const superAdminDashboardRoutes_1 = __importDefault(require("./routes/superAdminDashboardRoutes"));
 const superAdminAuditRoutes_1 = __importDefault(require("./routes/superAdminAuditRoutes"));
+const patientNotificationPreferencesRoutes_1 = __importDefault(require("./routes/patientNotificationPreferencesRoutes"));
 const systemIntegrationService_1 = __importDefault(require("./services/systemIntegrationService"));
 const app = (0, express_1.default)();
 const systemIntegration = systemIntegrationService_1.default.getInstance();
@@ -192,6 +199,9 @@ app.use('/api/', limiter);
 app.use(express_1.default.json({ limit: '10mb' }));
 app.use(express_1.default.urlencoded({ extended: true }));
 app.use((0, cookie_parser_1.default)());
+app.use(logger_1.addCorrelationId);
+const performanceMonitoring_2 = require("./utils/performanceMonitoring");
+app.use((0, performanceMonitoring_1.createPerformanceMiddleware)(performanceMonitoring_2.performanceCollector));
 app.use((0, express_mongo_sanitize_1.default)());
 app.use((0, xss_clean_1.default)());
 app.use((0, hpp_1.default)());
@@ -210,6 +220,9 @@ const latencyMeasurement_1 = require("./middlewares/latencyMeasurement");
 app.use('/api/', latencyMeasurement_1.latencyMeasurementMiddleware);
 const unifiedAuditMiddleware_1 = require("./middlewares/unifiedAuditMiddleware");
 app.use('/api/', unifiedAuditMiddleware_1.unifiedAuditMiddleware);
+const clinicalInterventionSync_1 = require("./middlewares/clinicalInterventionSync");
+app.use('/api/', clinicalInterventionSync_1.clinicalInterventionSyncMiddleware);
+app.use('/api/', clinicalInterventionSync_1.followUpCompletionSyncMiddleware);
 const compressionMiddleware_1 = require("./middlewares/compressionMiddleware");
 app.use('/api/', (0, compressionMiddleware_1.responseSizeMonitoringMiddleware)());
 app.get('/api/health', (req, res) => {
@@ -218,6 +231,44 @@ app.get('/api/health', (req, res) => {
         timestamp: new Date().toISOString(),
         environment: process.env.NODE_ENV,
     });
+});
+const auth_1 = require("./middlewares/auth");
+app.get('/api/debug/user-info', auth_1.auth, async (req, res) => {
+    try {
+        const user = req.user;
+        const workspaceContext = req.workspaceContext;
+        const FeatureFlagService = (await Promise.resolve().then(() => __importStar(require('./services/FeatureFlagService')))).default;
+        const patientEngagementModule = await FeatureFlagService.isFeatureEnabled('patient_engagement_module', user._id.toString(), user.workplaceId?.toString() || 'no-workspace');
+        const appointmentScheduling = await FeatureFlagService.isFeatureEnabled('appointment_scheduling', user._id.toString(), user.workplaceId?.toString() || 'no-workspace');
+        res.json({
+            status: 'OK',
+            user: {
+                id: user._id,
+                email: user.email,
+                role: user.role,
+                workplaceRole: user.workplaceRole,
+                status: user.status,
+                workplaceId: user.workplaceId,
+            },
+            workspaceContext: workspaceContext ? {
+                workspaceId: workspaceContext.workspace?._id,
+                planName: workspaceContext.plan?.name,
+                subscriptionStatus: workspaceContext.workspace?.subscriptionStatus,
+            } : null,
+            featureFlags: {
+                patient_engagement_module: patientEngagementModule,
+                appointment_scheduling: appointmentScheduling,
+            },
+            timestamp: new Date().toISOString(),
+        });
+    }
+    catch (error) {
+        res.status(500).json({
+            status: 'ERROR',
+            error: error.message,
+            timestamp: new Date().toISOString(),
+        });
+    }
 });
 app.get('/api/health/integration', async (req, res) => {
     try {
@@ -237,6 +288,8 @@ app.get('/api/health/integration', async (req, res) => {
     }
 });
 app.use('/api/health/feature-flags', healthRoutes_1.default);
+app.use('/api/health', healthRoutes_2.default);
+app.use('/api/monitoring', monitoringRoutes_1.default);
 app.get('/api/health/memory', (req, res) => {
     try {
         const memoryReport = MemoryManagementService_1.default.getMemoryReport();
@@ -281,6 +334,13 @@ app.get('/api/health/cache', async (req, res) => {
 });
 app.use('/api/public', publicApiRoutes_1.default);
 app.use('/api/public/drugs', publicDrugDetailsRoutes_1.default);
+const publicAppointmentRoutes_1 = __importDefault(require("./routes/publicAppointmentRoutes"));
+app.use('/api/public/appointments', publicAppointmentRoutes_1.default);
+const publicWorkspaceRoutes_1 = __importDefault(require("./routes/publicWorkspaceRoutes"));
+app.use('/api/public/workspaces', publicWorkspaceRoutes_1.default);
+const patientPortalAuthRoutes_1 = __importDefault(require("./routes/patientPortalAuthRoutes"));
+app.use('/api/patient-portal/auth', patientPortalAuthRoutes_1.default);
+app.use('/api/patient-portal/patients', patientPortalAuthRoutes_1.default);
 const publicHelpRoutes_1 = __importDefault(require("./routes/publicHelpRoutes"));
 app.use('/api/help', publicHelpRoutes_1.default);
 app.use('/api/analytics', analyticsRoutes_1.default);
@@ -292,6 +352,7 @@ app.use('/api/deployment', deploymentRoutes_1.default);
 app.use('/api/production-validation', productionValidationRoutes_1.default);
 app.use('/api/continuous-monitoring', continuousMonitoringRoutes_1.default);
 app.use('/api/auth', authRoutes_1.default);
+app.use('/api/patient-auth', patientAuthRoutes_1.default);
 app.use('/api/user/settings', userSettingsRoutes_1.default);
 app.use('/api/subscriptions', subscriptionRoutes_1.default);
 app.use('/api/pricing', pricingManagementRoutes_1.default);
@@ -307,6 +368,7 @@ app.use('/api/patients', dtpRoutes_1.default);
 app.use('/api/patients', carePlanRoutes_1.default);
 app.use('/api/patients', visitRoutes_1.default);
 app.use('/api/patients', patientMTRIntegrationRoutes_1.default);
+app.use('/api/patients', patientNotificationPreferencesRoutes_1.default);
 app.use('/api', invitationRoutes_1.default);
 app.use('/api', allergyRoutes_1.default);
 app.use('/api', conditionRoutes_1.default);
@@ -350,6 +412,20 @@ app.use('/api/payments', paymentRoutes_1.default);
 app.use('/api/billing', billingRoutes_1.default);
 app.use('/api/mtr', mtrRoutes_1.default);
 app.use('/api/mtr/notifications', mtrNotificationRoutes_1.default);
+app.use('/api/engagement-integration', engagementIntegrationRoutes_1.default);
+const appointmentRoutes_1 = __importDefault(require("./routes/appointmentRoutes"));
+const followUpRoutes_1 = __importDefault(require("./routes/followUpRoutes"));
+const scheduleRoutes_1 = __importDefault(require("./routes/scheduleRoutes"));
+const queueMonitoringRoutes_1 = __importDefault(require("./routes/queueMonitoringRoutes"));
+const alertRoutes_1 = __importDefault(require("./routes/alertRoutes"));
+const patientPortalRoutes_1 = __importDefault(require("./routes/patientPortalRoutes"));
+app.use('/api', appointmentAnalyticsRoutes_1.default);
+app.use('/api/appointments', appointmentRoutes_1.default);
+app.use('/api/follow-ups', followUpRoutes_1.default);
+app.use('/api/schedules', scheduleRoutes_1.default);
+app.use('/api/queue-monitoring', queueMonitoringRoutes_1.default);
+app.use('/api/alerts', alertRoutes_1.default);
+app.use('/api/patient-portal', patientPortalRoutes_1.default);
 app.get('/api/clinical-interventions/health', (req, res) => {
     res.json({
         status: 'OK',
@@ -391,6 +467,8 @@ app.use('/api/email', emailWebhookRoutes_1.default);
 app.use('/api/admin', admin_1.default);
 app.use('/api/admin/dashboard', adminDashboardRoutes_1.default);
 app.use('/api/admin/saas', saasRoutes_1.default);
+const rolloutRoutes_1 = __importDefault(require("./routes/rolloutRoutes"));
+app.use('/api/admin/rollout', rolloutRoutes_1.default);
 app.use('/api/roles', roleRoutes_1.default);
 app.use('/api/role-hierarchy', roleHierarchyRoutes_1.default);
 app.use('/api/permissions', permissionRoutes_1.default);

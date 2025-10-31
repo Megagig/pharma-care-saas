@@ -1,0 +1,244 @@
+# Prometheus alert rules for Patient Engagement Module - Staging Environment
+
+groups:
+  - name: patient-engagement-staging-alerts
+    interval: 30s
+    rules:
+      # Service availability alerts
+      - alert: StagingServiceDown
+        expr: up{job=~"patient-engagement-staging.*"} == 0
+        for: 1m
+        labels:
+          severity: warning
+          environment: staging
+          module: patient-engagement
+        annotations:
+          summary: "Patient Engagement staging service is down"
+          description: "The {{ $labels.job }} service has been down for more than 1 minute"
+          runbook_url: "https://docs.PharmacyCopilot.com/runbooks/service-down"
+
+      - alert: StagingHealthCheckFailing
+        expr: up{job="patient-engagement-staging-health"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          environment: staging
+          module: patient-engagement
+        annotations:
+          summary: "Staging health check is failing"
+          description: "Health check endpoint has been failing for more than 2 minutes"
+
+      # Performance alerts
+      - alert: StagingHighResponseTime
+        expr: histogram_quantile(0.95, rate(http_request_duration_seconds_bucket{job="patient-engagement-staging-api"}[5m])) > 2
+        for: 3m
+        labels:
+          severity: warning
+          environment: staging
+          module: patient-engagement
+        annotations:
+          summary: "High response time in staging"
+          description: "95th percentile response time is {{ $value }}s (threshold: 2s)"
+
+      - alert: StagingHighErrorRate
+        expr: rate(http_requests_total{job="patient-engagement-staging-api",status=~"5.."}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: warning
+          environment: staging
+          module: patient-engagement
+        annotations:
+          summary: "High error rate in staging"
+          description: "Error rate is {{ $value }} errors per second (threshold: 0.1/s)"
+
+      # Database alerts
+      - alert: StagingDatabaseDown
+        expr: up{job="mongodb-staging"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          environment: staging
+          module: patient-engagement
+        annotations:
+          summary: "Staging MongoDB is down"
+          description: "MongoDB staging instance has been down for more than 1 minute"
+
+      - alert: StagingDatabaseSlowQueries
+        expr: mongodb_op_latencies_histogram_seconds{job="mongodb-staging",type="command"} > 1
+        for: 5m
+        labels:
+          severity: warning
+          environment: staging
+          module: patient-engagement
+        annotations:
+          summary: "Slow database queries in staging"
+          description: "Database query latency is {{ $value }}s (threshold: 1s)"
+
+      # Redis alerts
+      - alert: StagingRedisDown
+        expr: up{job="redis-staging"} == 0
+        for: 2m
+        labels:
+          severity: warning
+          environment: staging
+          module: patient-engagement
+        annotations:
+          summary: "Staging Redis is down"
+          description: "Redis staging instance has been down for more than 2 minutes"
+
+      - alert: StagingRedisHighMemoryUsage
+        expr: redis_memory_used_bytes{job="redis-staging"} / redis_memory_max_bytes{job="redis-staging"} > 0.8
+        for: 5m
+        labels:
+          severity: warning
+          environment: staging
+          module: patient-engagement
+        annotations:
+          summary: "High Redis memory usage in staging"
+          description: "Redis memory usage is {{ $value | humanizePercentage }} (threshold: 80%)"
+
+      # System resource alerts
+      - alert: StagingHighCPUUsage
+        expr: 100 - (avg by(instance) (irate(node_cpu_seconds_total{job="node-exporter-staging",mode="idle"}[5m])) * 100) > 80
+        for: 5m
+        labels:
+          severity: warning
+          environment: staging
+          module: patient-engagement
+        annotations:
+          summary: "High CPU usage in staging"
+          description: "CPU usage is {{ $value }}% (threshold: 80%)"
+
+      - alert: StagingHighMemoryUsage
+        expr: (1 - (node_memory_MemAvailable_bytes{job="node-exporter-staging"} / node_memory_MemTotal_bytes{job="node-exporter-staging"})) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          environment: staging
+          module: patient-engagement
+        annotations:
+          summary: "High memory usage in staging"
+          description: "Memory usage is {{ $value }}% (threshold: 85%)"
+
+      - alert: StagingLowDiskSpace
+        expr: (1 - (node_filesystem_avail_bytes{job="node-exporter-staging",mountpoint="/"} / node_filesystem_size_bytes{job="node-exporter-staging",mountpoint="/"})) * 100 > 85
+        for: 5m
+        labels:
+          severity: warning
+          environment: staging
+          module: patient-engagement
+        annotations:
+          summary: "Low disk space in staging"
+          description: "Disk usage is {{ $value }}% (threshold: 85%)"
+
+      # Application-specific alerts
+      - alert: StagingAppointmentCreationFailures
+        expr: rate(appointment_creation_failures_total{environment="staging"}[5m]) > 0.05
+        for: 3m
+        labels:
+          severity: warning
+          environment: staging
+          module: patient-engagement
+          feature: appointments
+        annotations:
+          summary: "High appointment creation failure rate"
+          description: "Appointment creation failure rate is {{ $value }}/s (threshold: 0.05/s)"
+
+      - alert: StagingFollowUpTaskBacklog
+        expr: followup_tasks_pending_total{environment="staging"} > 100
+        for: 10m
+        labels:
+          severity: warning
+          environment: staging
+          module: patient-engagement
+          feature: followups
+        annotations:
+          summary: "High follow-up task backlog"
+          description: "{{ $value }} follow-up tasks are pending (threshold: 100)"
+
+      - alert: StagingReminderDeliveryFailures
+        expr: rate(reminder_delivery_failures_total{environment="staging"}[10m]) > 0.1
+        for: 5m
+        labels:
+          severity: warning
+          environment: staging
+          module: patient-engagement
+          feature: reminders
+        annotations:
+          summary: "High reminder delivery failure rate"
+          description: "Reminder delivery failure rate is {{ $value }}/s (threshold: 0.1/s)"
+
+      - alert: StagingJobQueueBacklog
+        expr: job_queue_size{environment="staging"} > 50
+        for: 10m
+        labels:
+          severity: warning
+          environment: staging
+          module: patient-engagement
+          feature: jobs
+        annotations:
+          summary: "High job queue backlog"
+          description: "{{ $value }} jobs are queued (threshold: 50)"
+
+      # Security alerts (relaxed for staging)
+      - alert: StagingUnusualTrafficPattern
+        expr: rate(http_requests_total{job="patient-engagement-staging-api"}[5m]) > 100
+        for: 10m
+        labels:
+          severity: info
+          environment: staging
+          module: patient-engagement
+        annotations:
+          summary: "Unusual traffic pattern in staging"
+          description: "Request rate is {{ $value }}/s (threshold: 100/s)"
+
+      - alert: StagingHighFailedLoginAttempts
+        expr: rate(auth_failed_attempts_total{environment="staging"}[5m]) > 5
+        for: 5m
+        labels:
+          severity: warning
+          environment: staging
+          module: patient-engagement
+        annotations:
+          summary: "High failed login attempts in staging"
+          description: "Failed login rate is {{ $value }}/s (threshold: 5/s)"
+
+  - name: patient-engagement-staging-business-alerts
+    interval: 60s
+    rules:
+      # Business logic alerts
+      - alert: StagingNoAppointmentsScheduled
+        expr: increase(appointments_created_total{environment="staging"}[1h]) == 0
+        for: 2h
+        labels:
+          severity: info
+          environment: staging
+          module: patient-engagement
+          type: business
+        annotations:
+          summary: "No appointments scheduled in staging for 2 hours"
+          description: "This might indicate a problem with the appointment scheduling system"
+
+      - alert: StagingNoFollowUpsCreated
+        expr: increase(followup_tasks_created_total{environment="staging"}[1h]) == 0
+        for: 2h
+        labels:
+          severity: info
+          environment: staging
+          module: patient-engagement
+          type: business
+        annotations:
+          summary: "No follow-up tasks created in staging for 2 hours"
+          description: "This might indicate a problem with the follow-up system"
+
+      - alert: StagingNoRemindersProcessed
+        expr: increase(reminders_processed_total{environment="staging"}[1h]) == 0
+        for: 2h
+        labels:
+          severity: info
+          environment: staging
+          module: patient-engagement
+          type: business
+        annotations:
+          summary: "No reminders processed in staging for 2 hours"
+          description: "This might indicate a problem with the reminder system"

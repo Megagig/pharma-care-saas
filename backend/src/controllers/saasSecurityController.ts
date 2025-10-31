@@ -404,60 +404,22 @@ export class SaaSSecurityController {
       const pageNum = parseInt(page as string, 10);
       const limitNum = Math.min(parseInt(limit as string, 10), 200); // Max 200 for audit logs
 
-      const auditLogs = await this.securityMonitoringService.getSecurityAuditLogs();
-
-      // Apply filters (in a real implementation, this would be done in the service with database queries)
-      let filteredLogs = auditLogs.logs; // Access the logs array
-
-      if (filters.userId) {
-        filteredLogs = filteredLogs.filter(log => log.userId.toString() === filters.userId);
-      }
-
-      if (filters.action) {
-        filteredLogs = filteredLogs.filter(log =>
-          log.action.toLowerCase().includes(filters.action!.toLowerCase())
-        );
-      }
-
-      if (filters.success !== undefined) {
-        filteredLogs = filteredLogs.filter(log => log.success === filters.success);
-      }
-
-      // Sort logs
-      filteredLogs.sort((a, b) => {
-        const aValue = (a as any)[sortBy as string];
-        const bValue = (b as any)[sortBy as string];
-
-        if (sortOrder === 'desc') {
-          return bValue > aValue ? 1 : -1;
-        }
-        return aValue > bValue ? 1 : -1;
+      // Pass filters to service for efficient database query
+      const auditLogsResult = await this.securityMonitoringService.getSecurityAuditLogs({
+        ...filters,
+        page: pageNum,
+        limit: limitNum
       });
-
-      // Apply pagination
-      const total = filteredLogs.length;
-      const startIndex = (pageNum - 1) * limitNum;
-      const paginatedLogs = filteredLogs.slice(startIndex, startIndex + limitNum);
 
       sendSuccess(
         res,
         {
-          auditLogs: paginatedLogs,
+          logs: auditLogsResult.logs,
           pagination: {
-            page: pageNum,
+            page: auditLogsResult.page,
             limit: limitNum,
-            total,
-            pages: Math.ceil(total / limitNum),
-            hasNext: pageNum * limitNum < total,
-            hasPrev: pageNum > 1
-          },
-          filters,
-          summary: {
-            totalLogs: total,
-            successfulActions: filteredLogs.filter(log => log.success).length,
-            failedActions: filteredLogs.filter(log => !log.success).length,
-            uniqueUsers: new Set(filteredLogs.map(log => log.userId)).size,
-            uniqueActions: new Set(filteredLogs.map(log => log.action)).size
+            total: auditLogsResult.total,
+            totalPages: auditLogsResult.pages,
           }
         },
         'Security audit logs retrieved successfully'

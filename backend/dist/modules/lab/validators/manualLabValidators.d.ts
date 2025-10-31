@@ -38,10 +38,10 @@ export declare const createManualLabOrderSchema: z.ZodObject<{
 export declare const updateOrderStatusSchema: z.ZodObject<{
     status: z.ZodEnum<{
         completed: "completed";
+        referred: "referred";
         requested: "requested";
         sample_collected: "sample_collected";
         result_awaited: "result_awaited";
-        referred: "referred";
     }>;
     notes: z.ZodOptional<z.ZodString>;
 }, z.core.$strip>;
@@ -54,10 +54,10 @@ export declare const patientParamsSchema: z.ZodObject<{
 export declare const orderQuerySchema: z.ZodObject<{
     status: z.ZodOptional<z.ZodEnum<{
         completed: "completed";
+        referred: "referred";
         requested: "requested";
         sample_collected: "sample_collected";
         result_awaited: "result_awaited";
-        referred: "referred";
     }>>;
     priority: z.ZodOptional<z.ZodEnum<{
         routine: "routine";
@@ -76,10 +76,10 @@ export declare const orderQuerySchema: z.ZodObject<{
 export declare const patientOrderQuerySchema: z.ZodObject<{
     status: z.ZodOptional<z.ZodEnum<{
         completed: "completed";
+        referred: "referred";
         requested: "requested";
         sample_collected: "sample_collected";
         result_awaited: "result_awaited";
-        referred: "referred";
     }>>;
     page: z.ZodPipe<z.ZodDefault<z.ZodOptional<z.ZodString>>, z.ZodTransform<number, string>>;
     limit: z.ZodPipe<z.ZodDefault<z.ZodOptional<z.ZodString>>, z.ZodTransform<number, string>>;

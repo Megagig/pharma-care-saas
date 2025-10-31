@@ -44,6 +44,9 @@ export interface IPatient extends Document {
   genotype?: 'AA' | 'AS' | 'SS' | 'AC' | 'SC' | 'CC';
   weightKg?: number;
 
+  // Virtual fields
+  name?: string; // Full name (virtual)
+
   // Clinical snapshots (latest vitals cached for list speed)
   latestVitals?: IPatientVitals;
 
@@ -54,6 +57,21 @@ export interface IPatient extends Document {
     push: boolean;
     resultNotifications: boolean;
     orderReminders: boolean;
+  };
+
+  // Appointment preferences
+  appointmentPreferences?: {
+    preferredDays: number[]; // 0-6 (Sunday-Saturday)
+    preferredTimeSlots: Array<{ start: string; end: string }>; // HH:mm format
+    preferredPharmacist?: mongoose.Types.ObjectId;
+    reminderPreferences: {
+      email: boolean;
+      sms: boolean;
+      push: boolean;
+      whatsapp: boolean;
+    };
+    language: string; // 'en', 'yo', 'ig', 'ha'
+    timezone: string;
   };
 
   // Multi-location and sharing metadata
@@ -83,6 +101,23 @@ export interface IPatient extends Document {
         completedBy: mongoose.Types.ObjectId;
       }>;
     };
+  };
+
+  // Engagement metrics
+  engagementMetrics?: {
+    totalAppointments: number;
+    completedAppointments: number;
+    cancelledAppointments: number;
+    noShowAppointments: number;
+    completionRate: number;
+    totalFollowUps: number;
+    completedFollowUps: number;
+    overdueFollowUps: number;
+    followUpCompletionRate: number;
+    averageResponseTime: number;
+    lastEngagementDate?: Date;
+    engagementScore: number;
+    lastUpdated?: Date;
   };
 
   // Flags
@@ -258,6 +293,77 @@ const patientSchema = new Schema(
       orderReminders: { type: Boolean, default: true },
     },
 
+    // Appointment preferences
+    appointmentPreferences: {
+      preferredDays: {
+        type: [Number],
+        validate: {
+          validator: function (days: number[]) {
+            return days.every((day) => day >= 0 && day <= 6);
+          },
+          message: 'Preferred days must be between 0 (Sunday) and 6 (Saturday)',
+        },
+      },
+      preferredTimeSlots: [
+        {
+          start: {
+            type: String,
+            validate: {
+              validator: function (time: string) {
+                return /^([01]\d|2[0-3]):([0-5]\d)$/.test(time);
+              },
+              message: 'Time must be in HH:mm format',
+            },
+          },
+          end: {
+            type: String,
+            validate: {
+              validator: function (time: string) {
+                return /^([01]\d|2[0-3]):([0-5]\d)$/.test(time);
+              },
+              message: 'Time must be in HH:mm format',
+            },
+          },
+        },
+      ],
+      preferredPharmacist: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+      },
+      reminderPreferences: {
+        email: { type: Boolean, default: true },
+        sms: { type: Boolean, default: false },
+        push: { type: Boolean, default: true },
+        whatsapp: { type: Boolean, default: false },
+      },
+      language: {
+        type: String,
+        enum: ['en', 'yo', 'ig', 'ha'],
+        default: 'en',
+      },
+      timezone: {
+        type: String,
+        default: 'Africa/Lagos',
+      },
+    },
+
+    // Engagement metrics
+    engagementMetrics: {
+      totalAppointments: { type: Number, default: 0 },
+      completedAppointments: { type: Number, default: 0 },
+      cancelledAppointments: { type: Number, default: 0 },
+      noShowAppointments: { type: Number, default: 0 },
+      completionRate: { type: Number, default: 0 },
+      totalFollowUps: { type: Number, default: 0 },
+      completedFollowUps: { type: Number, default: 0 },
+      overdueFollowUps: { type: Number, default: 0 },
+      followUpCompletionRate: { type: Number, default: 0 },
+      averageResponseTime: { type: Number, default: 0 },
+      lastEngagementDate: Date,
+      engagementScore: { type: Number, default: 0 },
+      lastUpdated: Date,
+    },
+
     // Multi-location and sharing metadata
     metadata: {
       sharedAccess: {
@@ -356,6 +462,12 @@ patientSchema.index(
 patientSchema.index({ hasActiveDTP: 1 });
 patientSchema.index({ createdAt: -1 });
 
+// Virtual for full name
+patientSchema.virtual('name').get(function (this: IPatient) {
+  const parts = [this.firstName, this.otherNames, this.lastName].filter(Boolean);
+  return parts.join(' ');
+});
+
 // Virtual for computed age from DOB
 patientSchema.virtual('computedAge').get(function (this: IPatient) {
   if (this.dob) {
@@ -380,6 +492,37 @@ patientSchema.virtual('dateOfBirth').get(function (this: IPatient) {
 
 patientSchema.virtual('dateOfBirth').set(function (this: IPatient, value: Date) {
   this.dob = value;
+});
+
+// Virtual for upcoming appointments count
+patientSchema.virtual('upcomingAppointments', {
+  ref: 'Appointment',
+  localField: '_id',
+  foreignField: 'patientId',
+  count: true,
+  match: {
+    status: { $in: ['scheduled', 'confirmed'] },
+    scheduledDate: { $gte: new Date() },
+    isDeleted: false,
+  },
+});
+
+// Virtual for last appointment date
+patientSchema.virtual('lastAppointmentDate').get(async function (this: IPatient) {
+  try {
+    const Appointment = mongoose.model('Appointment');
+    const lastAppointment = await Appointment.findOne({
+      patientId: this._id,
+      status: 'completed',
+      isDeleted: false,
+    })
+      .sort({ scheduledDate: -1 })
+      .select('scheduledDate');
+    
+    return lastAppointment?.scheduledDate;
+  } catch (error) {
+    return undefined;
+  }
 });
 
 // Instance methods

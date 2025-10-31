@@ -103,6 +103,10 @@ const subscriptionSchema = new mongoose_1.Schema({
         default: true,
     },
     gracePeriodEnd: Date,
+    canceledAt: {
+        type: Date,
+        index: true,
+    },
     stripeSubscriptionId: {
         type: String,
         sparse: true,

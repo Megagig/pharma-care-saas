@@ -41,6 +41,7 @@ export interface ISubscription extends Document {
   paymentHistory: mongoose.Types.ObjectId[];
   autoRenew: boolean;
   gracePeriodEnd?: Date;
+  canceledAt?: Date;
   stripeSubscriptionId?: string;
   stripeCustomerId?: string;
 
@@ -149,6 +150,10 @@ const subscriptionSchema = new Schema(
       default: true,
     },
     gracePeriodEnd: Date,
+    canceledAt: {
+      type: Date,
+      index: true,
+    },
     stripeSubscriptionId: {
       type: String,
       sparse: true,

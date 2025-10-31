@@ -48,10 +48,8 @@ import AnalyticsIcon from '@mui/icons-material/Analytics';
 import SettingsIcon from '@mui/icons-material/Settings';
 import SecurityIcon from '@mui/icons-material/Security';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
-import SwapVertIcon from '@mui/icons-material/SwapVert';
 import EmailIcon from '@mui/icons-material/Email';
 import LocationOnIcon from '@mui/icons-material/LocationOn';
-import WebhookIcon from '@mui/icons-material/Webhook';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import PlaylistAddCheckIcon from '@mui/icons-material/PlaylistAddCheck';
 import RemoveCircleIcon from '@mui/icons-material/RemoveCircle';
@@ -75,23 +73,27 @@ import type { BulkRoleAssignment, DynamicUser, Role } from '../../types/rbac';
 // Import the new admin components
 import SecurityDashboard from './SecurityDashboard';
 import UsageMonitoring from './UsageMonitoring';
-import MigrationDashboard from './MigrationDashboard';
 import InvitationManagement from './InvitationManagement';
 import LocationManagement from './LocationManagement';
-import WebhookManagement from './WebhookManagement';
 import AdvancedSubscriptionAnalytics from '../subscription/AdvancedSubscriptionAnalytics';
+import EnhancedAnalytics from './EnhancedAnalytics';
 
 interface License {
-  _id: string;
-  firstName: string;
-  lastName: string;
-  email: string;
+  userId: string;
+  userName: string;
+  userEmail: string;
+  userRole: string;
+  workplaceName?: string;
   licenseNumber: string;
-  licenseDocument: {
+  licenseStatus?: string;
+  pharmacySchool?: string;
+  yearOfGraduation?: number;
+  expirationDate?: string;
+  documentInfo?: {
     fileName: string;
     uploadedAt: string;
+    fileSize?: number;
   };
-  createdAt: string;
 }
 
 interface Analytics {
@@ -124,6 +126,11 @@ const AdminDashboard: React.FC = () => {
     status: '',
     licenseStatus: '',
   });
+  const [licenseFilters, setLicenseFilters] = useState({
+    status: '',
+    search: '',
+  });
+  const [pendingLicenseCount, setPendingLicenseCount] = useState(0);
 
   // Bulk operation states
   const [bulkAssignDialogOpen, setBulkAssignDialogOpen] = useState(false);
@@ -143,7 +150,7 @@ const AdminDashboard: React.FC = () => {
   useEffect(() => {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeTab, filters]);
+  }, [activeTab, filters, licenseFilters]);
 
   useEffect(() => {
     if (activeTab === 0) {
@@ -195,10 +202,20 @@ const AdminDashboard: React.FC = () => {
 
   const loadLicenses = async () => {
     try {
-      const response = await getPendingLicenses();
+      // Fetch all licenses with current filters
+      const response = await getPendingLicenses({
+        status: licenseFilters.status || undefined,
+        search: licenseFilters.search || undefined,
+      });
 
       if (response.success) {
         setLicenses(response.data.licenses as License[]);
+      }
+
+      // Fetch pending count for badge
+      const pendingResponse = await getPendingLicenses({ status: 'pending' });
+      if (pendingResponse.success) {
+        setPendingLicenseCount(pendingResponse.data.licenses.length);
       }
     } catch (error) {
       console.error('Failed to load licenses:', error);
@@ -526,17 +543,71 @@ const AdminDashboard: React.FC = () => {
     }
   };
 
+  const getLicenseStatusColor = (
+    status: string
+  ):
+    | 'default'
+    | 'primary'
+    | 'secondary'
+    | 'error'
+    | 'info'
+    | 'success'
+    | 'warning' => {
+    switch (status) {
+      case 'approved':
+        return 'success';
+      case 'pending':
+        return 'warning';
+      case 'rejected':
+        return 'error';
+      case 'not_required':
+        return 'default';
+      default:
+        return 'default';
+    }
+  };
+
+  const getSubscriptionColor = (
+    tier: string | undefined
+  ):
+    | 'default'
+    | 'primary'
+    | 'secondary'
+    | 'error'
+    | 'info'
+    | 'success'
+    | 'warning' => {
+    switch (tier) {
+      case 'enterprise':
+        return 'error';
+      case 'pro':
+      case 'network':
+        return 'primary';
+      case 'basic':
+        return 'info';
+      case 'free_trial':
+      case 'trial':
+        return 'warning';
+      case 'active':
+        return 'success';
+      default:
+        return 'default';
+    }
+  };
+
   if (loading && !users.length && !licenses.length && !analytics) {
     return <LoadingSpinner message="Loading admin dashboard..." />;
   }
 
   return (
-    <Box p={3}>
-      <Typography variant="h4" gutterBottom>
-        Admin Dashboard
-      </Typography>
+    <Box>
+      <Box sx={{ px: 3, pt: 3 }}>
+        <Typography variant="h4" gutterBottom>
+          Admin Dashboard
+        </Typography>
+      </Box>
 
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3, px: 3 }}>
         <Tabs
           value={activeTab}
           onChange={(_, newValue) => setActiveTab(newValue)}
@@ -550,7 +621,7 @@ const AdminDashboard: React.FC = () => {
           />
           <Tab
             icon={
-              <Badge badgeContent={licenses.length} color="error">
+              <Badge badgeContent={pendingLicenseCount} color="error">
                 <AssignmentIcon />
               </Badge>
             }
@@ -568,18 +639,12 @@ const AdminDashboard: React.FC = () => {
             label="Usage Monitoring"
             iconPosition="start"
           />
-          <Tab
-            icon={<SwapVertIcon />}
-            label="Migrations"
-            iconPosition="start"
-          />
           <Tab icon={<EmailIcon />} label="Invitations" iconPosition="start" />
           <Tab
             icon={<LocationOnIcon />}
             label="Locations"
             iconPosition="start"
           />
-          <Tab icon={<WebhookIcon />} label="Webhooks" iconPosition="start" />
           <Tab
             icon={<SettingsIcon />}
             label="System Settings"
@@ -590,7 +655,7 @@ const AdminDashboard: React.FC = () => {
 
       {/* Users Tab */}
       {activeTab === 0 && (
-        <>
+        <Box sx={{ px: 3 }}>
           {/* Bulk Actions */}
           <Box sx={{ mb: 3, display: 'flex', gap: 2 }}>
             <Button
@@ -695,30 +760,31 @@ const AdminDashboard: React.FC = () => {
                     <TableCell>{user.email}</TableCell>
                     <TableCell>
                       <Chip
-                        label={(user.systemRole || 'unknown').replace('_', ' ')}
-                        color={getRoleColor(user.systemRole || 'unknown')}
+                        label={(user.role || user.systemRole || 'No Role').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        color={getRoleColor(user.role || user.systemRole || 'unknown')}
                         size="small"
                       />
                     </TableCell>
                     <TableCell>
                       <Chip
-                        label={user.status}
+                        label={user.status || 'Unknown'}
                         color={getStatusColor(user.status)}
                         size="small"
                       />
                     </TableCell>
                     <TableCell>
                       <Chip
-                        label="not_required"
-                        color={getStatusColor('not_required')}
+                        label={(user.licenseStatus || 'not_required').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        color={getLicenseStatusColor(user.licenseStatus || 'not_required')}
                         size="small"
                       />
                     </TableCell>
                     <TableCell>
                       <Chip
-                        label="free_trial"
+                        label={(user.subscriptionTier || user.subscriptionStatus || 'No Subscription').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
                         variant="outlined"
                         size="small"
+                        color={getSubscriptionColor(user.subscriptionTier || user.subscriptionStatus)}
                       />
                     </TableCell>
                     <TableCell>
@@ -756,145 +822,134 @@ const AdminDashboard: React.FC = () => {
               }
             />
           </TableContainer>
-        </>
+        </Box>
       )}
 
       {/* Licenses Tab */}
       {activeTab === 1 && (
-        <TableContainer component={Paper}>
-          <Table>
-            <TableHead>
-              <TableRow>
-                <TableCell>Name</TableCell>
-                <TableCell>Email</TableCell>
-                <TableCell>License Number</TableCell>
-                <TableCell>Document</TableCell>
-                <TableCell>Submitted</TableCell>
-                <TableCell>Actions</TableCell>
-              </TableRow>
-            </TableHead>
-            <TableBody>
-              {licenses.map((license) => (
-                <TableRow key={license._id}>
-                  <TableCell>
-                    {license.firstName} {license.lastName}
-                  </TableCell>
-                  <TableCell>{license.email}</TableCell>
-                  <TableCell>{license.licenseNumber}</TableCell>
-                  <TableCell>
-                    <Button
-                      startIcon={<DownloadIcon />}
-                      size="small"
-                      onClick={() => {
-                        window.open(
-                          `/api/license/document/${license._id}`,
-                          '_blank'
-                        );
-                      }}
-                    >
-                      {license.licenseDocument.fileName}
-                    </Button>
-                  </TableCell>
-                  <TableCell>
-                    {new Date(license.createdAt).toLocaleDateString()}
-                  </TableCell>
-                  <TableCell>
-                    <Tooltip title="Approve License">
-                      <IconButton
-                        onClick={() => handleApproveLicense(license._id)}
-                        color="success"
-                      >
-                        <CheckCircleIcon />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Reject License">
-                      <IconButton
-                        onClick={() => {
-                          setSelectedLicense(license);
-                          setLicenseDialogOpen(true);
-                        }}
-                        color="error"
-                      >
-                        <CancelIcon />
-                      </IconButton>
-                    </Tooltip>
-                  </TableCell>
+        <Box sx={{ px: 3 }}>
+          {/* License Filters */}
+          <Grid container spacing={2} sx={{ mb: 3 }}>
+            <Grid size={{ xs: 12, md: 3 }}>
+              <FormControl fullWidth>
+                <InputLabel>Status</InputLabel>
+                <Select
+                  value={licenseFilters.status}
+                  onChange={(e) =>
+                    setLicenseFilters({
+                      ...licenseFilters,
+                      status: e.target.value,
+                    })
+                  }
+                >
+                  <MenuItem value="">All Licenses</MenuItem>
+                  <MenuItem value="pending">Pending</MenuItem>
+                  <MenuItem value="approved">Approved</MenuItem>
+                  <MenuItem value="rejected">Rejected</MenuItem>
+                </Select>
+              </FormControl>
+            </Grid>
+            <Grid size={{ xs: 12, md: 6 }}>
+              <TextField
+                fullWidth
+                placeholder="Search by name, email, or license number"
+                value={licenseFilters.search}
+                onChange={(e) =>
+                  setLicenseFilters({
+                    ...licenseFilters,
+                    search: e.target.value,
+                  })
+                }
+              />
+            </Grid>
+          </Grid>
+
+          <TableContainer component={Paper}>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Name</TableCell>
+                  <TableCell>Email</TableCell>
+                  <TableCell>License Number</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Document</TableCell>
+                  <TableCell>Submitted</TableCell>
+                  <TableCell>Actions</TableCell>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </TableContainer>
+              </TableHead>
+              <TableBody>
+                {licenses.map((license) => (
+                  <TableRow key={license.userId}>
+                    <TableCell>
+                      {license.userName}
+                    </TableCell>
+                    <TableCell>{license.userEmail}</TableCell>
+                    <TableCell>{license.licenseNumber}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={(license.licenseStatus || 'pending').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        color={getLicenseStatusColor(license.licenseStatus || 'pending')}
+                        size="small"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      {license.documentInfo ? (
+                        <Button
+                          startIcon={<DownloadIcon />}
+                          size="small"
+                          onClick={() => {
+                            window.open(
+                              `/api/license/document/${license.userId}`,
+                              '_blank'
+                            );
+                          }}
+                        >
+                          {license.documentInfo.fileName}
+                        </Button>
+                      ) : (
+                        <Typography variant="caption" color="text.secondary">
+                          No document
+                        </Typography>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {license.documentInfo?.uploadedAt
+                        ? new Date(license.documentInfo.uploadedAt).toLocaleDateString()
+                        : '-'}
+                    </TableCell>
+                    <TableCell>
+                      <Tooltip title="Approve License">
+                        <IconButton
+                          onClick={() => handleApproveLicense(license.userId)}
+                          color="success"
+                          disabled={license.licenseStatus === 'approved'}
+                        >
+                          <CheckCircleIcon />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Reject License">
+                        <IconButton
+                          onClick={() => {
+                            setSelectedLicense(license as any);
+                            setLicenseDialogOpen(true);
+                          }}
+                          color="error"
+                          disabled={license.licenseStatus === 'rejected'}
+                        >
+                          <CancelIcon />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </TableContainer>
+        </Box>
       )}
 
       {/* Analytics Tab */}
-      {activeTab === 2 && analytics && (
-        <Grid container spacing={3}>
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  User Statistics
-                </Typography>
-                {analytics.users.map((stat) => (
-                  <Box
-                    key={stat._id}
-                    display="flex"
-                    justifyContent="space-between"
-                    mb={1}
-                  >
-                    <Typography variant="body2">{stat._id}:</Typography>
-                    <Typography variant="body2">
-                      {stat.active}/{stat.count}
-                    </Typography>
-                  </Box>
-                ))}
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Subscription Statistics
-                </Typography>
-                {analytics.subscriptions.map((stat) => (
-                  <Box key={stat._id} sx={{ mb: 1 }}>
-                    <Box display="flex" justifyContent="space-between">
-                      <Typography variant="body2">{stat._id}:</Typography>
-                      <Typography variant="body2">{stat.count}</Typography>
-                    </Box>
-                    <Typography variant="caption" color="text.secondary">
-                      Revenue: ₦{stat.revenue?.toLocaleString()}
-                    </Typography>
-                  </Box>
-                ))}
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  License Statistics
-                </Typography>
-                {analytics.licenses.map((stat) => (
-                  <Box
-                    key={stat._id}
-                    display="flex"
-                    justifyContent="space-between"
-                    mb={1}
-                  >
-                    <Typography variant="body2">{stat._id}:</Typography>
-                    <Typography variant="body2">{stat.count}</Typography>
-                  </Box>
-                ))}
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      )}
+      {activeTab === 2 && <EnhancedAnalytics />}
 
       {/* Security Dashboard Tab */}
       {activeTab === 3 && <SecurityDashboard />}
@@ -902,26 +957,22 @@ const AdminDashboard: React.FC = () => {
       {/* Usage Monitoring Tab */}
       {activeTab === 4 && <UsageMonitoring />}
 
-      {/* Migration Dashboard Tab */}
-      {activeTab === 5 && <MigrationDashboard />}
-
       {/* Invitation Management Tab */}
-      {activeTab === 6 && <InvitationManagement />}
+      {activeTab === 5 && <InvitationManagement />}
 
       {/* Location Management Tab */}
-      {activeTab === 7 && <LocationManagement />}
-
-      {/* Webhook Management Tab */}
-      {activeTab === 8 && <WebhookManagement />}
+      {activeTab === 6 && <LocationManagement />}
 
       {/* Advanced Subscription Analytics Tab */}
-      {activeTab === 9 && <AdvancedSubscriptionAnalytics />}
+      {activeTab === 7 && <AdvancedSubscriptionAnalytics />}
 
       {/* System Settings Tab */}
-      {activeTab === 10 && (
-        <Alert severity="info">
-          System settings panel will be available in the next update.
-        </Alert>
+      {activeTab === 8 && (
+        <Box sx={{ px: 3 }}>
+          <Alert severity="info">
+            System settings panel will be available in the next update.
+          </Alert>
+        </Box>
       )}
 
       {/* Edit User Dialog */}

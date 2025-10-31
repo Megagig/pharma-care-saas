@@ -1,0 +1,53 @@
+{
+  "name": "patient-engagement-uat",
+  "version": "1.0.0",
+  "description": "User Acceptance Testing suite for Patient Engagement & Follow-up Management module",
+  "main": "scripts/run-uat.js",
+  "scripts": {
+    "setup": "node scripts/uat-data-setup.js",
+    "run": "node scripts/run-uat.js",
+    "verify": "node scripts/run-uat.js verify",
+    "report": "node scripts/run-uat.js report",
+    "cleanup": "node scripts/run-uat.js cleanup",
+    "monitor": "node scripts/uat-monitor.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "uat",
+    "testing",
+    "patient-engagement",
+    "pharmacy",
+    "healthcare"
+  ],
+  "author": "Pharmacy Copilot Team",
+  "license": "MIT",
+  "dependencies": {
+    "@faker-js/faker": "^8.0.0",
+    "mongoose": "^7.0.0",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.0.0",
+    "chalk": "^4.1.2",
+    "inquirer": "^8.2.0",
+    "commander": "^9.0.0",
+    "node-fetch": "^3.3.0",
+    "puppeteer": "^21.0.0",
+    "playwright": "^1.40.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.0.0",
+    "jest": "^29.0.0",
+    "@types/node": "^20.0.0"
+  },
+  "engines": {
+    "node": ">=16.0.0",
+    "npm": ">=8.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pharmacy-copilot/patient-engagement.git"
+  },
+  "bugs": {
+    "url": "https://github.com/pharmacy-copilot/patient-engagement/issues"
+  },
+  "homepage": "https://github.com/pharmacy-copilot/patient-engagement#readme"
+}

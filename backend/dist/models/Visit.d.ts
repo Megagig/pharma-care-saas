@@ -18,6 +18,7 @@ export interface IVisit extends Document {
     workplaceId: mongoose.Types.ObjectId;
     locationId?: string;
     patientId: mongoose.Types.ObjectId;
+    appointmentId?: mongoose.Types.ObjectId;
     date: Date;
     soap: ISOAPNotes;
     attachments?: IAttachment[];

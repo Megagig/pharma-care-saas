@@ -13,10 +13,12 @@ import path from 'path';
 // Import custom types (automatically loaded from src/types/)
 import errorHandler from './middlewares/errorHandler';
 import memoryManagementService from './services/MemoryManagementService';
-import logger from './utils/logger';
+import logger, { addCorrelationId } from './utils/logger';
+import { createPerformanceMiddleware } from './utils/performanceMonitoring';
 
 // Route imports
 import authRoutes from './routes/authRoutes';
+import patientAuthRoutes from './routes/patientAuthRoutes';
 import userSettingsRoutes from './routes/userSettingsRoutes';
 import subscriptionRoutes from './routes/subscriptionRoutes';
 import patientRoutes from './routes/patientRoutes';
@@ -47,6 +49,8 @@ import auditRoutes from './routes/auditRoutes';
 import securityRoutes from './routes/securityRoutes';
 import invitationRoutes from './routes/invitationRoutes';
 import medicationManagementRoutes from './routes/medicationManagementRoutes';
+import patientEngagementHealthRoutes from './routes/healthRoutes';
+import monitoringRoutes from './routes/monitoringRoutes';
 import medicationAnalyticsRoutes from './routes/medicationAnalyticsRoutes';
 import usageMonitoringRoutes from './routes/usageMonitoringRoutes';
 import locationRoutes from './routes/locationRoutes';
@@ -66,6 +70,7 @@ import diagnosticRoutes from './routes/diagnosticRoutes';
 import communicationRoutes from './routes/communicationRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 import notificationManagementRoutes from './routes/notificationManagementRoutes';
+import engagementIntegrationRoutes from './routes/engagementIntegrationRoutes';
 import analyticsRoutes from './routes/analyticsRoutes';
 import reportsRoutes from './routes/reportsRoutes';
 import lighthouseRoutes from './routes/lighthouseRoutes';
@@ -76,11 +81,13 @@ import permissionRoutes from './routes/permissionRoutes';
 import rbacAuditRoutes from './routes/rbacAudit';
 import roleRoutes from './routes/roleRoutes';
 import pricingManagementRoutes from './routes/pricingManagementRoutes';
+import appointmentAnalyticsRoutes from './routes/appointmentAnalyticsRoutes';
 import saasRoutes from './routes/saasRoutes';
 import workspaceTeamRoutes from './routes/workspaceTeamRoutes';
 import dashboardRoutes from './routes/dashboardRoutes';
 import superAdminDashboardRoutes from './routes/superAdminDashboardRoutes';
 import superAdminAuditRoutes from './routes/superAdminAuditRoutes';
+import patientNotificationPreferencesRoutes from './routes/patientNotificationPreferencesRoutes';
 import SystemIntegrationService from './services/systemIntegrationService';
 
 const app: Application = express();
@@ -189,6 +196,13 @@ app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
+// Add correlation ID for request tracking
+app.use(addCorrelationId);
+
+// Performance monitoring middleware
+import { performanceCollector } from './utils/performanceMonitoring';
+app.use(createPerformanceMiddleware(performanceCollector));
+
 // Data sanitization
 app.use(mongoSanitize()); // Against NoSQL query injection
 app.use(xss()); // Against XSS attacks
@@ -217,6 +231,14 @@ app.use('/api/', latencyMeasurementMiddleware);
 import { unifiedAuditMiddleware } from './middlewares/unifiedAuditMiddleware';
 app.use('/api/', unifiedAuditMiddleware);
 
+// Clinical Intervention Sync Middleware (creates follow-up tasks automatically)
+import {
+  clinicalInterventionSyncMiddleware,
+  followUpCompletionSyncMiddleware
+} from './middlewares/clinicalInterventionSync';
+app.use('/api/', clinicalInterventionSyncMiddleware);
+app.use('/api/', followUpCompletionSyncMiddleware);
+
 // Compression middleware for API responses
 import {
   intelligentCompressionMiddleware,
@@ -242,6 +264,56 @@ app.get('/api/health', (req: Request, res: Response) => {
   });
 });
 
+// Debug endpoint to check user role and feature flags
+import { auth } from './middlewares/auth';
+app.get('/api/debug/user-info', auth, async (req: any, res: Response) => {
+  try {
+    const user = req.user;
+    const workspaceContext = req.workspaceContext;
+
+    // Check feature flags
+    const FeatureFlagService = (await import('./services/FeatureFlagService')).default;
+    const patientEngagementModule = await FeatureFlagService.isFeatureEnabled(
+      'patient_engagement_module',
+      user._id.toString(),
+      user.workplaceId?.toString() || 'no-workspace'
+    );
+    const appointmentScheduling = await FeatureFlagService.isFeatureEnabled(
+      'appointment_scheduling',
+      user._id.toString(),
+      user.workplaceId?.toString() || 'no-workspace'
+    );
+
+    res.json({
+      status: 'OK',
+      user: {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+        workplaceRole: user.workplaceRole,
+        status: user.status,
+        workplaceId: user.workplaceId,
+      },
+      workspaceContext: workspaceContext ? {
+        workspaceId: workspaceContext.workspace?._id,
+        planName: workspaceContext.plan?.name,
+        subscriptionStatus: workspaceContext.workspace?.subscriptionStatus,
+      } : null,
+      featureFlags: {
+        patient_engagement_module: patientEngagementModule,
+        appointment_scheduling: appointmentScheduling,
+      },
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: 'ERROR',
+      error: error.message,
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
 // System integration health endpoint
 app.get('/api/health/integration', async (req: Request, res: Response) => {
   try {
@@ -261,6 +333,10 @@ app.get('/api/health/integration', async (req: Request, res: Response) => {
 });
 
 app.use('/api/health/feature-flags', healthRoutes);
+
+// Patient Engagement Monitoring routes
+app.use('/api/health', patientEngagementHealthRoutes);
+app.use('/api/monitoring', monitoringRoutes);
 
 // Memory health endpoint
 app.get('/api/health/memory', (req: Request, res: Response) => {
@@ -311,6 +387,20 @@ app.get('/api/health/cache', async (req: Request, res: Response) => {
 app.use('/api/public', publicApiRoutes);
 app.use('/api/public/drugs', publicDrugDetailsRoutes);
 
+// Public Appointment routes (no authentication required)
+import publicAppointmentRoutes from './routes/publicAppointmentRoutes';
+app.use('/api/public/appointments', publicAppointmentRoutes);
+
+// Public Workspace routes (no authentication required)
+import publicWorkspaceRoutes from './routes/publicWorkspaceRoutes';
+app.use('/api/public/workspaces', publicWorkspaceRoutes);
+
+// Patient Portal Authentication routes (no authentication required)
+import patientPortalAuthRoutes from './routes/patientPortalAuthRoutes';
+app.use('/api/patient-portal/auth', patientPortalAuthRoutes);
+// Mount specific auth routes that need to be at /api/patient-portal level
+app.use('/api/patient-portal/patients', patientPortalAuthRoutes); // For /patients/pending route
+
 // Public Help routes (authentication required but no role restrictions)
 import publicHelpRoutes from './routes/publicHelpRoutes';
 app.use('/api/help', publicHelpRoutes);
@@ -333,6 +423,7 @@ app.use('/api/continuous-monitoring', continuousMonitoringRoutes);
 
 // API routes
 app.use('/api/auth', authRoutes);
+app.use('/api/patient-auth', patientAuthRoutes);
 app.use('/api/user/settings', userSettingsRoutes);
 app.use('/api/subscriptions', subscriptionRoutes);
 app.use('/api/pricing', pricingManagementRoutes);
@@ -354,6 +445,7 @@ app.use('/api/patients', dtpRoutes);
 app.use('/api/patients', carePlanRoutes);
 app.use('/api/patients', visitRoutes);
 app.use('/api/patients', patientMTRIntegrationRoutes);
+app.use('/api/patients', patientNotificationPreferencesRoutes);
 
 // Invitation routes (must come before individual resource routes to avoid auth conflicts)
 app.use('/api', invitationRoutes);
@@ -440,6 +532,28 @@ app.use('/api/payments', paymentRoutes);
 app.use('/api/billing', billingRoutes);
 app.use('/api/mtr', mtrRoutes);
 app.use('/api/mtr/notifications', mtrNotificationRoutes);
+
+// Engagement Integration routes
+app.use('/api/engagement-integration', engagementIntegrationRoutes);
+
+// Patient Engagement & Follow-up Management routes
+import appointmentRoutes from './routes/appointmentRoutes';
+import followUpRoutes from './routes/followUpRoutes';
+import scheduleRoutes from './routes/scheduleRoutes';
+import queueMonitoringRoutes from './routes/queueMonitoringRoutes';
+import alertRoutes from './routes/alertRoutes';
+import patientPortalRoutes from './routes/patientPortalRoutes';
+
+// Appointment Analytics routes - MUST come before /api/appointments to avoid /:id matching
+app.use('/api', appointmentAnalyticsRoutes);
+
+app.use('/api/appointments', appointmentRoutes);
+app.use('/api/follow-ups', followUpRoutes);
+app.use('/api/schedules', scheduleRoutes);
+app.use('/api/queue-monitoring', queueMonitoringRoutes);
+app.use('/api/alerts', alertRoutes);
+app.use('/api/patient-portal', patientPortalRoutes);
+
 // Clinical interventions health check (no auth required)
 app.get('/api/clinical-interventions/health', (req, res) => {
   res.json({
@@ -495,6 +609,10 @@ app.use('/api/email', emailWebhookRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/admin/dashboard', adminDashboardRoutes);
 app.use('/api/admin/saas', saasRoutes);
+
+// Patient Engagement Rollout Management routes (Super Admin only)
+import rolloutRoutes from './routes/rolloutRoutes';
+app.use('/api/admin/rollout', rolloutRoutes);
 app.use('/api/roles', roleRoutes);
 app.use('/api/role-hierarchy', roleHierarchyRoutes);
 app.use('/api/permissions', permissionRoutes);

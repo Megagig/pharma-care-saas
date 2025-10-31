@@ -50,6 +50,7 @@ import MemberList from '../../components/workspace/MemberList';
 import MemberFilters from '../../components/workspace/MemberFilters';
 import PendingApprovals from '../../components/workspace/PendingApprovals';
 import PendingLicenseApprovals from '../../components/workspace/PendingLicenseApprovals';
+import PendingPatientApprovals from '../../components/workspace/PendingPatientApprovals';
 import InviteList from '../../components/workspace/InviteList';
 import InviteGenerator from '../../components/workspace/InviteGenerator';
 import AuditTrail from '../../components/workspace/AuditTrail';
@@ -469,19 +470,27 @@ const WorkspaceTeam: React.FC = () => {
             sx={{ minHeight: 64 }}
           />
           <Tab
-            icon={<MailIcon />}
-            label="Invite Links"
+            icon={<PeopleIcon />}
+            label="Patient Approvals"
             iconPosition="start"
             id="workspace-team-tab-3"
             aria-controls="workspace-team-tabpanel-3"
             sx={{ minHeight: 64 }}
           />
           <Tab
-            icon={<HistoryIcon />}
-            label="Audit Trail"
+            icon={<MailIcon />}
+            label="Invite Links"
             iconPosition="start"
             id="workspace-team-tab-4"
             aria-controls="workspace-team-tabpanel-4"
+            sx={{ minHeight: 64 }}
+          />
+          <Tab
+            icon={<HistoryIcon />}
+            label="Audit Trail"
+            iconPosition="start"
+            id="workspace-team-tab-5"
+            aria-controls="workspace-team-tabpanel-5"
             sx={{ minHeight: 64 }}
           />
         </Tabs>
@@ -508,6 +517,10 @@ const WorkspaceTeam: React.FC = () => {
       </TabPanel>
 
       <TabPanel value={activeTab} index={3}>
+        <PendingPatientApprovals />
+      </TabPanel>
+
+      <TabPanel value={activeTab} index={4}>
         <Box sx={{ mb: 3, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="h6">Workspace Invites</Typography>
           <Button
@@ -529,7 +542,7 @@ const WorkspaceTeam: React.FC = () => {
         />
       </TabPanel>
 
-      <TabPanel value={activeTab} index={4}>
+      <TabPanel value={activeTab} index={5}>
         <AuditTrail />
       </TabPanel>
 

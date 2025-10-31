@@ -718,6 +718,7 @@ export const getPendingLicenses = async (params?: {
   page?: number;
   limit?: number;
   search?: string;
+  status?: string;
   sortBy?: string;
   sortOrder?: string;
 }): Promise<{

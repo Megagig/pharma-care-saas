@@ -1,0 +1,1537 @@
+openapi: 3.0.3
+info:
+  title: Patient Engagement & Follow-up Management API
+  description: |
+    The Patient Engagement & Follow-up Management API provides comprehensive endpoints for managing appointments, 
+    follow-up tasks, reminders, and pharmacist schedules. This API transforms PharmacyCopilot from an episodic 
+    care system to a continuous care platform.
+    
+    ## Features
+    - **Appointment Management**: Create, update, and manage patient appointments
+    - **Follow-up Tasks**: Automated and manual follow-up task management
+    - **Reminder System**: Multi-channel reminder delivery (email, SMS, push)
+    - **Schedule Management**: Pharmacist availability and capacity management
+    - **Analytics**: Comprehensive reporting and performance metrics
+    - **Patient Portal**: Self-service appointment booking and management
+    - **Real-time Updates**: WebSocket support for live notifications
+    
+    ## Authentication
+    All endpoints require JWT Bearer token authentication unless otherwise specified.
+    
+    ## Rate Limiting
+    - Standard endpoints: 1000 requests/hour per user
+    - Public endpoints: 100 requests/hour per IP
+    - Bulk operations: 50 requests/hour per user
+  version: 1.0.0
+  contact:
+    name: API Support
+    email: api-support@pharmacycopilot.com
+    url: https://docs.pharmacycopilot.com
+  license:
+    name: Proprietary
+    url: https://pharmacycopilot.com/license
+
+servers:
+  - url: https://api.pharmacycopilot.com/api
+    description: Production server
+  - url: https://staging-api.pharmacycopilot.com/api
+    description: Staging server
+  - url: http://localhost:3000/api
+    description: Development server
+
+security:
+  - BearerAuth: []
+
+paths:
+  # Appointments
+  /appointments:
+    get:
+      tags:
+        - Appointments
+      summary: Get appointments with filtering
+      description: Retrieve appointments with various filtering options for calendar views
+      parameters:
+        - name: view
+          in: query
+          description: Calendar view type
+          schema:
+            type: string
+            enum: [day, week, month]
+        - name: date
+          in: query
+          description: Date for calendar view (ISO format)
+          schema:
+            type: string
+            format: date
+        - name: pharmacistId
+          in: query
+          description: Filter by pharmacist ID
+          schema:
+            type: string
+        - name: locationId
+          in: query
+          description: Filter by location ID
+          schema:
+            type: string
+        - name: status
+          in: query
+          description: Filter by appointment status
+          schema:
+            $ref: '#/components/schemas/AppointmentStatus'
+        - name: type
+          in: query
+          description: Filter by appointment type
+          schema:
+            $ref: '#/components/schemas/AppointmentType'
+        - name: limit
+          in: query
+          description: Maximum number of results
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: page
+          in: query
+          description: Page number for pagination
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      appointments:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/AppointmentWithPatient'
+                      summary:
+                        $ref: '#/components/schemas/AppointmentSummary'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+    post:
+      tags:
+        - Appointments
+      summary: Create new appointment
+      description: Create a new appointment for a patient
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateAppointmentRequest'
+      responses:
+        '201':
+          description: Appointment created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      appointment:
+                        $ref: '#/components/schemas/Appointment'
+                      reminders:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Reminder'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalError'
+
+  /appointments/{id}:
+    get:
+      tags:
+        - Appointments
+      summary: Get appointment by ID
+      description: Retrieve detailed information about a specific appointment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Appointment ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      appointment:
+                        $ref: '#/components/schemas/Appointment'
+                      patient:
+                        $ref: '#/components/schemas/PatientSummary'
+                      assignedPharmacist:
+                        $ref: '#/components/schemas/PharmacistSummary'
+                      relatedRecords:
+                        $ref: '#/components/schemas/RelatedRecords'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+    put:
+      tags:
+        - Appointments
+      summary: Update appointment
+      description: Update appointment details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Appointment ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAppointmentRequest'
+      responses:
+        '200':
+          description: Appointment updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      appointment:
+                        $ref: '#/components/schemas/Appointment'
+                      affectedAppointments:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/Appointment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /appointments/{id}/status:
+    patch:
+      tags:
+        - Appointments
+      summary: Update appointment status
+      description: Update the status of an appointment (confirm, complete, cancel, etc.)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Appointment ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAppointmentStatusRequest'
+      responses:
+        '200':
+          description: Status updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      appointment:
+                        $ref: '#/components/schemas/Appointment'
+
+  /appointments/{id}/reschedule:
+    post:
+      tags:
+        - Appointments
+      summary: Reschedule appointment
+      description: Reschedule an appointment to a new date and time
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Appointment ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RescheduleAppointmentRequest'
+      responses:
+        '200':
+          description: Appointment rescheduled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      appointment:
+                        $ref: '#/components/schemas/Appointment'
+                      notificationSent:
+                        type: boolean
+
+  /appointments/{id}/cancel:
+    post:
+      tags:
+        - Appointments
+      summary: Cancel appointment
+      description: Cancel an appointment with reason
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Appointment ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelAppointmentRequest'
+      responses:
+        '200':
+          description: Appointment cancelled successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      appointment:
+                        $ref: '#/components/schemas/Appointment'
+                      cancelledCount:
+                        type: integer
+
+  /appointments/available-slots:
+    get:
+      tags:
+        - Appointments
+      summary: Get available appointment slots
+      description: Retrieve available time slots for appointment booking
+      parameters:
+        - name: date
+          in: query
+          required: true
+          description: Date to check availability (ISO format)
+          schema:
+            type: string
+            format: date
+        - name: pharmacistId
+          in: query
+          description: Specific pharmacist ID
+          schema:
+            type: string
+        - name: duration
+          in: query
+          description: Appointment duration in minutes
+          schema:
+            type: integer
+            minimum: 5
+            maximum: 120
+        - name: type
+          in: query
+          description: Appointment type
+          schema:
+            $ref: '#/components/schemas/AppointmentType'
+      responses:
+        '200':
+          description: Available slots retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      slots:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/AvailableSlot'
+                      pharmacists:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/PharmacistSummary'
+
+  # Follow-up Tasks
+  /follow-ups:
+    get:
+      tags:
+        - Follow-up Tasks
+      summary: Get follow-up tasks
+      description: Retrieve follow-up tasks with filtering and pagination
+      parameters:
+        - name: status
+          in: query
+          description: Filter by task status
+          schema:
+            $ref: '#/components/schemas/FollowUpStatus'
+        - name: priority
+          in: query
+          description: Filter by priority
+          schema:
+            $ref: '#/components/schemas/Priority'
+        - name: assignedTo
+          in: query
+          description: Filter by assigned pharmacist ID
+          schema:
+            type: string
+        - name: patientId
+          in: query
+          description: Filter by patient ID
+          schema:
+            type: string
+        - name: type
+          in: query
+          description: Filter by task type
+          schema:
+            $ref: '#/components/schemas/FollowUpType'
+        - name: overdue
+          in: query
+          description: Show only overdue tasks
+          schema:
+            type: boolean
+        - name: limit
+          in: query
+          description: Maximum number of results
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: page
+          in: query
+          description: Page number for pagination
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      tasks:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/FollowUpTaskWithPatient'
+                      summary:
+                        $ref: '#/components/schemas/FollowUpSummary'
+                      pagination:
+                        $ref: '#/components/schemas/Pagination'
+
+    post:
+      tags:
+        - Follow-up Tasks
+      summary: Create follow-up task
+      description: Create a new follow-up task for a patient
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateFollowUpTaskRequest'
+      responses:
+        '201':
+          description: Follow-up task created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      followUpTask:
+                        $ref: '#/components/schemas/FollowUpTask'
+
+  /follow-ups/{id}:
+    get:
+      tags:
+        - Follow-up Tasks
+      summary: Get follow-up task by ID
+      description: Retrieve detailed information about a specific follow-up task
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Follow-up task ID
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      task:
+                        $ref: '#/components/schemas/FollowUpTask'
+                      patient:
+                        $ref: '#/components/schemas/PatientSummary'
+                      assignedPharmacist:
+                        $ref: '#/components/schemas/PharmacistSummary'
+                      relatedRecords:
+                        $ref: '#/components/schemas/RelatedRecords'
+
+    put:
+      tags:
+        - Follow-up Tasks
+      summary: Update follow-up task
+      description: Update follow-up task details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Follow-up task ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateFollowUpTaskRequest'
+      responses:
+        '200':
+          description: Task updated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      task:
+                        $ref: '#/components/schemas/FollowUpTask'
+
+  /follow-ups/{id}/complete:
+    post:
+      tags:
+        - Follow-up Tasks
+      summary: Complete follow-up task
+      description: Mark a follow-up task as completed with outcome details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Follow-up task ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompleteFollowUpTaskRequest'
+      responses:
+        '200':
+          description: Task completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      task:
+                        $ref: '#/components/schemas/FollowUpTask'
+
+  /follow-ups/{id}/convert-to-appointment:
+    post:
+      tags:
+        - Follow-up Tasks
+      summary: Convert follow-up to appointment
+      description: Convert a follow-up task into a scheduled appointment
+      parameters:
+        - name: id
+          in: path
+          required: true
+          description: Follow-up task ID
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConvertToAppointmentRequest'
+      responses:
+        '201':
+          description: Appointment created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      appointment:
+                        $ref: '#/components/schemas/Appointment'
+                      task:
+                        $ref: '#/components/schemas/FollowUpTask'
+
+  # Analytics
+  /appointments/analytics:
+    get:
+      tags:
+        - Analytics
+      summary: Get appointment analytics
+      description: Retrieve comprehensive appointment analytics and metrics
+      parameters:
+        - name: startDate
+          in: query
+          required: true
+          description: Start date for analytics period
+          schema:
+            type: string
+            format: date
+        - name: endDate
+          in: query
+          required: true
+          description: End date for analytics period
+          schema:
+            type: string
+            format: date
+        - name: pharmacistId
+          in: query
+          description: Filter by pharmacist ID
+          schema:
+            type: string
+        - name: locationId
+          in: query
+          description: Filter by location ID
+          schema:
+            type: string
+        - name: groupBy
+          in: query
+          description: Group results by time period
+          schema:
+            type: string
+            enum: [day, week, month]
+      responses:
+        '200':
+          description: Analytics data retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    $ref: '#/components/schemas/AppointmentAnalytics'
+
+  # Patient Portal
+  /patient-portal/appointment-types:
+    get:
+      tags:
+        - Patient Portal
+      summary: Get available appointment types
+      description: Public endpoint for patients to view available appointment types
+      security: []
+      responses:
+        '200':
+          description: Available appointment types
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      appointmentTypes:
+                        type: array
+                        items:
+                          $ref: '#/components/schemas/AppointmentTypeInfo'
+
+  /patient-portal/appointments:
+    post:
+      tags:
+        - Patient Portal
+      summary: Book appointment (Patient Portal)
+      description: Allows patients to book appointments through the portal
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatientBookAppointmentRequest'
+      responses:
+        '201':
+          description: Appointment booked successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      appointment:
+                        type: object
+                        properties:
+                          _id:
+                            type: string
+                          confirmationNumber:
+                            type: string
+                          scheduledDate:
+                            type: string
+                            format: date
+                          scheduledTime:
+                            type: string
+                          status:
+                            type: string
+                      confirmationSent:
+                        type: boolean
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    # Enums
+    AppointmentStatus:
+      type: string
+      enum:
+        - scheduled
+        - confirmed
+        - in_progress
+        - completed
+        - cancelled
+        - no_show
+        - rescheduled
+
+    AppointmentType:
+      type: string
+      enum:
+        - mtm_session
+        - chronic_disease_review
+        - new_medication_consultation
+        - vaccination
+        - health_check
+        - smoking_cessation
+        - general_followup
+
+    FollowUpStatus:
+      type: string
+      enum:
+        - pending
+        - in_progress
+        - completed
+        - cancelled
+        - overdue
+        - converted_to_appointment
+
+    FollowUpType:
+      type: string
+      enum:
+        - medication_start_followup
+        - lab_result_review
+        - hospital_discharge_followup
+        - medication_change_followup
+        - chronic_disease_monitoring
+        - adherence_check
+        - refill_reminder
+        - preventive_care
+        - general_followup
+
+    Priority:
+      type: string
+      enum:
+        - low
+        - medium
+        - high
+        - urgent
+        - critical
+
+    # Core Models
+    Appointment:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: "507f1f77bcf86cd799439011"
+        workplaceId:
+          type: string
+        locationId:
+          type: string
+        patientId:
+          type: string
+        assignedTo:
+          type: string
+        type:
+          $ref: '#/components/schemas/AppointmentType'
+        title:
+          type: string
+          example: "Monthly MTM Session"
+        description:
+          type: string
+          example: "Comprehensive medication review"
+        scheduledDate:
+          type: string
+          format: date
+          example: "2025-10-25"
+        scheduledTime:
+          type: string
+          pattern: '^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$'
+          example: "10:00"
+        duration:
+          type: integer
+          minimum: 5
+          maximum: 120
+          example: 30
+        timezone:
+          type: string
+          example: "Africa/Lagos"
+        status:
+          $ref: '#/components/schemas/AppointmentStatus'
+        confirmationStatus:
+          type: string
+          enum: [pending, confirmed, declined]
+        confirmedAt:
+          type: string
+          format: date-time
+        isRecurring:
+          type: boolean
+          default: false
+        recurrencePattern:
+          $ref: '#/components/schemas/RecurrencePattern'
+        reminders:
+          type: array
+          items:
+            $ref: '#/components/schemas/Reminder'
+        relatedRecords:
+          $ref: '#/components/schemas/RelatedRecords'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    FollowUpTask:
+      type: object
+      properties:
+        _id:
+          type: string
+        workplaceId:
+          type: string
+        patientId:
+          type: string
+        assignedTo:
+          type: string
+        type:
+          $ref: '#/components/schemas/FollowUpType'
+        title:
+          type: string
+          example: "Follow-up for new Warfarin prescription"
+        description:
+          type: string
+          example: "Check INR levels and assess for bleeding"
+        objectives:
+          type: array
+          items:
+            type: string
+          example: ["Review INR results", "Assess for bleeding symptoms"]
+        priority:
+          $ref: '#/components/schemas/Priority'
+        dueDate:
+          type: string
+          format: date
+        status:
+          $ref: '#/components/schemas/FollowUpStatus'
+        trigger:
+          $ref: '#/components/schemas/TaskTrigger'
+        relatedRecords:
+          $ref: '#/components/schemas/RelatedRecords'
+        escalationHistory:
+          type: array
+          items:
+            $ref: '#/components/schemas/EscalationRecord'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    # Supporting Models
+    RecurrencePattern:
+      type: object
+      properties:
+        frequency:
+          type: string
+          enum: [daily, weekly, biweekly, monthly, quarterly]
+        interval:
+          type: integer
+          minimum: 1
+        endDate:
+          type: string
+          format: date
+        endAfterOccurrences:
+          type: integer
+        daysOfWeek:
+          type: array
+          items:
+            type: integer
+            minimum: 0
+            maximum: 6
+
+    Reminder:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [email, sms, push, whatsapp]
+        scheduledFor:
+          type: string
+          format: date-time
+        sent:
+          type: boolean
+        sentAt:
+          type: string
+          format: date-time
+        deliveryStatus:
+          type: string
+          enum: [pending, sent, delivered, failed]
+
+    RelatedRecords:
+      type: object
+      properties:
+        visitId:
+          type: string
+        mtrSessionId:
+          type: string
+        clinicalInterventionId:
+          type: string
+        diagnosticCaseId:
+          type: string
+        followUpTaskId:
+          type: string
+
+    TaskTrigger:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [manual, medication_start, lab_result, hospital_discharge, medication_change, scheduled_monitoring, missed_appointment, system_rule]
+        sourceId:
+          type: string
+        sourceType:
+          type: string
+        triggerDate:
+          type: string
+          format: date-time
+
+    EscalationRecord:
+      type: object
+      properties:
+        escalatedAt:
+          type: string
+          format: date-time
+        escalatedBy:
+          type: string
+        fromPriority:
+          type: string
+        toPriority:
+          type: string
+        reason:
+          type: string
+
+    PatientSummary:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        age:
+          type: integer
+        phone:
+          type: string
+        email:
+          type: string
+
+    PharmacistSummary:
+      type: object
+      properties:
+        _id:
+          type: string
+        name:
+          type: string
+        specializations:
+          type: array
+          items:
+            type: string
+
+    AvailableSlot:
+      type: object
+      properties:
+        time:
+          type: string
+          pattern: '^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$'
+        available:
+          type: boolean
+        pharmacistId:
+          type: string
+        pharmacistName:
+          type: string
+        reason:
+          type: string
+
+    AppointmentSummary:
+      type: object
+      properties:
+        total:
+          type: integer
+        byStatus:
+          type: object
+          additionalProperties:
+            type: integer
+        byType:
+          type: object
+          additionalProperties:
+            type: integer
+
+    FollowUpSummary:
+      type: object
+      properties:
+        total:
+          type: integer
+        overdue:
+          type: integer
+        dueToday:
+          type: integer
+        byPriority:
+          type: object
+          additionalProperties:
+            type: integer
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        totalPages:
+          type: integer
+        totalItems:
+          type: integer
+
+    AppointmentAnalytics:
+      type: object
+      properties:
+        summary:
+          type: object
+          properties:
+            totalAppointments:
+              type: integer
+            completionRate:
+              type: number
+            noShowRate:
+              type: number
+            cancellationRate:
+              type: number
+            averageWaitTime:
+              type: number
+        byType:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              count:
+                type: integer
+              completionRate:
+                type: number
+        trends:
+          type: object
+          properties:
+            daily:
+              type: array
+              items:
+                type: object
+                properties:
+                  date:
+                    type: string
+                    format: date
+                  appointments:
+                    type: integer
+                  completed:
+                    type: integer
+
+    AppointmentTypeInfo:
+      type: object
+      properties:
+        type:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        duration:
+          type: integer
+        available:
+          type: boolean
+
+    # Request Models
+    CreateAppointmentRequest:
+      type: object
+      required:
+        - patientId
+        - type
+        - scheduledDate
+        - scheduledTime
+        - duration
+      properties:
+        patientId:
+          type: string
+        type:
+          $ref: '#/components/schemas/AppointmentType'
+        scheduledDate:
+          type: string
+          format: date
+        scheduledTime:
+          type: string
+          pattern: '^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$'
+        duration:
+          type: integer
+          minimum: 5
+          maximum: 120
+        assignedTo:
+          type: string
+        description:
+          type: string
+        isRecurring:
+          type: boolean
+          default: false
+        recurrencePattern:
+          $ref: '#/components/schemas/RecurrencePattern'
+        patientPreferences:
+          type: object
+          properties:
+            preferredChannel:
+              type: string
+              enum: [email, sms, whatsapp, phone]
+            language:
+              type: string
+
+    UpdateAppointmentRequest:
+      type: object
+      properties:
+        scheduledDate:
+          type: string
+          format: date
+        scheduledTime:
+          type: string
+        description:
+          type: string
+        updateType:
+          type: string
+          enum: [this_only, this_and_future]
+
+    UpdateAppointmentStatusRequest:
+      type: object
+      required:
+        - status
+      properties:
+        status:
+          $ref: '#/components/schemas/AppointmentStatus'
+        reason:
+          type: string
+        outcome:
+          type: object
+          properties:
+            status:
+              type: string
+              enum: [successful, partially_successful, unsuccessful]
+            notes:
+              type: string
+            nextActions:
+              type: array
+              items:
+                type: string
+            visitCreated:
+              type: boolean
+
+    RescheduleAppointmentRequest:
+      type: object
+      required:
+        - newDate
+        - newTime
+      properties:
+        newDate:
+          type: string
+          format: date
+        newTime:
+          type: string
+        reason:
+          type: string
+        notifyPatient:
+          type: boolean
+          default: true
+
+    CancelAppointmentRequest:
+      type: object
+      required:
+        - reason
+      properties:
+        reason:
+          type: string
+        notifyPatient:
+          type: boolean
+          default: true
+        cancelType:
+          type: string
+          enum: [this_only, all_future]
+
+    CreateFollowUpTaskRequest:
+      type: object
+      required:
+        - patientId
+        - type
+        - title
+        - description
+        - priority
+        - dueDate
+      properties:
+        patientId:
+          type: string
+        type:
+          $ref: '#/components/schemas/FollowUpType'
+        title:
+          type: string
+        description:
+          type: string
+        objectives:
+          type: array
+          items:
+            type: string
+        priority:
+          $ref: '#/components/schemas/Priority'
+        dueDate:
+          type: string
+          format: date
+        assignedTo:
+          type: string
+        trigger:
+          $ref: '#/components/schemas/TaskTrigger'
+
+    UpdateFollowUpTaskRequest:
+      type: object
+      properties:
+        description:
+          type: string
+        priority:
+          $ref: '#/components/schemas/Priority'
+        dueDate:
+          type: string
+          format: date
+        assignedTo:
+          type: string
+
+    CompleteFollowUpTaskRequest:
+      type: object
+      required:
+        - outcome
+      properties:
+        outcome:
+          type: object
+          required:
+            - status
+            - notes
+          properties:
+            status:
+              type: string
+              enum: [successful, partially_successful, unsuccessful]
+            notes:
+              type: string
+            nextActions:
+              type: array
+              items:
+                type: string
+            appointmentCreated:
+              type: boolean
+            appointmentId:
+              type: string
+
+    ConvertToAppointmentRequest:
+      type: object
+      required:
+        - scheduledDate
+        - scheduledTime
+        - duration
+        - type
+      properties:
+        scheduledDate:
+          type: string
+          format: date
+        scheduledTime:
+          type: string
+        duration:
+          type: integer
+        type:
+          $ref: '#/components/schemas/AppointmentType'
+
+    PatientBookAppointmentRequest:
+      type: object
+      required:
+        - patientId
+        - type
+        - scheduledDate
+        - scheduledTime
+      properties:
+        patientId:
+          type: string
+        type:
+          $ref: '#/components/schemas/AppointmentType'
+        scheduledDate:
+          type: string
+          format: date
+        scheduledTime:
+          type: string
+        notes:
+          type: string
+        notificationPreferences:
+          type: object
+          properties:
+            email:
+              type: boolean
+            sms:
+              type: boolean
+
+    # Response Models with Patient Info
+    AppointmentWithPatient:
+      allOf:
+        - $ref: '#/components/schemas/Appointment'
+        - type: object
+          properties:
+            patient:
+              $ref: '#/components/schemas/PatientSummary'
+
+    FollowUpTaskWithPatient:
+      allOf:
+        - $ref: '#/components/schemas/FollowUpTask'
+        - type: object
+          properties:
+            patient:
+              $ref: '#/components/schemas/PatientSummary'
+
+    # Error Models
+    Error:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        error:
+          type: object
+          properties:
+            code:
+              type: string
+            message:
+              type: string
+            details:
+              type: object
+
+  responses:
+    BadRequest:
+      description: Bad request - validation error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            success: false
+            error:
+              code: "VALIDATION_ERROR"
+              message: "Invalid appointment date"
+              details:
+                field: "scheduledDate"
+                value: "2025-10-20"
+                constraint: "Date must be in the future"
+
+    Unauthorized:
+      description: Unauthorized - invalid or missing authentication
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            success: false
+            error:
+              code: "UNAUTHORIZED"
+              message: "Invalid or missing authentication token"
+
+    Forbidden:
+      description: Forbidden - insufficient permissions
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            success: false
+            error:
+              code: "FORBIDDEN"
+              message: "Insufficient permissions to access this resource"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            success: false
+            error:
+              code: "NOT_FOUND"
+              message: "Appointment not found"
+
+    Conflict:
+      description: Conflict - resource conflict
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            success: false
+            error:
+              code: "CONFLICT"
+              message: "Appointment time conflict detected"
+
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            success: false
+            error:
+              code: "INTERNAL_ERROR"
+              message: "An unexpected error occurred"
+
+tags:
+  - name: Appointments
+    description: Appointment management operations
+  - name: Follow-up Tasks
+    description: Follow-up task management operations
+  - name: Analytics
+    description: Analytics and reporting operations
+  - name: Patient Portal
+    description: Patient self-service operations

@@ -33,6 +33,14 @@ export const LazyReportsAnalyticsDashboard = lazy(() =>
   import('../modules/reports-analytics/components/ReportsAnalyticsDashboard')
 );
 
+// Patient Engagement & Follow-up
+export const LazyPatientEngagement = lazy(() => import('../pages/PatientEngagement'));
+export const LazyAppointmentManagement = lazy(() => import('../pages/AppointmentManagement'));
+export const LazyFollowUpManagement = lazy(() => import('../pages/FollowUpManagement'));
+export const LazyPatientPortal = lazy(() => import('../pages/PatientPortal'));
+export const LazyPatientAuth = lazy(() => import('../pages/PatientAuth'));
+export const LazyPublicPatientPortal = lazy(() => import('../pages/PublicPatientPortal'));
+
 // Admin components
 export const LazyAdminDashboard = lazy(() => import('../components/admin/AdminDashboard'));
 export const LazyFeatureManagement = lazy(() => import('../pages/FeatureManagement'));

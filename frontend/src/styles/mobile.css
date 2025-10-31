@@ -1,5 +1,8 @@
 /* Mobile-specific styles for Communication Hub */
 
+/* Import mobile appointment styles */
+@import './mobile-appointments.css';
+
 /* Safe area insets for devices with notches */
 :root {
   --safe-area-inset-top: env(safe-area-inset-top);

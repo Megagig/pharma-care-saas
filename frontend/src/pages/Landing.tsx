@@ -55,6 +55,7 @@ const Landing = () => {
     { label: 'About', path: '/about' },
     { label: 'Contact', path: '/contact' },
     { label: 'Pricing', path: '/pricing' },
+    { label: 'Patient Portal', path: '/patient-access' },
     { label: 'Sign In', path: '/login' },
     { label: 'Get Started', path: '/register' },
   ];
@@ -228,6 +229,26 @@ const Landing = () => {
               gap: 3,
             }}
           >
+            <Button 
+              component={Link} 
+              to="/patient-access" 
+              color="inherit"
+              startIcon={<LocalPharmacyIcon />}
+              sx={{
+                fontWeight: 600,
+                color: 'primary.main',
+                '&:hover': {
+                  backgroundColor: 'primary.main',
+                  color: 'white',
+                },
+                border: '1px solid',
+                borderColor: 'primary.main',
+                borderRadius: 2,
+                px: 2,
+              }}
+            >
+              Patient Portal
+            </Button>
             <Button component={Link} to="/about" color="inherit">
               About
             </Button>
@@ -452,8 +473,29 @@ const Landing = () => {
                   Start Free Trial
                 </Button>
                 <Button
-                  onClick={scrollToFeatures}
+                  component={Link}
+                  to="/patient-access"
                   variant="outlined"
+                  size="large"
+                  startIcon={<LocalPharmacyIcon />}
+                  sx={{ 
+                    py: 1.5, 
+                    px: 4, 
+                    borderRadius: 3,
+                    borderColor: 'primary.main',
+                    color: 'primary.main',
+                    '&:hover': {
+                      borderColor: 'primary.dark',
+                      backgroundColor: 'primary.main',
+                      color: 'white',
+                    }
+                  }}
+                >
+                  Patient Portal
+                </Button>
+                <Button
+                  onClick={scrollToFeatures}
+                  variant="text"
                   size="large"
                   sx={{ py: 1.5, px: 4, borderRadius: 3 }}
                 >
@@ -795,6 +837,154 @@ const Landing = () => {
           </Box>
         </Box>
       </Container>
+
+      {/* Patient Portal Section */}
+      <Box
+        sx={{
+          bgcolor: theme.palette.mode === 'dark' 
+            ? 'rgba(25, 118, 210, 0.05)' 
+            : 'rgba(25, 118, 210, 0.08)',
+          py: { xs: 8, md: 12 },
+        }}
+      >
+        <Container maxWidth="lg">
+          <Box
+            ref={(el) => (observerRefs.current['patient-portal-header'] = el as HTMLDivElement | null)}
+            sx={{
+              textAlign: 'center',
+              mb: 8,
+              opacity: isVisible['patient-portal-header'] ? 1 : 0,
+              transform: isVisible['patient-portal-header']
+                ? 'translateY(0)'
+                : 'translateY(30px)',
+              transition: 'all 0.8s ease-out',
+            }}
+          >
+            <Typography
+              variant="h3"
+              component="h2"
+              sx={{
+                fontWeight: 700,
+                mb: 3,
+                color: 'text.primary',
+              }}
+            >
+              Patient Portal Access
+            </Typography>
+            <Typography
+              variant="h6"
+              sx={{
+                color: 'text.secondary',
+                maxWidth: '600px',
+                mx: 'auto',
+                lineHeight: 1.6,
+              }}
+            >
+              Patients can easily access their pharmacy's portal to book appointments, 
+              manage prescriptions, and stay connected with their healthcare providers.
+            </Typography>
+          </Box>
+
+          <Box
+            ref={(el) => (observerRefs.current['patient-portal-content'] = el as HTMLDivElement | null)}
+            sx={{
+              display: 'grid',
+              gridTemplateColumns: { xs: '1fr', md: '1fr 1fr' },
+              gap: 6,
+              alignItems: 'center',
+              opacity: isVisible['patient-portal-content'] ? 1 : 0,
+              transform: isVisible['patient-portal-content']
+                ? 'translateY(0)'
+                : 'translateY(30px)',
+              transition: 'all 0.8s ease-out 0.2s',
+            }}
+          >
+            {/* Left Content */}
+            <Box>
+              <Typography variant="h4" sx={{ fontWeight: 600, mb: 3 }}>
+                Simple Access for Patients
+              </Typography>
+              <Box sx={{ mb: 4 }}>
+                {[
+                  'Find their pharmacy by name or location',
+                  'Create an account or sign in securely',
+                  'Book appointments online 24/7',
+                  'View appointment history and upcoming visits',
+                  'Manage notification preferences',
+                  'Access prescription information'
+                ].map((feature, index) => (
+                  <Box key={index} sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                    <CheckCircleIcon sx={{ color: 'primary.main', mr: 2 }} />
+                    <Typography variant="body1">{feature}</Typography>
+                  </Box>
+                ))}
+              </Box>
+              <Button
+                component={Link}
+                to="/patient-access"
+                variant="contained"
+                size="large"
+                startIcon={<LocalPharmacyIcon />}
+                sx={{ py: 1.5, px: 4, borderRadius: 3 }}
+              >
+                Try Patient Portal
+              </Button>
+            </Box>
+
+            {/* Right Image/Demo */}
+            <Box
+              sx={{
+                display: 'flex',
+                justifyContent: 'center',
+                alignItems: 'center',
+              }}
+            >
+              <Paper
+                sx={{
+                  p: 4,
+                  borderRadius: 4,
+                  boxShadow: theme.shadows[8],
+                  maxWidth: 400,
+                  width: '100%',
+                }}
+              >
+                <Box sx={{ textAlign: 'center', mb: 3 }}>
+                  <LocalPharmacyIcon sx={{ fontSize: 60, color: 'primary.main', mb: 2 }} />
+                  <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                    Patient Portal Demo
+                  </Typography>
+                  <Typography variant="body2" color="text.secondary">
+                    Experience the patient journey
+                  </Typography>
+                </Box>
+                <Box sx={{ mb: 3 }}>
+                  <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+                    1. Search for your pharmacy
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+                    2. Create account or sign in
+                  </Typography>
+                  <Typography variant="body2" sx={{ mb: 1, fontWeight: 500 }}>
+                    3. Book appointments easily
+                  </Typography>
+                  <Typography variant="body2" sx={{ fontWeight: 500 }}>
+                    4. Manage your healthcare
+                  </Typography>
+                </Box>
+                <Button
+                  component={Link}
+                  to="/patient-access"
+                  variant="outlined"
+                  fullWidth
+                  sx={{ borderRadius: 2 }}
+                >
+                  Start Demo
+                </Button>
+              </Paper>
+            </Box>
+          </Box>
+        </Container>
+      </Box>
 
       {/* Testimonials Section */}
       <Box

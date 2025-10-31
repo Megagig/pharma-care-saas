@@ -88,6 +88,16 @@ const notificationDataSchema = new mongoose_1.Schema({
         ref: 'Reminder',
         index: true,
     },
+    appointmentId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'Appointment',
+        index: true,
+    },
+    followUpTaskId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'FollowUpTask',
+        index: true,
+    },
     medicationName: {
         type: String,
     },
@@ -174,7 +184,10 @@ const notificationSchema = new mongoose_1.Schema({
             'conversation_invite', 'file_shared', 'intervention_assigned',
             'patient_query', 'urgent_message', 'system_notification',
             'consultation_request', 'consultation_accepted', 'consultation_completed', 'consultation_escalated',
-            'medication_reminder', 'missed_medication', 'reminder_setup', 'flagged_message'
+            'medication_reminder', 'missed_medication', 'reminder_setup', 'flagged_message',
+            'appointment_reminder', 'appointment_confirmed', 'appointment_rescheduled',
+            'appointment_cancelled', 'followup_task_assigned', 'followup_task_overdue',
+            'medication_refill_due', 'adherence_check_reminder'
         ],
         required: true,
         index: true,
@@ -366,9 +379,15 @@ notificationSchema.pre('save', function () {
         }
     }
     if (this.isNew) {
-        const enabledChannels = Object.entries(this.deliveryChannels)
-            .filter(([_, enabled]) => enabled)
-            .map(([channel, _]) => channel);
+        const enabledChannels = [];
+        if (this.deliveryChannels.inApp)
+            enabledChannels.push('inApp');
+        if (this.deliveryChannels.email)
+            enabledChannels.push('email');
+        if (this.deliveryChannels.sms)
+            enabledChannels.push('sms');
+        if (this.deliveryChannels.push)
+            enabledChannels.push('push');
         this.deliveryStatus = enabledChannels.map(channel => ({
             channel: channel,
             status: 'pending',

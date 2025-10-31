@@ -4,8 +4,9 @@ export declare const paginationSchema: z.ZodObject<{
     limit: z.ZodPipe<z.ZodDefault<z.ZodOptional<z.ZodString>>, z.ZodTransform<number, string>>;
     sort: z.ZodDefault<z.ZodOptional<z.ZodString>>;
 }, z.core.$strip>;
-export declare const searchSchema: z.ZodObject<{
+export declare const searchSchema: z.ZodPipe<z.ZodObject<{
     q: z.ZodOptional<z.ZodString>;
+    search: z.ZodOptional<z.ZodString>;
     name: z.ZodOptional<z.ZodString>;
     mrn: z.ZodOptional<z.ZodString>;
     phone: z.ZodOptional<z.ZodString>;
@@ -21,7 +22,31 @@ export declare const searchSchema: z.ZodObject<{
     page: z.ZodPipe<z.ZodDefault<z.ZodOptional<z.ZodString>>, z.ZodTransform<number, string>>;
     limit: z.ZodPipe<z.ZodDefault<z.ZodOptional<z.ZodString>>, z.ZodTransform<number, string>>;
     sort: z.ZodDefault<z.ZodOptional<z.ZodString>>;
-}, z.core.$strip>;
+}, z.core.$strip>, z.ZodTransform<{
+    q: string;
+    sort: string;
+    search?: string;
+    name?: string;
+    mrn?: string;
+    phone?: string;
+    state?: string;
+    bloodGroup?: string;
+    genotype?: string;
+    page?: number;
+    limit?: number;
+}, {
+    sort: string;
+    q?: string;
+    search?: string;
+    name?: string;
+    mrn?: string;
+    phone?: string;
+    state?: string;
+    bloodGroup?: string;
+    genotype?: string;
+    page?: number;
+    limit?: number;
+}>>;
 export declare const createPatientSchema: z.ZodObject<{
     firstName: z.ZodString;
     lastName: z.ZodString;
@@ -61,8 +86,8 @@ export declare const createPatientSchema: z.ZodObject<{
         snomedId: z.ZodOptional<z.ZodString>;
         onsetDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
         status: z.ZodOptional<z.ZodEnum<{
-            active: "active";
             resolved: "resolved";
+            active: "active";
             remission: "remission";
         }>>;
         notes: z.ZodOptional<z.ZodString>;
@@ -182,8 +207,8 @@ export declare const updatePatientSchema: z.ZodObject<{
         snomedId: z.ZodOptional<z.ZodString>;
         onsetDate: z.ZodPipe<z.ZodOptional<z.ZodString>, z.ZodTransform<Date, string>>;
         status: z.ZodOptional<z.ZodEnum<{
-            active: "active";
             resolved: "resolved";
+            active: "active";
             remission: "remission";
         }>>;
         notes: z.ZodOptional<z.ZodString>;
@@ -292,8 +317,8 @@ export declare const createConditionSchema: z.ZodObject<{
     snomedId: z.ZodOptional<z.ZodString>;
     onsetDate: z.ZodOptional<z.ZodString>;
     status: z.ZodDefault<z.ZodEnum<{
-        active: "active";
         resolved: "resolved";
+        active: "active";
         remission: "remission";
     }>>;
     notes: z.ZodOptional<z.ZodString>;
@@ -303,8 +328,8 @@ export declare const updateConditionSchema: z.ZodObject<{
     snomedId: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     onsetDate: z.ZodOptional<z.ZodOptional<z.ZodString>>;
     status: z.ZodOptional<z.ZodDefault<z.ZodEnum<{
-        active: "active";
         resolved: "resolved";
+        active: "active";
         remission: "remission";
     }>>>;
     notes: z.ZodOptional<z.ZodOptional<z.ZodString>>;
@@ -516,8 +541,8 @@ export declare const createVisitSchema: z.ZodObject<{
     }, z.core.$strip>;
     attachments: z.ZodOptional<z.ZodArray<z.ZodObject<{
         kind: z.ZodEnum<{
-            image: "image";
             other: "other";
+            image: "image";
             lab: "lab";
             audio: "audio";
         }>;
@@ -537,8 +562,8 @@ export declare const updateVisitSchema: z.ZodObject<{
     }, z.core.$strip>>;
     attachments: z.ZodOptional<z.ZodOptional<z.ZodArray<z.ZodObject<{
         kind: z.ZodEnum<{
-            image: "image";
             other: "other";
+            image: "image";
             lab: "lab";
             audio: "audio";
         }>;
@@ -554,8 +579,8 @@ export declare const visitParamsSchema: z.ZodObject<{
 }, z.core.$strip>;
 export declare const attachmentSchema: z.ZodObject<{
     kind: z.ZodEnum<{
-        image: "image";
         other: "other";
+        image: "image";
         lab: "lab";
         audio: "audio";
     }>;

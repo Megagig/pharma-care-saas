@@ -38,15 +38,6 @@ apiClient.interceptors.request.use(
       }
     }
 
-    // Debug logging for API requests
-    console.log('🔵 API Request:', {
-      method: config.method?.toUpperCase(),
-      url: config.url,
-      baseURL: config.baseURL,
-      fullURL: config.baseURL ? `${config.baseURL}${config.url}` : config.url,
-      hasCSRF: !!config.headers['x-csrf-token']
-    });
-
     // Don't add custom headers that aren't in CORS allowedHeaders
     // The backend RBAC will handle authentication via cookies
 
@@ -85,7 +76,8 @@ apiClient.interceptors.response.use(
       error.response?.status === 401 &&
       !originalRequest._retry &&
       !originalRequest.url?.includes('/auth/login') &&
-      !originalRequest.url?.includes('/auth/refresh-token')
+      !originalRequest.url?.includes('/auth/refresh-token') &&
+      !originalRequest.url?.includes('/patient-portal') // Don't auto-refresh for patient portal endpoints
     ) {
       if (!isRefreshing) {
         // Set flag to indicate we're refreshing
@@ -113,14 +105,21 @@ apiClient.interceptors.response.use(
             // Retry the original request
             return apiClient(originalRequest);
           } else {
-            // If refresh failed, redirect to login
-            window.location.href = '/login?session=expired';
+            // If refresh failed, only redirect for actual auth failures
+            isRefreshing = false;
+            // Don't auto-redirect, let the app handle the error
             return Promise.reject(error);
           }
-        } catch (refreshError) {
-          // If refresh failed, redirect to login
+        } catch (refreshError: any) {
+          // Only redirect to login if it's a refresh token error (401)
           isRefreshing = false;
-          window.location.href = '/login?session=expired';
+          
+          // Check if it's actually an auth error or a permission error
+          if (refreshError.response?.status === 401) {
+            // Only logout if the refresh token itself is invalid
+            window.location.href = '/login?session=expired';
+          }
+          
           return Promise.reject(refreshError);
         }
       } else {

@@ -8,6 +8,8 @@ export interface INotificationData {
     consultationRequestId?: mongoose.Types.ObjectId;
     pharmacistId?: mongoose.Types.ObjectId;
     reminderId?: mongoose.Types.ObjectId;
+    appointmentId?: mongoose.Types.ObjectId;
+    followUpTaskId?: mongoose.Types.ObjectId;
     medicationName?: string;
     dosage?: string;
     scheduledTime?: Date;
@@ -38,7 +40,7 @@ export interface INotificationDeliveryStatus {
 export interface INotification extends Document {
     _id: mongoose.Types.ObjectId;
     userId: mongoose.Types.ObjectId;
-    type: 'new_message' | 'mention' | 'therapy_update' | 'clinical_alert' | 'conversation_invite' | 'file_shared' | 'intervention_assigned' | 'patient_query' | 'urgent_message' | 'system_notification' | 'consultation_request' | 'consultation_accepted' | 'consultation_completed' | 'consultation_escalated' | 'medication_reminder' | 'missed_medication' | 'reminder_setup' | 'flagged_message';
+    type: 'new_message' | 'mention' | 'therapy_update' | 'clinical_alert' | 'conversation_invite' | 'file_shared' | 'intervention_assigned' | 'patient_query' | 'urgent_message' | 'system_notification' | 'consultation_request' | 'consultation_accepted' | 'consultation_completed' | 'consultation_escalated' | 'medication_reminder' | 'missed_medication' | 'reminder_setup' | 'flagged_message' | 'appointment_reminder' | 'appointment_confirmed' | 'appointment_rescheduled' | 'appointment_cancelled' | 'followup_task_assigned' | 'followup_task_overdue' | 'medication_refill_due' | 'adherence_check_reminder';
     title: string;
     content: string;
     data: INotificationData;

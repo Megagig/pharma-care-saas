@@ -1,0 +1,408 @@
+{
+  "info": {
+    "name": "Patient Engagement & Follow-up Management API",
+    "description": "Complete API collection for Patient Engagement & Follow-up Management module",
+    "version": "1.0.0",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{jwt_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "https://api.pharmacycopilot.com/api",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "patient_id",
+      "value": "507f1f77bcf86cd799439011",
+      "type": "string"
+    },
+    {
+      "key": "pharmacist_id",
+      "value": "507f1f77bcf86cd799439012",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "Appointments",
+      "item": [
+        {
+          "name": "Create Appointment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": \"{{patient_id}}\",\n  \"type\": \"mtm_session\",\n  \"scheduledDate\": \"2025-10-25\",\n  \"scheduledTime\": \"10:00\",\n  \"duration\": 30,\n  \"assignedTo\": \"{{pharmacist_id}}\",\n  \"description\": \"Monthly medication therapy review\",\n  \"isRecurring\": false,\n  \"patientPreferences\": {\n    \"preferredChannel\": \"email\",\n    \"language\": \"en\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/appointments",
+              "host": ["{{base_url}}"],
+              "path": ["appointments"]
+            },
+            "description": "Create a new appointment for a patient"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Appointments (Calendar View)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/appointments?view=week&date=2025-10-25&pharmacistId={{pharmacist_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["appointments"],
+              "query": [
+                {
+                  "key": "view",
+                  "value": "week"
+                },
+                {
+                  "key": "date",
+                  "value": "2025-10-25"
+                },
+                {
+                  "key": "pharmacistId",
+                  "value": "{{pharmacist_id}}"
+                }
+              ]
+            },
+            "description": "Retrieve appointments for calendar display"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Appointment by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/appointments/{{appointment_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["appointments", "{{appointment_id}}"]
+            },
+            "description": "Get detailed information about a specific appointment"
+          },
+          "response": []
+        },
+        {
+          "name": "Update Appointment Status",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"status\": \"completed\",\n  \"outcome\": {\n    \"status\": \"successful\",\n    \"notes\": \"Patient responded well to medication changes\",\n    \"nextActions\": [\"Schedule follow-up in 3 months\"],\n    \"visitCreated\": true\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/appointments/{{appointment_id}}/status",
+              "host": ["{{base_url}}"],
+              "path": ["appointments", "{{appointment_id}}", "status"]
+            },
+            "description": "Update the status of an appointment"
+          },
+          "response": []
+        },
+        {
+          "name": "Reschedule Appointment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"newDate\": \"2025-10-27\",\n  \"newTime\": \"15:00\",\n  \"reason\": \"Patient requested change\",\n  \"notifyPatient\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/appointments/{{appointment_id}}/reschedule",
+              "host": ["{{base_url}}"],
+              "path": ["appointments", "{{appointment_id}}", "reschedule"]
+            },
+            "description": "Reschedule an appointment to a new date and time"
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Appointment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"reason\": \"Patient requested cancellation\",\n  \"notifyPatient\": true,\n  \"cancelType\": \"this_only\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/appointments/{{appointment_id}}/cancel",
+              "host": ["{{base_url}}"],
+              "path": ["appointments", "{{appointment_id}}", "cancel"]
+            },
+            "description": "Cancel an appointment"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Available Slots",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/appointments/available-slots?date=2025-10-25&duration=30&type=mtm_session",
+              "host": ["{{base_url}}"],
+              "path": ["appointments", "available-slots"],
+              "query": [
+                {
+                  "key": "date",
+                  "value": "2025-10-25"
+                },
+                {
+                  "key": "duration",
+                  "value": "30"
+                },
+                {
+                  "key": "type",
+                  "value": "mtm_session"
+                }
+              ]
+            },
+            "description": "Get available appointment slots for booking"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Follow-up Tasks",
+      "item": [
+        {
+          "name": "Create Follow-up Task",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": \"{{patient_id}}\",\n  \"type\": \"medication_start_followup\",\n  \"title\": \"Follow-up for new Warfarin prescription\",\n  \"description\": \"Check INR levels and assess for bleeding\",\n  \"objectives\": [\n    \"Review INR results\",\n    \"Assess for bleeding symptoms\",\n    \"Adjust dosage if needed\"\n  ],\n  \"priority\": \"high\",\n  \"dueDate\": \"2025-10-30\",\n  \"assignedTo\": \"{{pharmacist_id}}\",\n  \"trigger\": {\n    \"type\": \"medication_start\",\n    \"sourceId\": \"507f1f77bcf86cd799439014\",\n    \"sourceType\": \"Medication\"\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/follow-ups",
+              "host": ["{{base_url}}"],
+              "path": ["follow-ups"]
+            },
+            "description": "Create a new follow-up task for a patient"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Follow-up Tasks",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/follow-ups?status=pending&priority=high&assignedTo={{pharmacist_id}}&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["follow-ups"],
+              "query": [
+                {
+                  "key": "status",
+                  "value": "pending"
+                },
+                {
+                  "key": "priority",
+                  "value": "high"
+                },
+                {
+                  "key": "assignedTo",
+                  "value": "{{pharmacist_id}}"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Retrieve follow-up tasks with filtering"
+          },
+          "response": []
+        },
+        {
+          "name": "Get Follow-up Task by ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/follow-ups/{{followup_id}}",
+              "host": ["{{base_url}}"],
+              "path": ["follow-ups", "{{followup_id}}"]
+            },
+            "description": "Get detailed information about a specific follow-up task"
+          },
+          "response": []
+        },
+        {
+          "name": "Complete Follow-up Task",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"outcome\": {\n    \"status\": \"successful\",\n    \"notes\": \"INR levels within target range. Patient reports no bleeding symptoms.\",\n    \"nextActions\": [\n      \"Continue current Warfarin dose\",\n      \"Schedule next INR check in 4 weeks\"\n    ],\n    \"appointmentCreated\": false\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/follow-ups/{{followup_id}}/complete",
+              "host": ["{{base_url}}"],
+              "path": ["follow-ups", "{{followup_id}}", "complete"]
+            },
+            "description": "Mark a follow-up task as completed"
+          },
+          "response": []
+        },
+        {
+          "name": "Convert Follow-up to Appointment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"scheduledDate\": \"2025-10-26\",\n  \"scheduledTime\": \"10:00\",\n  \"duration\": 30,\n  \"type\": \"general_followup\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/follow-ups/{{followup_id}}/convert-to-appointment",
+              "host": ["{{base_url}}"],
+              "path": ["follow-ups", "{{followup_id}}", "convert-to-appointment"]
+            },
+            "description": "Convert a follow-up task into a scheduled appointment"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Analytics",
+      "item": [
+        {
+          "name": "Get Appointment Analytics",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/appointments/analytics?startDate=2025-10-01&endDate=2025-10-31&pharmacistId={{pharmacist_id}}&groupBy=week",
+              "host": ["{{base_url}}"],
+              "path": ["appointments", "analytics"],
+              "query": [
+                {
+                  "key": "startDate",
+                  "value": "2025-10-01"
+                },
+                {
+                  "key": "endDate",
+                  "value": "2025-10-31"
+                },
+                {
+                  "key": "pharmacistId",
+                  "value": "{{pharmacist_id}}"
+                },
+                {
+                  "key": "groupBy",
+                  "value": "week"
+                }
+              ]
+            },
+            "description": "Get comprehensive appointment analytics"
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Patient Portal",
+      "item": [
+        {
+          "name": "Get Available Appointment Types",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/patient-portal/appointment-types",
+              "host": ["{{base_url}}"],
+              "path": ["patient-portal", "appointment-types"]
+            },
+            "description": "Get available appointment types for patient booking"
+          },
+          "response": []
+        },
+        {
+          "name": "Book Appointment (Patient Portal)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"patientId\": \"{{patient_id}}\",\n  \"type\": \"health_check\",\n  \"scheduledDate\": \"2025-10-25\",\n  \"scheduledTime\": \"14:00\",\n  \"notes\": \"Need blood pressure check\",\n  \"notificationPreferences\": {\n    \"email\": true,\n    \"sms\": true\n  }\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/patient-portal/appointments",
+              "host": ["{{base_url}}"],
+              "path": ["patient-portal", "appointments"]
+            },
+            "description": "Book appointment through patient portal"
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}

@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo } from 'react';
+import React, { useEffect, useMemo, lazy } from 'react';
 import {
   BrowserRouter as Router,
   Routes,
@@ -72,7 +72,16 @@ import {
   LazyMTRHelp,
   LazyLicenseUpload,
   LazyWorkspaceTeam,
+  LazyPatientEngagement,
+  LazyAppointmentManagement,
+  LazyFollowUpManagement,
+  LazyPatientPortal,
+  LazyPatientAuth,
+  LazyPublicPatientPortal,
 } from './components/LazyComponents';
+
+// Additional lazy imports
+const LazyScheduleManagement = lazy(() => import('./pages/ScheduleManagement'));
 
 import { LazyWrapper, useRoutePreloading } from './components/LazyWrapper';
 import { useRoutePrefetching, useBackgroundSync, useCacheWarming } from './hooks/useRoutePrefetching';
@@ -220,6 +229,11 @@ function App(): JSX.Element {
                           <Route path="/contact" element={<Contact />} />
                           <Route path="/pricing" element={<Pricing />} />
                           <Route path="/login" element={<Login />} />
+                          <Route path="/patient-access" element={
+                            <LazyWrapper fallback={PageSkeleton}>
+                              <LazyPublicPatientPortal />
+                            </LazyWrapper>
+                          } />
                           <Route
                             path="/register"
                             element={<MultiStepRegister />}
@@ -447,6 +461,120 @@ function App(): JSX.Element {
                                   </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>
+                            }
+                          />
+
+                          {/* Patient Engagement & Follow-up Module */}
+                          <Route
+                            path="/patient-engagement"
+                            element={
+                              <ProtectedRoute
+                                requiredFeature="patient_engagement"
+                                requiresActiveSubscription
+                              >
+                                <AppLayout>
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyPatientEngagement />
+                                  </LazyWrapper>
+                                </AppLayout>
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/appointments"
+                            element={
+                              <ProtectedRoute
+                                requiredFeature="patient_engagement"
+                                requiresActiveSubscription
+                              >
+                                <AppLayout>
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyAppointmentManagement />
+                                  </LazyWrapper>
+                                </AppLayout>
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/appointments/waitlist"
+                            element={
+                              <ProtectedRoute
+                                requiredFeature="patient_engagement"
+                                requiresActiveSubscription
+                              >
+                                <AppLayout>
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyAppointmentManagement />
+                                  </LazyWrapper>
+                                </AppLayout>
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/schedule"
+                            element={
+                              <ProtectedRoute
+                                requiredFeature="patient_engagement"
+                                requiresActiveSubscription
+                              >
+                                <AppLayout>
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyScheduleManagement />
+                                  </LazyWrapper>
+                                </AppLayout>
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/follow-ups"
+                            element={
+                              <ProtectedRoute
+                                requiredFeature="patient_engagement"
+                                requiresActiveSubscription
+                              >
+                                <AppLayout>
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyFollowUpManagement />
+                                  </LazyWrapper>
+                                </AppLayout>
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/patient-portal"
+                            element={
+                              <ProtectedRoute>
+                                <AppLayout>
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyPatientPortal />
+                                  </LazyWrapper>
+                                </AppLayout>
+                              </ProtectedRoute>
+                            }
+                          />
+                          {/* Public Patient Portal Routes */}
+                          <Route
+                            path="/patient-portal-public"
+                            element={
+                              <LazyWrapper fallback={PageSkeleton}>
+                                <LazyPublicPatientPortal />
+                              </LazyWrapper>
+                            }
+                          />
+                          <Route
+                            path="/patient-auth/:workspaceId"
+                            element={
+                              <LazyWrapper fallback={PageSkeleton}>
+                                <LazyPatientAuth />
+                              </LazyWrapper>
+                            }
+                          />
+                          <Route
+                            path="/patient-portal/:workspaceId"
+                            element={
+                              <LazyWrapper fallback={PageSkeleton}>
+                                <LazyPatientPortal />
+                              </LazyWrapper>
                             }
                           />
 

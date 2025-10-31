@@ -49,6 +49,8 @@ const UsageAlertCronService_1 = __importDefault(require("./services/UsageAlertCr
 const EmailDeliveryCronService_1 = require("./services/EmailDeliveryCronService");
 const communicationSocketService_1 = __importDefault(require("./services/communicationSocketService"));
 const socketNotificationService_1 = __importDefault(require("./services/socketNotificationService"));
+const AppointmentSocketService_1 = __importDefault(require("./services/AppointmentSocketService"));
+const QueueService_1 = __importDefault(require("./services/QueueService"));
 require("./models/Medication");
 require("./models/Conversation");
 require("./models/Message");
@@ -65,6 +67,16 @@ async function initializeServer() {
             console.error('⚠️ Error seeding workspaces:', error);
         }
         performanceMonitoring_1.performanceCollector.startSystemMetricsCollection();
+        try {
+            await QueueService_1.default.initialize();
+            console.log('✅ Queue Service initialized successfully');
+            const { initializeWorkers } = await Promise.resolve().then(() => __importStar(require('./jobs/workers')));
+            await initializeWorkers();
+            console.log('✅ Job workers initialized successfully');
+        }
+        catch (error) {
+            console.error('⚠️ Queue Service initialization failed:', error);
+        }
     }
     catch (error) {
         console.error('❌ Database connection failed:', error);
@@ -94,6 +106,7 @@ async function initializeServer() {
     });
     const communicationSocketService = new communicationSocketService_1.default(io);
     const socketNotificationService = new socketNotificationService_1.default(io);
+    const appointmentSocketService = new AppointmentSocketService_1.default(io);
     const { initializeChatSocketService } = await Promise.resolve().then(() => __importStar(require('./services/chat/ChatSocketService')));
     const { initializePresenceModel } = await Promise.resolve().then(() => __importStar(require('./models/chat/Presence')));
     const Redis = (await Promise.resolve().then(() => __importStar(require('ioredis')))).default;
@@ -116,6 +129,7 @@ async function initializeServer() {
     const chatSocketService = initializeChatSocketService(io);
     app_1.default.set('communicationSocket', communicationSocketService);
     app_1.default.set('socketNotification', socketNotificationService);
+    app_1.default.set('appointmentSocket', appointmentSocketService);
     app_1.default.set('chatSocket', chatSocketService);
     const server = httpServer.listen(PORT, () => {
         console.log(`🚀 Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);
@@ -143,13 +157,20 @@ async function initializeServer() {
     });
     return server;
 }
-const gracefulShutdown = (signal) => {
+const gracefulShutdown = async (signal) => {
     console.log(`Received ${signal}. Starting graceful shutdown...`);
     try {
         if (server) {
             server.close(() => {
                 console.log('HTTP server closed');
             });
+        }
+        try {
+            await QueueService_1.default.closeAll();
+            console.log('Queue Service closed');
+        }
+        catch (error) {
+            console.error('Error closing Queue Service:', error);
         }
         const mongoose = require('mongoose');
         mongoose.connection.close();

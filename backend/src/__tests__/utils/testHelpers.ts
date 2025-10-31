@@ -98,6 +98,30 @@ export function createTestWorkplaceData(overrides: Partial<any> = {}) {
 }
 
 /**
+ * Create test MTR session data
+ */
+export function createTestMTRSessionData(
+    patientId: string,
+    pharmacistId: string,
+    workplaceId: string,
+    overrides: Partial<any> = {}
+) {
+    return {
+        workplaceId,
+        patientId,
+        pharmacistId,
+        reviewNumber: `MTR-${Date.now()}`,
+        reviewType: 'comprehensive',
+        status: 'completed',
+        startedAt: new Date(Date.now() - 60 * 60 * 1000), // 1 hour ago
+        completedAt: new Date(),
+        medications: [],
+        createdBy: pharmacistId,
+        ...overrides,
+    };
+}
+
+/**
  * Wait for a specified amount of time (for async operations)
  */
 export function wait(ms: number): Promise<void> {

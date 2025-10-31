@@ -11,6 +11,9 @@ import {
   CardContent,
   Breadcrumbs,
   Link,
+  Tabs,
+  Tab,
+  Divider,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -18,6 +21,9 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { ErrorBoundary } from '../../../components/common/ErrorBoundary';
 import DiagnosticFeatureGuard from '../middlewares/diagnosticFeatureGuard';
 import AIAnalysisResults from '../components/AIAnalysisResults';
+import ScheduleDiagnosticFollowUp from '../../../components/diagnostics/ScheduleDiagnosticFollowUp';
+import DiagnosticLinkedAppointments from '../../../components/diagnostics/DiagnosticLinkedAppointments';
+import { useDiagnosticEngagementData } from '../../../hooks/useDiagnosticEngagement';
 import {
   aiDiagnosticService,
   DiagnosticCase,
@@ -34,7 +40,15 @@ const CaseResultsPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [analysisLoading, setAnalysisLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState(0);
   const isLoadingRef = useRef(false);
+
+  // Get engagement data for this diagnostic case
+  const {
+    data: engagementData,
+    isLoading: engagementLoading,
+    refetch: refetchEngagement,
+  } = useDiagnosticEngagementData(diagnosticCase?._id || '');
 
   const pollForAnalysis = useCallback(async () => {
     if (!caseId) return;
@@ -103,6 +117,17 @@ const CaseResultsPage: React.FC = () => {
 
   const handleRefresh = () => {
     loadCase();
+    if (diagnosticCase?._id) {
+      refetchEngagement();
+    }
+  };
+
+  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
+  };
+
+  const handleFollowUpCreated = () => {
+    refetchEngagement();
   };
 
   const handleBack = () => {
@@ -202,9 +227,17 @@ const CaseResultsPage: React.FC = () => {
         {/* Case Information */}
         <Card sx={{ mb: 3 }}>
           <CardContent>
-            <Typography variant="h6" sx={{ mb: 2 }}>
-              Case Information
-            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+              <Typography variant="h6">
+                Case Information
+              </Typography>
+              {diagnosticCase.status === 'completed' && (
+                <ScheduleDiagnosticFollowUp
+                  diagnosticCase={diagnosticCase}
+                  onFollowUpCreated={handleFollowUpCreated}
+                />
+              )}
+            </Box>
             <Box
               sx={{
                 display: 'grid',
@@ -255,33 +288,58 @@ const CaseResultsPage: React.FC = () => {
           </CardContent>
         </Card>
 
-        {/* Analysis Results */}
-        {diagnosticCase.status === 'analyzing' || analysisLoading ? (
-          <AIAnalysisResults analysis={{} as AIAnalysisResult} loading={true} />
-        ) : diagnosticCase.status === 'completed' && analysis ? (
-          <AIAnalysisResults analysis={analysis} />
-        ) : diagnosticCase.status === 'failed' ? (
-          <Alert severity="error" sx={{ mb: 2 }}>
-            <Typography variant="h6" sx={{ mb: 1 }}>
-              Analysis Failed
-            </Typography>
-            <Typography variant="body2">
-              The AI analysis could not be completed. This may be due to
-              insufficient data or a system error. Please try submitting the
-              case again or contact support if the issue persists.
-            </Typography>
-          </Alert>
-        ) : (
-          <Alert severity="info" sx={{ mb: 2 }}>
-            <Typography variant="h6" sx={{ mb: 1 }}>
-              Analysis Pending
-            </Typography>
-            <Typography variant="body2">
-              The AI analysis has not been completed yet. Please check back
-              later or refresh the page.
-            </Typography>
-          </Alert>
-        )}
+        {/* Tabs for Analysis and Engagement */}
+        <Card sx={{ mb: 3 }}>
+          <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+            <Tabs value={activeTab} onChange={handleTabChange} aria-label="diagnostic case tabs">
+              <Tab label="AI Analysis" />
+              <Tab label="Follow-up & Appointments" />
+            </Tabs>
+          </Box>
+
+          {/* Analysis Results Tab */}
+          {activeTab === 0 && (
+            <Box>
+              {diagnosticCase.status === 'analyzing' || analysisLoading ? (
+                <AIAnalysisResults analysis={{} as AIAnalysisResult} loading={true} />
+              ) : diagnosticCase.status === 'completed' && analysis ? (
+                <AIAnalysisResults analysis={analysis} />
+              ) : diagnosticCase.status === 'failed' ? (
+                <Alert severity="error" sx={{ m: 2 }}>
+                  <Typography variant="h6" sx={{ mb: 1 }}>
+                    Analysis Failed
+                  </Typography>
+                  <Typography variant="body2">
+                    The AI analysis could not be completed. This may be due to
+                    insufficient data or a system error. Please try submitting the
+                    case again or contact support if the issue persists.
+                  </Typography>
+                </Alert>
+              ) : (
+                <Alert severity="info" sx={{ m: 2 }}>
+                  <Typography variant="h6" sx={{ mb: 1 }}>
+                    Analysis Pending
+                  </Typography>
+                  <Typography variant="body2">
+                    The AI analysis has not been completed yet. Please check back
+                    later or refresh the page.
+                  </Typography>
+                </Alert>
+              )}
+            </Box>
+          )}
+
+          {/* Engagement Tab */}
+          {activeTab === 1 && (
+            <Box>
+              <DiagnosticLinkedAppointments
+                appointments={engagementData?.appointments || []}
+                followUpTasks={engagementData?.followUpTasks || []}
+                loading={engagementLoading}
+              />
+            </Box>
+          )}
+        </Card>
 
         {/* Actions */}
         <Box sx={{ mt: 4, display: 'flex', gap: 2, justifyContent: 'center' }}>

@@ -21,6 +21,7 @@ declare class FeatureFlagService {
     private getGlobalFeatureFlag;
     private getUserFeatureOverride;
     private getWorkspaceFeatureOverride;
+    private getDatabaseFeatureFlag;
     private isInternalUser;
     private isBetaUser;
     private getUserPercentile;

@@ -945,12 +945,12 @@ class AdminController {
                     { $sort: { count: -1 } },
                 ]),
             };
-            const ActivityLog = mongoose_1.default.model('ActivityLog');
+            const AuditLog = mongoose_1.default.model('AuditLog');
             const activityAnalytics = {
-                total: await ActivityLog.countDocuments({
+                total: await AuditLog.countDocuments({
                     timestamp: { $gte: startDate, $lte: endDate },
                 }),
-                byAction: await ActivityLog.aggregate([
+                byAction: await AuditLog.aggregate([
                     {
                         $match: {
                             timestamp: { $gte: startDate, $lte: endDate },
@@ -959,7 +959,7 @@ class AdminController {
                     { $group: { _id: '$action', count: { $sum: 1 } } },
                     { $sort: { count: -1 } },
                 ]),
-                byUser: await ActivityLog.aggregate([
+                byUser: await AuditLog.aggregate([
                     {
                         $match: {
                             timestamp: { $gte: startDate, $lte: endDate },
@@ -969,7 +969,7 @@ class AdminController {
                     { $sort: { count: -1 } },
                     { $limit: 10 },
                 ]),
-                daily: await ActivityLog.aggregate([
+                daily: await AuditLog.aggregate([
                     {
                         $match: {
                             timestamp: { $gte: startDate, $lte: endDate },

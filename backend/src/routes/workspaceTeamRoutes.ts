@@ -26,6 +26,16 @@ router.get(
 // Apply authentication with workspace context to all routes below
 router.use(authWithWorkspace);
 
+/**
+ * Get workspace settings (available to all authenticated users)
+ * @route GET /api/workspace/settings
+ * @access Private (All authenticated users in workspace)
+ */
+router.get(
+  '/settings',
+  workspaceTeamController.getWorkspaceSettings.bind(workspaceTeamController)
+);
+
 // Apply workspace owner authorization to all routes below
 router.use(requireWorkspaceOwner);
 

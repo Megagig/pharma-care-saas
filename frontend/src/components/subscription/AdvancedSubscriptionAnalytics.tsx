@@ -36,6 +36,7 @@ import TimelineIcon from '@mui/icons-material/Timeline';
 import BarChartIcon from '@mui/icons-material/BarChart';
 import PieChartIcon from '@mui/icons-material/PieChart';
 import { useUIStore } from '../../stores';
+import { adminService } from '../../services/adminService';
 
 interface RevenueData {
   date: string;
@@ -89,108 +90,52 @@ const AdvancedSubscriptionAnalytics: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      // In a real implementation, this would call the subscriptionService
-      // For now, we'll mock the data structure
-      const mockAnalytics: AdvancedAnalytics = {
-        revenueTrend: [
-          {
-            date: '2023-05-01',
-            amount: 12500,
-            subscriptions: 85,
-            churnRate: 2.5,
+      // Fetch real subscription analytics from backend
+      const response = await adminService.getSubscriptionAnalytics(period);
+      
+      if (response?.data) {
+        // Transform backend data to match our interface
+        const backendData = response.data;
+        
+        // Map growthTrend to revenueTrend format
+        const revenueTrend = (backendData.growthTrend || []).map((item: any) => ({
+          date: item.month,
+          amount: Math.round(item.mrr),
+          subscriptions: Math.round(item.subscribers),
+          churnRate: item.churn * 100, // Convert to percentage
+        }));
+        
+        // Map planDistribution to subscriptionDistribution format
+        const totalSubs = (backendData.planDistribution || []).reduce((sum: number, p: any) => sum + p.count, 0);
+        const subscriptionDistribution = (backendData.planDistribution || []).map((plan: any) => ({
+          tier: plan.planName,
+          count: plan.count,
+          percentage: plan.percentage,
+          revenue: plan.revenue,
+          mrr: plan.revenue,
+          churnRate: backendData.churnRate * 100 || 0,
+        }));
+        
+        // Calculate ARPU (Average Revenue Per User)
+        const arpu = totalSubs > 0 ? Math.round(backendData.mrr / totalSubs) : 0;
+        
+        const transformedAnalytics: AdvancedAnalytics = {
+          revenueTrend,
+          subscriptionDistribution,
+          featureUsage: [], // No feature usage data from backend yet
+          keyMetrics: {
+            mrr: Math.round(backendData.mrr || 0),
+            arr: Math.round(backendData.arr || 0),
+            churnRate: backendData.churnRate ? backendData.churnRate * 100 : 0,
+            ltv: Math.round(backendData.ltv || 0),
+            arpu,
           },
-          {
-            date: '2023-06-01',
-            amount: 14200,
-            subscriptions: 92,
-            churnRate: 2.1,
-          },
-          {
-            date: '2023-07-01',
-            amount: 16800,
-            subscriptions: 105,
-            churnRate: 1.8,
-          },
-          {
-            date: '2023-08-01',
-            amount: 18900,
-            subscriptions: 118,
-            churnRate: 1.5,
-          },
-          {
-            date: '2023-09-01',
-            amount: 21500,
-            subscriptions: 132,
-            churnRate: 1.2,
-          },
-          {
-            date: '2023-10-01',
-            amount: 24800,
-            subscriptions: 148,
-            churnRate: 1.0,
-          },
-        ],
-        subscriptionDistribution: [
-          {
-            tier: 'Free Trial',
-            count: 120,
-            percentage: 15,
-            revenue: 0,
-            mrr: 0,
-            churnRate: 85,
-          },
-          {
-            tier: 'Basic',
-            count: 280,
-            percentage: 35,
-            revenue: 280000,
-            mrr: 28000,
-            churnRate: 8,
-          },
-          {
-            tier: 'Pro',
-            count: 250,
-            percentage: 31,
-            revenue: 375000,
-            mrr: 37500,
-            churnRate: 5,
-          },
-          {
-            tier: 'Enterprise',
-            count: 150,
-            percentage: 19,
-            revenue: 450000,
-            mrr: 45000,
-            churnRate: 2,
-          },
-        ],
-        featureUsage: [
-          {
-            feature: 'Patient Management',
-            usage: 95,
-            limit: 100,
-            percentage: 95,
-          },
-          {
-            feature: 'Medication Tracking',
-            usage: 87,
-            limit: 100,
-            percentage: 87,
-          },
-          { feature: 'Clinical Notes', usage: 72, limit: 100, percentage: 72 },
-          { feature: 'ADR Module', usage: 45, limit: 100, percentage: 45 },
-          { feature: 'Reports Export', usage: 68, limit: 100, percentage: 68 },
-        ],
-        keyMetrics: {
-          mrr: 110500,
-          arr: 1326000,
-          churnRate: 4.1,
-          ltv: 26800,
-          arpu: 138,
-        },
-      };
-
-      setAnalytics(mockAnalytics);
+        };
+        
+        setAnalytics(transformedAnalytics);
+      } else {
+        throw new Error('No data received from backend');
+      }
     } catch {
       setError('Failed to load analytics data');
       addNotification({

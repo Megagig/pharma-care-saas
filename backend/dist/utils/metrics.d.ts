@@ -1,7 +1,7 @@
 import promClient from 'prom-client';
 declare const register: promClient.Registry<"text/plain; version=0.0.4; charset=utf-8">;
-export declare const httpRequestDuration: promClient.Histogram<"method" | "route" | "status_code">;
-export declare const httpRequestsTotal: promClient.Counter<"method" | "route" | "status_code">;
+export declare const httpRequestDuration: promClient.Histogram<"method" | "status_code" | "route">;
+export declare const httpRequestsTotal: promClient.Counter<"method" | "status_code" | "route">;
 export declare const subscriptionsTotal: promClient.Gauge<"status" | "tier">;
 export declare const trialConversionsTotal: promClient.Counter<"from_tier" | "to_tier">;
 export declare const trialsExpiredTotal: promClient.Counter<string>;

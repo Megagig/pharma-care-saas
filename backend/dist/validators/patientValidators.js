@@ -25,6 +25,7 @@ exports.paginationSchema = zod_1.z.object({
 exports.searchSchema = zod_1.z
     .object({
     q: zod_1.z.string().optional(),
+    search: zod_1.z.string().optional(),
     name: zod_1.z.string().optional(),
     mrn: zod_1.z.string().optional(),
     phone: zod_1.z.string().optional(),
@@ -32,7 +33,11 @@ exports.searchSchema = zod_1.z
     bloodGroup: zod_1.z.enum(tenancyGuard_1.BLOOD_GROUPS).optional(),
     genotype: zod_1.z.enum(tenancyGuard_1.GENOTYPES).optional(),
 })
-    .merge(exports.paginationSchema);
+    .merge(exports.paginationSchema)
+    .transform((data) => ({
+    ...data,
+    q: data.q || data.search,
+}));
 exports.createPatientSchema = zod_1.z.object({
     firstName: zod_1.z
         .string()
