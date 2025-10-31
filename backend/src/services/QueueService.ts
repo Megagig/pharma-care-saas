@@ -69,6 +69,20 @@ export class QueueService {
       return;
     }
 
+    // Check if background jobs are disabled
+    if (process.env.DISABLE_BACKGROUND_JOBS === 'true') {
+      logger.info('⏸️ QueueService disabled (DISABLE_BACKGROUND_JOBS=true)');
+      this.isInitialized = true;
+      return;
+    }
+
+    // Check if Redis URL is available
+    if (!process.env.REDIS_URL || process.env.REDIS_URL.trim() === '') {
+      logger.info('⏸️ QueueService disabled (no REDIS_URL configured)');
+      this.isInitialized = true;
+      return;
+    }
+
     try {
       logger.info('Initializing QueueService...');
 
@@ -81,7 +95,9 @@ export class QueueService {
       logger.info('QueueService initialized successfully');
     } catch (error) {
       logger.error('Failed to initialize QueueService:', error);
-      throw error;
+      // Don't throw - allow app to continue without queues
+      logger.warn('⏸️ QueueService disabled due to initialization error');
+      this.isInitialized = true;
     }
   }
 
