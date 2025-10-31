@@ -43,6 +43,20 @@ async function initializeServer() {
     // Start performance monitoring after DB is connected
     performanceCollector.startSystemMetricsCollection();
 
+    // Initialize Upstash Redis (REST API)
+    try {
+      const { initializeUpstashRedis, testUpstashRedisConnection } = await import('./config/upstashRedis');
+      initializeUpstashRedis();
+      const isConnected = await testUpstashRedisConnection();
+      if (isConnected) {
+        console.log('✅ Upstash Redis (REST API) connected successfully');
+      } else {
+        console.log('ℹ️ Upstash Redis not available, using fallback cache');
+      }
+    } catch (error) {
+      console.log('ℹ️ Upstash Redis initialization skipped:', error);
+    }
+
     // Initialize Queue Service
     try {
       await QueueService.initialize();
