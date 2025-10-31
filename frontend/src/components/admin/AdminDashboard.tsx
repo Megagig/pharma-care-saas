@@ -604,12 +604,14 @@ const AdminDashboard: React.FC = () => {
   }
 
   return (
-    <Box p={3}>
-      <Typography variant="h4" gutterBottom>
-        Admin Dashboard
-      </Typography>
+    <Box>
+      <Box sx={{ px: 3, pt: 3 }}>
+        <Typography variant="h4" gutterBottom>
+          Admin Dashboard
+        </Typography>
+      </Box>
 
-      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3 }}>
+      <Box sx={{ borderBottom: 1, borderColor: 'divider', mb: 3, px: 3 }}>
         <Tabs
           value={activeTab}
           onChange={(_, newValue) => setActiveTab(newValue)}
@@ -663,7 +665,7 @@ const AdminDashboard: React.FC = () => {
 
       {/* Users Tab */}
       {activeTab === 0 && (
-        <>
+        <Box sx={{ px: 3 }}>
           {/* Bulk Actions */}
           <Box sx={{ mb: 3, display: 'flex', gap: 2 }}>
             <Button
@@ -830,12 +832,12 @@ const AdminDashboard: React.FC = () => {
               }
             />
           </TableContainer>
-        </>
+        </Box>
       )}
 
       {/* Licenses Tab */}
       {activeTab === 1 && (
-        <>
+        <Box sx={{ px: 3 }}>
           {/* License Filters */}
           <Grid container spacing={2} sx={{ mb: 3 }}>
             <Grid size={{ xs: 12, md: 3 }}>
@@ -953,7 +955,7 @@ const AdminDashboard: React.FC = () => {
               </TableBody>
             </Table>
           </TableContainer>
-        </>
+        </Box>
       )}
 
       {/* Analytics Tab */}
@@ -982,9 +984,11 @@ const AdminDashboard: React.FC = () => {
 
       {/* System Settings Tab */}
       {activeTab === 10 && (
-        <Alert severity="info">
-          System settings panel will be available in the next update.
-        </Alert>
+        <Box sx={{ px: 3 }}>
+          <Alert severity="info">
+            System settings panel will be available in the next update.
+          </Alert>
+        </Box>
       )}
 
       {/* Edit User Dialog */}

@@ -450,14 +450,19 @@ export const adminService = {
       if (value) queryParams.append(key, value.toString());
     });
 
-    const response = await apiClient.get(`/admin/invitations?${queryParams}`);
+    const response = await apiClient.get(`/admin/dashboard/invitations?${queryParams}`);
     return response.data;
   },
 
   async cancelInvitation(invitationId: string, reason?: string) {
-    const response = await apiClient.delete(`/admin/invitations/${invitationId}`, {
+    const response = await apiClient.delete(`/admin/dashboard/invitations/${invitationId}`, {
       data: { reason },
     });
+    return response.data;
+  },
+
+  async resendInvitation(invitationId: string) {
+    const response = await apiClient.post(`/api/invitations/${invitationId}/resend`);
     return response.data;
   },
 };

@@ -178,15 +178,11 @@ const EnhancedAnalytics: React.FC = () => {
 
   return (
     <Box sx={{
-      width: '100vw',
-      maxWidth: '100vw',
-      position: 'relative',
-      left: '50%',
-      right: '50%',
-      marginLeft: '-50vw',
-      marginRight: '-50vw',
-      padding: { xs: 2, sm: 3, md: 4 },
-      boxSizing: 'border-box'
+      width: '100%',
+      maxWidth: '100%',
+      minWidth: 0,
+      padding: 0,
+      margin: 0,
     }}>
       {/* Header with gradient background */}
       <Paper
@@ -197,7 +193,7 @@ const EnhancedAnalytics: React.FC = () => {
           width: '100%',
           background: `linear-gradient(135deg, ${theme.palette.primary.main} 0%, ${theme.palette.secondary.main} 100%)`,
           color: 'white',
-          borderRadius: 3,
+          borderRadius: 0,
         }}
       >
         <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
@@ -237,7 +233,7 @@ const EnhancedAnalytics: React.FC = () => {
       </Paper>
 
       {/* Modern Summary Cards with Icons and Gradients */}
-      <Grid container spacing={3} sx={{ mb: 4, width: '100%', margin: 0 }}>
+      <Grid container spacing={3} sx={{ mb: 4, width: '100%', px: 3 }}>
         <Grid item xs={12} sm={6} md={3}>
           <Grow in timeout={500}>
             <Card
@@ -492,7 +488,7 @@ const EnhancedAnalytics: React.FC = () => {
       </Grid>
 
       {/* Charts Row 1 - Trend Charts (Full Width) */}
-      <Grid container spacing={3} sx={{ mb: 4, width: '100%', margin: 0 }}>
+      <Grid container spacing={3} sx={{ mb: 4, width: '100%', px: 3 }}>
         {/* User Growth Chart */}
         <Grid item xs={12}>
           <Fade in timeout={1300}>
@@ -629,7 +625,7 @@ const EnhancedAnalytics: React.FC = () => {
       </Grid>
 
       {/* Charts Row 2 - Distribution Charts (Full Width) */}
-      <Grid container spacing={3} sx={{ mb: 4, width: '100%', margin: 0 }}>
+      <Grid container spacing={3} sx={{ mb: 4, width: '100%', px: 3 }}>
         {/* Users by Role - Pie Chart */}
         <Grid item xs={12}>
           <Fade in timeout={1700}>
@@ -763,7 +759,7 @@ const EnhancedAnalytics: React.FC = () => {
       </Grid>
 
       {/* Charts Row 3 - Activity & Risk Analysis (Full Width) */}
-      <Grid container spacing={3} sx={{ mb: 4, width: '100%', margin: 0 }}>
+      <Grid container spacing={3} sx={{ mb: 4, width: '100%', px: 3 }}>
         {/* Top Activities - Bar Chart */}
         <Grid item xs={12}>
           <Fade in timeout={2100}>
@@ -889,7 +885,7 @@ const EnhancedAnalytics: React.FC = () => {
       </Grid>
 
       {/* Additional Stats Cards - Modern Design */}
-      <Grid container spacing={3} sx={{ width: '100%', margin: 0 }}>
+      <Grid container spacing={3} sx={{ width: '100%', px: 3, pb: 3 }}>
         <Grid item xs={12} md={4}>
           <Fade in timeout={2500}>
             <Card

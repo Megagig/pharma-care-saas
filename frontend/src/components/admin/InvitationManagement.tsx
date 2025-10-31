@@ -1,30 +1,36 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Box,
   Card,
   CardContent,
-  CardHeader,
   Chip,
   CircularProgress,
-  Divider,
   Grid,
-  List,
-  ListItem,
-  ListItemText,
   Typography,
-  Alert,
   Button,
-  Paper,
   TextField,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
   FormControl,
   InputLabel,
   Select,
   MenuItem,
   IconButton,
+  Tabs,
+  Tab,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Paper,
+  Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  TablePagination,
+  alpha,
+  Skeleton,
 } from '@mui/material';
 import {
   Email as EmailIcon,
@@ -33,200 +39,160 @@ import {
   HourglassEmpty as PendingIcon,
   Cancel as RejectedIcon,
   Refresh as RefreshIcon,
-  Delete as DeleteIcon,
   Search as SearchIcon,
+  Business as WorkspaceIcon,
+  TrendingUp,
+  Send as SendIcon,
+  Block as BlockIcon,
+  Groups as GeneralIcon,
 } from '@mui/icons-material';
 import { useUIStore } from '../../stores';
+import { adminService } from '../../services/adminService';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 interface Invitation {
-  id: string;
+  _id: string;
   email: string;
   role: string;
-  status: 'pending' | 'accepted' | 'rejected' | 'expired';
-  invitedBy: string;
-  invitedAt: string;
+  status: 'active' | 'used' | 'canceled' | 'expired';
+  invitedBy: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  usedBy?: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
+  workspaceId: {
+    _id: string;
+    name: string;
+  };
+  code: string;
+  createdAt: string;
   expiresAt: string;
-  workspace: string;
+  usedAt?: string;
+  metadata?: any;
+}
+
+interface TabPanelProps {
+  children?: React.ReactNode;
+  index: number;
+  value: number;
+}
+
+function TabPanel(props: TabPanelProps) {
+  const { children, value, index, ...other } = props;
+
+  return (
+    <div
+      role="tabpanel"
+      hidden={value !== index}
+      id={`invitation-tabpanel-${index}`}
+      aria-labelledby={`invitation-tab-${index}`}
+      {...other}
+    >
+      {value === index && <Box sx={{ pt: 3 }}>{children}</Box>}
+    </div>
+  );
 }
 
 const InvitationManagement: React.FC = () => {
-  const [loading, setLoading] = useState(false);
-  const [invitations, setInvitations] = useState<Invitation[]>([
-    {
-      id: '1',
-      email: 'newuser@example.com',
-      role: 'pharmacist',
-      status: 'pending',
-      invitedBy: 'admin@example.com',
-      invitedAt: new Date(Date.now() - 86400000).toISOString(),
-      expiresAt: new Date(Date.now() + 604800000).toISOString(),
-      workspace: 'Main Pharmacy',
-    },
-    {
-      id: '2',
-      email: 'teamuser@example.com',
-      role: 'pharmacy_team',
-      status: 'accepted',
-      invitedBy: 'admin@example.com',
-      invitedAt: new Date(Date.now() - 172800000).toISOString(),
-      expiresAt: new Date(Date.now() - 86400000).toISOString(),
-      workspace: 'Main Pharmacy',
-    },
-    {
-      id: '3',
-      email: 'expired@example.com',
-      role: 'intern_pharmacist',
-      status: 'expired',
-      invitedBy: 'admin@example.com',
-      invitedAt: new Date(Date.now() - 604800000).toISOString(),
-      expiresAt: new Date(Date.now() - 86400000).toISOString(),
-      workspace: 'Main Pharmacy',
-    },
-    {
-      id: '4',
-      email: 'rejected@example.com',
-      role: 'pharmacy_outlet',
-      status: 'rejected',
-      invitedBy: 'admin@example.com',
-      invitedAt: new Date(Date.now() - 259200000).toISOString(),
-      expiresAt: new Date(Date.now() + 345600000).toISOString(),
-      workspace: 'Branch Pharmacy',
-    },
-  ]);
-  const [showInviteDialog, setShowInviteDialog] = useState(false);
+  const queryClient = useQueryClient();
+  const addNotification = useUIStore((state) => state.addNotification);
+  
+  const [activeTab, setActiveTab] = useState(0);
+  const [page, setPage] = useState(0);
+  const [rowsPerPage, setRowsPerPage] = useState(10);
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [newInvitation, setNewInvitation] = useState({
-    email: '',
-    role: 'pharmacist',
-    workspace: 'Main Pharmacy',
+  const [filterStatus, setFilterStatus] = useState<string>('all');
+  const [cancelDialog, setCancelDialog] = useState<{ open: boolean; invitation: Invitation | null }>({
+    open: false,
+    invitation: null,
   });
 
-  const addNotification = useUIStore((state) => state.addNotification);
+  // Reset page when filters change
+  useEffect(() => {
+    setPage(0);
+  }, [searchTerm, filterStatus]);
 
-  const handleSendInvitation = async () => {
-    try {
-      setLoading(true);
-
-      // In a real implementation, this would call an API
-      // For now, we'll simulate the process
-      addNotification({
-        type: 'info',
-        title: 'Invitation Sent',
-        message: `Invitation sent to ${newInvitation.email}`,
-      });
-
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Add the new invitation to the list
-      const invitation: Invitation = {
-        id: (invitations.length + 1).toString(),
-        email: newInvitation.email,
-        role: newInvitation.role,
-        status: 'pending',
-        invitedBy: 'current_user@example.com',
-        invitedAt: new Date().toISOString(),
-        expiresAt: new Date(Date.now() + 604800000).toISOString(), // 7 days from now
-        workspace: newInvitation.workspace,
+  // Fetch invitations data
+  const { data, isLoading, refetch } = useQuery({
+    queryKey: ['invitations', page, rowsPerPage, searchTerm, filterStatus],
+    queryFn: async () => {
+      const params: any = {
+        page: page + 1,
+        limit: rowsPerPage,
       };
+      if (searchTerm) params.search = searchTerm;
+      if (filterStatus !== 'all') params.status = filterStatus;
 
-      setInvitations([invitation, ...invitations]);
-      setShowInviteDialog(false);
-      setNewInvitation({
-        email: '',
-        role: 'pharmacist',
-        workspace: 'Main Pharmacy',
+      const response = await adminService.getInvitationManagement(params);
+      return response.data;
+    },
+    staleTime: 0, // Always fetch fresh data
+    refetchOnMount: true,
+  });
+
+  // Cancel invitation mutation
+  const cancelMutation = useMutation({
+    mutationFn: async (invitationId: string) => {
+      return adminService.cancelInvitation(invitationId, 'Canceled by admin');
+    },
+    onSuccess: () => {
+      addNotification({
+        type: 'success',
+        title: 'Success',
+        message: 'Invitation canceled successfully',
       });
-    } catch (err) {
+      queryClient.invalidateQueries({ queryKey: ['invitations'] });
+      setCancelDialog({ open: false, invitation: null });
+    },
+    onError: (error: any) => {
       addNotification({
         type: 'error',
-        title: 'Invitation Failed',
-        message: `Failed to send invitation to ${newInvitation.email}`,
+        title: 'Error',
+        message: error.response?.data?.message || 'Failed to cancel invitation',
       });
-    } finally {
-      setLoading(false);
+    },
+  });
+
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
+    setActiveTab(newValue);
+    setPage(0);
+  };
+
+  const handleChangePage = (_event: unknown, newPage: number) => {
+    setPage(newPage);
+  };
+
+  const handleChangeRowsPerPage = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setRowsPerPage(parseInt(event.target.value, 10));
+    setPage(0);
+  };
+
+  const handleCancelInvitation = (invitation: Invitation) => {
+    setCancelDialog({ open: true, invitation });
+  };
+
+  const confirmCancelInvitation = () => {
+    if (cancelDialog.invitation) {
+      cancelMutation.mutate(cancelDialog.invitation._id);
     }
   };
 
-  const handleRevokeInvitation = async (invitationId: string) => {
-    try {
-      setLoading(true);
-
-      // In a real implementation, this would call an API
-      // For now, we'll simulate the process
-      addNotification({
-        type: 'info',
-        title: 'Invitation Revoked',
-        message: `Invitation revoked for ID: ${invitationId}`,
-      });
-
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Update the invitation status
-      setInvitations(
-        invitations.map((inv) =>
-          inv.id === invitationId ? { ...inv, status: 'rejected' } : inv
-        )
-      );
-    } catch (err) {
-      addNotification({
-        type: 'error',
-        title: 'Revoke Failed',
-        message: `Failed to revoke invitation: ${invitationId}`,
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleResendInvitation = async (invitationId: string) => {
-    try {
-      setLoading(true);
-
-      // In a real implementation, this would call an API
-      // For now, we'll simulate the process
-      addNotification({
-        type: 'info',
-        title: 'Invitation Resent',
-        message: `Invitation resent for ID: ${invitationId}`,
-      });
-
-      // Simulate API call delay
-      await new Promise((resolve) => setTimeout(resolve, 1000));
-
-      // Update the invitation expiration date
-      setInvitations(
-        invitations.map((inv) =>
-          inv.id === invitationId
-            ? {
-                ...inv,
-                expiresAt: new Date(Date.now() + 604800000).toISOString(), // 7 days from now
-              }
-            : inv
-        )
-      );
-    } catch (err) {
-      addNotification({
-        type: 'error',
-        title: 'Resend Failed',
-        message: `Failed to resend invitation: ${invitationId}`,
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const getStatusColor = (status: string) => {
+  const getStatusColor = (status: string): 'default' | 'primary' | 'secondary' | 'error' | 'info' | 'success' | 'warning' => {
     switch (status) {
-      case 'accepted':
+      case 'used':
         return 'success';
-      case 'rejected':
+      case 'canceled':
         return 'error';
       case 'expired':
         return 'warning';
-      case 'pending':
+      case 'active':
         return 'info';
       default:
         return 'default';
@@ -235,30 +201,34 @@ const InvitationManagement: React.FC = () => {
 
   const getStatusIcon = (status: string) => {
     switch (status) {
-      case 'accepted':
-        return <AcceptedIcon />;
-      case 'rejected':
-        return <RejectedIcon />;
+      case 'used':
+        return <AcceptedIcon fontSize="small" />;
+      case 'canceled':
+        return <RejectedIcon fontSize="small" />;
       case 'expired':
-        return <RejectedIcon />;
-      case 'pending':
-        return <PendingIcon />;
+        return <RejectedIcon fontSize="small" />;
+      case 'active':
+        return <PendingIcon fontSize="small" />;
       default:
-        return <PendingIcon />;
+        return <PendingIcon fontSize="small" />;
     }
   };
 
-  const filteredInvitations = invitations.filter((invitation) => {
-    const matchesSearch =
-      invitation.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      invitation.role.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus =
-      filterStatus === 'all' || invitation.status === filterStatus;
-    return matchesSearch && matchesStatus;
-  });
+  // Calculate statistics
+  const invitations = data?.invitations || [];
+  const totalCount = data?.pagination?.totalItems || 0;
+  
+  const stats = {
+    total: totalCount,
+    active: invitations.filter((i: Invitation) => i.status === 'active').length,
+    used: invitations.filter((i: Invitation) => i.status === 'used').length,
+    canceled: invitations.filter((i: Invitation) => i.status === 'canceled').length,
+    expired: invitations.filter((i: Invitation) => i.status === 'expired').length,
+  };
 
   return (
     <Box>
+      {/* Header */}
       <Box
         sx={{
           display: 'flex',
@@ -268,341 +238,461 @@ const InvitationManagement: React.FC = () => {
         }}
       >
         <Box sx={{ display: 'flex', alignItems: 'center' }}>
-          <InviteIcon sx={{ mr: 1, color: 'primary.main' }} />
-          <Typography variant="h5" component="h1">
+          <InviteIcon sx={{ mr: 1, fontSize: 32, color: 'primary.main' }} />
+          <Typography variant="h4" component="h1" fontWeight="600">
             Invitation Management
           </Typography>
         </Box>
-        <Box>
-          <Button
-            variant="contained"
-            startIcon={<InviteIcon />}
-            onClick={() => setShowInviteDialog(true)}
-            sx={{ mr: 1 }}
-          >
-            Invite User
-          </Button>
-          <Button
-            variant="outlined"
-            startIcon={<RefreshIcon />}
-            onClick={() => setLoading(true)}
-          >
-            Refresh
-          </Button>
-        </Box>
+        <Button
+          variant="outlined"
+          startIcon={<RefreshIcon />}
+          onClick={() => refetch()}
+          disabled={isLoading}
+        >
+          Refresh
+        </Button>
       </Box>
 
-      {/* Invitation Stats */}
+      {/* Statistics Cards */}
       <Grid container spacing={3} sx={{ mb: 3 }}>
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="primary.main" gutterBottom>
-                {invitations.length}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                Total Invitations
-              </Typography>
+        <Grid item xs={12} sm={6} md={2.4}>
+          <Card
+            sx={{
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              color: 'white',
+            }}
+          >
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box>
+                  <Typography variant="h3" fontWeight="700">
+                    {isLoading ? <Skeleton width={60} sx={{ bgcolor: alpha('#fff', 0.2) }} /> : stats.total}
+                  </Typography>
+                  <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
+                    Total Invitations
+                  </Typography>
+                </Box>
+                <EmailIcon sx={{ fontSize: 40, opacity: 0.8 }} />
+              </Box>
             </CardContent>
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="info.main" gutterBottom>
-                {invitations.filter((i) => i.status === 'pending').length}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                Pending
-              </Typography>
+        <Grid item xs={12} sm={6} md={2.4}>
+          <Card
+            sx={{
+              background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+              color: 'white',
+            }}
+          >
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box>
+                  <Typography variant="h3" fontWeight="700">
+                    {isLoading ? <Skeleton width={60} sx={{ bgcolor: alpha('#fff', 0.2) }} /> : stats.active}
+                  </Typography>
+                  <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
+                    Active
+                  </Typography>
+                </Box>
+                <PendingIcon sx={{ fontSize: 40, opacity: 0.8 }} />
+              </Box>
             </CardContent>
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="success.main" gutterBottom>
-                {invitations.filter((i) => i.status === 'accepted').length}
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                Accepted
-              </Typography>
+        <Grid item xs={12} sm={6} md={2.4}>
+          <Card
+            sx={{
+              background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+              color: 'white',
+            }}
+          >
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box>
+                  <Typography variant="h3" fontWeight="700">
+                    {isLoading ? <Skeleton width={60} sx={{ bgcolor: alpha('#fff', 0.2) }} /> : stats.used}
+                  </Typography>
+                  <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
+                    Accepted
+                  </Typography>
+                </Box>
+                <AcceptedIcon sx={{ fontSize: 40, opacity: 0.8 }} />
+              </Box>
             </CardContent>
           </Card>
         </Grid>
 
-        <Grid item xs={12} sm={6} md={3}>
-          <Card>
-            <CardContent sx={{ textAlign: 'center' }}>
-              <Typography variant="h4" color="warning.main" gutterBottom>
-                {
-                  invitations.filter(
-                    (i) => i.status === 'expired' || i.status === 'rejected'
-                  ).length
-                }
-              </Typography>
-              <Typography variant="body2" color="textSecondary">
-                Expired/Rejected
-              </Typography>
+        <Grid item xs={12} sm={6} md={2.4}>
+          <Card
+            sx={{
+              background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+              color: 'white',
+            }}
+          >
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box>
+                  <Typography variant="h3" fontWeight="700">
+                    {isLoading ? <Skeleton width={60} sx={{ bgcolor: alpha('#fff', 0.2) }} /> : stats.expired}
+                  </Typography>
+                  <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
+                    Expired
+                  </Typography>
+                </Box>
+                <RejectedIcon sx={{ fontSize: 40, opacity: 0.8 }} />
+              </Box>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        <Grid item xs={12} sm={6} md={2.4}>
+          <Card
+            sx={{
+              background: 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)',
+              color: 'white',
+            }}
+          >
+            <CardContent>
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Box>
+                  <Typography variant="h3" fontWeight="700">
+                    {isLoading ? <Skeleton width={60} sx={{ bgcolor: alpha('#fff', 0.2) }} /> : stats.canceled}
+                  </Typography>
+                  <Typography variant="body2" sx={{ opacity: 0.9, mt: 0.5 }}>
+                    Canceled
+                  </Typography>
+                </Box>
+                <BlockIcon sx={{ fontSize: 40, opacity: 0.8 }} />
+              </Box>
             </CardContent>
           </Card>
         </Grid>
       </Grid>
 
-      {/* Search and Filter */}
-      <Card sx={{ mb: 3 }}>
-        <CardContent>
+      {/* Tabs */}
+      <Card>
+        <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
+          <Tabs
+            value={activeTab}
+            onChange={handleTabChange}
+            aria-label="invitation tabs"
+            sx={{
+              px: 2,
+              '& .MuiTab-root': {
+                textTransform: 'none',
+                fontWeight: 600,
+                fontSize: '0.95rem',
+              },
+            }}
+          >
+            <Tab
+              icon={<WorkspaceIcon />}
+              iconPosition="start"
+              label="Workspace Invites"
+              id="invitation-tab-0"
+              aria-controls="invitation-tabpanel-0"
+            />
+            <Tab
+              icon={<GeneralIcon />}
+              iconPosition="start"
+              label="General Invitations"
+              id="invitation-tab-1"
+              aria-controls="invitation-tabpanel-1"
+            />
+          </Tabs>
+        </Box>
+
+        {/* Filters */}
+        <Box sx={{ p: 3, borderBottom: 1, borderColor: 'divider' }}>
           <Grid container spacing={2}>
             <Grid item xs={12} md={6}>
               <TextField
                 fullWidth
-                placeholder="Search by email or role..."
+                placeholder="Search by email..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 InputProps={{
-                  startAdornment: (
-                    <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />
-                  ),
+                  startAdornment: <SearchIcon sx={{ mr: 1, color: 'text.secondary' }} />,
                 }}
               />
             </Grid>
-            <Grid item xs={12} md={6}>
+            <Grid item xs={12} md={3}>
               <FormControl fullWidth>
                 <InputLabel>Status Filter</InputLabel>
                 <Select
                   value={filterStatus}
                   label="Status Filter"
-                  onChange={(e) => setFilterStatus(e.target.value as string)}
+                  onChange={(e) => setFilterStatus(e.target.value)}
                 >
                   <MenuItem value="all">All Statuses</MenuItem>
-                  <MenuItem value="pending">Pending</MenuItem>
-                  <MenuItem value="accepted">Accepted</MenuItem>
-                  <MenuItem value="rejected">Rejected</MenuItem>
+                  <MenuItem value="active">Active</MenuItem>
+                  <MenuItem value="used">Accepted</MenuItem>
+                  <MenuItem value="canceled">Canceled</MenuItem>
                   <MenuItem value="expired">Expired</MenuItem>
                 </Select>
               </FormControl>
             </Grid>
           </Grid>
-        </CardContent>
+        </Box>
+
+        {/* Tab Panel 0: Workspace Invites */}
+        <TabPanel value={activeTab} index={0}>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Email</TableCell>
+                  <TableCell>Workspace</TableCell>
+                  <TableCell>Role</TableCell>
+                  <TableCell>Invited By</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Created</TableCell>
+                  <TableCell>Expires</TableCell>
+                  <TableCell align="right">Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {isLoading ? (
+                  Array.from({ length: 5 }).map((_, index) => (
+                    <TableRow key={index}>
+                      <TableCell><Skeleton /></TableCell>
+                      <TableCell><Skeleton /></TableCell>
+                      <TableCell><Skeleton /></TableCell>
+                      <TableCell><Skeleton /></TableCell>
+                      <TableCell><Skeleton /></TableCell>
+                      <TableCell><Skeleton /></TableCell>
+                      <TableCell><Skeleton /></TableCell>
+                      <TableCell><Skeleton /></TableCell>
+                    </TableRow>
+                  ))
+                ) : invitations.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={8} align="center">
+                      <Typography variant="body1" color="text.secondary" sx={{ py: 4 }}>
+                        No invitations found
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  invitations.map((invitation: Invitation) => (
+                    <TableRow key={invitation._id} hover>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <EmailIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                          {invitation.email}
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          icon={<WorkspaceIcon />}
+                          label={invitation.workspaceId.name}
+                          size="small"
+                          variant="outlined"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Chip label={invitation.role} size="small" />
+                      </TableCell>
+                      <TableCell>
+                        {invitation.invitedBy.firstName} {invitation.invitedBy.lastName}
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          icon={getStatusIcon(invitation.status)}
+                          label={invitation.status.toUpperCase()}
+                          size="small"
+                          color={getStatusColor(invitation.status)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {new Date(invitation.createdAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(invitation.expiresAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell align="right">
+                        {invitation.status === 'active' && (
+                          <Tooltip title="Cancel Invitation">
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => handleCancelInvitation(invitation)}
+                            >
+                              <BlockIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+
+          <TablePagination
+            rowsPerPageOptions={[5, 10, 25, 50]}
+            component="div"
+            count={totalCount}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+          />
+        </TabPanel>
+
+        {/* Tab Panel 1: General Invitations (All workspaces view) */}
+        <TabPanel value={activeTab} index={1}>
+          <TableContainer>
+            <Table>
+              <TableHead>
+                <TableRow>
+                  <TableCell>Email</TableCell>
+                  <TableCell>Workspace</TableCell>
+                  <TableCell>Role</TableCell>
+                  <TableCell>Invited By</TableCell>
+                  <TableCell>Status</TableCell>
+                  <TableCell>Created</TableCell>
+                  <TableCell>Expires</TableCell>
+                  <TableCell>Used By</TableCell>
+                  <TableCell align="right">Actions</TableCell>
+                </TableRow>
+              </TableHead>
+              <TableBody>
+                {isLoading ? (
+                  Array.from({ length: 5 }).map((_, index) => (
+                    <TableRow key={index}>
+                      <TableCell><Skeleton /></TableCell>
+                      <TableCell><Skeleton /></TableCell>
+                      <TableCell><Skeleton /></TableCell>
+                      <TableCell><Skeleton /></TableCell>
+                      <TableCell><Skeleton /></TableCell>
+                      <TableCell><Skeleton /></TableCell>
+                      <TableCell><Skeleton /></TableCell>
+                      <TableCell><Skeleton /></TableCell>
+                      <TableCell><Skeleton /></TableCell>
+                    </TableRow>
+                  ))
+                ) : invitations.length === 0 ? (
+                  <TableRow>
+                    <TableCell colSpan={9} align="center">
+                      <Typography variant="body1" color="text.secondary" sx={{ py: 4 }}>
+                        No invitations found
+                      </Typography>
+                    </TableCell>
+                  </TableRow>
+                ) : (
+                  invitations.map((invitation: Invitation) => (
+                    <TableRow key={invitation._id} hover>
+                      <TableCell>
+                        <Box sx={{ display: 'flex', alignItems: 'center' }}>
+                          <EmailIcon sx={{ mr: 1, color: 'text.secondary' }} />
+                          {invitation.email}
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          icon={<WorkspaceIcon />}
+                          label={invitation.workspaceId.name}
+                          size="small"
+                          variant="outlined"
+                        />
+                      </TableCell>
+                      <TableCell>
+                        <Chip label={invitation.role} size="small" />
+                      </TableCell>
+                      <TableCell>
+                        <Typography variant="body2">
+                          {invitation.invitedBy.firstName} {invitation.invitedBy.lastName}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                          {invitation.invitedBy.email}
+                        </Typography>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          icon={getStatusIcon(invitation.status)}
+                          label={invitation.status.toUpperCase()}
+                          size="small"
+                          color={getStatusColor(invitation.status)}
+                        />
+                      </TableCell>
+                      <TableCell>
+                        {new Date(invitation.createdAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        {new Date(invitation.expiresAt).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell>
+                        {invitation.usedBy ? (
+                          <Box>
+                            <Typography variant="body2">
+                              {invitation.usedBy.firstName} {invitation.usedBy.lastName}
+                            </Typography>
+                            <Typography variant="caption" color="text.secondary">
+                              {invitation.usedAt && new Date(invitation.usedAt).toLocaleDateString()}
+                            </Typography>
+                          </Box>
+                        ) : (
+                          <Typography variant="body2" color="text.secondary">
+                            -
+                          </Typography>
+                        )}
+                      </TableCell>
+                      <TableCell align="right">
+                        {invitation.status === 'active' && (
+                          <Tooltip title="Cancel Invitation">
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => handleCancelInvitation(invitation)}
+                            >
+                              <BlockIcon fontSize="small" />
+                            </IconButton>
+                          </Tooltip>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
+              </TableBody>
+            </Table>
+          </TableContainer>
+
+          <TablePagination
+            rowsPerPageOptions={[5, 10, 25, 50]}
+            component="div"
+            count={totalCount}
+            rowsPerPage={rowsPerPage}
+            page={page}
+            onPageChange={handleChangePage}
+            onRowsPerPageChange={handleChangeRowsPerPage}
+          />
+        </TabPanel>
       </Card>
 
-      {/* Invitation List */}
-      <Grid container spacing={3}>
-        <Grid item xs={12}>
-          <Card>
-            <CardHeader
-              title="Invitation List"
-              subheader="Manage all workspace invitations"
-            />
-            <Divider />
-            <CardContent>
-              {filteredInvitations.length === 0 ? (
-                <Box sx={{ textAlign: 'center', py: 4 }}>
-                  <Typography variant="body1" color="textSecondary">
-                    No invitations found
-                  </Typography>
-                </Box>
-              ) : (
-                <List>
-                  {filteredInvitations.map((invitation) => (
-                    <ListItem
-                      key={invitation.id}
-                      sx={{
-                        border: 1,
-                        borderColor: 'divider',
-                        borderRadius: 1,
-                        mb: 1,
-                        '&:last-child': { mb: 0 },
-                      }}
-                    >
-                      <Box sx={{ mr: 2, mt: 0.5 }}>
-                        <EmailIcon />
-                      </Box>
-                      <ListItemText
-                        primary={
-                          <Box
-                            sx={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              mb: 0.5,
-                            }}
-                          >
-                            <Typography variant="subtitle1" sx={{ mr: 1 }}>
-                              {invitation.email}
-                            </Typography>
-                            <Chip
-                              label={invitation.status}
-                              size="small"
-                              color={getStatusColor(invitation.status) as any}
-                            />
-                            <Chip
-                              label={invitation.role}
-                              size="small"
-                              variant="outlined"
-                              sx={{ ml: 1 }}
-                            />
-                          </Box>
-                        }
-                        secondary={
-                          <Box>
-                            <Typography variant="body2" color="textSecondary">
-                              Invited by {invitation.invitedBy} to{' '}
-                              {invitation.workspace}
-                            </Typography>
-                            <Box
-                              sx={{
-                                display: 'flex',
-                                alignItems: 'center',
-                                mt: 1,
-                              }}
-                            >
-                              <Typography
-                                variant="caption"
-                                color="textSecondary"
-                                sx={{ mr: 2 }}
-                              >
-                                Invited:{' '}
-                                {new Date(
-                                  invitation.invitedAt
-                                ).toLocaleDateString()}
-                              </Typography>
-                              <Typography
-                                variant="caption"
-                                color="textSecondary"
-                              >
-                                Expires:{' '}
-                                {new Date(
-                                  invitation.expiresAt
-                                ).toLocaleDateString()}
-                              </Typography>
-                            </Box>
-                          </Box>
-                        }
-                      />
-                      <Box>
-                        {invitation.status === 'pending' && (
-                          <>
-                            <Button
-                              variant="outlined"
-                              size="small"
-                              onClick={() =>
-                                handleResendInvitation(invitation.id)
-                              }
-                              sx={{ mr: 1 }}
-                            >
-                              Resend
-                            </Button>
-                            <Button
-                              variant="outlined"
-                              color="error"
-                              size="small"
-                              onClick={() =>
-                                handleRevokeInvitation(invitation.id)
-                              }
-                            >
-                              Revoke
-                            </Button>
-                          </>
-                        )}
-                        {invitation.status === 'expired' && (
-                          <Button
-                            variant="outlined"
-                            size="small"
-                            onClick={() =>
-                              handleResendInvitation(invitation.id)
-                            }
-                          >
-                            Resend
-                          </Button>
-                        )}
-                      </Box>
-                    </ListItem>
-                  ))}
-                </List>
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
-      </Grid>
-
-      {/* Invite User Dialog */}
-      <Dialog
-        open={showInviteDialog}
-        onClose={() => setShowInviteDialog(false)}
-        maxWidth="sm"
-        fullWidth
-      >
-        <DialogTitle>
-          <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <InviteIcon sx={{ mr: 1 }} />
-            Invite New User
-          </Box>
-        </DialogTitle>
+      {/* Cancel Invitation Dialog */}
+      <Dialog open={cancelDialog.open} onClose={() => setCancelDialog({ open: false, invitation: null })}>
+        <DialogTitle>Cancel Invitation</DialogTitle>
         <DialogContent>
-          <Box sx={{ pt: 1 }}>
-            <TextField
-              fullWidth
-              label="Email Address"
-              type="email"
-              value={newInvitation.email}
-              onChange={(e) =>
-                setNewInvitation({ ...newInvitation, email: e.target.value })
-              }
-              margin="normal"
-              required
-            />
-            <FormControl fullWidth margin="normal">
-              <InputLabel>Role</InputLabel>
-              <Select
-                value={newInvitation.role}
-                label="Role"
-                onChange={(e) =>
-                  setNewInvitation({
-                    ...newInvitation,
-                    role: e.target.value as string,
-                  })
-                }
-              >
-                <MenuItem value="pharmacist">Pharmacist</MenuItem>
-                <MenuItem value="pharmacy_team">Pharmacy Team</MenuItem>
-                <MenuItem value="pharmacy_outlet">Pharmacy Outlet</MenuItem>
-                <MenuItem value="intern_pharmacist">Intern Pharmacist</MenuItem>
-              </Select>
-            </FormControl>
-            <FormControl fullWidth margin="normal">
-              <InputLabel>Workspace</InputLabel>
-              <Select
-                value={newInvitation.workspace}
-                label="Workspace"
-                onChange={(e) =>
-                  setNewInvitation({
-                    ...newInvitation,
-                    workspace: e.target.value as string,
-                  })
-                }
-              >
-                <MenuItem value="Main Pharmacy">Main Pharmacy</MenuItem>
-                <MenuItem value="Branch Pharmacy">Branch Pharmacy</MenuItem>
-                <MenuItem value="Mobile Unit">Mobile Unit</MenuItem>
-              </Select>
-            </FormControl>
-          </Box>
+          <Typography>
+            Are you sure you want to cancel the invitation for {cancelDialog.invitation?.email}?
+          </Typography>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setShowInviteDialog(false)}>Cancel</Button>
+          <Button onClick={() => setCancelDialog({ open: false, invitation: null })}>
+            Cancel
+          </Button>
           <Button
             variant="contained"
-            onClick={handleSendInvitation}
-            disabled={
-              loading ||
-              !newInvitation.email ||
-              !newInvitation.email.includes('@')
-            }
-            startIcon={loading ? <CircularProgress size={20} /> : <EmailIcon />}
+            color="error"
+            onClick={confirmCancelInvitation}
+            disabled={cancelMutation.isPending}
+            startIcon={cancelMutation.isPending ? <CircularProgress size={16} /> : <BlockIcon />}
           >
-            Send Invitation
+            Confirm
           </Button>
         </DialogActions>
       </Dialog>
