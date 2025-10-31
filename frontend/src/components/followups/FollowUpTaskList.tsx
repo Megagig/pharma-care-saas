@@ -644,7 +644,7 @@ const FollowUpTaskList: React.FC<FollowUpTaskListProps> = ({
                             <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
                               <PersonIcon sx={{ fontSize: 16 }} />
                               <Typography variant="caption">
-                                Patient ID: {task.patientId}
+                                Patient ID: {typeof task.patientId === 'object' ? (task.patientId as any)?._id || 'N/A' : task.patientId}
                               </Typography>
                             </Box>
                             

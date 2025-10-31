@@ -214,15 +214,46 @@ export class SaaSAnalyticsController {
         };
       });
 
-      // Generate growth trend (simplified)
+      // Generate real growth trend from historical data
       const growthTrend: GrowthTrend[] = [];
       for (let i = 5; i >= 0; i--) {
-        const month = format(subDays(new Date(), i * 30), 'MMM yyyy');
+        const monthStart = subDays(new Date(), i * 30);
+        const monthEnd = subDays(new Date(), (i - 1) * 30);
+        const monthLabel = format(monthStart, 'MMM yyyy');
+        
+        // Get subscriptions active in this month
+        const monthSubscriptions = await Subscription.find({
+          createdAt: { $lte: monthEnd },
+          $or: [
+            { status: 'active' },
+            { canceledAt: { $gte: monthStart } }
+          ]
+        });
+        
+        const monthActiveSubscriptions = monthSubscriptions.filter(
+          sub => sub.status === 'active' || (sub.canceledAt && new Date(sub.canceledAt) >= monthStart)
+        );
+        
+        const monthCanceledSubscriptions = monthSubscriptions.filter(
+          sub => sub.status === 'canceled' && sub.canceledAt && 
+          new Date(sub.canceledAt) >= monthStart && new Date(sub.canceledAt) <= monthEnd
+        );
+        
+        // Calculate month MRR
+        const monthMrr = monthActiveSubscriptions.reduce((sum, sub) => {
+          return sum + this.getMonthlyAmount(sub.amount || sub.priceAtPurchase, sub.billingCycle || sub.billingInterval);
+        }, 0);
+        
+        // Calculate month churn rate
+        const monthChurnRate = monthSubscriptions.length > 0 
+          ? monthCanceledSubscriptions.length / monthSubscriptions.length 
+          : 0;
+        
         growthTrend.push({
-          month,
-          mrr: mrr * (0.8 + i * 0.04), // Simulated growth
-          subscribers: activeSubscriptions.length * (0.7 + i * 0.05),
-          churn: churnRate * (1.2 - i * 0.04)
+          month: monthLabel,
+          mrr: monthMrr,
+          subscribers: monthActiveSubscriptions.length,
+          churn: monthChurnRate
         });
       }
 

@@ -134,7 +134,15 @@ export const adminService = {
   },
 
   async getSubscriptionAnalytics(period: 'day' | 'week' | 'month' | 'year' = 'month') {
-    const response = await apiClient.get(`/admin/analytics/subscriptions?period=${period}`);
+    // Map period to timeRange that backend expects
+    const timeRangeMap = {
+      day: '7d',
+      week: '7d',
+      month: '30d',
+      year: '1y',
+    };
+    const timeRange = timeRangeMap[period];
+    const response = await apiClient.get(`/admin/saas/analytics/subscriptions?timeRange=${timeRange}`);
     return response.data;
   },
 
