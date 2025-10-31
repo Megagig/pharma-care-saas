@@ -81,14 +81,18 @@ class PerformanceCacheService {
             const cacheManager = CacheManager_1.default.getInstance();
             const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
             this.redis = new ioredis_1.default(redisUrl, {
+                tls: redisUrl.includes('upstash.io')
+                    ? { rejectUnauthorized: false }
+                    : undefined,
+                family: redisUrl.includes('upstash.io') ? 6 : 4,
                 maxRetriesPerRequest: 3,
                 lazyConnect: false,
                 keepAlive: 30000,
-                connectTimeout: 10000,
-                commandTimeout: 5000,
+                connectTimeout: 30000,
+                commandTimeout: 10000,
                 enableReadyCheck: true,
                 enableOfflineQueue: true,
-                db: 1,
+                db: redisUrl.includes('upstash.io') ? 0 : 1,
                 retryStrategy: (times) => {
                     const delay = Math.min(times * 50, 3000);
                     return delay;

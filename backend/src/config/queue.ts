@@ -9,15 +9,45 @@ import logger from '../utils/logger';
 
 /**
  * Redis connection configuration for Bull queues
+ * Supports Upstash Redis and standard Redis
  */
 export const redisConfig = process.env.REDIS_URL
-  ? process.env.REDIS_URL // Use full Redis URL if provided (e.g., from Render)
+  ? {
+      // Use Redis URL (Upstash, Render, Heroku, etc.)
+      // Upstash requires specific settings for compatibility
+      ...(typeof process.env.REDIS_URL === 'string' && process.env.REDIS_URL.includes('upstash.io')
+        ? {
+            // Upstash-specific configuration
+            host: new URL(process.env.REDIS_URL).hostname,
+            port: parseInt(new URL(process.env.REDIS_URL).port || '6379'),
+            password: new URL(process.env.REDIS_URL).password,
+            tls: {
+              rejectUnauthorized: false, // Required for Upstash
+            },
+            maxRetriesPerRequest: null, // Required for Bull
+            enableReadyCheck: false,
+            lazyConnect: true,
+            family: 6, // Use IPv6 for Upstash
+            connectTimeout: 30000, // Longer timeout for serverless
+            keepAlive: 30000,
+          }
+        : {
+            // Standard Redis URL
+            host: new URL(process.env.REDIS_URL).hostname,
+            port: parseInt(new URL(process.env.REDIS_URL).port || '6379'),
+            password: new URL(process.env.REDIS_URL).password || undefined,
+            maxRetriesPerRequest: null,
+            enableReadyCheck: false,
+            lazyConnect: true,
+          }),
+    }
   : {
+      // Fallback to individual parameters
       host: process.env.REDIS_HOST || 'localhost',
       port: parseInt(process.env.REDIS_PORT || '6379'),
       password: process.env.REDIS_PASSWORD,
-      db: parseInt(process.env.REDIS_QUEUE_DB || '1'), // Use separate DB for queues
-      maxRetriesPerRequest: null, // Required for Bull
+      db: parseInt(process.env.REDIS_QUEUE_DB || '1'),
+      maxRetriesPerRequest: null,
       enableReadyCheck: false,
       lazyConnect: true,
     };

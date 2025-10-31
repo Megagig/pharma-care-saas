@@ -101,9 +101,14 @@ async function initializeServer() {
   const { initializePresenceModel } = await import('./models/chat/Presence');
   const Redis = (await import('ioredis')).default;
 
-  // Initialize Redis for presence tracking
+  // Initialize Redis for presence tracking (Upstash compatible)
   const redisClient = process.env.REDIS_URL
     ? new Redis(process.env.REDIS_URL, {
+        tls: process.env.REDIS_URL.includes('upstash.io') 
+          ? { rejectUnauthorized: false } 
+          : undefined,
+        family: process.env.REDIS_URL.includes('upstash.io') ? 6 : 4,
+        connectTimeout: 30000,
         retryStrategy: (times) => {
           const delay = Math.min(times * 50, 2000);
           return delay;

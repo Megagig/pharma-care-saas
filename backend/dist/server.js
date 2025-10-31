@@ -110,15 +110,27 @@ async function initializeServer() {
     const { initializeChatSocketService } = await Promise.resolve().then(() => __importStar(require('./services/chat/ChatSocketService')));
     const { initializePresenceModel } = await Promise.resolve().then(() => __importStar(require('./models/chat/Presence')));
     const Redis = (await Promise.resolve().then(() => __importStar(require('ioredis')))).default;
-    const redisClient = new Redis({
-        host: process.env.REDIS_HOST || 'localhost',
-        port: parseInt(process.env.REDIS_PORT || '6379'),
-        password: process.env.REDIS_PASSWORD,
-        retryStrategy: (times) => {
-            const delay = Math.min(times * 50, 2000);
-            return delay;
-        },
-    });
+    const redisClient = process.env.REDIS_URL
+        ? new Redis(process.env.REDIS_URL, {
+            tls: process.env.REDIS_URL.includes('upstash.io')
+                ? { rejectUnauthorized: false }
+                : undefined,
+            family: process.env.REDIS_URL.includes('upstash.io') ? 6 : 4,
+            connectTimeout: 30000,
+            retryStrategy: (times) => {
+                const delay = Math.min(times * 50, 2000);
+                return delay;
+            },
+        })
+        : new Redis({
+            host: process.env.REDIS_HOST || 'localhost',
+            port: parseInt(process.env.REDIS_PORT || '6379'),
+            password: process.env.REDIS_PASSWORD,
+            retryStrategy: (times) => {
+                const delay = Math.min(times * 50, 2000);
+                return delay;
+            },
+        });
     redisClient.on('connect', () => {
         console.log('✅ Redis connected for presence tracking');
     });

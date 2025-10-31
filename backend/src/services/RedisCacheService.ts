@@ -44,12 +44,15 @@ export class RedisCacheService {
         try {
             this.redis = process.env.REDIS_URL
                 ? new Redis(process.env.REDIS_URL, {
+                    tls: process.env.REDIS_URL.includes('upstash.io') 
+                        ? { rejectUnauthorized: false } 
+                        : undefined,
+                    family: process.env.REDIS_URL.includes('upstash.io') ? 6 : 4,
                     maxRetriesPerRequest: 3,
                     lazyConnect: true,
                     keepAlive: 30000,
-                    family: 4,
-                    connectTimeout: 10000,
-                    commandTimeout: 5000,
+                    connectTimeout: 30000, // Longer for Upstash
+                    commandTimeout: 10000, // Longer for Upstash
                     enableReadyCheck: true,
                     enableOfflineQueue: false
                 })

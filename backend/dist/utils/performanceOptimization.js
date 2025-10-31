@@ -10,14 +10,24 @@ const logger_1 = __importDefault(require("./logger"));
 let redisClient = null;
 const initializeRedisCache = () => {
     try {
-        redisClient = new ioredis_1.default({
-            host: process.env.REDIS_HOST || 'localhost',
-            port: parseInt(process.env.REDIS_PORT || '6379'),
-            password: process.env.REDIS_PASSWORD,
-            db: parseInt(process.env.REDIS_DB || '0'),
-            maxRetriesPerRequest: 3,
-            lazyConnect: true,
-        });
+        redisClient = process.env.REDIS_URL
+            ? new ioredis_1.default(process.env.REDIS_URL, {
+                tls: process.env.REDIS_URL.includes('upstash.io')
+                    ? { rejectUnauthorized: false }
+                    : undefined,
+                family: process.env.REDIS_URL.includes('upstash.io') ? 6 : 4,
+                maxRetriesPerRequest: 3,
+                lazyConnect: true,
+                connectTimeout: 30000,
+            })
+            : new ioredis_1.default({
+                host: process.env.REDIS_HOST || 'localhost',
+                port: parseInt(process.env.REDIS_PORT || '6379'),
+                password: process.env.REDIS_PASSWORD,
+                db: parseInt(process.env.REDIS_DB || '0'),
+                maxRetriesPerRequest: 3,
+                lazyConnect: true,
+            });
         redisClient.on('connect', () => {
             logger_1.default.info('Redis cache connected successfully');
         });

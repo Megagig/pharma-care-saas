@@ -76,18 +76,22 @@ export default class PerformanceCacheService {
       // Try to reuse existing CacheManager connection
       const cacheManager = CacheManager.getInstance();
 
-      // Create our own Redis connection for performance caching
+      // Create our own Redis connection for performance caching (Upstash compatible)
       const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 
       this.redis = new Redis(redisUrl, {
+        tls: redisUrl.includes('upstash.io') 
+          ? { rejectUnauthorized: false } 
+          : undefined,
+        family: redisUrl.includes('upstash.io') ? 6 : 4,
         maxRetriesPerRequest: 3,
         lazyConnect: false, // Connect immediately
         keepAlive: 30000,
-        connectTimeout: 10000,
-        commandTimeout: 5000,
+        connectTimeout: 30000, // Longer for Upstash
+        commandTimeout: 10000, // Longer for Upstash
         enableReadyCheck: true,
         enableOfflineQueue: true, // Enable offline queue to prevent errors
-        db: 1, // Use different database than CacheManager
+        db: redisUrl.includes('upstash.io') ? 0 : 1, // Upstash free tier only supports db 0
         retryStrategy: (times) => {
           // Retry with exponential backoff, max 3 seconds
           const delay = Math.min(times * 50, 3000);

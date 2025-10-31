@@ -17,8 +17,13 @@ export const initializeRedisCache = () => {
     try {
         redisClient = process.env.REDIS_URL
             ? new Redis(process.env.REDIS_URL, {
+                tls: process.env.REDIS_URL.includes('upstash.io') 
+                    ? { rejectUnauthorized: false } 
+                    : undefined,
+                family: process.env.REDIS_URL.includes('upstash.io') ? 6 : 4,
                 maxRetriesPerRequest: 3,
                 lazyConnect: true,
+                connectTimeout: 30000,
             })
             : new Redis({
                 host: process.env.REDIS_HOST || 'localhost',

@@ -102,11 +102,15 @@ class CacheManager {
             const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 
             this.redis = new Redis(redisUrl, {
+                tls: redisUrl.includes('upstash.io') 
+                    ? { rejectUnauthorized: false } 
+                    : undefined,
+                family: redisUrl.includes('upstash.io') ? 6 : 4,
                 maxRetriesPerRequest: 3,
                 lazyConnect: true,
                 keepAlive: 30000,
-                connectTimeout: 10000,
-                commandTimeout: 5000,
+                connectTimeout: 30000, // Longer for Upstash
+                commandTimeout: 10000, // Longer for Upstash
                 enableReadyCheck: true,
                 enableOfflineQueue: false
             });

@@ -57,20 +57,34 @@ class RedisCacheService {
             return;
         }
         try {
-            this.redis = new ioredis_1.default({
-                host: process.env.REDIS_HOST || 'localhost',
-                port: parseInt(process.env.REDIS_PORT || '6379'),
-                password: process.env.REDIS_PASSWORD,
-                db: parseInt(process.env.REDIS_DB || '0'),
-                maxRetriesPerRequest: 3,
-                lazyConnect: true,
-                keepAlive: 30000,
-                family: 4,
-                connectTimeout: 10000,
-                commandTimeout: 5000,
-                enableReadyCheck: true,
-                enableOfflineQueue: false
-            });
+            this.redis = process.env.REDIS_URL
+                ? new ioredis_1.default(process.env.REDIS_URL, {
+                    tls: process.env.REDIS_URL.includes('upstash.io')
+                        ? { rejectUnauthorized: false }
+                        : undefined,
+                    family: process.env.REDIS_URL.includes('upstash.io') ? 6 : 4,
+                    maxRetriesPerRequest: 3,
+                    lazyConnect: true,
+                    keepAlive: 30000,
+                    connectTimeout: 30000,
+                    commandTimeout: 10000,
+                    enableReadyCheck: true,
+                    enableOfflineQueue: false
+                })
+                : new ioredis_1.default({
+                    host: process.env.REDIS_HOST || 'localhost',
+                    port: parseInt(process.env.REDIS_PORT || '6379'),
+                    password: process.env.REDIS_PASSWORD,
+                    db: parseInt(process.env.REDIS_DB || '0'),
+                    maxRetriesPerRequest: 3,
+                    lazyConnect: true,
+                    keepAlive: 30000,
+                    family: 4,
+                    connectTimeout: 10000,
+                    commandTimeout: 5000,
+                    enableReadyCheck: true,
+                    enableOfflineQueue: false
+                });
             this.setupEventHandlers();
         }
         catch (error) {
