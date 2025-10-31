@@ -329,32 +329,6 @@ class AppointmentService {
   }
 
   /**
-   * Get upcoming appointments
-   */
-  async getUpcomingAppointments(params: {
-    days?: number;
-    pharmacistId?: string;
-  } = {}): Promise<ApiResponse<{ 
-    appointments: Appointment[]; 
-    summary: { today: number; tomorrow: number; thisWeek: number }; 
-  }>> {
-    const searchParams = new URLSearchParams();
-
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined && value !== null) {
-        searchParams.append(key, String(value));
-      }
-    });
-
-    return this.makeRequest<ApiResponse<{ 
-      appointments: Appointment[]; 
-      summary: { today: number; tomorrow: number; thisWeek: number }; 
-    }>>(
-      `/appointments/upcoming?${searchParams.toString()}`
-    );
-  }
-
-  /**
    * Confirm appointment (for patient portal or reminder links)
    */
   async confirmAppointment(
