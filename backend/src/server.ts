@@ -102,15 +102,22 @@ async function initializeServer() {
   const Redis = (await import('ioredis')).default;
 
   // Initialize Redis for presence tracking
-  const redisClient = new Redis({
-    host: process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.REDIS_PORT || '6379'),
-    password: process.env.REDIS_PASSWORD,
-    retryStrategy: (times) => {
-      const delay = Math.min(times * 50, 2000);
-      return delay;
-    },
-  });
+  const redisClient = process.env.REDIS_URL
+    ? new Redis(process.env.REDIS_URL, {
+        retryStrategy: (times) => {
+          const delay = Math.min(times * 50, 2000);
+          return delay;
+        },
+      })
+    : new Redis({
+        host: process.env.REDIS_HOST || 'localhost',
+        port: parseInt(process.env.REDIS_PORT || '6379'),
+        password: process.env.REDIS_PASSWORD,
+        retryStrategy: (times) => {
+          const delay = Math.min(times * 50, 2000);
+          return delay;
+        },
+      });
 
   redisClient.on('connect', () => {
     console.log('✅ Redis connected for presence tracking');

@@ -10,28 +10,32 @@ import logger from '../utils/logger';
 /**
  * Redis connection configuration for Bull queues
  */
-export const redisConfig = {
-  host: process.env.REDIS_HOST || 'localhost',
-  port: parseInt(process.env.REDIS_PORT || '6379'),
-  password: process.env.REDIS_PASSWORD,
-  db: parseInt(process.env.REDIS_QUEUE_DB || '1'), // Use separate DB for queues
-  maxRetriesPerRequest: null, // Required for Bull
-  enableReadyCheck: false,
-  lazyConnect: true,
-};
+export const redisConfig = process.env.REDIS_URL
+  ? process.env.REDIS_URL // Use full Redis URL if provided (e.g., from Render)
+  : {
+      host: process.env.REDIS_HOST || 'localhost',
+      port: parseInt(process.env.REDIS_PORT || '6379'),
+      password: process.env.REDIS_PASSWORD,
+      db: parseInt(process.env.REDIS_QUEUE_DB || '1'), // Use separate DB for queues
+      maxRetriesPerRequest: null, // Required for Bull
+      enableReadyCheck: false,
+      lazyConnect: true,
+    };
 
 /**
  * Create Redis client for Bull
  */
 export const createRedisClient = (): Redis => {
-  const client = new Redis(redisConfig);
+  const client = typeof redisConfig === 'string' 
+    ? new Redis(redisConfig) 
+    : new Redis(redisConfig);
 
   client.on('connect', () => {
     logger.info('Queue Redis client connected');
   });
 
   client.on('error', (error) => {
-    logger.error('Queue Redis client error:', error);
+    logger.error('❌ Redis connection error:', error);
   });
 
   client.on('close', () => {

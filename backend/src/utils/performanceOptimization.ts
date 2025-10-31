@@ -15,14 +15,19 @@ let redisClient: Redis | null = null;
 
 export const initializeRedisCache = () => {
     try {
-        redisClient = new Redis({
-            host: process.env.REDIS_HOST || 'localhost',
-            port: parseInt(process.env.REDIS_PORT || '6379'),
-            password: process.env.REDIS_PASSWORD,
-            db: parseInt(process.env.REDIS_DB || '0'),
-            maxRetriesPerRequest: 3,
-            lazyConnect: true,
-        });
+        redisClient = process.env.REDIS_URL
+            ? new Redis(process.env.REDIS_URL, {
+                maxRetriesPerRequest: 3,
+                lazyConnect: true,
+            })
+            : new Redis({
+                host: process.env.REDIS_HOST || 'localhost',
+                port: parseInt(process.env.REDIS_PORT || '6379'),
+                password: process.env.REDIS_PASSWORD,
+                db: parseInt(process.env.REDIS_DB || '0'),
+                maxRetriesPerRequest: 3,
+                lazyConnect: true,
+            });
 
         redisClient.on('connect', () => {
             logger.info('Redis cache connected successfully');
