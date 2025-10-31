@@ -255,9 +255,9 @@ import {
 
 app.use('/api/', responseSizeMonitoringMiddleware());
 
-// Diagnostic routes (FOR DEBUGGING - REMOVE IN PRODUCTION)
-import diagnosticRoutes from './routes/diagnosticRoutes';
-app.use('/api/diagnostic', diagnosticRoutes);
+// Environment diagnostic routes (FOR DEBUGGING - REMOVE IN PRODUCTION)
+import envDiagnosticRoutes from './routes/diagnosticRoutes';
+app.use('/api/env-diagnostic', envDiagnosticRoutes);
 
 // Health check routes
 app.get('/api/health', (req: Request, res: Response) => {
