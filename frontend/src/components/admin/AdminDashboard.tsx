@@ -886,70 +886,70 @@ const AdminDashboard: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-              {licenses.map((license) => (
-                <TableRow key={license.userId}>
-                  <TableCell>
-                    {license.userName}
-                  </TableCell>
-                  <TableCell>{license.userEmail}</TableCell>
-                  <TableCell>{license.licenseNumber}</TableCell>
-                  <TableCell>
-                    <Chip
-                      label={(license.licenseStatus || 'pending').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                      color={getLicenseStatusColor(license.licenseStatus || 'pending')}
-                      size="small"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    {license.documentInfo ? (
-                      <Button
-                        startIcon={<DownloadIcon />}
+                {licenses.map((license) => (
+                  <TableRow key={license.userId}>
+                    <TableCell>
+                      {license.userName}
+                    </TableCell>
+                    <TableCell>{license.userEmail}</TableCell>
+                    <TableCell>{license.licenseNumber}</TableCell>
+                    <TableCell>
+                      <Chip
+                        label={(license.licenseStatus || 'pending').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}
+                        color={getLicenseStatusColor(license.licenseStatus || 'pending')}
                         size="small"
-                        onClick={() => {
-                          window.open(
-                            `/api/license/document/${license.userId}`,
-                            '_blank'
-                          );
-                        }}
-                      >
-                        {license.documentInfo.fileName}
-                      </Button>
-                    ) : (
-                      <Typography variant="caption" color="text.secondary">
-                        No document
-                      </Typography>
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    {license.documentInfo?.uploadedAt
-                      ? new Date(license.documentInfo.uploadedAt).toLocaleDateString()
-                      : '-'}
-                  </TableCell>
-                  <TableCell>
-                    <Tooltip title="Approve License">
-                      <IconButton
-                        onClick={() => handleApproveLicense(license.userId)}
-                        color="success"
-                        disabled={license.licenseStatus === 'approved'}
-                      >
-                        <CheckCircleIcon />
-                      </IconButton>
-                    </Tooltip>
-                    <Tooltip title="Reject License">
-                      <IconButton
-                        onClick={() => {
-                          setSelectedLicense(license as any);
-                          setLicenseDialogOpen(true);
-                        }}
-                        color="error"
-                        disabled={license.licenseStatus === 'rejected'}
-                      >
-                        <CancelIcon />
-                      </IconButton>
-                    </Tooltip>
-                  </TableCell>
-                </TableRow>
-              ))}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      {license.documentInfo ? (
+                        <Button
+                          startIcon={<DownloadIcon />}
+                          size="small"
+                          onClick={() => {
+                            window.open(
+                              `/api/license/document/${license.userId}`,
+                              '_blank'
+                            );
+                          }}
+                        >
+                          {license.documentInfo.fileName}
+                        </Button>
+                      ) : (
+                        <Typography variant="caption" color="text.secondary">
+                          No document
+                        </Typography>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {license.documentInfo?.uploadedAt
+                        ? new Date(license.documentInfo.uploadedAt).toLocaleDateString()
+                        : '-'}
+                    </TableCell>
+                    <TableCell>
+                      <Tooltip title="Approve License">
+                        <IconButton
+                          onClick={() => handleApproveLicense(license.userId)}
+                          color="success"
+                          disabled={license.licenseStatus === 'approved'}
+                        >
+                          <CheckCircleIcon />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Reject License">
+                        <IconButton
+                          onClick={() => {
+                            setSelectedLicense(license as any);
+                            setLicenseDialogOpen(true);
+                          }}
+                          color="error"
+                          disabled={license.licenseStatus === 'rejected'}
+                        >
+                          <CancelIcon />
+                        </IconButton>
+                      </Tooltip>
+                    </TableCell>
+                  </TableRow>
+                ))}
               </TableBody>
             </Table>
           </TableContainer>

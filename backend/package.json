@@ -17,6 +17,7 @@
     "seed:plans": "ts-node scripts/seedPlansFromConfig.ts",
     "seed:pricing": "ts-node src/scripts/seedPricingData.ts",
     "seed:help": "ts-node src/scripts/seedHelpData.ts",
+    "seed:security-logs": "ts-node src/scripts/seedSecurityAuditLogs.ts",
     "drop-indexes": "ts-node scripts/dropOldIndexes.ts",
     "clean-db": "ts-node scripts/cleanDatabase.ts",
     "migrate:workspace": "ts-node scripts/migrateToWorkspaceSubscriptions.ts",
