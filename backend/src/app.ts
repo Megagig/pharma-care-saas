@@ -255,6 +255,10 @@ import {
 
 app.use('/api/', responseSizeMonitoringMiddleware());
 
+// Diagnostic routes (FOR DEBUGGING - REMOVE IN PRODUCTION)
+import diagnosticRoutes from './routes/diagnosticRoutes';
+app.use('/api/diagnostic', diagnosticRoutes);
+
 // Health check routes
 app.get('/api/health', (req: Request, res: Response) => {
   res.json({
