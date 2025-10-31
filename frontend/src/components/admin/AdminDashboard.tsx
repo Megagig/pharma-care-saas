@@ -80,6 +80,7 @@ import InvitationManagement from './InvitationManagement';
 import LocationManagement from './LocationManagement';
 import WebhookManagement from './WebhookManagement';
 import AdvancedSubscriptionAnalytics from '../subscription/AdvancedSubscriptionAnalytics';
+import EnhancedAnalytics from './EnhancedAnalytics';
 
 interface License {
   userId: string;
@@ -956,74 +957,7 @@ const AdminDashboard: React.FC = () => {
       )}
 
       {/* Analytics Tab */}
-      {activeTab === 2 && analytics && (
-        <Grid container spacing={3}>
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  User Statistics
-                </Typography>
-                {analytics.users.map((stat) => (
-                  <Box
-                    key={stat._id}
-                    display="flex"
-                    justifyContent="space-between"
-                    mb={1}
-                  >
-                    <Typography variant="body2">{stat._id}:</Typography>
-                    <Typography variant="body2">
-                      {stat.active}/{stat.count}
-                    </Typography>
-                  </Box>
-                ))}
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Subscription Statistics
-                </Typography>
-                {analytics.subscriptions.map((stat) => (
-                  <Box key={stat._id} sx={{ mb: 1 }}>
-                    <Box display="flex" justifyContent="space-between">
-                      <Typography variant="body2">{stat._id}:</Typography>
-                      <Typography variant="body2">{stat.count}</Typography>
-                    </Box>
-                    <Typography variant="caption" color="text.secondary">
-                      Revenue: ₦{stat.revenue?.toLocaleString()}
-                    </Typography>
-                  </Box>
-                ))}
-              </CardContent>
-            </Card>
-          </Grid>
-
-          <Grid size={{ xs: 12, md: 4 }}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  License Statistics
-                </Typography>
-                {analytics.licenses.map((stat) => (
-                  <Box
-                    key={stat._id}
-                    display="flex"
-                    justifyContent="space-between"
-                    mb={1}
-                  >
-                    <Typography variant="body2">{stat._id}:</Typography>
-                    <Typography variant="body2">{stat.count}</Typography>
-                  </Box>
-                ))}
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
-      )}
+      {activeTab === 2 && <EnhancedAnalytics />}
 
       {/* Security Dashboard Tab */}
       {activeTab === 3 && <SecurityDashboard />}
