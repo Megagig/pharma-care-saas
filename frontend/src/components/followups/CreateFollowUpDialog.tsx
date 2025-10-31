@@ -221,6 +221,9 @@ const CreateFollowUpDialog: React.FC<CreateFollowUpDialogProps> = ({
         .map(obj => obj.trim())
         .filter(obj => obj.length > 0);
       setValue('objectives', objectives);
+    } else {
+      // If no objectives text, set empty array
+      setValue('objectives', []);
     }
   }, [watchedObjectivesText, setValue]);
 
@@ -232,12 +235,20 @@ const CreateFollowUpDialog: React.FC<CreateFollowUpDialogProps> = ({
         return;
       }
 
+      // Ensure at least one objective exists
+      let objectives = data.objectives;
+      if (!objectives || objectives.length === 0) {
+        // Provide a default objective based on the follow-up type
+        const selectedType = FOLLOWUP_TYPES.find(type => type.value === data.type);
+        objectives = [selectedType?.description || 'Follow up with patient'];
+      }
+
       const followUpData: FollowUpFormData = {
         patientId: data.selectedPatient._id,
         type: data.type,
         title: data.title,
         description: data.description,
-        objectives: data.objectives,
+        objectives: objectives,
         priority: data.priority,
         dueDate: data.dueDate,
         estimatedDuration: data.estimatedDuration,
@@ -491,15 +502,23 @@ const CreateFollowUpDialog: React.FC<CreateFollowUpDialogProps> = ({
                       <Controller
                         name="objectivesText"
                         control={control}
+                        rules={{
+                          validate: (value) => {
+                            const objectives = value?.split('\n').map(obj => obj.trim()).filter(obj => obj.length > 0) || [];
+                            return objectives.length > 0 || 'At least one objective is required';
+                          }
+                        }}
                         render={({ field }) => (
                           <TextField
                             {...field}
-                            label="Objectives (one per line)"
+                            label="Objectives (one per line) *"
                             placeholder="Enter each objective on a new line..."
                             multiline
                             rows={3}
                             fullWidth
-                            helperText="List each objective on a separate line"
+                            required
+                            error={!!errors.objectivesText}
+                            helperText={errors.objectivesText?.message || "List each objective on a separate line (required)"}
                           />
                         )}
                       />

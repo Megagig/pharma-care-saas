@@ -465,4 +465,21 @@ export const adminService = {
     const response = await apiClient.post(`/api/invitations/${invitationId}/resend`);
     return response.data;
   },
+
+  // Location Management
+  async getLocations(params?: {
+    page?: number;
+    limit?: number;
+    search?: string;
+    workspaceId?: string;
+  }) {
+    // For now, we'll fetch workspaces and extract their locations
+    const queryParams = new URLSearchParams();
+    if (params?.page) queryParams.append('page', params.page.toString());
+    if (params?.limit) queryParams.append('limit', params.limit.toString());
+    if (params?.search) queryParams.append('search', params.search);
+    
+    const response = await apiClient.get(`/admin/dashboard/workspaces?${queryParams}`);
+    return response.data;
+  },
 };
