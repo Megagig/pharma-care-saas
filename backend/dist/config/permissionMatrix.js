@@ -189,25 +189,25 @@ exports.PERMISSION_MATRIX = {
         allowTrialAccess: false,
     },
     'appointment.create': {
-        workplaceRoles: ['Owner', 'Pharmacist'],
+        workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet'],
         features: ['appointmentScheduling'],
         requiresActiveSubscription: true,
         allowTrialAccess: true,
     },
     'appointment.read': {
-        workplaceRoles: ['Owner', 'Pharmacist', 'Technician', 'Assistant'],
+        workplaceRoles: ['Owner', 'Pharmacist', 'Technician', 'Assistant', 'pharmacy_outlet'],
         features: ['appointmentScheduling'],
         requiresActiveSubscription: true,
         allowTrialAccess: true,
     },
     'appointment.update': {
-        workplaceRoles: ['Owner', 'Pharmacist'],
+        workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet'],
         features: ['appointmentScheduling'],
         requiresActiveSubscription: true,
         allowTrialAccess: true,
     },
     'appointment.delete': {
-        workplaceRoles: ['Owner', 'Pharmacist'],
+        workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet'],
         features: ['appointmentScheduling'],
         requiresActiveSubscription: true,
         allowTrialAccess: false,
@@ -237,7 +237,7 @@ exports.PERMISSION_MATRIX = {
         allowTrialAccess: true,
     },
     'appointment.manage': {
-        workplaceRoles: ['Owner'],
+        workplaceRoles: ['Owner', 'pharmacy_outlet'],
         features: ['appointmentScheduling'],
         requiresActiveSubscription: true,
         allowTrialAccess: true,
@@ -630,27 +630,27 @@ exports.PERMISSION_MATRIX = {
         allowTrialAccess: true,
     },
     'view_appointment_analytics': {
-        workplaceRoles: ['Owner', 'Pharmacist'],
+        workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet'],
         requiresActiveSubscription: true,
         allowTrialAccess: true,
     },
     'view_followup_analytics': {
-        workplaceRoles: ['Owner', 'Pharmacist'],
+        workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet'],
         requiresActiveSubscription: true,
         allowTrialAccess: true,
     },
     'view_reminder_analytics': {
-        workplaceRoles: ['Owner', 'Pharmacist'],
+        workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet'],
         requiresActiveSubscription: true,
         allowTrialAccess: true,
     },
     'view_capacity_analytics': {
-        workplaceRoles: ['Owner', 'Pharmacist'],
+        workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet'],
         requiresActiveSubscription: true,
         allowTrialAccess: true,
     },
     'export_analytics': {
-        workplaceRoles: ['Owner', 'Pharmacist'],
+        workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet'],
         features: ['dataExport'],
         requiresActiveSubscription: true,
         allowTrialAccess: false,
@@ -731,6 +731,7 @@ exports.ROLE_HIERARCHY = {
 };
 exports.WORKPLACE_ROLE_HIERARCHY = {
     Owner: ['Owner', 'Pharmacist', 'Staff', 'Technician', 'Cashier', 'Assistant'],
+    pharmacy_outlet: ['pharmacy_outlet', 'Owner', 'Pharmacist', 'Staff', 'Technician', 'Cashier', 'Assistant'],
     Pharmacist: ['Pharmacist', 'Technician', 'Assistant'],
     Staff: ['Staff', 'Technician', 'Assistant'],
     Technician: ['Technician', 'Assistant'],

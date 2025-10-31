@@ -29,6 +29,7 @@ export interface ISubscription extends Document {
     paymentHistory: mongoose.Types.ObjectId[];
     autoRenew: boolean;
     gracePeriodEnd?: Date;
+    canceledAt?: Date;
     stripeSubscriptionId?: string;
     stripeCustomerId?: string;
     webhookEvents: {

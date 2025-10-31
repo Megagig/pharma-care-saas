@@ -5,7 +5,7 @@ import { ISubscription } from '../models/Subscription';
 import { ISubscriptionPlan } from '../models/SubscriptionPlan';
 import { Types } from 'mongoose';
 export type UserRole = 'pharmacist' | 'pharmacy_team' | 'pharmacy_outlet' | 'intern_pharmacist' | 'super_admin' | 'owner';
-export type WorkplaceRole = 'Owner' | 'Staff' | 'Pharmacist' | 'Cashier' | 'Technician' | 'Assistant';
+export type WorkplaceRole = 'Owner' | 'Staff' | 'Pharmacist' | 'Cashier' | 'Technician' | 'Assistant' | 'pharmacy_outlet';
 export type SubscriptionTier = 'free_trial' | 'basic' | 'pro' | 'pharmily' | 'network' | 'enterprise';
 export interface PermissionMatrix {
     [action: string]: {
