@@ -15,24 +15,21 @@ let redisClient: Redis | null = null;
 
 export const initializeRedisCache = () => {
     try {
-        redisClient = process.env.REDIS_URL
-            ? new Redis(process.env.REDIS_URL, {
-                tls: process.env.REDIS_URL.includes('upstash.io') 
-                    ? { rejectUnauthorized: false } 
-                    : undefined,
-                family: process.env.REDIS_URL.includes('upstash.io') ? 6 : 4,
-                maxRetriesPerRequest: 3,
-                lazyConnect: true,
-                connectTimeout: 30000,
-            })
-            : new Redis({
-                host: process.env.REDIS_HOST || 'localhost',
-                port: parseInt(process.env.REDIS_PORT || '6379'),
-                password: process.env.REDIS_PASSWORD,
-                db: parseInt(process.env.REDIS_DB || '0'),
-                maxRetriesPerRequest: 3,
-                lazyConnect: true,
-            });
+        // Only initialize if REDIS_URL is explicitly set
+        if (!process.env.REDIS_URL || process.env.REDIS_URL.trim() === '') {
+            logger.info('Redis cache disabled (no REDIS_URL configured)');
+            return null;
+        }
+
+        redisClient = new Redis(process.env.REDIS_URL, {
+            tls: process.env.REDIS_URL.includes('upstash.io') 
+                ? { rejectUnauthorized: false } 
+                : undefined,
+            family: process.env.REDIS_URL.includes('upstash.io') ? 6 : 4,
+            maxRetriesPerRequest: 3,
+            lazyConnect: true,
+            connectTimeout: 30000,
+        });
 
         redisClient.on('connect', () => {
             logger.info('Redis cache connected successfully');

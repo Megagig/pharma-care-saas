@@ -115,39 +115,37 @@ async function initializeServer() {
   const { initializePresenceModel } = await import('./models/chat/Presence');
   const Redis = (await import('ioredis')).default;
 
-  // Initialize Redis for presence tracking (Upstash compatible)
-  const redisClient = process.env.REDIS_URL
-    ? new Redis(process.env.REDIS_URL, {
-        tls: process.env.REDIS_URL.includes('upstash.io') 
-          ? { rejectUnauthorized: false } 
-          : undefined,
-        family: process.env.REDIS_URL.includes('upstash.io') ? 6 : 4,
-        connectTimeout: 30000,
-        retryStrategy: (times) => {
-          const delay = Math.min(times * 50, 2000);
-          return delay;
-        },
-      })
-    : new Redis({
-        host: process.env.REDIS_HOST || 'localhost',
-        port: parseInt(process.env.REDIS_PORT || '6379'),
-        password: process.env.REDIS_PASSWORD,
-        retryStrategy: (times) => {
-          const delay = Math.min(times * 50, 2000);
-          return delay;
-        },
-      });
+  // Initialize Redis for presence tracking (only if REDIS_URL is explicitly set)
+  let redisClient: any = null;
+  
+  if (process.env.REDIS_URL && process.env.REDIS_URL.trim() !== '') {
+    redisClient = new Redis(process.env.REDIS_URL, {
+      tls: process.env.REDIS_URL.includes('upstash.io') 
+        ? { rejectUnauthorized: false } 
+        : undefined,
+      family: process.env.REDIS_URL.includes('upstash.io') ? 6 : 4,
+      connectTimeout: 30000,
+      retryStrategy: (times) => {
+        const delay = Math.min(times * 50, 2000);
+        return delay;
+      },
+    });
+  } else {
+    console.log('ℹ️ Redis presence tracking disabled (no REDIS_URL configured)');
+  }
 
-  redisClient.on('connect', () => {
-    console.log('✅ Redis connected for presence tracking');
-  });
+  if (redisClient) {
+    redisClient.on('connect', () => {
+      console.log('✅ Redis connected for presence tracking');
+    });
 
-  redisClient.on('error', (err) => {
-    console.error('❌ Redis connection error:', err);
-  });
+    redisClient.on('error', (err) => {
+      console.error('❌ Redis connection error:', err);
+    });
 
-  // Initialize presence model
-  initializePresenceModel(redisClient);
+    // Initialize presence model
+    initializePresenceModel(redisClient);
+  }
 
   // Initialize chat socket service
   const chatSocketService = initializeChatSocketService(io);
