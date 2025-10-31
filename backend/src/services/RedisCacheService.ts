@@ -42,20 +42,31 @@ export class RedisCacheService {
         }
 
         try {
-            this.redis = new Redis({
-                host: process.env.REDIS_HOST || 'localhost',
-                port: parseInt(process.env.REDIS_PORT || '6379'),
-                password: process.env.REDIS_PASSWORD,
-                db: parseInt(process.env.REDIS_DB || '0'),
-                maxRetriesPerRequest: 3,
-                lazyConnect: true,
-                keepAlive: 30000,
-                family: 4,
-                connectTimeout: 10000,
-                commandTimeout: 5000,
-                enableReadyCheck: true,
-                enableOfflineQueue: false
-            });
+            this.redis = process.env.REDIS_URL
+                ? new Redis(process.env.REDIS_URL, {
+                    maxRetriesPerRequest: 3,
+                    lazyConnect: true,
+                    keepAlive: 30000,
+                    family: 4,
+                    connectTimeout: 10000,
+                    commandTimeout: 5000,
+                    enableReadyCheck: true,
+                    enableOfflineQueue: false
+                })
+                : new Redis({
+                    host: process.env.REDIS_HOST || 'localhost',
+                    port: parseInt(process.env.REDIS_PORT || '6379'),
+                    password: process.env.REDIS_PASSWORD,
+                    db: parseInt(process.env.REDIS_DB || '0'),
+                    maxRetriesPerRequest: 3,
+                    lazyConnect: true,
+                    keepAlive: 30000,
+                    family: 4,
+                    connectTimeout: 10000,
+                    commandTimeout: 5000,
+                    enableReadyCheck: true,
+                    enableOfflineQueue: false
+                });
 
             this.setupEventHandlers();
         } catch (error) {
