@@ -36,6 +36,18 @@ import logger from '../utils/logger';
  * Initialize all job workers
  */
 export async function initializeWorkers(): Promise<void> {
+  // Check if background jobs are disabled
+  if (process.env.DISABLE_BACKGROUND_JOBS === 'true') {
+    logger.info('⏸️ Job workers disabled (DISABLE_BACKGROUND_JOBS=true)');
+    return;
+  }
+
+  // Check if Redis URL is available
+  if (!process.env.REDIS_URL || process.env.REDIS_URL.trim() === '') {
+    logger.info('⏸️ Job workers disabled (no REDIS_URL configured)');
+    return;
+  }
+
   try {
     logger.info('Initializing job workers...');
 
