@@ -1,349 +1,224 @@
-# Workspace Team Management - Verification Checklist
+# Analytics & Reports - Verification Checklist
 
-## Pre-Testing Setup
+## ✅ Server Status
+- [x] Backend server restarted successfully
+- [x] No TypeScript compilation errors
+- [x] All imports resolved correctly
 
-- [ ] Backend server is running (`cd backend && npm run dev`)
-- [ ] Frontend server is running (`cd frontend && npm run dev`)
-- [ ] MongoDB is running and accessible
-- [ ] You have a user account with `pharmacy_outlet` role
-- [ ] User has an active subscription
+## 🧪 Manual Testing Steps
 
-## Login & Navigation
+### 1. Navigate to Analytics & Reports Tab
+1. Open your browser and go to: `http://localhost:5173` (or your frontend URL)
+2. Login as a super admin user
+3. Navigate to: **SaaS Settings** → **Analytics & Reports** tab
 
-- [ ] Login with pharmacy_outlet user credentials
-- [ ] Navigate to `/workspace/team` route
-- [ ] Page loads without errors in console
-- [ ] No "data is undefined" errors appear
+### 2. Verify Currency Display (₦)
+**Expected**: All monetary values should display with ₦ symbol (Naira)
 
-## Statistics Cards (Top Section)
+Check these metrics:
+- [ ] Monthly Recurring Revenue shows ₦ (not $)
+- [ ] Annual Recurring Revenue shows ₦ (not $)
+- [ ] Customer LTV shows ₦ (not $)
+- [ ] Revenue in Plan Distribution table shows ₦
+- [ ] Revenue in Revenue Growth table shows ₦
+- [ ] Cost Savings in Clinical Impact shows ₦
 
-- [ ] "Total Members" card shows a number (not 0 or loading forever)
-- [ ] "Active Members" card shows a number
-- [ ] "Pending Approvals" card shows correct count
-- [ ] "Active Invites" card shows correct count
-- [ ] All cards have proper icons and styling
+### 3. Verify Real Data (No Mock/Placeholder)
+**Expected**: All data should come from actual database records
 
-## Tab 1: Members
+#### Subscription Analytics Tab:
+- [ ] MRR value is calculated from real subscriptions
+- [ ] ARR = MRR × 12
+- [ ] Churn rate is based on actual canceled subscriptions
+- [ ] Plan Distribution shows actual plan names (Free Trial, Basic, Pro, Pharmily, Network, Enterprise)
+- [ ] NO ObjectId strings visible (like "68e4f2a652d8798b18d1ac5a")
+- [ ] Revenue Growth shows real growth percentages (not random numbers)
 
-### Basic Functionality
-- [ ] Tab is clickable and switches to Members view
-- [ ] Member list loads without errors
-- [ ] At least one member is visible (the logged-in user)
-- [ ] Member cards show: avatar, name, email, role, status
+#### Workspace Usage Tab:
+- [ ] Workspace names are real
+- [ ] Plan names are readable (not IDs)
+- [ ] Prescription counts are real (from MedicationRecord model)
+- [ ] Diagnostic counts are real (from DiagnosticCase model)
+- [ ] Patient counts are real
+- [ ] Active user counts are real
+- [ ] Clinical interventions are real
+- [ ] Last activity dates are real
 
-### Search & Filter
-- [ ] Search box is present and functional
-- [ ] Can search by name
-- [ ] Can search by email
-- [ ] Role filter dropdown works
-- [ ] Status filter dropdown works
-- [ ] Clear filters button works
+#### Clinical Impact Tab:
+- [ ] Total Interventions count is real
+- [ ] Adherence Improvement percentage is calculated from real data
+- [ ] Cost Savings is calculated from real interventions
+- [ ] Workspace breakdown table shows real data per workspace
 
-### Sorting
-- [ ] Can sort by name (click column header)
-- [ ] Can sort by role
-- [ ] Can sort by status
-- [ ] Can sort by joined date
-- [ ] Sort direction toggles (asc/desc)
+### 4. Verify Time Range Filter
+**Expected**: Changing time range should reload data with different date filters
 
-### Pagination
-- [ ] Pagination controls are visible
-- [ ] Can change rows per page (10, 20, 50, 100)
-- [ ] Can navigate between pages
-- [ ] Page numbers update correctly
+Test each option:
+- [ ] Select "Last 7 days" → Data updates
+- [ ] Select "Last 30 days" → Data updates
+- [ ] Select "Last 90 days" → Data updates
+- [ ] Select "Last year" → Data updates
+- [ ] Loading indicator appears during data fetch
+- [ ] Data changes based on selected range
 
-### Member Actions
-- [ ] Click ⋮ (more actions) button on a member
-- [ ] "Assign Role" option appears
-- [ ] "Suspend Member" option appears (if not owner)
-- [ ] "Remove from Workspace" option appears (if not owner)
-- [ ] Actions menu closes when clicking outside
+### 5. Verify Modern Design
+**Expected**: Professional, modern appearance with gradients and animations
 
-## Tab 2: Pending Approvals
+Check these elements:
+- [ ] Metric cards have gradient backgrounds
+- [ ] Cards have hover effect (slight lift animation)
+- [ ] Tables have colored headers
+- [ ] Tables have hover effects on rows
+- [ ] Plan names appear as chips/badges
+- [ ] Progress bars show in Plan Distribution
+- [ ] Growth indicators show up/down arrows
+- [ ] Icons display correctly
+- [ ] Typography is clear and professional
 
-### Basic Functionality
-- [ ] Tab is clickable and switches to Pending Approvals view
-- [ ] Component loads without placeholder message
-- [ ] Shows empty state if no pending members
-- [ ] Shows list if pending members exist
+### 6. Verify Responsive Design
+**Expected**: Layout adapts to different screen sizes
 
-### Pending Members List (if any exist)
-- [ ] Each pending member shows: avatar, name, email, role, date
-- [ ] Checkbox for each member works
-- [ ] "Select All" checkbox works
-- [ ] Approve button is visible
-- [ ] Reject button is visible
+Test on:
+- [ ] Desktop (1920px+): 4-column card layout
+- [ ] Tablet (768px-1024px): 2-column card layout
+- [ ] Mobile (< 768px): Single column, stacked cards
+- [ ] Button text hides on mobile
+- [ ] Tables scroll horizontally on mobile
+- [ ] All content is accessible
 
-### Individual Actions
-- [ ] Click "Approve" on a member
-- [ ] Confirmation or success message appears
-- [ ] Member moves to active members list
-- [ ] Pending count decreases
-- [ ] Click "Reject" on a member
-- [ ] Rejection reason dialog appears
-- [ ] Can enter optional reason
-- [ ] Member is rejected successfully
+### 7. Verify Tab Functionality
+**Expected**: All three tabs work and show different data
 
-### Bulk Actions
-- [ ] Select multiple members with checkboxes
-- [ ] Bulk action bar appears showing count
-- [ ] "Approve Selected" button works
-- [ ] "Reject Selected" button works
-- [ ] Confirmation dialog appears for bulk actions
+- [ ] "Subscription Analytics" tab loads and displays data
+- [ ] "Workspace Usage" tab loads and displays data
+- [ ] "Clinical Impact" tab loads and displays data
+- [ ] Switching between tabs works smoothly
+- [ ] Each tab shows relevant metrics
+- [ ] Loading states work for each tab
 
-## Tab 3: Invite Links
+### 8. Check Browser Console
+**Expected**: No errors in console
 
-### Invite Generator
-- [ ] Tab is clickable and switches to Invite Links view
-- [ ] Invite generator form is visible at top
-- [ ] Email field is present and validates
-- [ ] Role dropdown has all roles
-- [ ] Expiration days field (1-30)
-- [ ] Max uses field (1-100)
-- [ ] "Requires Approval" checkbox
-- [ ] Personal message textarea
-- [ ] "Generate Invite" button is clickable
+- [ ] No JavaScript errors
+- [ ] No failed API requests (check Network tab)
+- [ ] API responses return 200 status
+- [ ] No CORS errors
+- [ ] No authentication errors
 
-### Generate Invite
-- [ ] Fill in email (e.g., test@example.com)
-- [ ] Select role (e.g., Staff)
-- [ ] Set expiration (e.g., 7 days)
-- [ ] Click "Generate Invite"
-- [ ] Success message appears
-- [ ] Invite appears in list below
-- [ ] Active invites count increases
+### 9. Check Backend Logs
+**Expected**: Clean logs with no errors
 
-### Invite List
-- [ ] List of invites is visible
-- [ ] Each invite shows: email, role, status, expiration, usage
-- [ ] Copy link button (📋) is visible for pending invites
-- [ ] Click copy button
-- [ ] "Copied!" tooltip or message appears
-- [ ] Invite URL is in clipboard
-- [ ] Revoke button (🗑) is visible for pending invites
-- [ ] Click revoke button
-- [ ] Confirmation dialog appears
-- [ ] Invite status changes to "revoked"
+Look for:
+- [ ] No "Error fetching subscription analytics"
+- [ ] No "Error fetching pharmacy usage reports"
+- [ ] No "Error fetching clinical outcomes report"
+- [ ] No "Cannot populate virtual subscriptionId" error
+- [ ] Successful API responses logged
 
-### Invite Status
-- [ ] Pending invites show "Pending" badge (blue)
-- [ ] Accepted invites show "Accepted" badge (green)
-- [ ] Expired invites show "Expired" badge (orange)
-- [ ] Revoked invites show "Revoked" badge (gray)
+### 10. Verify Empty States
+**Expected**: Graceful handling when no data exists
 
-### Pagination
-- [ ] Pagination works if more than 20 invites
-- [ ] Can change rows per page
-- [ ] Can navigate between pages
+If you have no data:
+- [ ] Empty state message displays
+- [ ] No JavaScript errors
+- [ ] UI remains functional
+- [ ] Message is clear and helpful
 
-## Tab 4: Audit Trail
+## 🐛 Common Issues & Solutions
 
-### Basic Functionality
-- [ ] Tab is clickable and switches to Audit Trail view
-- [ ] Component loads without placeholder message
-- [ ] Audit log list is visible
-- [ ] Shows empty state if no logs exist
-- [ ] Shows logs if any exist
+### Issue: "Cannot populate virtual subscriptionId"
+**Solution**: Already fixed! Using `currentSubscriptionId` now.
 
-### Filters
-- [ ] Start date picker is present
-- [ ] End date picker is present
-- [ ] Category dropdown is present (Member, Role, Permission, etc.)
-- [ ] Action text field is present
-- [ ] "Clear" button works
-- [ ] "Export CSV" button is visible
+### Issue: Plan names show as ObjectIds
+**Solution**: Already fixed! Using plans.json mapping.
 
-### Audit Log List
-- [ ] Each log shows: timestamp, actor, category, action, target
-- [ ] Severity badges are color-coded
-- [ ] Category badges are color-coded
-- [ ] Expandable details button (▼) is visible
+### Issue: Random numbers for prescriptions/diagnostics
+**Solution**: Already fixed! Using real MedicationRecord and DiagnosticCase counts.
 
-### Log Details
-- [ ] Click expand button on a log
-- [ ] Details section expands
-- [ ] Shows "Before" and "After" values (if applicable)
-- [ ] Shows reason (if applicable)
-- [ ] Shows metadata (if applicable)
-- [ ] Shows IP address
-- [ ] Shows user agent
-- [ ] Click expand button again to collapse
+### Issue: Currency shows $ instead of ₦
+**Solution**: Already fixed! Using NGN currency with en-NG locale.
 
-### Filtering
-- [ ] Select date range
-- [ ] Logs filter by date
-- [ ] Select category
-- [ ] Logs filter by category
-- [ ] Enter action text
-- [ ] Logs filter by action
-- [ ] Clear filters resets all
+### Issue: Time range filter doesn't work
+**Solution**: Already fixed! useEffect triggers on timeRange change.
 
-### Export
-- [ ] Click "Export CSV" button
-- [ ] File download starts
-- [ ] CSV file contains audit logs
-- [ ] CSV has proper headers
-- [ ] CSV data matches displayed logs
+## 📊 Expected Data Structure
 
-### Pagination
-- [ ] Pagination works if more than 20 logs
-- [ ] Can change rows per page
-- [ ] Can navigate between pages
+### Subscription Analytics Response:
+```json
+{
+  "success": true,
+  "data": {
+    "mrr": 119250,
+    "arr": 1431000,
+    "ltv": 327937.50,
+    "cac": 150,
+    "churnRate": 0.045,
+    "upgradeRate": 0.05,
+    "downgradeRate": 0.02,
+    "planDistribution": [
+      {
+        "planName": "Enterprise",
+        "count": 5,
+        "percentage": 25,
+        "revenue": 37500
+      }
+    ],
+    "revenueByPlan": [
+      {
+        "planName": "Enterprise",
+        "revenue": 37500,
+        "growth": 0.15
+      }
+    ],
+    "growthTrend": [...]
+  }
+}
+```
 
-## Integration Tests
+### Workspace Usage Response:
+```json
+{
+  "success": true,
+  "data": {
+    "reports": [
+      {
+        "pharmacyId": "68b5cb82f1f0f9758b8afadf",
+        "pharmacyName": "Main Pharmacy",
+        "subscriptionPlan": "Enterprise",
+        "prescriptionsProcessed": 45,
+        "diagnosticsPerformed": 12,
+        "patientsManaged": 234,
+        "activeUsers": 8,
+        "lastActivity": "2025-10-23T05:25:43.000Z",
+        "clinicalOutcomes": {
+          "interventions": 67,
+          "adherenceImprovement": 12.5,
+          "costSavings": 150000
+        }
+      }
+    ]
+  }
+}
+```
 
-### Complete Workflow: Invite → Approve → Manage
-1. [ ] Generate an invite link (Invite Links tab)
-2. [ ] Copy the invite URL
-3. [ ] Open invite URL in incognito/private window
-4. [ ] Register a new user with the invite
-5. [ ] Return to workspace team page
-6. [ ] See new pending approval (Pending Approvals tab)
-7. [ ] Pending Approvals count increased by 1
-8. [ ] Approve the pending member
-9. [ ] Member appears in Members tab
-10. [ ] Active Members count increased by 1
-11. [ ] Check Audit Trail tab
-12. [ ] See "invite_generated" log entry
-13. [ ] See "member_approved" log entry
+## ✅ Success Criteria
 
-### Role Change Workflow
-1. [ ] Go to Members tab
-2. [ ] Click ⋮ on a member (not yourself)
-3. [ ] Click "Assign Role"
-4. [ ] Role assignment dialog opens
-5. [ ] Select new role
-6. [ ] Enter reason (optional)
-7. [ ] Click "Save"
-8. [ ] Success message appears
-9. [ ] Member's role updates in list
-10. [ ] Go to Audit Trail tab
-11. [ ] See "role_changed" log entry
-12. [ ] Expand log to see before/after values
+All items checked = Implementation successful! 🎉
 
-### Suspend/Activate Workflow
-1. [ ] Go to Members tab
-2. [ ] Click ⋮ on an active member
-3. [ ] Click "Suspend Member"
-4. [ ] Suspension dialog opens
-5. [ ] Enter suspension reason
-6. [ ] Click "Suspend"
-7. [ ] Member status changes to "Suspended"
-8. [ ] Active Members count decreases
-9. [ ] Click ⋮ on suspended member
-10. [ ] Click "Activate Member"
-11. [ ] Member status changes to "Active"
-12. [ ] Active Members count increases
-13. [ ] Check Audit Trail for both actions
+- Currency displays as ₦ everywhere
+- All data comes from real API endpoints
+- Plan names are readable (not IDs)
+- Time range filter works
+- All three tabs are functional
+- Design is modern and responsive
+- No errors in console or logs
 
-## Error Handling
+## 📝 Notes
 
-### Network Errors
-- [ ] Disconnect internet
-- [ ] Try to load members
-- [ ] Error message appears
-- [ ] Reconnect internet
-- [ ] Retry works
-
-### Invalid Actions
-- [ ] Try to suspend yourself (should fail)
-- [ ] Try to remove yourself (should fail)
-- [ ] Try to approve already approved member (should fail)
-- [ ] Try to use expired invite (should fail)
-
-### Validation
-- [ ] Try to generate invite with invalid email
-- [ ] Validation error appears
-- [ ] Try to set expiration > 30 days
-- [ ] Validation error appears
-- [ ] Try to set max uses > 100
-- [ ] Validation error appears
-
-## Performance
-
-- [ ] Page loads in < 2 seconds
-- [ ] Tab switching is instant
-- [ ] Search/filter is responsive
-- [ ] No lag when scrolling lists
-- [ ] Pagination is smooth
-- [ ] No memory leaks (check dev tools)
-
-## Mobile Responsiveness
-
-- [ ] Open on mobile device or resize browser
-- [ ] Statistics cards stack vertically
-- [ ] Tabs become scrollable
-- [ ] Tables are horizontally scrollable
-- [ ] Forms are usable on mobile
-- [ ] Buttons are touch-friendly
-
-## Accessibility
-
-- [ ] Can navigate with keyboard (Tab key)
-- [ ] Can activate buttons with Enter/Space
-- [ ] Screen reader announces elements correctly
-- [ ] Color contrast is sufficient
-- [ ] Focus indicators are visible
-- [ ] ARIA labels are present
-
-## Browser Compatibility
-
-Test in multiple browsers:
-- [ ] Chrome/Edge (Chromium)
-- [ ] Firefox
-- [ ] Safari (if on Mac)
-
-## Final Checks
-
-- [ ] No console errors
-- [ ] No console warnings (or only expected ones)
-- [ ] No network errors in Network tab
-- [ ] All images/icons load
-- [ ] All fonts load
-- [ ] Styling looks correct
-- [ ] No layout shifts
-- [ ] No broken links
-
-## Documentation
-
-- [ ] Read WORKSPACE_TEAM_BUGS_FIXED.md
-- [ ] Read WORKSPACE_TEAM_VISUAL_GUIDE.md
-- [ ] Read QUICK_FIX_SUMMARY.md
-- [ ] Understand the changes made
-- [ ] Know how to troubleshoot issues
+- If prescription/diagnostic counts are 0, that's expected if you don't have MedicationRecord or DiagnosticCase data yet
+- Growth rates may be 0 if this is your first time period with data
+- Empty workspaces list is normal if no workspaces have active subscriptions
 
 ---
 
-## Sign-Off
-
-**Tester Name**: ___________________
-**Date**: ___________________
-**Status**: ⬜ Pass ⬜ Fail
-**Notes**: 
-___________________________________________
-___________________________________________
-___________________________________________
-
-## Issues Found
-
-If any issues are found, document them here:
-
-1. **Issue**: 
-   **Steps to Reproduce**: 
-   **Expected**: 
-   **Actual**: 
-   **Severity**: ⬜ Critical ⬜ High ⬜ Medium ⬜ Low
-
-2. **Issue**: 
-   **Steps to Reproduce**: 
-   **Expected**: 
-   **Actual**: 
-   **Severity**: ⬜ Critical ⬜ High ⬜ Medium ⬜ Low
-
----
-
-**Overall Result**: 
-- ⬜ All tests passed - Ready for production
-- ⬜ Minor issues found - Can deploy with fixes
-- ⬜ Major issues found - Needs more work
-- ⬜ Critical issues found - Do not deploy
+**Ready to test?** Follow the checklist above and mark items as you verify them!

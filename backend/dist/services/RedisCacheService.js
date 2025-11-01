@@ -60,7 +60,7 @@ class RedisCacheService {
             const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
             this.redis = new ioredis_1.default(redisUrl, {
                 maxRetriesPerRequest: 3,
-                lazyConnect: true,
+                lazyConnect: false,
                 keepAlive: 30000,
                 connectTimeout: 10000,
                 commandTimeout: 5000,

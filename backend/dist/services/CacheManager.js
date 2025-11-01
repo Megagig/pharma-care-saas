@@ -84,7 +84,7 @@ class CacheManager {
             const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
             this.redis = new ioredis_1.default(redisUrl, {
                 maxRetriesPerRequest: 3,
-                lazyConnect: true,
+                lazyConnect: false,
                 keepAlive: 30000,
                 connectTimeout: 10000,
                 commandTimeout: 5000,
@@ -95,6 +95,9 @@ class CacheManager {
                 this.isConnected = true;
                 logger_1.default.info('Redis cache manager connected');
             });
+            this.redis.on('ready', () => {
+                this.isConnected = true;
+            });
             this.redis.on('error', (error) => {
                 this.isConnected = false;
                 logger_1.default.error('Redis cache manager error:', error);
@@ -103,11 +106,8 @@ class CacheManager {
                 this.isConnected = false;
                 logger_1.default.warn('Redis cache manager connection closed');
             });
-            const connectionPromise = this.redis.ping();
-            const timeoutPromise = new Promise((_, reject) => {
-                setTimeout(() => reject(new Error('Redis connection timeout')), 5000);
-            });
-            await Promise.race([connectionPromise, timeoutPromise]);
+            await this.redis.ping();
+            this.isConnected = true;
         }
         catch (error) {
             logger_1.default.error('Failed to initialize Redis cache manager, falling back to memory cache:', error);

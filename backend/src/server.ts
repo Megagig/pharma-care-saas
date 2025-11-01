@@ -14,7 +14,8 @@ import { emailDeliveryCronService } from './services/EmailDeliveryCronService';
 import CommunicationSocketService from './services/communicationSocketService';
 import SocketNotificationService from './services/socketNotificationService';
 import AppointmentSocketService from './services/AppointmentSocketService';
-// QueueService removed - background jobs disabled
+import { QueueService } from './services/QueueService';
+import { initializeWorkers } from './jobs/workers';
 
 // Import models to ensure they are registered with Mongoose
 import './models/Medication';
@@ -43,24 +44,16 @@ async function initializeServer() {
     // Start performance monitoring after DB is connected
     performanceCollector.startSystemMetricsCollection();
 
-    // Initialize Upstash Redis (REST API)
+    // Initialize Queue Service and Job Workers
     try {
-      const { initializeUpstashRedis, testUpstashRedisConnection } = await import('./config/upstashRedis');
-      initializeUpstashRedis();
-      const isConnected = await testUpstashRedisConnection();
-      if (isConnected) {
-        console.log('✅ Upstash Redis (REST API) connected successfully');
-      } else {
-        console.log('ℹ️ Upstash Redis not available, using fallback cache');
-      }
+      const queueService = QueueService.getInstance();
+      await queueService.initialize();
+      await initializeWorkers();
+      console.log('✅ Queue Service and Job Workers initialized successfully');
     } catch (error) {
-      console.log('ℹ️ Upstash Redis initialization skipped:', error);
+      console.error('⚠️ Queue Service initialization failed:', error);
+      console.log('ℹ️ Continuing without background jobs');
     }
-
-    // Queue Service and Job Workers DISABLED
-    // Background jobs (reminders, follow-ups) are disabled to avoid Redis dependency
-    // The application functions normally without them
-    console.log('ℹ️ Queue Service and Job Workers disabled (not required for core functionality)');
   } catch (error) {
     console.error('❌ Database connection failed:', error);
     process.exit(1);
@@ -193,8 +186,14 @@ const gracefulShutdown = async (signal: string) => {
       });
     }
 
-    // Queue Service removed - no cleanup needed
-    console.log('ℹ️ Queue Service not active (disabled)');
+    // Cleanup Queue Service
+    try {
+      const queueService = QueueService.getInstance();
+      await queueService.closeAll();
+      console.log('✅ Queue Service shut down successfully');
+    } catch (error) {
+      console.log('ℹ️ Queue Service not active or already shut down');
+    }
 
     // Close database connection
     const mongoose = require('mongoose');

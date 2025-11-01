@@ -50,6 +50,8 @@ const EmailDeliveryCronService_1 = require("./services/EmailDeliveryCronService"
 const communicationSocketService_1 = __importDefault(require("./services/communicationSocketService"));
 const socketNotificationService_1 = __importDefault(require("./services/socketNotificationService"));
 const AppointmentSocketService_1 = __importDefault(require("./services/AppointmentSocketService"));
+const QueueService_1 = require("./services/QueueService");
+const workers_1 = require("./jobs/workers");
 require("./models/Medication");
 require("./models/Conversation");
 require("./models/Message");
@@ -67,20 +69,15 @@ async function initializeServer() {
         }
         performanceMonitoring_1.performanceCollector.startSystemMetricsCollection();
         try {
-            const { initializeUpstashRedis, testUpstashRedisConnection } = await Promise.resolve().then(() => __importStar(require('./config/upstashRedis')));
-            initializeUpstashRedis();
-            const isConnected = await testUpstashRedisConnection();
-            if (isConnected) {
-                console.log('✅ Upstash Redis (REST API) connected successfully');
-            }
-            else {
-                console.log('ℹ️ Upstash Redis not available, using fallback cache');
-            }
+            const queueService = QueueService_1.QueueService.getInstance();
+            await queueService.initialize();
+            await (0, workers_1.initializeWorkers)();
+            console.log('✅ Queue Service and Job Workers initialized successfully');
         }
         catch (error) {
-            console.log('ℹ️ Upstash Redis initialization skipped:', error);
+            console.error('⚠️ Queue Service initialization failed:', error);
+            console.log('ℹ️ Continuing without background jobs');
         }
-        console.log('ℹ️ Queue Service and Job Workers disabled (not required for core functionality)');
     }
     catch (error) {
         console.error('❌ Database connection failed:', error);
@@ -174,7 +171,14 @@ const gracefulShutdown = async (signal) => {
                 console.log('HTTP server closed');
             });
         }
-        console.log('ℹ️ Queue Service not active (disabled)');
+        try {
+            const queueService = QueueService_1.QueueService.getInstance();
+            await queueService.closeAll();
+            console.log('✅ Queue Service shut down successfully');
+        }
+        catch (error) {
+            console.log('ℹ️ Queue Service not active or already shut down');
+        }
         const mongoose = require('mongoose');
         mongoose.connection.close();
         console.log('Database connection closed');
