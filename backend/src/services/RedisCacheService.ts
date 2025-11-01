@@ -42,36 +42,16 @@ export class RedisCacheService {
         }
 
         try {
-            this.redis = process.env.REDIS_URL
-                ? new Redis(process.env.REDIS_URL, {
-                    tls: process.env.REDIS_URL.includes('upstash.io') 
-                        ? { rejectUnauthorized: false } 
-                        : undefined,
-                    family: process.env.REDIS_URL.includes('upstash.io') ? 6 : 4,
-                    maxRetriesPerRequest: 3,
-                    lazyConnect: true,
-                    keepAlive: 30000,
-                    connectTimeout: 30000, // Longer for Upstash
-                    commandTimeout: 10000, // Longer for Upstash
-                    enableReadyCheck: true,
-                    enableOfflineQueue: false
-                })
-                : new Redis({
-                    host: process.env.REDIS_HOST || 'localhost',
-                    port: parseInt(process.env.REDIS_PORT || '6379'),
-                    password: process.env.REDIS_PASSWORD,
-                    db: parseInt(process.env.REDIS_DB || '0'),
-                    maxRetriesPerRequest: 3,
-                    lazyConnect: true,
-                    keepAlive: 30000,
-                    family: 4,
-                    connectTimeout: 10000,
-                    commandTimeout: 5000,
-                    enableReadyCheck: true,
-                    enableOfflineQueue: false
-                });
+            // Check if Redis is configured
+            if (!process.env.REDIS_URL || process.env.REDIS_URL.trim() === '') {
+                logger.info('ℹ️ RedisCacheService: Redis not configured, caching disabled');
+                this.redis = null;
+                return;
+            }
 
-            this.setupEventHandlers();
+            // No Upstash REST API configured, disable caching
+            logger.info('ℹ️ RedisCacheService: No Upstash REST API configured, caching disabled');
+            this.redis = null;
         } catch (error) {
             logger.error('Failed to initialize Redis cache service:', error);
             this.redis = null;
