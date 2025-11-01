@@ -46,12 +46,12 @@ export class RedisCacheService {
 
             this.redis = new Redis(redisUrl, {
                 maxRetriesPerRequest: 3,
-                lazyConnect: true,
+                lazyConnect: false, // Connect immediately
                 keepAlive: 30000,
                 connectTimeout: 10000,
                 commandTimeout: 5000,
                 enableReadyCheck: true,
-                enableOfflineQueue: false
+                enableOfflineQueue: true
             });
 
             this.setupEventHandlers();

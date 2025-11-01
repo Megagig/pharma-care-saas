@@ -45,15 +45,13 @@ const exportHelpers_1 = require("../utils/exportHelpers");
 const path = __importStar(require("path"));
 class BackgroundJobService {
     constructor() {
-        if (process.env.DISABLE_BACKGROUND_JOBS === 'true') {
-            logger_1.default.info('Background job service is disabled via environment variable');
-            return;
-        }
         try {
+            const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+            const parsedUrl = new URL(redisUrl);
             const redisConfig = {
-                host: process.env.REDIS_HOST || 'localhost',
-                port: parseInt(process.env.REDIS_PORT || '6379'),
-                password: process.env.REDIS_PASSWORD,
+                host: parsedUrl.hostname,
+                port: parseInt(parsedUrl.port || '6379'),
+                password: parsedUrl.password || process.env.REDIS_PASSWORD,
                 db: parseInt(process.env.REDIS_JOB_DB || '1'),
             };
             this.exportQueue = new bull_1.default('report-exports', { redis: redisConfig });
@@ -62,20 +60,15 @@ class BackgroundJobService {
             this.setupJobProcessors();
             this.setupEventHandlers();
             this.scheduleCleanupJobs();
-            logger_1.default.info('Background job service initialized successfully');
+            logger_1.default.info('✅ Background job service initialized successfully');
         }
         catch (error) {
             logger_1.default.error('Failed to initialize background job service:', error);
-            logger_1.default.warn('Background job service will be disabled. Install and start Redis to enable job processing.');
+            logger_1.default.warn('⚠️ Background job service will be disabled. Install and start Redis to enable job processing.');
         }
     }
     static getInstance() {
         if (!BackgroundJobService.instance) {
-            if (process.env.DISABLE_BACKGROUND_JOBS === 'true') {
-                logger_1.default.info('Background jobs are disabled via environment variable');
-                BackgroundJobService.instance = new BackgroundJobService();
-                return BackgroundJobService.instance;
-            }
             BackgroundJobService.instance = new BackgroundJobService();
         }
         return BackgroundJobService.instance;

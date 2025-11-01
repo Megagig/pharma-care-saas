@@ -50,7 +50,6 @@ const EmailDeliveryCronService_1 = require("./services/EmailDeliveryCronService"
 const communicationSocketService_1 = __importDefault(require("./services/communicationSocketService"));
 const socketNotificationService_1 = __importDefault(require("./services/socketNotificationService"));
 const AppointmentSocketService_1 = __importDefault(require("./services/AppointmentSocketService"));
-const QueueService_1 = __importDefault(require("./services/QueueService"));
 require("./models/Medication");
 require("./models/Conversation");
 require("./models/Message");
@@ -68,15 +67,20 @@ async function initializeServer() {
         }
         performanceMonitoring_1.performanceCollector.startSystemMetricsCollection();
         try {
-            await QueueService_1.default.initialize();
-            console.log('✅ Queue Service initialized successfully');
-            const { initializeWorkers } = await Promise.resolve().then(() => __importStar(require('./jobs/workers')));
-            await initializeWorkers();
-            console.log('✅ Job workers initialized successfully');
+            const { initializeUpstashRedis, testUpstashRedisConnection } = await Promise.resolve().then(() => __importStar(require('./config/upstashRedis')));
+            initializeUpstashRedis();
+            const isConnected = await testUpstashRedisConnection();
+            if (isConnected) {
+                console.log('✅ Upstash Redis (REST API) connected successfully');
+            }
+            else {
+                console.log('ℹ️ Upstash Redis not available, using fallback cache');
+            }
         }
         catch (error) {
-            console.error('⚠️ Queue Service initialization failed:', error);
+            console.log('ℹ️ Upstash Redis initialization skipped:', error);
         }
+        console.log('ℹ️ Queue Service and Job Workers disabled (not required for core functionality)');
     }
     catch (error) {
         console.error('❌ Database connection failed:', error);
@@ -110,34 +114,27 @@ async function initializeServer() {
     const { initializeChatSocketService } = await Promise.resolve().then(() => __importStar(require('./services/chat/ChatSocketService')));
     const { initializePresenceModel } = await Promise.resolve().then(() => __importStar(require('./models/chat/Presence')));
     const Redis = (await Promise.resolve().then(() => __importStar(require('ioredis')))).default;
-    const redisClient = process.env.REDIS_URL
-        ? new Redis(process.env.REDIS_URL, {
-            tls: process.env.REDIS_URL.includes('upstash.io')
-                ? { rejectUnauthorized: false }
-                : undefined,
-            family: process.env.REDIS_URL.includes('upstash.io') ? 6 : 4,
-            connectTimeout: 30000,
-            retryStrategy: (times) => {
-                const delay = Math.min(times * 50, 2000);
-                return delay;
-            },
-        })
-        : new Redis({
-            host: process.env.REDIS_HOST || 'localhost',
-            port: parseInt(process.env.REDIS_PORT || '6379'),
-            password: process.env.REDIS_PASSWORD,
+    let redisClient = null;
+    if (process.env.REDIS_URL) {
+        redisClient = new Redis(process.env.REDIS_URL, {
+            maxRetriesPerRequest: 3,
+            connectTimeout: 10000,
             retryStrategy: (times) => {
                 const delay = Math.min(times * 50, 2000);
                 return delay;
             },
         });
-    redisClient.on('connect', () => {
-        console.log('✅ Redis connected for presence tracking');
-    });
-    redisClient.on('error', (err) => {
-        console.error('❌ Redis connection error:', err);
-    });
-    initializePresenceModel(redisClient);
+        redisClient.on('connect', () => {
+            console.log('✅ Redis connected for presence tracking');
+        });
+        redisClient.on('error', (err) => {
+            console.error('❌ Redis connection error:', err);
+        });
+        initializePresenceModel(redisClient);
+    }
+    else {
+        console.log('ℹ️ Redis presence tracking disabled (no REDIS_URL configured)');
+    }
     const chatSocketService = initializeChatSocketService(io);
     app_1.default.set('communicationSocket', communicationSocketService);
     app_1.default.set('socketNotification', socketNotificationService);
@@ -177,13 +174,7 @@ const gracefulShutdown = async (signal) => {
                 console.log('HTTP server closed');
             });
         }
-        try {
-            await QueueService_1.default.closeAll();
-            console.log('Queue Service closed');
-        }
-        catch (error) {
-            console.error('Error closing Queue Service:', error);
-        }
+        console.log('ℹ️ Queue Service not active (disabled)');
         const mongoose = require('mongoose');
         mongoose.connection.close();
         console.log('Database connection closed');

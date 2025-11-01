@@ -225,6 +225,8 @@ app.use('/api/', clinicalInterventionSync_1.clinicalInterventionSyncMiddleware);
 app.use('/api/', clinicalInterventionSync_1.followUpCompletionSyncMiddleware);
 const compressionMiddleware_1 = require("./middlewares/compressionMiddleware");
 app.use('/api/', (0, compressionMiddleware_1.responseSizeMonitoringMiddleware)());
+const diagnosticRoutes_2 = __importDefault(require("./routes/diagnosticRoutes"));
+app.use('/api/env-diagnostic', diagnosticRoutes_2.default);
 app.get('/api/health', (req, res) => {
     res.json({
         status: 'OK',
