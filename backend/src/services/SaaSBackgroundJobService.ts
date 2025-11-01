@@ -151,18 +151,6 @@ export class SaaSBackgroundJobService {
    * Initialize SaaS-specific job queues
    */
   private initializeQueues(): void {
-    // Check if background jobs are disabled
-    if (process.env.DISABLE_BACKGROUND_JOBS === 'true') {
-      logger.info('⏸️ SaaS background job queues disabled (DISABLE_BACKGROUND_JOBS=true)');
-      return;
-    }
-
-    // Check if Redis is configured
-    if (!process.env.REDIS_URL && !process.env.REDIS_HOST) {
-      logger.info('⏸️ SaaS background job queues disabled (no Redis configured)');
-      return;
-    }
-
     try {
       const redisConfig = {
         host: process.env.REDIS_HOST || 'localhost',
@@ -180,8 +168,7 @@ export class SaaSBackgroundJobService {
       logger.info('SaaS background job queues initialized successfully');
     } catch (error) {
       logger.error('Failed to initialize SaaS job queues:', error);
-      // Don't throw - allow app to continue without queues
-      logger.warn('⏸️ SaaS background job queues disabled due to initialization error');
+      throw error;
     }
   }
 
@@ -189,11 +176,6 @@ export class SaaSBackgroundJobService {
    * Setup job processors for each queue
    */
   private setupJobProcessors(): void {
-    // Skip if queues not initialized
-    if (!this.metricsQueue) {
-      return;
-    }
-
     // Metrics calculation processor
     this.metricsQueue.process('calculate-metrics', 3, async (job: Job<MetricsCalculationJobData>) => {
       return this.processMetricsCalculationJob(job);
@@ -224,11 +206,6 @@ export class SaaSBackgroundJobService {
    * Setup event handlers for job queues
    */
   private setupEventHandlers(): void {
-    // Skip if queues not initialized
-    if (!this.metricsQueue) {
-      return;
-    }
-
     // Metrics queue events
     this.metricsQueue.on('completed', (job, result) => {
       logger.info(`Metrics calculation job ${job.id} completed`, {
@@ -875,4 +852,6 @@ export class SaaSBackgroundJobService {
   }
 }
 
-export default SaaSBackgroundJobService.getInstance();
+// Export class instead of instance to prevent auto-initialization
+// This avoids creating Bull queues at module load time
+export default SaaSBackgroundJobService;

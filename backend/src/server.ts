@@ -14,7 +14,7 @@ import { emailDeliveryCronService } from './services/EmailDeliveryCronService';
 import CommunicationSocketService from './services/communicationSocketService';
 import SocketNotificationService from './services/socketNotificationService';
 import AppointmentSocketService from './services/AppointmentSocketService';
-import QueueService from './services/QueueService';
+// QueueService removed - background jobs disabled
 
 // Import models to ensure they are registered with Mongoose
 import './models/Medication';
@@ -57,19 +57,10 @@ async function initializeServer() {
       console.log('ℹ️ Upstash Redis initialization skipped:', error);
     }
 
-    // Initialize Queue Service
-    try {
-      await QueueService.initialize();
-      console.log('✅ Queue Service initialized successfully');
-      
-      // Initialize job workers
-      const { initializeWorkers } = await import('./jobs/workers');
-      await initializeWorkers();
-      console.log('✅ Job workers initialized successfully');
-    } catch (error) {
-      console.error('⚠️ Queue Service initialization failed:', error);
-      // Don't exit - queues are not critical for basic functionality
-    }
+    // Queue Service and Job Workers DISABLED
+    // Background jobs (reminders, follow-ups) are disabled to avoid Redis dependency
+    // The application functions normally without them
+    console.log('ℹ️ Queue Service and Job Workers disabled (not required for core functionality)');
   } catch (error) {
     console.error('❌ Database connection failed:', error);
     process.exit(1);
@@ -207,13 +198,8 @@ const gracefulShutdown = async (signal: string) => {
       });
     }
 
-    // Close queue service
-    try {
-      await QueueService.closeAll();
-      console.log('Queue Service closed');
-    } catch (error) {
-      console.error('Error closing Queue Service:', error);
-    }
+    // Queue Service removed - no cleanup needed
+    console.log('ℹ️ Queue Service not active (disabled)');
 
     // Close database connection
     const mongoose = require('mongoose');
