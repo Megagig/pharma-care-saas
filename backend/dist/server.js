@@ -56,6 +56,8 @@ require("./models/Medication");
 require("./models/Conversation");
 require("./models/Message");
 const PORT = parseInt(process.env.PORT || '5000', 10);
+let server;
+let redisClient = null;
 async function initializeServer() {
     try {
         await (0, db_1.default)();
@@ -111,23 +113,44 @@ async function initializeServer() {
     const { initializeChatSocketService } = await Promise.resolve().then(() => __importStar(require('./services/chat/ChatSocketService')));
     const { initializePresenceModel } = await Promise.resolve().then(() => __importStar(require('./models/chat/Presence')));
     const Redis = (await Promise.resolve().then(() => __importStar(require('ioredis')))).default;
-    let redisClient = null;
     if (process.env.REDIS_URL) {
-        redisClient = new Redis(process.env.REDIS_URL, {
-            maxRetriesPerRequest: 3,
-            connectTimeout: 10000,
-            retryStrategy: (times) => {
-                const delay = Math.min(times * 50, 2000);
-                return delay;
-            },
-        });
-        redisClient.on('connect', () => {
-            console.log('✅ Redis connected for presence tracking');
-        });
-        redisClient.on('error', (err) => {
-            console.error('❌ Redis connection error:', err);
-        });
-        initializePresenceModel(redisClient);
+        try {
+            redisClient = new Redis(process.env.REDIS_URL, {
+                maxRetriesPerRequest: 3,
+                connectTimeout: 10000,
+                commandTimeout: 5000,
+                enableOfflineQueue: false,
+                retryStrategy: (times) => {
+                    const delay = Math.min(times * 200, 2000);
+                    if (times > 10) {
+                        console.log('❌ Redis presence tracking: Max retry attempts reached');
+                        return null;
+                    }
+                    return delay;
+                },
+                reconnectOnError: (err) => {
+                    console.log('Redis presence tracking: Reconnect attempt:', err.message);
+                    return true;
+                },
+            });
+            redisClient.on('connect', () => {
+                console.log('✅ Redis connected for presence tracking');
+            });
+            redisClient.on('error', (err) => {
+                console.error('❌ Redis presence tracking error:', err.message);
+            });
+            redisClient.on('close', () => {
+                console.log('Redis presence tracking connection closed');
+            });
+            redisClient.on('end', () => {
+                console.log('Redis presence tracking connection ended');
+            });
+            initializePresenceModel(redisClient);
+        }
+        catch (error) {
+            console.error('❌ Failed to initialize Redis presence tracking:', error);
+            redisClient = null;
+        }
     }
     else {
         console.log('ℹ️ Redis presence tracking disabled (no REDIS_URL configured)');
@@ -171,8 +194,51 @@ const gracefulShutdown = async (signal) => {
                 console.log('HTTP server closed');
             });
         }
+        if (redisClient) {
+            try {
+                await redisClient.quit();
+                console.log('✅ Redis presence tracking closed');
+            }
+            catch (error) {
+                console.error('Error closing Redis presence tracking:', error);
+                redisClient.disconnect();
+            }
+        }
         try {
-            const queueService = QueueService_1.QueueService.getInstance();
+            const PerformanceCacheService = (await Promise.resolve().then(() => __importStar(require('./services/PerformanceCacheService')))).default;
+            await PerformanceCacheService.getInstance().close();
+            console.log('✅ Performance cache service shut down');
+        }
+        catch (error) {
+            console.log('ℹ️ Performance cache service not active or already shut down');
+        }
+        try {
+            const CacheManager = (await Promise.resolve().then(() => __importStar(require('./services/CacheManager')))).default;
+            await CacheManager.getInstance().close();
+            console.log('✅ Cache manager shut down');
+        }
+        catch (error) {
+            console.log('ℹ️ Cache manager not active or already shut down');
+        }
+        try {
+            const RedisCacheService = (await Promise.resolve().then(() => __importStar(require('./services/RedisCacheService')))).default;
+            await RedisCacheService.close();
+            console.log('✅ Redis cache service shut down');
+        }
+        catch (error) {
+            console.log('ℹ️ Redis cache service not active or already shut down');
+        }
+        try {
+            const { shutdownRedisCache } = await Promise.resolve().then(() => __importStar(require('./utils/performanceOptimization')));
+            await shutdownRedisCache();
+            console.log('✅ Performance optimization cache shut down');
+        }
+        catch (error) {
+            console.log('ℹ️ Performance optimization cache not active or already shut down');
+        }
+        try {
+            const { QueueService } = await Promise.resolve().then(() => __importStar(require('./services/QueueService')));
+            const queueService = QueueService.getInstance();
             await queueService.closeAll();
             console.log('✅ Queue Service shut down successfully');
         }
@@ -180,19 +246,13 @@ const gracefulShutdown = async (signal) => {
             console.log('ℹ️ Queue Service not active or already shut down');
         }
         const mongoose = require('mongoose');
-        mongoose.connection.close();
-        console.log('Database connection closed');
-        setTimeout(() => {
-            console.log('Server closed successfully');
-            process.exit(0);
-        });
-        setTimeout(() => {
-            console.log('Forcing exit...');
-            process.exit(1);
-        }, 10000);
+        await mongoose.connection.close();
+        console.log('✅ Database connection closed');
+        console.log('✅ Server closed successfully');
+        process.exit(0);
     }
     catch (error) {
-        console.error('Error during graceful shutdown:', error);
+        console.error('❌ Error during graceful shutdown:', error);
         process.exit(1);
     }
 };
@@ -200,18 +260,33 @@ process.on('unhandledRejection', (err, promise) => {
     console.log(`Unhandled Rejection: ${err.message}`);
     console.log('Promise:', promise);
     if (err.message.includes('Cannot set headers after they are sent')) {
-        console.warn('Headers already sent error - this is likely a timing issue with async operations');
+        console.warn('⚠️ Headers already sent error - this is likely a timing issue with async operations');
+        return;
+    }
+    if (err.message.includes('Reached the max retries per request limit') ||
+        err.message.includes('MaxRetriesPerRequestError') ||
+        err.message.includes('Connection is closed')) {
+        console.error('❌ Redis connection error detected:', err.message);
+        console.log('ℹ️ Application will continue without Redis caching');
         return;
     }
     gracefulShutdown('unhandledRejection');
 });
 process.on('uncaughtException', (err) => {
     console.log(`Uncaught Exception: ${err.message}`);
-    process.exit(1);
+    console.error('Stack trace:', err.stack);
+    if (err.message && (err.message.includes('Reached the max retries per request limit') ||
+        err.message.includes('MaxRetriesPerRequestError') ||
+        err.message.includes('Connection is closed') ||
+        err.message.includes('Redis'))) {
+        console.error('❌ Redis-related uncaught exception:', err.message);
+        console.log('ℹ️ Application will continue without Redis caching');
+        return;
+    }
+    gracefulShutdown('uncaughtException');
 });
 process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
 process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-let server;
 initializeServer()
     .then((serverInstance) => {
     server = serverInstance;

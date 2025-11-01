@@ -42,6 +42,8 @@ const perf_hooks_1 = require("perf_hooks");
 const logger_1 = __importDefault(require("../utils/logger"));
 class RedisCacheService {
     constructor() {
+        this.redis = null;
+        this.isConnected = false;
         this.stats = {
             hits: 0,
             misses: 0,
@@ -52,12 +54,19 @@ class RedisCacheService {
         this.responseTimes = [];
         const cacheProvider = process.env.CACHE_PROVIDER || 'redis';
         if (cacheProvider === 'memory') {
-            logger_1.default.info('Using memory cache provider instead of Redis');
+            logger_1.default.info('RedisCacheService: Using memory cache provider instead of Redis');
             this.redis = null;
+            this.isConnected = false;
             return;
         }
         try {
-            const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+            const redisUrl = process.env.REDIS_URL;
+            if (!redisUrl) {
+                logger_1.default.info('RedisCacheService: REDIS_URL not configured');
+                this.redis = null;
+                this.isConnected = false;
+                return;
+            }
             this.redis = new ioredis_1.default(redisUrl, {
                 maxRetriesPerRequest: 3,
                 lazyConnect: false,
@@ -65,13 +74,27 @@ class RedisCacheService {
                 connectTimeout: 10000,
                 commandTimeout: 5000,
                 enableReadyCheck: true,
-                enableOfflineQueue: true
+                enableOfflineQueue: false,
+                retryStrategy: (times) => {
+                    const delay = Math.min(times * 200, 3000);
+                    if (times > 10) {
+                        logger_1.default.error('RedisCacheService: Max retry attempts reached, disabling cache');
+                        this.isConnected = false;
+                        return null;
+                    }
+                    return delay;
+                },
+                reconnectOnError: (err) => {
+                    logger_1.default.warn('RedisCacheService: Redis reconnect attempt:', err.message);
+                    return true;
+                },
             });
             this.setupEventHandlers();
         }
         catch (error) {
-            logger_1.default.error('Failed to initialize Redis cache service:', error);
+            logger_1.default.error('RedisCacheService: Failed to initialize:', error);
             this.redis = null;
+            this.isConnected = false;
         }
     }
     static getInstance() {
@@ -84,20 +107,30 @@ class RedisCacheService {
         if (!this.redis)
             return;
         this.redis.on('connect', () => {
-            logger_1.default.info('Redis connected successfully');
+            this.isConnected = true;
+            logger_1.default.info('✅ RedisCacheService: Redis connected successfully');
+        });
+        this.redis.on('ready', () => {
+            this.isConnected = true;
         });
         this.redis.on('error', (error) => {
-            logger_1.default.error('Redis connection error:', error);
+            this.isConnected = false;
+            logger_1.default.error('RedisCacheService: Redis error:', error.message);
         });
         this.redis.on('close', () => {
-            logger_1.default.warn('Redis connection closed');
+            this.isConnected = false;
+            logger_1.default.warn('RedisCacheService: Redis connection closed');
+        });
+        this.redis.on('end', () => {
+            this.isConnected = false;
+            logger_1.default.warn('RedisCacheService: Redis connection ended');
         });
         this.redis.on('reconnecting', () => {
-            logger_1.default.info('Redis reconnecting...');
+            logger_1.default.info('RedisCacheService: Redis reconnecting...');
         });
     }
     async set(key, value, options = {}) {
-        if (!this.redis) {
+        if (!this.redis || !this.isConnected) {
             return false;
         }
         const startTime = perf_hooks_1.performance.now();
@@ -123,12 +156,12 @@ class RedisCacheService {
             return result === 'OK';
         }
         catch (error) {
-            logger_1.default.error('Redis set error:', error);
+            logger_1.default.error('RedisCacheService: Set error:', error);
             return false;
         }
     }
     async get(key) {
-        if (!this.redis) {
+        if (!this.redis || !this.isConnected) {
             this.stats.misses++;
             return null;
         }
@@ -152,7 +185,7 @@ class RedisCacheService {
             return JSON.parse(value);
         }
         catch (error) {
-            logger_1.default.error('Redis get error:', error);
+            logger_1.default.error('RedisCacheService: Get error:', error);
             this.stats.misses++;
             this.updateStats(perf_hooks_1.performance.now() - startTime);
             return null;
@@ -387,14 +420,22 @@ class RedisCacheService {
         }
     }
     async close() {
-        if (!this.redis) {
-            return;
-        }
         try {
-            await this.redis.quit();
+            if (this.redis) {
+                logger_1.default.info('RedisCacheService: Closing Redis connection...');
+                await this.redis.quit();
+                this.redis = null;
+                this.isConnected = false;
+                logger_1.default.info('RedisCacheService: Redis connection closed gracefully');
+            }
         }
         catch (error) {
-            logger_1.default.error('Redis close error:', error);
+            logger_1.default.error('RedisCacheService: Error during close:', error);
+            if (this.redis) {
+                this.redis.disconnect();
+                this.redis = null;
+                this.isConnected = false;
+            }
         }
     }
     async addCacheTags(key, tags, ttl) {

@@ -13,6 +13,7 @@ interface CacheStats {
 export declare class RedisCacheService {
     private static instance;
     private redis;
+    private isConnected;
     private stats;
     private responseTimes;
     constructor();

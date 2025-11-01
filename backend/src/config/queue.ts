@@ -12,43 +12,77 @@ import logger from '../utils/logger';
  */
 export const redisConfig = process.env.REDIS_URL
   ? {
-      // Use Redis URL
-      host: new URL(process.env.REDIS_URL).hostname,
-      port: parseInt(new URL(process.env.REDIS_URL).port || '6379'),
-      password: new URL(process.env.REDIS_URL).password || undefined,
-      maxRetriesPerRequest: null,
-      enableReadyCheck: false,
-      lazyConnect: true,
-    }
+    // Use Redis URL
+    host: new URL(process.env.REDIS_URL).hostname,
+    port: parseInt(new URL(process.env.REDIS_URL).port || '6379'),
+    password: new URL(process.env.REDIS_URL).password || undefined,
+    maxRetriesPerRequest: 3, // Changed from null to prevent infinite retries
+    enableReadyCheck: true,
+    lazyConnect: false,
+    connectTimeout: 10000,
+    commandTimeout: 5000,
+    enableOfflineQueue: false, // Prevent queue buildup
+    retryStrategy: (times: number) => {
+      const delay = Math.min(times * 200, 3000);
+      if (times > 10) {
+        console.error('Queue Redis: Max retry attempts reached');
+        return null; // Stop retrying
+      }
+      return delay;
+    },
+  }
   : {
-      // Fallback to individual parameters
-      host: process.env.REDIS_HOST || 'localhost',
-      port: parseInt(process.env.REDIS_PORT || '6379'),
-      password: process.env.REDIS_PASSWORD,
-      db: parseInt(process.env.REDIS_QUEUE_DB || '1'),
-      maxRetriesPerRequest: null,
-      enableReadyCheck: false,
-      lazyConnect: true,
-    };
+    // Fallback to individual parameters
+    host: process.env.REDIS_HOST || 'localhost',
+    port: parseInt(process.env.REDIS_PORT || '6379'),
+    password: process.env.REDIS_PASSWORD,
+    db: parseInt(process.env.REDIS_QUEUE_DB || '1'),
+    maxRetriesPerRequest: 3,
+    enableReadyCheck: true,
+    lazyConnect: false,
+    connectTimeout: 10000,
+    commandTimeout: 5000,
+    enableOfflineQueue: false,
+    retryStrategy: (times: number) => {
+      const delay = Math.min(times * 200, 3000);
+      if (times > 10) {
+        console.error('Queue Redis: Max retry attempts reached');
+        return null;
+      }
+      return delay;
+    },
+  };
 
 /**
  * Create Redis client for Bull
  */
 export const createRedisClient = (): Redis => {
-  const client = typeof redisConfig === 'string' 
-    ? new Redis(redisConfig) 
+  const client = typeof redisConfig === 'string'
+    ? new Redis(redisConfig)
     : new Redis(redisConfig);
 
   client.on('connect', () => {
-    logger.info('Queue Redis client connected');
+    logger.info('✅ Queue Redis client connected');
+  });
+
+  client.on('ready', () => {
+    logger.info('Queue Redis client ready');
   });
 
   client.on('error', (error) => {
-    logger.error('❌ Redis connection error:', error);
+    logger.error('❌ Queue Redis connection error:', error.message);
   });
 
   client.on('close', () => {
     logger.warn('Queue Redis client connection closed');
+  });
+
+  client.on('end', () => {
+    logger.warn('Queue Redis client connection ended');
+  });
+
+  client.on('reconnecting', () => {
+    logger.info('Queue Redis client reconnecting...');
   });
 
   return client;

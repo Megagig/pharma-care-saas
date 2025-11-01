@@ -75,13 +75,19 @@ class CacheManager {
     async initializeRedis() {
         const cacheProvider = process.env.CACHE_PROVIDER || 'redis';
         if (cacheProvider === 'memory') {
-            logger_1.default.info('Using memory cache provider instead of Redis');
+            logger_1.default.info('CacheManager: Using memory cache provider instead of Redis');
             this.redis = null;
             this.isConnected = false;
             return;
         }
         try {
-            const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+            const redisUrl = process.env.REDIS_URL;
+            if (!redisUrl) {
+                logger_1.default.info('CacheManager: REDIS_URL not configured, using in-memory fallback');
+                this.redis = null;
+                this.isConnected = false;
+                return;
+            }
             this.redis = new ioredis_1.default(redisUrl, {
                 maxRetriesPerRequest: 3,
                 lazyConnect: false,
@@ -89,28 +95,46 @@ class CacheManager {
                 connectTimeout: 10000,
                 commandTimeout: 5000,
                 enableReadyCheck: true,
-                enableOfflineQueue: true
+                enableOfflineQueue: false,
+                retryStrategy: (times) => {
+                    const delay = Math.min(times * 200, 3000);
+                    if (times > 10) {
+                        logger_1.default.error('CacheManager: Max Redis retry attempts reached, disabling cache');
+                        this.isConnected = false;
+                        return null;
+                    }
+                    return delay;
+                },
+                reconnectOnError: (err) => {
+                    logger_1.default.warn('CacheManager: Redis reconnect attempt:', err.message);
+                    return true;
+                },
             });
             this.redis.on('connect', () => {
                 this.isConnected = true;
-                logger_1.default.info('Redis cache manager connected');
+                logger_1.default.info('✅ CacheManager: Redis connected');
             });
             this.redis.on('ready', () => {
                 this.isConnected = true;
             });
             this.redis.on('error', (error) => {
                 this.isConnected = false;
-                logger_1.default.error('Redis cache manager error:', error);
+                logger_1.default.error('CacheManager: Redis error:', error.message);
             });
             this.redis.on('close', () => {
                 this.isConnected = false;
-                logger_1.default.warn('Redis cache manager connection closed');
+                logger_1.default.warn('CacheManager: Redis connection closed');
+            });
+            this.redis.on('end', () => {
+                this.isConnected = false;
+                logger_1.default.warn('CacheManager: Redis connection ended');
             });
             await this.redis.ping();
             this.isConnected = true;
+            logger_1.default.info('CacheManager: Redis connection verified');
         }
         catch (error) {
-            logger_1.default.error('Failed to initialize Redis cache manager, falling back to memory cache:', error);
+            logger_1.default.error('CacheManager: Failed to initialize Redis, falling back to memory cache:', error);
             this.redis = null;
             this.isConnected = false;
         }
@@ -626,11 +650,22 @@ class CacheManager {
         return workspaceId ? `${base}:${workspaceId}` : base;
     }
     async close() {
-        if (this.redis) {
-            await this.redis.quit();
-            this.redis = null;
-            this.isConnected = false;
-            logger_1.default.info('Redis cache manager connection closed');
+        try {
+            if (this.redis) {
+                logger_1.default.info('CacheManager: Closing Redis connection...');
+                await this.redis.quit();
+                this.redis = null;
+                this.isConnected = false;
+                logger_1.default.info('CacheManager: Redis connection closed gracefully');
+            }
+        }
+        catch (error) {
+            logger_1.default.error('CacheManager: Error during close:', error);
+            if (this.redis) {
+                this.redis.disconnect();
+                this.redis = null;
+                this.isConnected = false;
+            }
         }
     }
 }

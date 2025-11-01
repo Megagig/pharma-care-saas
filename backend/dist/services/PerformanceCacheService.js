@@ -1,44 +1,10 @@
 "use strict";
-var __createBinding = (this && this.__createBinding) || (Object.create ? (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    var desc = Object.getOwnPropertyDescriptor(m, k);
-    if (!desc || ("get" in desc ? !m.__esModule : desc.writable || desc.configurable)) {
-      desc = { enumerable: true, get: function() { return m[k]; } };
-    }
-    Object.defineProperty(o, k2, desc);
-}) : (function(o, m, k, k2) {
-    if (k2 === undefined) k2 = k;
-    o[k2] = m[k];
-}));
-var __setModuleDefault = (this && this.__setModuleDefault) || (Object.create ? (function(o, v) {
-    Object.defineProperty(o, "default", { enumerable: true, value: v });
-}) : function(o, v) {
-    o["default"] = v;
-});
-var __importStar = (this && this.__importStar) || (function () {
-    var ownKeys = function(o) {
-        ownKeys = Object.getOwnPropertyNames || function (o) {
-            var ar = [];
-            for (var k in o) if (Object.prototype.hasOwnProperty.call(o, k)) ar[ar.length] = k;
-            return ar;
-        };
-        return ownKeys(o);
-    };
-    return function (mod) {
-        if (mod && mod.__esModule) return mod;
-        var result = {};
-        if (mod != null) for (var k = ownKeys(mod), i = 0; i < k.length; i++) if (k[i] !== "default") __createBinding(result, mod, k[i]);
-        __setModuleDefault(result, mod);
-        return result;
-    };
-})();
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const ioredis_1 = __importDefault(require("ioredis"));
 const logger_1 = __importDefault(require("../utils/logger"));
-const CacheManager_1 = __importDefault(require("./CacheManager"));
 class PerformanceCacheService {
     constructor() {
         this.redis = null;
@@ -78,8 +44,13 @@ class PerformanceCacheService {
     }
     async initializeRedis() {
         try {
-            const cacheManager = CacheManager_1.default.getInstance();
-            const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+            const redisUrl = process.env.REDIS_URL;
+            if (!redisUrl) {
+                logger_1.default.info('Performance cache: REDIS_URL not configured, using in-memory fallback');
+                this.isConnected = false;
+                this.initializationFailed = true;
+                return;
+            }
             this.redis = new ioredis_1.default(redisUrl, {
                 maxRetriesPerRequest: 3,
                 lazyConnect: false,
@@ -87,46 +58,73 @@ class PerformanceCacheService {
                 connectTimeout: 10000,
                 commandTimeout: 5000,
                 enableReadyCheck: true,
-                enableOfflineQueue: true,
+                enableOfflineQueue: false,
                 db: 1,
                 retryStrategy: (times) => {
-                    const delay = Math.min(times * 50, 3000);
+                    const delay = Math.min(times * 200, 3000);
+                    if (times > 10) {
+                        logger_1.default.error('Performance cache: Max Redis retry attempts reached, disabling cache');
+                        this.isConnected = false;
+                        this.initializationFailed = true;
+                        return null;
+                    }
                     return delay;
+                },
+                reconnectOnError: (err) => {
+                    logger_1.default.warn('Performance cache: Redis reconnect attempt:', err.message);
+                    return true;
                 },
             });
             this.redis.on('connect', () => {
+                logger_1.default.info('✅ Performance cache: Redis connected successfully');
                 this.isConnected = true;
-                logger_1.default.info('Performance cache service connected to Redis');
+                this.initializationFailed = false;
             });
             this.redis.on('ready', () => {
+                logger_1.default.info('Performance cache: Redis ready to accept commands');
                 this.isConnected = true;
+                this.initializationFailed = false;
             });
-            this.redis.on('error', (error) => {
+            this.redis.on('error', (err) => {
+                logger_1.default.error('Performance cache: Redis error:', err.message);
                 this.isConnected = false;
-                if (!error.message.includes('ECONNREFUSED')) {
-                    logger_1.default.error('Performance cache service Redis error:', error);
-                }
             });
             this.redis.on('close', () => {
+                logger_1.default.warn('Performance cache: Redis connection closed');
+                this.isConnected = false;
+            });
+            this.redis.on('reconnecting', () => {
+                logger_1.default.info('Performance cache: Redis reconnecting...');
+            });
+            this.redis.on('end', () => {
+                logger_1.default.warn('Performance cache: Redis connection ended');
                 this.isConnected = false;
             });
             await this.redis.ping();
             this.isConnected = true;
             this.initializationFailed = false;
+            logger_1.default.info('Performance cache: Redis connection verified');
         }
         catch (error) {
-            logger_1.default.warn('Performance cache service unavailable, continuing without cache');
-            this.redis = null;
+            logger_1.default.error('Performance cache: Failed to initialize Redis:', error);
             this.isConnected = false;
             this.initializationFailed = true;
+            this.redis = null;
             setTimeout(() => {
                 this.initializationFailed = false;
-            }, 30000);
+            }, 60000);
         }
     }
     async ensureConnection() {
         if (this.isConnected && this.redis) {
-            return true;
+            try {
+                await this.redis.ping();
+                return true;
+            }
+            catch (error) {
+                logger_1.default.warn('Performance cache: Redis ping failed, connection lost');
+                this.isConnected = false;
+            }
         }
         if (this.initializationFailed) {
             return false;
@@ -146,78 +144,40 @@ class PerformanceCacheService {
         return this.isConnected;
     }
     async cacheApiResponse(key, data, options = {}) {
-        if (!(await this.ensureConnection())) {
-            return false;
-        }
         try {
-            const { ttl = this.DEFAULT_TTL, compress = true, tags = [] } = options;
-            if (!this.redis) {
-                return;
+            const hasConnection = await this.ensureConnection();
+            if (!hasConnection || !this.redis) {
+                logger_1.default.debug('Performance cache: Cache set skipped (no Redis connection)');
+                return false;
             }
-            const cacheKey = `${this.PREFIXES.API_RESPONSE}${key}`;
-            let serializedData = JSON.stringify(data);
-            if (compress && serializedData.length > this.COMPRESSION_THRESHOLD) {
-                const zlib = await Promise.resolve().then(() => __importStar(require('zlib')));
-                const compressed = zlib.gzipSync(Buffer.from(serializedData));
-                serializedData = compressed.toString('base64');
-                await this.redis.hset(`${cacheKey}:meta`, {
-                    compressed: 'true',
-                    originalSize: serializedData.length,
-                    compressedSize: compressed.length,
-                    tags: JSON.stringify(tags),
-                    timestamp: Date.now(),
-                });
-            }
-            else {
-                await this.redis.hset(`${cacheKey}:meta`, {
-                    compressed: 'false',
-                    size: serializedData.length,
-                    tags: JSON.stringify(tags),
-                    timestamp: Date.now(),
-                });
-            }
-            await this.redis.setex(cacheKey, ttl, serializedData);
-            await this.redis.expire(`${cacheKey}:meta`, ttl);
+            const ttl = options.ttl || this.DEFAULT_TTL;
+            const serialized = JSON.stringify(data);
+            await this.redis.setex(key, ttl, serialized);
             this.stats.sets++;
-            logger_1.default.debug(`Cached API response: ${key}`, {
-                size: serializedData.length,
-                ttl,
-                compressed: compress && serializedData.length > this.COMPRESSION_THRESHOLD,
-            });
             return true;
         }
         catch (error) {
-            logger_1.default.error('Error caching API response:', error);
+            logger_1.default.error('Performance cache: Error caching API response:', error);
             return false;
         }
     }
     async getCachedApiResponse(key) {
-        if (!(await this.ensureConnection())) {
-            this.stats.misses++;
-            return null;
-        }
         try {
-            const cacheKey = `${this.PREFIXES.API_RESPONSE}${key}`;
-            const [data, metadata] = await Promise.all([
-                this.redis.get(cacheKey),
-                this.redis.hgetall(`${cacheKey}:meta`),
-            ]);
-            if (!data) {
+            const hasConnection = await this.ensureConnection();
+            if (!hasConnection || !this.redis) {
                 this.stats.misses++;
                 return null;
             }
-            let deserializedData = data;
-            if (metadata.compressed === 'true') {
-                const zlib = await Promise.resolve().then(() => __importStar(require('zlib')));
-                const compressed = Buffer.from(data, 'base64');
-                deserializedData = zlib.gunzipSync(compressed).toString();
+            const cached = await this.redis.get(key);
+            if (!cached) {
+                this.stats.misses++;
+                return null;
             }
-            const result = JSON.parse(deserializedData);
             this.stats.hits++;
-            return result;
+            return JSON.parse(cached);
         }
         catch (error) {
-            logger_1.default.error('Error getting cached API response:', error);
+            logger_1.default.error('Performance cache: Error getting cached API response:', error);
             this.stats.misses++;
             return null;
         }
@@ -295,57 +255,40 @@ class PerformanceCacheService {
         return this.getCachedApiResponse(key);
     }
     async invalidateByTags(tags) {
-        if (!this.isConnected || !this.redis) {
-            return 0;
-        }
         try {
-            let deletedCount = 0;
-            const metaKeys = await this.redis.keys('*:meta');
-            for (const metaKey of metaKeys) {
-                const metadata = await this.redis.hgetall(metaKey);
-                if (metadata.tags) {
-                    const keyTags = JSON.parse(metadata.tags);
-                    const hasMatchingTag = tags.some(tag => keyTags.includes(tag));
-                    if (hasMatchingTag) {
-                        const dataKey = metaKey.replace(':meta', '');
-                        await Promise.all([
-                            this.redis.del(dataKey),
-                            this.redis.del(metaKey),
-                        ]);
-                        deletedCount++;
-                    }
-                }
+            const hasConnection = await this.ensureConnection();
+            if (!hasConnection || !this.redis) {
+                return 0;
             }
-            this.stats.deletes += deletedCount;
-            logger_1.default.debug(`Invalidated ${deletedCount} cache entries by tags:`, tags);
+            let deletedCount = 0;
+            for (const tag of tags) {
+                const pattern = `*:tag:${tag}:*`;
+                const deleted = await this.invalidateByPattern(pattern);
+                deletedCount += deleted;
+            }
             return deletedCount;
         }
         catch (error) {
-            logger_1.default.error('Error invalidating cache by tags:', error);
+            logger_1.default.error('Performance cache: Error invalidating by tags:', error);
             return 0;
         }
     }
     async invalidateByPattern(pattern) {
-        if (!this.isConnected || !this.redis) {
-            return 0;
-        }
         try {
-            const keys = await this.redis.keys(pattern);
-            if (keys.length > 0) {
-                await this.redis.del(...keys);
-                this.stats.deletes += keys.length;
-                const metaKeys = keys.map(key => `${key}:meta`);
-                const existingMetaKeys = await this.redis.exists(...metaKeys);
-                if (existingMetaKeys > 0) {
-                    await this.redis.del(...metaKeys);
-                }
-                logger_1.default.debug(`Invalidated ${keys.length} cache entries by pattern: ${pattern}`);
-                return keys.length;
+            const hasConnection = await this.ensureConnection();
+            if (!hasConnection || !this.redis) {
+                return 0;
             }
-            return 0;
+            const keys = await this.redis.keys(pattern);
+            if (keys.length === 0)
+                return 0;
+            const deleted = await this.redis.del(...keys);
+            this.stats.deletes += deleted;
+            logger_1.default.debug(`Performance cache: Invalidated ${deleted} cache entries by pattern: ${pattern}`);
+            return deleted;
         }
         catch (error) {
-            logger_1.default.error('Error invalidating cache by pattern:', error);
+            logger_1.default.error('Performance cache: Error invalidating cache by pattern:', error);
             return 0;
         }
     }
@@ -384,16 +327,17 @@ class PerformanceCacheService {
         }
     }
     async clearAll() {
-        if (!this.isConnected || !this.redis) {
-            return;
-        }
         try {
+            const hasConnection = await this.ensureConnection();
+            if (!hasConnection || !this.redis) {
+                return;
+            }
             await this.redis.flushdb();
             this.resetStats();
             logger_1.default.info('Performance cache cleared');
         }
         catch (error) {
-            logger_1.default.error('Error clearing performance cache:', error);
+            logger_1.default.error('Performance cache: Error clearing cache:', error);
         }
     }
     resetStats() {
@@ -417,11 +361,22 @@ class PerformanceCacheService {
         return crypto.createHash('md5').update(query.toLowerCase().trim()).digest('hex');
     }
     async close() {
-        if (this.redis) {
-            await this.redis.quit();
-            this.redis = null;
-            this.isConnected = false;
-            logger_1.default.info('Performance cache service connection closed');
+        try {
+            if (this.redis) {
+                logger_1.default.info('Performance cache: Closing Redis connection...');
+                await this.redis.quit();
+                this.redis = null;
+                this.isConnected = false;
+                logger_1.default.info('Performance cache: Redis connection closed gracefully');
+            }
+        }
+        catch (error) {
+            logger_1.default.error('Performance cache: Error during close:', error);
+            if (this.redis) {
+                this.redis.disconnect();
+                this.redis = null;
+                this.isConnected = false;
+            }
         }
     }
     async get(key) {

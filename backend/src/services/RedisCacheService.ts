@@ -22,7 +22,8 @@ interface CacheStats {
  */
 export class RedisCacheService {
     private static instance: RedisCacheService;
-    private redis: Redis;
+    private redis: Redis | null = null;
+    private isConnected: boolean = false;
     private stats: CacheStats = {
         hits: 0,
         misses: 0,
@@ -36,28 +37,50 @@ export class RedisCacheService {
         // Check if Redis is disabled or should use memory cache
         const cacheProvider = process.env.CACHE_PROVIDER || 'redis';
         if (cacheProvider === 'memory') {
-            logger.info('Using memory cache provider instead of Redis');
+            logger.info('RedisCacheService: Using memory cache provider instead of Redis');
             this.redis = null;
+            this.isConnected = false;
             return;
         }
 
         try {
-            const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+            const redisUrl = process.env.REDIS_URL;
+
+            if (!redisUrl) {
+                logger.info('RedisCacheService: REDIS_URL not configured');
+                this.redis = null;
+                this.isConnected = false;
+                return;
+            }
 
             this.redis = new Redis(redisUrl, {
                 maxRetriesPerRequest: 3,
-                lazyConnect: false, // Connect immediately
+                lazyConnect: false,
                 keepAlive: 30000,
                 connectTimeout: 10000,
                 commandTimeout: 5000,
                 enableReadyCheck: true,
-                enableOfflineQueue: true
+                enableOfflineQueue: false, // Prevent queue buildup
+                retryStrategy: (times) => {
+                    const delay = Math.min(times * 200, 3000);
+                    if (times > 10) {
+                        logger.error('RedisCacheService: Max retry attempts reached, disabling cache');
+                        this.isConnected = false;
+                        return null; // Stop retrying
+                    }
+                    return delay;
+                },
+                reconnectOnError: (err) => {
+                    logger.warn('RedisCacheService: Redis reconnect attempt:', err.message);
+                    return true;
+                },
             });
 
             this.setupEventHandlers();
         } catch (error) {
-            logger.error('Failed to initialize Redis cache service:', error);
+            logger.error('RedisCacheService: Failed to initialize:', error);
             this.redis = null;
+            this.isConnected = false;
         }
     }
 
@@ -72,19 +95,31 @@ export class RedisCacheService {
         if (!this.redis) return;
 
         this.redis.on('connect', () => {
-            logger.info('Redis connected successfully');
+            this.isConnected = true;
+            logger.info('✅ RedisCacheService: Redis connected successfully');
+        });
+
+        this.redis.on('ready', () => {
+            this.isConnected = true;
         });
 
         this.redis.on('error', (error) => {
-            logger.error('Redis connection error:', error);
+            this.isConnected = false;
+            logger.error('RedisCacheService: Redis error:', error.message);
         });
 
         this.redis.on('close', () => {
-            logger.warn('Redis connection closed');
+            this.isConnected = false;
+            logger.warn('RedisCacheService: Redis connection closed');
+        });
+
+        this.redis.on('end', () => {
+            this.isConnected = false;
+            logger.warn('RedisCacheService: Redis connection ended');
         });
 
         this.redis.on('reconnecting', () => {
-            logger.info('Redis reconnecting...');
+            logger.info('RedisCacheService: Redis reconnecting...');
         });
     }
 
@@ -96,7 +131,7 @@ export class RedisCacheService {
         value: T,
         options: CacheOptions = {}
     ): Promise<boolean> {
-        if (!this.redis) {
+        if (!this.redis || !this.isConnected) {
             return false;
         }
 
@@ -141,7 +176,7 @@ export class RedisCacheService {
             this.updateStats(performance.now() - startTime);
             return result === 'OK';
         } catch (error) {
-            logger.error('Redis set error:', error);
+            logger.error('RedisCacheService: Set error:', error);
             return false;
         }
     }
@@ -150,7 +185,7 @@ export class RedisCacheService {
      * Get cache value
      */
     async get<T>(key: string): Promise<T | null> {
-        if (!this.redis) {
+        if (!this.redis || !this.isConnected) {
             this.stats.misses++;
             return null;
         }
@@ -178,7 +213,7 @@ export class RedisCacheService {
 
             return JSON.parse(value) as T;
         } catch (error) {
-            logger.error('Redis get error:', error);
+            logger.error('RedisCacheService: Get error:', error);
             this.stats.misses++;
             this.updateStats(performance.now() - startTime);
             return null;
@@ -485,14 +520,22 @@ export class RedisCacheService {
      * Close connection
      */
     async close(): Promise<void> {
-        if (!this.redis) {
-            return;
-        }
-
         try {
-            await this.redis.quit();
+            if (this.redis) {
+                logger.info('RedisCacheService: Closing Redis connection...');
+                await this.redis.quit();
+                this.redis = null;
+                this.isConnected = false;
+                logger.info('RedisCacheService: Redis connection closed gracefully');
+            }
         } catch (error) {
-            logger.error('Redis close error:', error);
+            logger.error('RedisCacheService: Error during close:', error);
+            // Force disconnect even if quit fails
+            if (this.redis) {
+                this.redis.disconnect();
+                this.redis = null;
+                this.isConnected = false;
+            }
         }
     }
 
