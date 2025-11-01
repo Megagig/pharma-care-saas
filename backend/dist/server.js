@@ -71,10 +71,16 @@ async function initializeServer() {
         }
         performanceMonitoring_1.performanceCollector.startSystemMetricsCollection();
         try {
-            const queueService = QueueService_1.QueueService.getInstance();
-            await queueService.initialize();
-            await (0, workers_1.initializeWorkers)();
-            console.log('✅ Queue Service and Job Workers initialized successfully');
+            if (process.env.DISABLE_BULL_QUEUES === 'true') {
+                console.log('ℹ️ Bull queues disabled (DISABLE_BULL_QUEUES=true)');
+                console.log('ℹ️ Background jobs will not be processed');
+            }
+            else {
+                const queueService = QueueService_1.QueueService.getInstance();
+                await queueService.initialize();
+                await (0, workers_1.initializeWorkers)();
+                console.log('✅ Queue Service and Job Workers initialized successfully');
+            }
         }
         catch (error) {
             console.error('⚠️ Queue Service initialization failed:', error);
@@ -116,6 +122,7 @@ async function initializeServer() {
     if (process.env.REDIS_URL) {
         try {
             console.log('📡 Initializing Redis presence tracking using shared connection...');
+            console.log(`🔗 Redis URL configured: ${process.env.REDIS_URL.substring(0, 20)}...`);
             const sharedRedisClient = await getRedisClient();
             if (sharedRedisClient) {
                 initializePresenceModel(sharedRedisClient);
@@ -123,10 +130,12 @@ async function initializeServer() {
             }
             else {
                 console.log('⚠️ Redis not available - presence tracking disabled');
+                console.log('ℹ️ Application will continue without Redis caching');
             }
         }
         catch (error) {
             console.error('❌ Failed to initialize Redis presence tracking:', error);
+            console.log('ℹ️ Application will continue without Redis caching');
         }
     }
     else {
@@ -207,7 +216,10 @@ process.on('unhandledRejection', (err, promise) => {
     }
     if (err.message.includes('Reached the max retries per request limit') ||
         err.message.includes('MaxRetriesPerRequestError') ||
-        err.message.includes('Connection is closed')) {
+        err.message.includes('ERR max number of clients reached') ||
+        err.message.includes('Connection is closed') ||
+        err.message.includes('ECONNRESET') ||
+        err.message.includes('ETIMEDOUT')) {
         console.error('❌ Redis connection error detected:', err.message);
         console.log('ℹ️ Application will continue without Redis caching');
         return;
@@ -219,7 +231,10 @@ process.on('uncaughtException', (err) => {
     console.error('Stack trace:', err.stack);
     if (err.message && (err.message.includes('Reached the max retries per request limit') ||
         err.message.includes('MaxRetriesPerRequestError') ||
+        err.message.includes('ERR max number of clients reached') ||
         err.message.includes('Connection is closed') ||
+        err.message.includes('ECONNRESET') ||
+        err.message.includes('ETIMEDOUT') ||
         err.message.includes('Redis'))) {
         console.error('❌ Redis-related uncaught exception:', err.message);
         console.log('ℹ️ Application will continue without Redis caching');

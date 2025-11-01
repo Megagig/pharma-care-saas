@@ -6,7 +6,7 @@
 import Bull, { Queue, Job, JobOptions } from 'bull';
 import {
   QueueName,
-  defaultQueueOptions,
+  getRedisConfig,
   queueConfigs,
   JobPriority,
   getJobOptionsByPriority,
@@ -17,6 +17,7 @@ import {
   AppointmentStatusJobData,
 } from '../config/queue';
 import logger from '../utils/logger';
+import { getRedisClient } from '../config/redis';
 
 /**
  * Queue statistics interface
@@ -93,8 +94,56 @@ export class QueueService {
   private async createQueue(name: QueueName): Promise<Queue> {
     try {
       const queueConfig = queueConfigs[name] || {};
+
+      // Get the shared Redis client to avoid "max clients" error
+      const sharedClient = await getRedisClient();
+
+      if (!sharedClient) {
+        throw new Error('Redis client not available');
+      }
+
+      // Bull options using shared Redis client
       const options = {
-        ...defaultQueueOptions,
+        // Use the shared client for all Bull connections
+        createClient: (type: string) => {
+          logger.debug(`Bull queue ${name} requesting ${type} client - returning shared connection`);
+
+          // For subscriber/bclient, Bull doesn't allow enableReadyCheck or maxRetriesPerRequest
+          // See: https://github.com/OptimalBits/bull/issues/1873
+          if (type === 'subscriber' || type === 'bclient') {
+            return sharedClient.duplicate({
+              maxRetriesPerRequest: null,
+              enableReadyCheck: false,
+              enableOfflineQueue: false,
+            });
+          }
+
+          // For regular client connection
+          return sharedClient.duplicate({
+            maxRetriesPerRequest: null,
+            enableOfflineQueue: true,
+          });
+        },
+        defaultJobOptions: {
+          attempts: 3,
+          backoff: {
+            type: 'exponential' as const,
+            delay: 2000,
+          },
+          removeOnComplete: {
+            age: 24 * 3600,
+            count: 1000,
+          },
+          removeOnFail: {
+            age: 7 * 24 * 3600,
+          },
+        },
+        settings: {
+          stalledInterval: 30000,
+          maxStalledCount: 2,
+          lockDuration: 30000,
+          lockRenewTime: 15000,
+        },
         ...queueConfig,
       };
 
@@ -157,6 +206,15 @@ export class QueueService {
 
     // Queue error
     queue.on('error', (error: Error) => {
+      // Suppress Redis connection errors - app continues without queues
+      if (error.message.includes('max retries') ||
+        error.message.includes('ECONNREFUSED') ||
+        error.message.includes('ETIMEDOUT') ||
+        error.message.includes('SSL') ||
+        error.message.includes('ECONNRESET')) {
+        logger.debug(`Queue ${name} Redis connection issue (gracefully degraded):`, error.message);
+        return;
+      }
       logger.error(`Queue error in ${name}:`, error);
     });
 

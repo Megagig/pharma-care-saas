@@ -48,10 +48,16 @@ async function initializeServer() {
 
     // Initialize Queue Service and Job Workers
     try {
-      const queueService = QueueService.getInstance();
-      await queueService.initialize();
-      await initializeWorkers();
-      console.log('✅ Queue Service and Job Workers initialized successfully');
+      // Skip Bull queues on free tier Redis (connection limit)
+      if (process.env.DISABLE_BULL_QUEUES === 'true') {
+        console.log('ℹ️ Bull queues disabled (DISABLE_BULL_QUEUES=true)');
+        console.log('ℹ️ Background jobs will not be processed');
+      } else {
+        const queueService = QueueService.getInstance();
+        await queueService.initialize();
+        await initializeWorkers();
+        console.log('✅ Queue Service and Job Workers initialized successfully');
+      }
     } catch (error) {
       console.error('⚠️ Queue Service initialization failed:', error);
       console.log('ℹ️ Continuing without background jobs');
@@ -230,7 +236,10 @@ process.on('unhandledRejection', (err: Error, promise) => {
   // Check for Redis connection errors
   if (err.message.includes('Reached the max retries per request limit') ||
     err.message.includes('MaxRetriesPerRequestError') ||
-    err.message.includes('Connection is closed')) {
+    err.message.includes('ERR max number of clients reached') ||
+    err.message.includes('Connection is closed') ||
+    err.message.includes('ECONNRESET') ||
+    err.message.includes('ETIMEDOUT')) {
     console.error('❌ Redis connection error detected:', err.message);
     console.log('ℹ️ Application will continue without Redis caching');
     return; // Don't crash the server for Redis errors
@@ -248,7 +257,10 @@ process.on('uncaughtException', (err: Error) => {
   if (err.message && (
     err.message.includes('Reached the max retries per request limit') ||
     err.message.includes('MaxRetriesPerRequestError') ||
+    err.message.includes('ERR max number of clients reached') ||
     err.message.includes('Connection is closed') ||
+    err.message.includes('ECONNRESET') ||
+    err.message.includes('ETIMEDOUT') ||
     err.message.includes('Redis')
   )) {
     console.error('❌ Redis-related uncaught exception:', err.message);
