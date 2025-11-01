@@ -104,12 +104,36 @@ async function initializeServer() {
   // Initialize new Chat Socket Service
   const { initializeChatSocketService } = await import('./services/chat/ChatSocketService');
   const { initializePresenceModel } = await import('./models/chat/Presence');
+  const Redis = (await import('ioredis')).default;
 
-  // Presence tracking requires Redis pub/sub which Upstash REST API doesn't support
-  // Disable presence tracking to prevent crashes
-  console.log('ℹ️ Presence tracking disabled (requires direct Redis connection with pub/sub)');
+  // Initialize Redis for presence tracking
+  let redisClient: any = null;
+  
+  if (process.env.REDIS_URL) {
+    redisClient = new Redis(process.env.REDIS_URL, {
+      maxRetriesPerRequest: 3,
+      connectTimeout: 10000,
+      retryStrategy: (times) => {
+        const delay = Math.min(times * 50, 2000);
+        return delay;
+      },
+    });
 
-  // Initialize chat socket service without presence tracking
+    redisClient.on('connect', () => {
+      console.log('✅ Redis connected for presence tracking');
+    });
+
+    redisClient.on('error', (err) => {
+      console.error('❌ Redis connection error:', err);
+    });
+
+    // Initialize presence model
+    initializePresenceModel(redisClient);
+  } else {
+    console.log('ℹ️ Redis presence tracking disabled (no REDIS_URL configured)');
+  }
+
+  // Initialize chat socket service
   const chatSocketService = initializeChatSocketService(io);
 
   // Make socket services available globally for other services

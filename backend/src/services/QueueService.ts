@@ -48,7 +48,7 @@ export class QueueService {
   private queues: Map<QueueName, Queue> = new Map();
   private isInitialized: boolean = false;
 
-  private constructor() {}
+  private constructor() { }
 
   /**
    * Get singleton instance
@@ -66,22 +66,6 @@ export class QueueService {
   async initialize(): Promise<void> {
     if (this.isInitialized) {
       logger.warn('QueueService already initialized');
-      return;
-    }
-
-    // Check if background jobs are disabled
-    logger.info(`QueueService: Checking DISABLE_BACKGROUND_JOBS = "${process.env.DISABLE_BACKGROUND_JOBS}"`);
-    if (process.env.DISABLE_BACKGROUND_JOBS === 'true') {
-      logger.info('⏸️ QueueService disabled (DISABLE_BACKGROUND_JOBS=true)');
-      this.isInitialized = true;
-      return;
-    }
-
-    // Check if Redis URL is available
-    logger.info(`QueueService: Checking REDIS_URL exists = ${!!process.env.REDIS_URL}`);
-    if (!process.env.REDIS_URL || process.env.REDIS_URL.trim() === '') {
-      logger.info('⏸️ QueueService disabled (no REDIS_URL configured)');
-      this.isInitialized = true;
       return;
     }
 

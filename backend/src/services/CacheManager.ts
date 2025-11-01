@@ -99,26 +99,43 @@ class CacheManager {
         }
 
         try {
-            // Try Upstash REST API (HTTP-based, no DNS issues)
-            if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
-                logger.info('ℹ️ CacheManager: Using Upstash REST API');
-                const { Redis: UpstashRedis } = await import('@upstash/redis');
-                this.redis = new UpstashRedis({
-                    url: process.env.UPSTASH_REDIS_REST_URL,
-                    token: process.env.UPSTASH_REDIS_REST_TOKEN,
-                }) as any; // Cast to ioredis type for compatibility
-                this.isConnected = true;
-                logger.info('✅ CacheManager connected via Upstash REST API');
-                return;
-            }
+            const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 
-            // No Upstash REST API configured, disable caching
-            logger.info('ℹ️ CacheManager: No Upstash REST API configured, caching disabled');
-            this.redis = null;
-            this.isConnected = false;
+            this.redis = new Redis(redisUrl, {
+                maxRetriesPerRequest: 3,
+                lazyConnect: true,
+                keepAlive: 30000,
+                connectTimeout: 10000,
+                commandTimeout: 5000,
+                enableReadyCheck: true,
+                enableOfflineQueue: false
+            });
+
+            this.redis.on('connect', () => {
+                this.isConnected = true;
+                logger.info('Redis cache manager connected');
+            });
+
+            this.redis.on('error', (error) => {
+                this.isConnected = false;
+                logger.error('Redis cache manager error:', error);
+            });
+
+            this.redis.on('close', () => {
+                this.isConnected = false;
+                logger.warn('Redis cache manager connection closed');
+            });
+
+            // Test connection with timeout
+            const connectionPromise = this.redis.ping();
+            const timeoutPromise = new Promise((_, reject) => {
+                setTimeout(() => reject(new Error('Redis connection timeout')), 5000);
+            });
+
+            await Promise.race([connectionPromise, timeoutPromise]);
 
         } catch (error) {
-            logger.error('Failed to initialize CacheManager:', error);
+            logger.error('Failed to initialize Redis cache manager, falling back to memory cache:', error);
             this.redis = null;
             this.isConnected = false;
         }

@@ -4,37 +4,41 @@
  */
 
 import mongoose from 'mongoose';
+import Redis from 'ioredis';
 import logger from './logger';
 
 // ===============================
 // REDIS CACHE CONFIGURATION
 // ===============================
 
-let redisClient: any = null;
+let redisClient: Redis | null = null;
 
-export const initializeRedisCache = async () => {
+export const initializeRedisCache = () => {
     try {
-        // Try Upstash REST API first (HTTP-based, no DNS issues)
-        if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
-            logger.info('ℹ️ Performance cache: Using Upstash REST API');
-            const { Redis: UpstashRedis } = await import('@upstash/redis');
-            redisClient = new UpstashRedis({
-                url: process.env.UPSTASH_REDIS_REST_URL,
-                token: process.env.UPSTASH_REDIS_REST_TOKEN,
-            });
-            logger.info('✅ Performance cache connected via Upstash REST API');
-            return redisClient;
-        }
+        const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 
-        logger.info('ℹ️ Performance cache disabled (no Upstash REST API configured)');
-        return null;
+        redisClient = new Redis(redisUrl, {
+            maxRetriesPerRequest: 3,
+            lazyConnect: true,
+            connectTimeout: 10000,
+        });
+
+        redisClient.on('connect', () => {
+            logger.info('Redis cache connected successfully');
+        });
+
+        redisClient.on('error', (error: Error) => {
+            logger.error('Redis cache connection error:', error);
+        });
+
+        return redisClient;
     } catch (error) {
-        logger.error('Failed to initialize performance cache:', error);
+        logger.error('Failed to initialize Redis cache:', error);
         return null;
     }
 };
 
-export const getRedisClient = (): any => {
+export const getRedisClient = (): Redis | null => {
     return redisClient;
 };
 
@@ -592,9 +596,9 @@ export class MemoryOptimizer {
 // INITIALIZATION
 // ===============================
 
-export const initializePerformanceOptimization = async () => {
+export const initializePerformanceOptimization = () => {
     // Initialize Redis cache
-    await initializeRedisCache();
+    initializeRedisCache();
 
     // Set up performance monitoring
     logger.info('Performance optimization initialized');

@@ -49,31 +49,16 @@ export class BackgroundJobService {
     private cleanupQueue: Queue;
 
     constructor() {
-        // Check if background jobs are disabled
-        if (process.env.DISABLE_BACKGROUND_JOBS === 'true') {
-            logger.info('ℹ️ Background job service is disabled via environment variable');
-            return;
-        }
-
         try {
-            // Bull/BullMQ queues require full Redis protocol (not REST API)
-            // Upstash REST API doesn't support pub/sub, blocking operations, or Lua scripts
-            // So we can only use direct Redis connection for queues
-            
-            if (!process.env.REDIS_URL || process.env.REDIS_URL.trim() === '') {
-                logger.info('ℹ️ BackgroundJobService: No direct Redis configured, queues disabled');
-                logger.info('ℹ️ Note: Bull queues require direct Redis connection (not REST API)');
-                return;
-            }
-
             // Parse Redis URL for Bull configuration
-            const redisUrl = new URL(process.env.REDIS_URL);
+            const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+            const parsedUrl = new URL(redisUrl);
+            
             const redisConfig = {
-                host: redisUrl.hostname,
-                port: parseInt(redisUrl.port || '6379'),
-                password: redisUrl.password || process.env.REDIS_PASSWORD,
+                host: parsedUrl.hostname,
+                port: parseInt(parsedUrl.port || '6379'),
+                password: parsedUrl.password || process.env.REDIS_PASSWORD,
                 db: parseInt(process.env.REDIS_JOB_DB || '1'), // Use different DB for jobs
-                tls: redisUrl.protocol === 'rediss:' ? { rejectUnauthorized: false } : undefined,
             };
 
             // Initialize queues with error handling
@@ -88,19 +73,12 @@ export class BackgroundJobService {
             logger.info('✅ Background job service initialized successfully');
         } catch (error) {
             logger.error('Failed to initialize background job service:', error);
-            logger.warn('⚠️ Background job service will be disabled. Bull queues require direct Redis connection.');
+            logger.warn('⚠️ Background job service will be disabled. Install and start Redis to enable job processing.');
         }
     }
 
     static getInstance(): BackgroundJobService {
         if (!BackgroundJobService.instance) {
-            // Check if background jobs are disabled
-            if (process.env.DISABLE_BACKGROUND_JOBS === 'true') {
-                logger.info('Background jobs are disabled via environment variable');
-                // Return a mock instance that doesn't do anything
-                BackgroundJobService.instance = new BackgroundJobService();
-                return BackgroundJobService.instance;
-            }
             BackgroundJobService.instance = new BackgroundJobService();
         }
         return BackgroundJobService.instance;

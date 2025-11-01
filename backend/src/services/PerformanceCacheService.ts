@@ -73,23 +73,53 @@ export default class PerformanceCacheService {
    */
   private async initializeRedis(): Promise<void> {
     try {
-      // Try Upstash REST API first (HTTP-based, no DNS issues)
-      if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
-        logger.info('ℹ️ PerformanceCacheService: Using Upstash REST API');
-        const { Redis: UpstashRedis } = await import('@upstash/redis');
-        this.redis = new UpstashRedis({
-          url: process.env.UPSTASH_REDIS_REST_URL,
-          token: process.env.UPSTASH_REDIS_REST_TOKEN,
-        }) as any; // Cast to ioredis type for compatibility
-        this.isConnected = true;
-        logger.info('✅ PerformanceCacheService connected via Upstash REST API');
-        return;
-      }
+      // Try to reuse existing CacheManager connection
+      const cacheManager = CacheManager.getInstance();
 
-      // No Upstash REST API configured, disable caching
-      logger.info('ℹ️ PerformanceCacheService: No Upstash REST API configured, caching disabled');
-      this.redis = null;
-      this.isConnected = false;
+      // Create our own Redis connection for performance caching
+      const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
+
+      this.redis = new Redis(redisUrl, {
+        maxRetriesPerRequest: 3,
+        lazyConnect: false, // Connect immediately
+        keepAlive: 30000,
+        connectTimeout: 10000,
+        commandTimeout: 5000,
+        enableReadyCheck: true,
+        enableOfflineQueue: true, // Enable offline queue to prevent errors
+        db: 1, // Use different database than CacheManager
+        retryStrategy: (times) => {
+          // Retry with exponential backoff, max 3 seconds
+          const delay = Math.min(times * 50, 3000);
+          return delay;
+        },
+      });
+
+      this.redis.on('connect', () => {
+        this.isConnected = true;
+        logger.info('Performance cache service connected to Redis');
+      });
+
+      this.redis.on('ready', () => {
+        this.isConnected = true;
+      });
+
+      this.redis.on('error', (error) => {
+        this.isConnected = false;
+        // Only log error once, not repeatedly
+        if (!error.message.includes('ECONNREFUSED')) {
+          logger.error('Performance cache service Redis error:', error);
+        }
+      });
+
+      this.redis.on('close', () => {
+        this.isConnected = false;
+      });
+
+      // Wait for connection to be ready
+      await this.redis.ping();
+      this.isConnected = true;
+      this.initializationFailed = false;
 
     } catch (error) {
       // Silently fail - caching is optional

@@ -42,16 +42,19 @@ export class RedisCacheService {
         }
 
         try {
-            // Check if Redis is configured
-            if (!process.env.REDIS_URL || process.env.REDIS_URL.trim() === '') {
-                logger.info('ℹ️ RedisCacheService: Redis not configured, caching disabled');
-                this.redis = null;
-                return;
-            }
+            const redisUrl = process.env.REDIS_URL || 'redis://localhost:6379';
 
-            // No Upstash REST API configured, disable caching
-            logger.info('ℹ️ RedisCacheService: No Upstash REST API configured, caching disabled');
-            this.redis = null;
+            this.redis = new Redis(redisUrl, {
+                maxRetriesPerRequest: 3,
+                lazyConnect: true,
+                keepAlive: 30000,
+                connectTimeout: 10000,
+                commandTimeout: 5000,
+                enableReadyCheck: true,
+                enableOfflineQueue: false
+            });
+
+            this.setupEventHandlers();
         } catch (error) {
             logger.error('Failed to initialize Redis cache service:', error);
             this.redis = null;
