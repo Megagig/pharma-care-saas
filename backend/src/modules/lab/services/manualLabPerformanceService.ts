@@ -191,7 +191,7 @@ export class ManualLabPerformanceService {
      */
     static async recordOrderProcessingMetrics(metrics: OrderProcessingMetrics): Promise<void> {
         try {
-            const redisClient = getRedisClient();
+            const redisClient = await getRedisClient();
             if (!redisClient) {
                 logger.warn('Redis not available for metrics storage');
                 return;
@@ -225,7 +225,7 @@ export class ManualLabPerformanceService {
      */
     static async recordPDFGenerationMetrics(metrics: PDFGenerationMetrics): Promise<void> {
         try {
-            const redisClient = getRedisClient();
+            const redisClient = await getRedisClient();
             if (!redisClient) {
                 logger.warn('Redis not available for metrics storage');
                 return;
@@ -260,7 +260,7 @@ export class ManualLabPerformanceService {
      */
     static async recordAIServiceMetrics(metrics: AIServiceMetrics): Promise<void> {
         try {
-            const redisClient = getRedisClient();
+            const redisClient = await getRedisClient();
             if (!redisClient) {
                 logger.warn('Redis not available for metrics storage');
                 return;
@@ -295,7 +295,7 @@ export class ManualLabPerformanceService {
      */
     static async recordDatabaseQueryMetrics(metrics: DatabaseQueryMetrics): Promise<void> {
         try {
-            const redisClient = getRedisClient();
+            const redisClient = await getRedisClient();
             if (!redisClient) {
                 logger.warn('Redis not available for metrics storage');
                 return;
@@ -334,7 +334,7 @@ export class ManualLabPerformanceService {
      */
     static async recordCacheMetrics(metrics: CacheMetrics): Promise<void> {
         try {
-            const redisClient = getRedisClient();
+            const redisClient = await getRedisClient();
             if (!redisClient) {
                 logger.warn('Redis not available for metrics storage');
                 return;
@@ -378,7 +378,7 @@ export class ManualLabPerformanceService {
         endTime: Date
     ): Promise<PerformanceSummary> {
         try {
-            const redisClient = getRedisClient();
+            const redisClient = await getRedisClient();
             if (!redisClient) {
                 throw new Error('Redis not available for metrics retrieval');
             }
@@ -462,7 +462,7 @@ export class ManualLabPerformanceService {
         lastUpdated: Date;
     }> {
         try {
-            const redisClient = getRedisClient();
+            const redisClient = await getRedisClient();
             if (!redisClient) {
                 throw new Error('Redis not available for metrics retrieval');
             }
@@ -701,7 +701,7 @@ export class ManualLabPerformanceService {
      */
     static async cleanupOldMetrics(): Promise<void> {
         try {
-            const redisClient = getRedisClient();
+            const redisClient = await getRedisClient();
             if (!redisClient) {
                 logger.warn('Redis not available for metrics cleanup');
                 return;

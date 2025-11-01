@@ -1,6 +1,7 @@
 import Redis from 'ioredis';
 import mongoose from 'mongoose';
 import logger from '../utils/logger';
+import { getRedisClient, isRedisAvailable } from '../config/redis';
 
 export interface CacheEntry<T = any> {
     data: T;
@@ -43,11 +44,10 @@ export interface CacheMetrics {
 /**
  * Redis-based cache manager for permission and role caching
  * Provides high-performance caching with automatic invalidation and consistency mechanisms
+ * Uses shared Redis connection from config/redis
  */
 class CacheManager {
     private static instance: CacheManager;
-    private redis: Redis | null = null;
-    private isConnected = false;
     private readonly DEFAULT_TTL = 5 * 60; // 5 minutes in seconds
     private readonly MAX_MEMORY_USAGE = 100 * 1024 * 1024; // 100MB
     private readonly CACHE_VERSION = '1.0.0';
@@ -75,7 +75,7 @@ class CacheManager {
     };
 
     private constructor() {
-        this.initializeRedis();
+        // Use shared Redis connection from config/redis
     }
 
     public static getInstance(): CacheManager {
@@ -86,85 +86,13 @@ class CacheManager {
     }
 
     /**
-     * Initialize Redis connection
+     * Helper to get Redis client with availability check
      */
-    private async initializeRedis(): Promise<void> {
-        // Check if Redis is disabled or should use memory cache
-        const cacheProvider = process.env.CACHE_PROVIDER || 'redis';
-        if (cacheProvider === 'memory') {
-            logger.info('CacheManager: Using memory cache provider instead of Redis');
-            this.redis = null;
-            this.isConnected = false;
-            return;
+    private async getRedis(): Promise<Redis | null> {
+        if (!isRedisAvailable()) {
+            return null;
         }
-
-        try {
-            const redisUrl = process.env.REDIS_URL;
-
-            if (!redisUrl) {
-                logger.info('CacheManager: REDIS_URL not configured, using in-memory fallback');
-                this.redis = null;
-                this.isConnected = false;
-                return;
-            }
-
-            this.redis = new Redis(redisUrl, {
-                maxRetriesPerRequest: 3,
-                lazyConnect: false,
-                keepAlive: 30000,
-                connectTimeout: 10000,
-                commandTimeout: 5000,
-                enableReadyCheck: true,
-                enableOfflineQueue: false, // Prevent queue buildup
-                retryStrategy: (times) => {
-                    const delay = Math.min(times * 200, 3000);
-                    if (times > 10) {
-                        logger.error('CacheManager: Max Redis retry attempts reached, disabling cache');
-                        this.isConnected = false;
-                        return null; // Stop retrying
-                    }
-                    return delay;
-                },
-                reconnectOnError: (err) => {
-                    logger.warn('CacheManager: Redis reconnect attempt:', err.message);
-                    return true;
-                },
-            });
-
-            this.redis.on('connect', () => {
-                this.isConnected = true;
-                logger.info('✅ CacheManager: Redis connected');
-            });
-
-            this.redis.on('ready', () => {
-                this.isConnected = true;
-            });
-
-            this.redis.on('error', (error) => {
-                this.isConnected = false;
-                logger.error('CacheManager: Redis error:', error.message);
-            });
-
-            this.redis.on('close', () => {
-                this.isConnected = false;
-                logger.warn('CacheManager: Redis connection closed');
-            });
-
-            this.redis.on('end', () => {
-                this.isConnected = false;
-                logger.warn('CacheManager: Redis connection ended');
-            });
-
-            // Test connection
-            await this.redis.ping();
-            this.isConnected = true;
-            logger.info('CacheManager: Redis connection verified');
-
-        } catch (error) {
-            logger.error('CacheManager: Failed to initialize Redis, falling back to memory cache:', error);
-            this.redis = null;
-            this.isConnected = false;
-        }
+        return await getRedisClient();
     }
 
     /**
@@ -178,7 +106,8 @@ class CacheManager {
         workspaceId?: mongoose.Types.ObjectId,
         ttl: number = this.DEFAULT_TTL
     ): Promise<boolean> {
-        if (!this.isConnected || !this.redis) {
+        const redis = await this.getRedis();
+        if (!redis) {
             return false;
         }
 
@@ -194,7 +123,7 @@ class CacheManager {
                 expiresAt: Date.now() + (ttl * 1000)
             };
 
-            await this.redis.setex(key, ttl, JSON.stringify(cacheEntry));
+            await redis.setex(key, ttl, JSON.stringify(cacheEntry));
             this.metrics.sets++;
 
             logger.debug(`Cached permissions for user ${userId}`, {
@@ -218,14 +147,15 @@ class CacheManager {
         userId: mongoose.Types.ObjectId,
         workspaceId?: mongoose.Types.ObjectId
     ): Promise<PermissionCacheEntry | null> {
-        if (!this.isConnected || !this.redis) {
+        const redis = await this.getRedis();
+        if (!redis) {
             this.metrics.misses++;
             return null;
         }
 
         try {
             const key = this.getUserPermissionKey(userId, workspaceId);
-            const cached = await this.redis.get(key);
+            const cached = await redis.get(key);
 
             if (!cached) {
                 this.metrics.misses++;
@@ -236,7 +166,7 @@ class CacheManager {
 
             // Check if cache entry is expired
             if (Date.now() > cacheEntry.expiresAt) {
-                await this.redis.del(key);
+                await redis.del(key);
                 this.metrics.misses++;
                 return null;
             }
@@ -262,7 +192,8 @@ class CacheManager {
         parentRoleId?: mongoose.Types.ObjectId,
         ttl: number = this.DEFAULT_TTL
     ): Promise<boolean> {
-        if (!this.isConnected || !this.redis) {
+        const redis = await this.getRedis();
+        if (!redis) {
             return false;
         }
 
@@ -278,7 +209,7 @@ class CacheManager {
                 expiresAt: Date.now() + (ttl * 1000)
             };
 
-            await this.redis.setex(key, ttl, JSON.stringify(cacheEntry));
+            await redis.setex(key, ttl, JSON.stringify(cacheEntry));
             this.metrics.sets++;
 
             return true;
@@ -295,14 +226,15 @@ class CacheManager {
     public async getCachedRolePermissions(
         roleId: mongoose.Types.ObjectId
     ): Promise<RoleCacheEntry | null> {
-        if (!this.isConnected || !this.redis) {
+        const redis = await this.getRedis();
+        if (!redis) {
             this.metrics.misses++;
             return null;
         }
 
         try {
             const key = this.getRolePermissionKey(roleId);
-            const cached = await this.redis.get(key);
+            const cached = await redis.get(key);
 
             if (!cached) {
                 this.metrics.misses++;
@@ -313,7 +245,7 @@ class CacheManager {
 
             // Check if cache entry is expired
             if (Date.now() > cacheEntry.expiresAt) {
-                await this.redis.del(key);
+                await redis.del(key);
                 this.metrics.misses++;
                 return null;
             }
@@ -339,7 +271,8 @@ class CacheManager {
         workspaceId?: mongoose.Types.ObjectId,
         ttl: number = this.DEFAULT_TTL
     ): Promise<boolean> {
-        if (!this.isConnected || !this.redis) {
+        const redis = await this.getRedis();
+        if (!redis) {
             return false;
         }
 
@@ -352,7 +285,7 @@ class CacheManager {
                 expiresAt: Date.now() + (ttl * 1000)
             };
 
-            await this.redis.setex(key, ttl, JSON.stringify(cacheEntry));
+            await redis.setex(key, ttl, JSON.stringify(cacheEntry));
             this.metrics.sets++;
 
             return true;
@@ -371,14 +304,15 @@ class CacheManager {
         action: string,
         workspaceId?: mongoose.Types.ObjectId
     ): Promise<{ allowed: boolean; source: string; timestamp: number } | null> {
-        if (!this.isConnected || !this.redis) {
+        const redis = await this.getRedis();
+        if (!redis) {
             this.metrics.misses++;
             return null;
         }
 
         try {
             const key = this.getPermissionCheckKey(userId, action, workspaceId);
-            const cached = await this.redis.get(key);
+            const cached = await redis.get(key);
 
             if (!cached) {
                 this.metrics.misses++;
@@ -389,7 +323,7 @@ class CacheManager {
 
             // Check if cache entry is expired
             if (Date.now() > cacheEntry.expiresAt) {
-                await this.redis.del(key);
+                await redis.del(key);
                 this.metrics.misses++;
                 return null;
             }
@@ -415,7 +349,8 @@ class CacheManager {
         userId: mongoose.Types.ObjectId,
         workspaceId?: mongoose.Types.ObjectId
     ): Promise<void> {
-        if (!this.isConnected || !this.redis) {
+        const redis = await this.getRedis();
+        if (!redis) {
             return;
         }
 
@@ -428,13 +363,13 @@ class CacheManager {
 
             for (const pattern of patterns) {
                 if (pattern.includes('*')) {
-                    const keys = await this.redis.keys(pattern);
+                    const keys = await redis.keys(pattern);
                     if (keys.length > 0) {
-                        await this.redis.del(...keys);
+                        await redis.del(...keys);
                         this.metrics.deletes += keys.length;
                     }
                 } else {
-                    await this.redis.del(pattern);
+                    await redis.del(pattern);
                     this.metrics.deletes++;
                 }
             }
@@ -450,7 +385,8 @@ class CacheManager {
      * Invalidate role permission cache
      */
     public async invalidateRoleCache(roleId: mongoose.Types.ObjectId): Promise<void> {
-        if (!this.isConnected || !this.redis) {
+        const redis = await this.getRedis();
+        if (!redis) {
             return;
         }
 
@@ -463,13 +399,13 @@ class CacheManager {
 
             for (const pattern of patterns) {
                 if (pattern.includes('*')) {
-                    const keys = await this.redis.keys(pattern);
+                    const keys = await redis.keys(pattern);
                     if (keys.length > 0) {
-                        await this.redis.del(...keys);
+                        await redis.del(...keys);
                         this.metrics.deletes += keys.length;
                     }
                 } else {
-                    await this.redis.del(pattern);
+                    await redis.del(pattern);
                     this.metrics.deletes++;
                 }
             }
@@ -485,14 +421,15 @@ class CacheManager {
      * Invalidate cache by pattern
      */
     public async invalidatePattern(pattern: string): Promise<number> {
-        if (!this.isConnected || !this.redis) {
+        const redis = await this.getRedis();
+        if (!redis) {
             return 0;
         }
 
         try {
-            const keys = await this.redis.keys(pattern);
+            const keys = await redis.keys(pattern);
             if (keys.length > 0) {
-                await this.redis.del(...keys);
+                await redis.del(...keys);
                 this.metrics.deletes += keys.length;
                 return keys.length;
             }
@@ -514,7 +451,8 @@ class CacheManager {
             priority: 'high' | 'medium' | 'low';
         }>
     ): Promise<void> {
-        if (!this.isConnected || !this.redis) {
+        const redis = await this.getRedis();
+        if (!redis) {
             return;
         }
 
@@ -577,7 +515,8 @@ class CacheManager {
         issues: string[];
         repaired: number;
     }> {
-        if (!this.isConnected || !this.redis) {
+        const redis = await this.getRedis();
+        if (!redis) {
             return {
                 consistent: false,
                 issues: ['Redis not connected'],
@@ -590,22 +529,22 @@ class CacheManager {
 
         try {
             // Check for expired entries that weren't cleaned up
-            const allKeys = await this.redis.keys('*');
+            const allKeys = await redis.keys('*');
             const now = Date.now();
 
             for (const key of allKeys) {
                 try {
-                    const value = await this.redis.get(key);
+                    const value = await redis.get(key);
                     if (value) {
                         const parsed = JSON.parse(value);
                         if (parsed.expiresAt && now > parsed.expiresAt) {
-                            await this.redis.del(key);
+                            await redis.del(key);
                             repaired++;
                         }
                     }
                 } catch (error) {
                     // Invalid JSON or other parsing error
-                    await this.redis.del(key);
+                    await redis.del(key);
                     issues.push(`Removed invalid cache entry: ${key}`);
                     repaired++;
                 }
@@ -619,7 +558,7 @@ class CacheManager {
 
             // Check memory usage
             try {
-                const memoryStats = await this.redis.memory('STATS') as string[];
+                const memoryStats = await redis.memory('STATS') as string[];
                 const memoryUsage = memoryStats.length > 0 && memoryStats[0] ? parseInt(memoryStats[0]) : 0;
                 if (memoryUsage > this.MAX_MEMORY_USAGE) {
                     issues.push(`Memory usage (${memoryUsage}) exceeds limit (${this.MAX_MEMORY_USAGE})`);
@@ -656,13 +595,14 @@ class CacheManager {
      * Check for orphaned cache entries
      */
     private async checkOrphanedEntries(issues: string[], repaired: number): Promise<void> {
-        if (!this.isConnected || !this.redis) {
+        const redis = await this.getRedis();
+        if (!redis) {
             return;
         }
 
         try {
             // Check for user permission entries without corresponding users
-            const userPermKeys = await this.redis.keys(`${this.PREFIXES.USER_PERMISSIONS}*`);
+            const userPermKeys = await redis.keys(`${this.PREFIXES.USER_PERMISSIONS}*`);
 
             for (const key of userPermKeys) {
                 const userId = key.replace(this.PREFIXES.USER_PERMISSIONS, '').split(':')[0];
@@ -673,7 +613,7 @@ class CacheManager {
                         const userExists = await User.exists({ _id: userId });
 
                         if (!userExists) {
-                            await this.redis.del(key);
+                            await redis.del(key);
                             issues.push(`Removed orphaned user permission cache: ${userId}`);
                             repaired++;
                         }
@@ -684,7 +624,7 @@ class CacheManager {
             }
 
             // Check for role permission entries without corresponding roles
-            const rolePermKeys = await this.redis.keys(`${this.PREFIXES.ROLE_PERMISSIONS}*`);
+            const rolePermKeys = await redis.keys(`${this.PREFIXES.ROLE_PERMISSIONS}*`);
 
             for (const key of rolePermKeys) {
                 const roleId = key.replace(this.PREFIXES.ROLE_PERMISSIONS, '');
@@ -695,7 +635,7 @@ class CacheManager {
                         const roleExists = await Role.exists({ _id: roleId, isActive: true });
 
                         if (!roleExists) {
-                            await this.redis.del(key);
+                            await redis.del(key);
                             issues.push(`Removed orphaned role permission cache: ${roleId}`);
                             repaired++;
                         }
@@ -714,12 +654,13 @@ class CacheManager {
      * Validate cache key patterns
      */
     private async validateCacheKeyPatterns(issues: string[]): Promise<void> {
-        if (!this.isConnected || !this.redis) {
+        const redis = await this.getRedis();
+        if (!redis) {
             return;
         }
 
         try {
-            const allKeys = await this.redis.keys('*');
+            const allKeys = await redis.keys('*');
             const validPrefixes = Object.values(this.PREFIXES);
 
             for (const key of allKeys) {
@@ -739,35 +680,36 @@ class CacheManager {
      * Perform memory cleanup when usage is high
      */
     private async performMemoryCleanup(): Promise<void> {
-        if (!this.isConnected || !this.redis) {
+        const redis = await this.getRedis();
+        if (!redis) {
             return;
         }
 
         try {
             // Remove expired entries first
-            const allKeys = await this.redis.keys('*');
+            const allKeys = await redis.keys('*');
             const now = Date.now();
             let cleanedCount = 0;
 
             for (const key of allKeys) {
                 try {
-                    const value = await this.redis.get(key);
+                    const value = await redis.get(key);
                     if (value) {
                         const parsed = JSON.parse(value);
                         if (parsed.expiresAt && now > parsed.expiresAt) {
-                            await this.redis.del(key);
+                            await redis.del(key);
                             cleanedCount++;
                         }
                     }
                 } catch (error) {
                     // Remove invalid entries
-                    await this.redis.del(key);
+                    await redis.del(key);
                     cleanedCount++;
                 }
             }
 
             // If still high memory usage, remove oldest entries
-            const memoryStats = await this.redis.memory('STATS') as string[];
+            const memoryStats = await redis.memory('STATS') as string[];
             const memoryUsage = memoryStats.length > 0 && memoryStats[0] ? parseInt(memoryStats[0]) : 0;
 
             if (memoryUsage > this.MAX_MEMORY_USAGE * 0.8) { // 80% threshold
@@ -778,7 +720,7 @@ class CacheManager {
                 for (let i = 0; i < keysToRemove && i < sortedKeys.length; i++) {
                     const key = sortedKeys[i];
                     if (key) {
-                        await this.redis.del(key);
+                        await redis.del(key);
                         cleanedCount++;
                     }
                 }
@@ -795,12 +737,13 @@ class CacheManager {
      * Check for cache fragmentation
      */
     private async checkCacheFragmentation(issues: string[]): Promise<void> {
-        if (!this.isConnected || !this.redis) {
+        const redis = await this.getRedis();
+        if (!redis) {
             return;
         }
 
         try {
-            const info = await this.redis.info('memory');
+            const info = await redis.info('memory');
             const fragmentationMatch = info.match(/mem_fragmentation_ratio:(\d+\.?\d*)/);
 
             if (fragmentationMatch && fragmentationMatch[1]) {
@@ -820,17 +763,18 @@ class CacheManager {
      * Get cache performance metrics
      */
     public async getMetrics(): Promise<CacheMetrics> {
-        if (!this.isConnected || !this.redis) {
+        const redis = await this.getRedis();
+        if (!redis) {
             return this.metrics;
         }
 
         try {
             // Update memory usage and key count
-            const info = await this.redis.info('memory');
+            const info = await redis.info('memory');
             const memoryMatch = info.match(/used_memory:(\d+)/);
             this.metrics.memoryUsage = memoryMatch && memoryMatch[1] ? parseInt(memoryMatch[1]) : 0;
 
-            this.metrics.keyCount = await this.redis.dbsize();
+            this.metrics.keyCount = await redis.dbsize();
 
             // Calculate hit rate
             this.metrics.totalOperations = this.metrics.hits + this.metrics.misses;
@@ -850,12 +794,13 @@ class CacheManager {
      * Clear all cache
      */
     public async clearAll(): Promise<void> {
-        if (!this.isConnected || !this.redis) {
+        const redis = await this.getRedis();
+        if (!redis) {
             return;
         }
 
         try {
-            await this.redis.flushdb();
+            await redis.flushdb();
             this.resetMetrics();
             logger.info('All cache cleared');
 
@@ -914,23 +859,8 @@ class CacheManager {
      * Close Redis connection
      */
     public async close(): Promise<void> {
-        try {
-            if (this.redis) {
-                logger.info('CacheManager: Closing Redis connection...');
-                await this.redis.quit();
-                this.redis = null;
-                this.isConnected = false;
-                logger.info('CacheManager: Redis connection closed gracefully');
-            }
-        } catch (error) {
-            logger.error('CacheManager: Error during close:', error);
-            // Force disconnect even if quit fails
-            if (this.redis) {
-                this.redis.disconnect();
-                this.redis = null;
-                this.isConnected = false;
-            }
-        }
+        // Connection managed by centralized RedisConnectionManager
+        // Individual services should not close the shared connection
     }
 }
 

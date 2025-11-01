@@ -37,13 +37,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.CachedReportService = exports.CacheKeyGenerator = exports.RedisCacheService = void 0;
-const ioredis_1 = __importDefault(require("ioredis"));
 const perf_hooks_1 = require("perf_hooks");
 const logger_1 = __importDefault(require("../utils/logger"));
+const redis_1 = require("../config/redis");
 class RedisCacheService {
     constructor() {
-        this.redis = null;
-        this.isConnected = false;
         this.stats = {
             hits: 0,
             misses: 0,
@@ -52,50 +50,6 @@ class RedisCacheService {
             avgResponseTime: 0,
         };
         this.responseTimes = [];
-        const cacheProvider = process.env.CACHE_PROVIDER || 'redis';
-        if (cacheProvider === 'memory') {
-            logger_1.default.info('RedisCacheService: Using memory cache provider instead of Redis');
-            this.redis = null;
-            this.isConnected = false;
-            return;
-        }
-        try {
-            const redisUrl = process.env.REDIS_URL;
-            if (!redisUrl) {
-                logger_1.default.info('RedisCacheService: REDIS_URL not configured');
-                this.redis = null;
-                this.isConnected = false;
-                return;
-            }
-            this.redis = new ioredis_1.default(redisUrl, {
-                maxRetriesPerRequest: 3,
-                lazyConnect: false,
-                keepAlive: 30000,
-                connectTimeout: 10000,
-                commandTimeout: 5000,
-                enableReadyCheck: true,
-                enableOfflineQueue: false,
-                retryStrategy: (times) => {
-                    const delay = Math.min(times * 200, 3000);
-                    if (times > 10) {
-                        logger_1.default.error('RedisCacheService: Max retry attempts reached, disabling cache');
-                        this.isConnected = false;
-                        return null;
-                    }
-                    return delay;
-                },
-                reconnectOnError: (err) => {
-                    logger_1.default.warn('RedisCacheService: Redis reconnect attempt:', err.message);
-                    return true;
-                },
-            });
-            this.setupEventHandlers();
-        }
-        catch (error) {
-            logger_1.default.error('RedisCacheService: Failed to initialize:', error);
-            this.redis = null;
-            this.isConnected = false;
-        }
     }
     static getInstance() {
         if (!RedisCacheService.instance) {
@@ -103,34 +57,12 @@ class RedisCacheService {
         }
         return RedisCacheService.instance;
     }
-    setupEventHandlers() {
-        if (!this.redis)
-            return;
-        this.redis.on('connect', () => {
-            this.isConnected = true;
-            logger_1.default.info('✅ RedisCacheService: Redis connected successfully');
-        });
-        this.redis.on('ready', () => {
-            this.isConnected = true;
-        });
-        this.redis.on('error', (error) => {
-            this.isConnected = false;
-            logger_1.default.error('RedisCacheService: Redis error:', error.message);
-        });
-        this.redis.on('close', () => {
-            this.isConnected = false;
-            logger_1.default.warn('RedisCacheService: Redis connection closed');
-        });
-        this.redis.on('end', () => {
-            this.isConnected = false;
-            logger_1.default.warn('RedisCacheService: Redis connection ended');
-        });
-        this.redis.on('reconnecting', () => {
-            logger_1.default.info('RedisCacheService: Redis reconnecting...');
-        });
-    }
     async set(key, value, options = {}) {
-        if (!this.redis || !this.isConnected) {
+        if (!(0, redis_1.isRedisAvailable)()) {
+            return false;
+        }
+        const redis = await (0, redis_1.getRedisClient)();
+        if (!redis) {
             return false;
         }
         const startTime = perf_hooks_1.performance.now();
@@ -142,11 +74,11 @@ class RedisCacheService {
                 serializedValue = zlib.gzipSync(serializedValue).toString('base64');
                 key = `compressed:${key}`;
             }
-            const result = await this.redis.setex(key, ttl, serializedValue);
+            const result = await redis.setex(key, ttl, serializedValue);
             if (tags.length > 0) {
                 await this.addCacheTags(key, tags, ttl);
             }
-            await this.redis.setex(`meta:${key}`, ttl, JSON.stringify({
+            await redis.setex(`meta:${key}`, ttl, JSON.stringify({
                 createdAt: new Date().toISOString(),
                 ttl,
                 tags,
@@ -161,15 +93,19 @@ class RedisCacheService {
         }
     }
     async get(key) {
-        if (!this.redis || !this.isConnected) {
+        if (!(0, redis_1.isRedisAvailable)()) {
+            return null;
+        }
+        const redis = await (0, redis_1.getRedisClient)();
+        if (!redis) {
             this.stats.misses++;
             return null;
         }
         const startTime = perf_hooks_1.performance.now();
         try {
-            let value = await this.redis.get(key);
+            let value = await redis.get(key);
             if (value === null) {
-                const compressedValue = await this.redis.get(`compressed:${key}`);
+                const compressedValue = await redis.get(`compressed:${key}`);
                 if (compressedValue) {
                     const zlib = await Promise.resolve().then(() => __importStar(require('zlib')));
                     value = zlib.gunzipSync(Buffer.from(compressedValue, 'base64')).toString();
@@ -192,18 +128,22 @@ class RedisCacheService {
         }
     }
     async mget(keys) {
-        if (!this.redis) {
+        if (!(0, redis_1.isRedisAvailable)()) {
+            return keys.map(() => null);
+        }
+        const redis = await (0, redis_1.getRedisClient)();
+        if (!redis) {
             this.stats.misses += keys.length;
             return keys.map(() => null);
         }
         const startTime = perf_hooks_1.performance.now();
         try {
-            const values = await this.redis.mget(...keys);
+            const values = await redis.mget(...keys);
             const results = [];
             for (let i = 0; i < values.length; i++) {
                 const value = values[i];
                 if (value === null) {
-                    const compressedValue = await this.redis.get(`compressed:${keys[i]}`);
+                    const compressedValue = await redis.get(`compressed:${keys[i]}`);
                     if (compressedValue) {
                         const zlib = await Promise.resolve().then(() => __importStar(require('zlib')));
                         const decompressed = zlib.gunzipSync(Buffer.from(compressedValue, 'base64')).toString();
@@ -231,11 +171,15 @@ class RedisCacheService {
         }
     }
     async del(key) {
-        if (!this.redis) {
+        if (!(0, redis_1.isRedisAvailable)()) {
+            return false;
+        }
+        const redis = await (0, redis_1.getRedisClient)();
+        if (!redis) {
             return false;
         }
         try {
-            const pipeline = this.redis.pipeline();
+            const pipeline = redis.pipeline();
             pipeline.del(key);
             pipeline.del(`compressed:${key}`);
             pipeline.del(`meta:${key}`);
@@ -248,15 +192,19 @@ class RedisCacheService {
         }
     }
     async delPattern(pattern) {
-        if (!this.redis) {
+        if (!(0, redis_1.isRedisAvailable)()) {
+            return 0;
+        }
+        const redis = await (0, redis_1.getRedisClient)();
+        if (!redis) {
             return 0;
         }
         try {
-            const keys = await this.redis.keys(pattern);
+            const keys = await redis.keys(pattern);
             if (keys.length === 0) {
                 return 0;
             }
-            const pipeline = this.redis.pipeline();
+            const pipeline = redis.pipeline();
             keys.forEach(key => {
                 pipeline.del(key);
                 pipeline.del(`compressed:${key}`);
@@ -271,11 +219,15 @@ class RedisCacheService {
         }
     }
     async ping() {
-        if (!this.redis) {
+        if (!(0, redis_1.isRedisAvailable)()) {
+            return false;
+        }
+        const redis = await (0, redis_1.getRedisClient)();
+        if (!redis) {
             return false;
         }
         try {
-            const result = await this.redis.ping();
+            const result = await redis.ping();
             return result === 'PONG';
         }
         catch (error) {
@@ -284,13 +236,17 @@ class RedisCacheService {
         }
     }
     async exists(key) {
-        if (!this.redis) {
+        if (!(0, redis_1.isRedisAvailable)()) {
+            return false;
+        }
+        const redis = await (0, redis_1.getRedisClient)();
+        if (!redis) {
             return false;
         }
         try {
-            const exists = await this.redis.exists(key);
+            const exists = await redis.exists(key);
             if (exists === 0) {
-                return (await this.redis.exists(`compressed:${key}`)) === 1;
+                return (await redis.exists(`compressed:${key}`)) === 1;
             }
             return exists === 1;
         }
@@ -300,11 +256,15 @@ class RedisCacheService {
         }
     }
     async expire(key, ttl) {
-        if (!this.redis) {
+        if (!(0, redis_1.isRedisAvailable)()) {
+            return false;
+        }
+        const redis = await (0, redis_1.getRedisClient)();
+        if (!redis) {
             return false;
         }
         try {
-            const pipeline = this.redis.pipeline();
+            const pipeline = redis.pipeline();
             pipeline.expire(key, ttl);
             pipeline.expire(`compressed:${key}`, ttl);
             pipeline.expire(`meta:${key}`, ttl);
@@ -317,13 +277,17 @@ class RedisCacheService {
         }
     }
     async ttl(key) {
-        if (!this.redis) {
+        if (!(0, redis_1.isRedisAvailable)()) {
+            return -1;
+        }
+        const redis = await (0, redis_1.getRedisClient)();
+        if (!redis) {
             return -1;
         }
         try {
-            let ttl = await this.redis.ttl(key);
+            let ttl = await redis.ttl(key);
             if (ttl === -2) {
-                ttl = await this.redis.ttl(`compressed:${key}`);
+                ttl = await redis.ttl(`compressed:${key}`);
             }
             return ttl;
         }
@@ -333,15 +297,19 @@ class RedisCacheService {
         }
     }
     async invalidateByTags(tags) {
-        if (!this.redis) {
+        if (!(0, redis_1.isRedisAvailable)()) {
+            return 0;
+        }
+        const redis = await (0, redis_1.getRedisClient)();
+        if (!redis) {
             return 0;
         }
         try {
             let deletedCount = 0;
             for (const tag of tags) {
-                const keys = await this.redis.smembers(`tag:${tag}`);
+                const keys = await redis.smembers(`tag:${tag}`);
                 if (keys.length > 0) {
-                    const pipeline = this.redis.pipeline();
+                    const pipeline = redis.pipeline();
                     keys.forEach(key => {
                         pipeline.del(key);
                         pipeline.del(`compressed:${key}`);
@@ -360,11 +328,15 @@ class RedisCacheService {
         }
     }
     async clear() {
-        if (!this.redis) {
+        if (!(0, redis_1.isRedisAvailable)()) {
+            return false;
+        }
+        const redis = await (0, redis_1.getRedisClient)();
+        if (!redis) {
             return false;
         }
         try {
-            await this.redis.flushdb();
+            await redis.flushdb();
             this.resetStats();
             return true;
         }
@@ -387,13 +359,17 @@ class RedisCacheService {
         this.responseTimes = [];
     }
     async getInfo() {
-        if (!this.redis) {
+        if (!(0, redis_1.isRedisAvailable)()) {
+            return false;
+        }
+        const redis = await (0, redis_1.getRedisClient)();
+        if (!redis) {
             return null;
         }
         try {
-            const info = await this.redis.info();
-            const memory = await this.redis.info('memory');
-            const stats = await this.redis.info('stats');
+            const info = await redis.info();
+            const memory = await redis.info('memory');
+            const stats = await redis.info('stats');
             return {
                 info,
                 memory,
@@ -407,11 +383,15 @@ class RedisCacheService {
         }
     }
     async healthCheck() {
-        if (!this.redis) {
+        if (!(0, redis_1.isRedisAvailable)()) {
+            return false;
+        }
+        const redis = await (0, redis_1.getRedisClient)();
+        if (!redis) {
             return false;
         }
         try {
-            const result = await this.redis.ping();
+            const result = await redis.ping();
             return result === 'PONG';
         }
         catch (error) {
@@ -420,29 +400,20 @@ class RedisCacheService {
         }
     }
     async close() {
-        try {
-            if (this.redis) {
-                logger_1.default.info('RedisCacheService: Closing Redis connection...');
-                await this.redis.quit();
-                this.redis = null;
-                this.isConnected = false;
-                logger_1.default.info('RedisCacheService: Redis connection closed gracefully');
-            }
-        }
-        catch (error) {
-            logger_1.default.error('RedisCacheService: Error during close:', error);
-            if (this.redis) {
-                this.redis.disconnect();
-                this.redis = null;
-                this.isConnected = false;
-            }
-        }
+        logger_1.default.info('RedisCacheService: Using shared Redis connection (no individual close needed)');
     }
     async addCacheTags(key, tags, ttl) {
-        if (!this.redis) {
+        if (!(0, redis_1.isRedisAvailable)()) {
             return;
         }
-        const pipeline = this.redis.pipeline();
+        const redis = await (0, redis_1.getRedisClient)();
+        if (!redis) {
+            return;
+        }
+        if (!redis) {
+            return;
+        }
+        const pipeline = redis.pipeline();
         tags.forEach(tag => {
             pipeline.sadd(`tag:${tag}`, key);
             pipeline.expire(`tag:${tag}`, ttl);

@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import Redis from 'ioredis';
-export declare const initializeRedisCache: () => Redis;
-export declare const getRedisClient: () => Redis | null;
+export declare const initializeRedisCache: () => any;
+export declare const getRedisClient: () => Promise<Redis | null>;
 export declare const isRedisCacheAvailable: () => boolean;
 export declare const shutdownRedisCache: () => Promise<void>;
 export interface CacheOptions {

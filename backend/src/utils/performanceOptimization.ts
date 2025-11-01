@@ -6,103 +6,30 @@
 import mongoose from 'mongoose';
 import Redis from 'ioredis';
 import logger from './logger';
+import { getRedisClient as getSharedRedisClient, isRedisAvailable } from '../config/redis';
 
 // ===============================
 // REDIS CACHE CONFIGURATION
 // ===============================
 
-let redisClient: Redis | null = null;
-let isRedisConnected: boolean = false;
-
+// Export wrapper functions for shared Redis connection
 export const initializeRedisCache = () => {
-    try {
-        const redisUrl = process.env.REDIS_URL;
-
-        if (!redisUrl) {
-            logger.info('Redis cache: REDIS_URL not configured');
-            return null;
-        }
-
-        redisClient = new Redis(redisUrl, {
-            maxRetriesPerRequest: 3,
-            lazyConnect: false,
-            connectTimeout: 10000,
-            commandTimeout: 5000,
-            enableOfflineQueue: false, // Prevent queue buildup
-            retryStrategy: (times) => {
-                const delay = Math.min(times * 200, 3000);
-                if (times > 10) {
-                    logger.error('Redis cache: Max retry attempts reached');
-                    return null;
-                }
-                return delay;
-            },
-            reconnectOnError: (err) => {
-                logger.warn('Redis cache: Reconnect attempt:', err.message);
-                return true;
-            },
-        });
-
-        redisClient.on('connect', () => {
-            logger.info('Redis cache connected successfully');
-            isRedisConnected = true;
-        });
-
-        redisClient.on('ready', () => {
-            isRedisConnected = true;
-        });
-
-        redisClient.on('error', (error: Error) => {
-            logger.error('Redis cache connection error:', error.message);
-            isRedisConnected = false;
-        });
-
-        redisClient.on('close', () => {
-            logger.warn('Redis cache connection closed');
-            isRedisConnected = false;
-        });
-
-        redisClient.on('end', () => {
-            logger.warn('Redis cache connection ended');
-            isRedisConnected = false;
-        });
-
-        return redisClient;
-    } catch (error) {
-        logger.error('Failed to initialize Redis cache:', error);
-        return null;
-    }
+    // Uses shared Redis connection from config/redis
+    logger.info('Using shared Redis connection for performance cache');
+    return null; // No initialization needed
 };
 
-export const getRedisClient = (): Redis | null => {
-    if (!redisClient || !isRedisConnected) {
-        return null;
-    }
-    return redisClient;
+export const getRedisClient = async (): Promise<Redis | null> => {
+    return await getSharedRedisClient();
 };
 
 export const isRedisCacheAvailable = (): boolean => {
-    return redisClient !== null && isRedisConnected;
+    return isRedisAvailable();
 };
 
 export const shutdownRedisCache = async (): Promise<void> => {
-    try {
-        if (redisClient) {
-            logger.info('Closing Redis cache connection...');
-            await redisClient.quit();
-            redisClient = null;
-            isRedisConnected = false;
-            logger.info('Redis cache closed gracefully');
-        }
-    } catch (error) {
-        logger.error('Error closing Redis cache:', error);
-        // Force disconnect
-        if (redisClient) {
-            redisClient.disconnect();
-            redisClient = null;
-            isRedisConnected = false;
-        }
-    }
+    // Connection managed by RedisConnectionManager
+    logger.info('Redis cache: Using shared connection (no individual shutdown needed)');
 };
 
 // ===============================
@@ -139,8 +66,12 @@ export class CacheManager {
         options: CacheOptions = {}
     ): Promise<boolean> {
         try {
-            const client = getRedisClient();
-            if (!client || !isRedisCacheAvailable()) {
+            if (!isRedisCacheAvailable()) {
+                return false;
+            }
+
+            const client = await getRedisClient();
+            if (!client) {
                 return false;
             }
 
@@ -167,8 +98,12 @@ export class CacheManager {
      */
     static async get<T>(key: string): Promise<T | null> {
         try {
-            const client = getRedisClient();
-            if (!client || !isRedisCacheAvailable()) {
+            if (!isRedisCacheAvailable()) {
+                return null;
+            }
+
+            const client = await getRedisClient();
+            if (!client) {
                 return null;
             }
 
@@ -194,8 +129,12 @@ export class CacheManager {
      */
     static async delete(pattern: string): Promise<boolean> {
         try {
-            const client = getRedisClient();
-            if (!client || !isRedisCacheAvailable()) {
+            if (!isRedisCacheAvailable()) {
+                return false;
+            }
+
+            const client = await getRedisClient();
+            if (!client) {
                 return false;
             }
 

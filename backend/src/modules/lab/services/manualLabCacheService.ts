@@ -719,7 +719,7 @@ export class ManualLabCacheService {
         memoryUsage?: string;
     }> {
         try {
-            const redisClient = getRedisClient();
+            const redisClient = await getRedisClient();
             if (!redisClient) {
                 return {
                     redisConnected: false,

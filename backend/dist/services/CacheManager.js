@@ -36,13 +36,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-const ioredis_1 = __importDefault(require("ioredis"));
 const mongoose_1 = __importDefault(require("mongoose"));
 const logger_1 = __importDefault(require("../utils/logger"));
+const redis_1 = require("../config/redis");
 class CacheManager {
     constructor() {
-        this.redis = null;
-        this.isConnected = false;
         this.DEFAULT_TTL = 5 * 60;
         this.MAX_MEMORY_USAGE = 100 * 1024 * 1024;
         this.CACHE_VERSION = '1.0.0';
@@ -64,7 +62,6 @@ class CacheManager {
             USER_ROLES: 'user_roles:',
             METRICS: 'cache_metrics:'
         };
-        this.initializeRedis();
     }
     static getInstance() {
         if (!CacheManager.instance) {
@@ -72,75 +69,15 @@ class CacheManager {
         }
         return CacheManager.instance;
     }
-    async initializeRedis() {
-        const cacheProvider = process.env.CACHE_PROVIDER || 'redis';
-        if (cacheProvider === 'memory') {
-            logger_1.default.info('CacheManager: Using memory cache provider instead of Redis');
-            this.redis = null;
-            this.isConnected = false;
-            return;
+    async getRedis() {
+        if (!(0, redis_1.isRedisAvailable)()) {
+            return null;
         }
-        try {
-            const redisUrl = process.env.REDIS_URL;
-            if (!redisUrl) {
-                logger_1.default.info('CacheManager: REDIS_URL not configured, using in-memory fallback');
-                this.redis = null;
-                this.isConnected = false;
-                return;
-            }
-            this.redis = new ioredis_1.default(redisUrl, {
-                maxRetriesPerRequest: 3,
-                lazyConnect: false,
-                keepAlive: 30000,
-                connectTimeout: 10000,
-                commandTimeout: 5000,
-                enableReadyCheck: true,
-                enableOfflineQueue: false,
-                retryStrategy: (times) => {
-                    const delay = Math.min(times * 200, 3000);
-                    if (times > 10) {
-                        logger_1.default.error('CacheManager: Max Redis retry attempts reached, disabling cache');
-                        this.isConnected = false;
-                        return null;
-                    }
-                    return delay;
-                },
-                reconnectOnError: (err) => {
-                    logger_1.default.warn('CacheManager: Redis reconnect attempt:', err.message);
-                    return true;
-                },
-            });
-            this.redis.on('connect', () => {
-                this.isConnected = true;
-                logger_1.default.info('✅ CacheManager: Redis connected');
-            });
-            this.redis.on('ready', () => {
-                this.isConnected = true;
-            });
-            this.redis.on('error', (error) => {
-                this.isConnected = false;
-                logger_1.default.error('CacheManager: Redis error:', error.message);
-            });
-            this.redis.on('close', () => {
-                this.isConnected = false;
-                logger_1.default.warn('CacheManager: Redis connection closed');
-            });
-            this.redis.on('end', () => {
-                this.isConnected = false;
-                logger_1.default.warn('CacheManager: Redis connection ended');
-            });
-            await this.redis.ping();
-            this.isConnected = true;
-            logger_1.default.info('CacheManager: Redis connection verified');
-        }
-        catch (error) {
-            logger_1.default.error('CacheManager: Failed to initialize Redis, falling back to memory cache:', error);
-            this.redis = null;
-            this.isConnected = false;
-        }
+        return await (0, redis_1.getRedisClient)();
     }
     async cacheUserPermissions(userId, permissions, sources, deniedPermissions = [], workspaceId, ttl = this.DEFAULT_TTL) {
-        if (!this.isConnected || !this.redis) {
+        const redis = await this.getRedis();
+        if (!redis) {
             return false;
         }
         try {
@@ -154,7 +91,7 @@ class CacheManager {
                 lastUpdated: Date.now(),
                 expiresAt: Date.now() + (ttl * 1000)
             };
-            await this.redis.setex(key, ttl, JSON.stringify(cacheEntry));
+            await redis.setex(key, ttl, JSON.stringify(cacheEntry));
             this.metrics.sets++;
             logger_1.default.debug(`Cached permissions for user ${userId}`, {
                 permissionCount: permissions.length,
@@ -169,20 +106,21 @@ class CacheManager {
         }
     }
     async getCachedUserPermissions(userId, workspaceId) {
-        if (!this.isConnected || !this.redis) {
+        const redis = await this.getRedis();
+        if (!redis) {
             this.metrics.misses++;
             return null;
         }
         try {
             const key = this.getUserPermissionKey(userId, workspaceId);
-            const cached = await this.redis.get(key);
+            const cached = await redis.get(key);
             if (!cached) {
                 this.metrics.misses++;
                 return null;
             }
             const cacheEntry = JSON.parse(cached);
             if (Date.now() > cacheEntry.expiresAt) {
-                await this.redis.del(key);
+                await redis.del(key);
                 this.metrics.misses++;
                 return null;
             }
@@ -196,7 +134,8 @@ class CacheManager {
         }
     }
     async cacheRolePermissions(roleId, permissions, inheritedPermissions, hierarchyLevel, parentRoleId, ttl = this.DEFAULT_TTL) {
-        if (!this.isConnected || !this.redis) {
+        const redis = await this.getRedis();
+        if (!redis) {
             return false;
         }
         try {
@@ -210,7 +149,7 @@ class CacheManager {
                 lastUpdated: Date.now(),
                 expiresAt: Date.now() + (ttl * 1000)
             };
-            await this.redis.setex(key, ttl, JSON.stringify(cacheEntry));
+            await redis.setex(key, ttl, JSON.stringify(cacheEntry));
             this.metrics.sets++;
             return true;
         }
@@ -220,20 +159,21 @@ class CacheManager {
         }
     }
     async getCachedRolePermissions(roleId) {
-        if (!this.isConnected || !this.redis) {
+        const redis = await this.getRedis();
+        if (!redis) {
             this.metrics.misses++;
             return null;
         }
         try {
             const key = this.getRolePermissionKey(roleId);
-            const cached = await this.redis.get(key);
+            const cached = await redis.get(key);
             if (!cached) {
                 this.metrics.misses++;
                 return null;
             }
             const cacheEntry = JSON.parse(cached);
             if (Date.now() > cacheEntry.expiresAt) {
-                await this.redis.del(key);
+                await redis.del(key);
                 this.metrics.misses++;
                 return null;
             }
@@ -247,7 +187,8 @@ class CacheManager {
         }
     }
     async cachePermissionCheck(userId, action, allowed, source, workspaceId, ttl = this.DEFAULT_TTL) {
-        if (!this.isConnected || !this.redis) {
+        const redis = await this.getRedis();
+        if (!redis) {
             return false;
         }
         try {
@@ -258,7 +199,7 @@ class CacheManager {
                 timestamp: Date.now(),
                 expiresAt: Date.now() + (ttl * 1000)
             };
-            await this.redis.setex(key, ttl, JSON.stringify(cacheEntry));
+            await redis.setex(key, ttl, JSON.stringify(cacheEntry));
             this.metrics.sets++;
             return true;
         }
@@ -268,20 +209,21 @@ class CacheManager {
         }
     }
     async getCachedPermissionCheck(userId, action, workspaceId) {
-        if (!this.isConnected || !this.redis) {
+        const redis = await this.getRedis();
+        if (!redis) {
             this.metrics.misses++;
             return null;
         }
         try {
             const key = this.getPermissionCheckKey(userId, action, workspaceId);
-            const cached = await this.redis.get(key);
+            const cached = await redis.get(key);
             if (!cached) {
                 this.metrics.misses++;
                 return null;
             }
             const cacheEntry = JSON.parse(cached);
             if (Date.now() > cacheEntry.expiresAt) {
-                await this.redis.del(key);
+                await redis.del(key);
                 this.metrics.misses++;
                 return null;
             }
@@ -299,7 +241,8 @@ class CacheManager {
         }
     }
     async invalidateUserCache(userId, workspaceId) {
-        if (!this.isConnected || !this.redis) {
+        const redis = await this.getRedis();
+        if (!redis) {
             return;
         }
         try {
@@ -310,14 +253,14 @@ class CacheManager {
             ];
             for (const pattern of patterns) {
                 if (pattern.includes('*')) {
-                    const keys = await this.redis.keys(pattern);
+                    const keys = await redis.keys(pattern);
                     if (keys.length > 0) {
-                        await this.redis.del(...keys);
+                        await redis.del(...keys);
                         this.metrics.deletes += keys.length;
                     }
                 }
                 else {
-                    await this.redis.del(pattern);
+                    await redis.del(pattern);
                     this.metrics.deletes++;
                 }
             }
@@ -328,7 +271,8 @@ class CacheManager {
         }
     }
     async invalidateRoleCache(roleId) {
-        if (!this.isConnected || !this.redis) {
+        const redis = await this.getRedis();
+        if (!redis) {
             return;
         }
         try {
@@ -339,14 +283,14 @@ class CacheManager {
             ];
             for (const pattern of patterns) {
                 if (pattern.includes('*')) {
-                    const keys = await this.redis.keys(pattern);
+                    const keys = await redis.keys(pattern);
                     if (keys.length > 0) {
-                        await this.redis.del(...keys);
+                        await redis.del(...keys);
                         this.metrics.deletes += keys.length;
                     }
                 }
                 else {
-                    await this.redis.del(pattern);
+                    await redis.del(pattern);
                     this.metrics.deletes++;
                 }
             }
@@ -357,13 +301,14 @@ class CacheManager {
         }
     }
     async invalidatePattern(pattern) {
-        if (!this.isConnected || !this.redis) {
+        const redis = await this.getRedis();
+        if (!redis) {
             return 0;
         }
         try {
-            const keys = await this.redis.keys(pattern);
+            const keys = await redis.keys(pattern);
             if (keys.length > 0) {
-                await this.redis.del(...keys);
+                await redis.del(...keys);
                 this.metrics.deletes += keys.length;
                 return keys.length;
             }
@@ -375,7 +320,8 @@ class CacheManager {
         }
     }
     async warmCache(warmingStrategies) {
-        if (!this.isConnected || !this.redis) {
+        const redis = await this.getRedis();
+        if (!redis) {
             return;
         }
         try {
@@ -409,7 +355,8 @@ class CacheManager {
         logger_1.default.debug(`Warming permission checks cache for ${userIds.length} users`);
     }
     async checkConsistency() {
-        if (!this.isConnected || !this.redis) {
+        const redis = await this.getRedis();
+        if (!redis) {
             return {
                 consistent: false,
                 issues: ['Redis not connected'],
@@ -419,21 +366,21 @@ class CacheManager {
         const issues = [];
         let repaired = 0;
         try {
-            const allKeys = await this.redis.keys('*');
+            const allKeys = await redis.keys('*');
             const now = Date.now();
             for (const key of allKeys) {
                 try {
-                    const value = await this.redis.get(key);
+                    const value = await redis.get(key);
                     if (value) {
                         const parsed = JSON.parse(value);
                         if (parsed.expiresAt && now > parsed.expiresAt) {
-                            await this.redis.del(key);
+                            await redis.del(key);
                             repaired++;
                         }
                     }
                 }
                 catch (error) {
-                    await this.redis.del(key);
+                    await redis.del(key);
                     issues.push(`Removed invalid cache entry: ${key}`);
                     repaired++;
                 }
@@ -441,7 +388,7 @@ class CacheManager {
             await this.checkOrphanedEntries(issues, repaired);
             await this.validateCacheKeyPatterns(issues);
             try {
-                const memoryStats = await this.redis.memory('STATS');
+                const memoryStats = await redis.memory('STATS');
                 const memoryUsage = memoryStats.length > 0 && memoryStats[0] ? parseInt(memoryStats[0]) : 0;
                 if (memoryUsage > this.MAX_MEMORY_USAGE) {
                     issues.push(`Memory usage (${memoryUsage}) exceeds limit (${this.MAX_MEMORY_USAGE})`);
@@ -469,11 +416,12 @@ class CacheManager {
         }
     }
     async checkOrphanedEntries(issues, repaired) {
-        if (!this.isConnected || !this.redis) {
+        const redis = await this.getRedis();
+        if (!redis) {
             return;
         }
         try {
-            const userPermKeys = await this.redis.keys(`${this.PREFIXES.USER_PERMISSIONS}*`);
+            const userPermKeys = await redis.keys(`${this.PREFIXES.USER_PERMISSIONS}*`);
             for (const key of userPermKeys) {
                 const userId = key.replace(this.PREFIXES.USER_PERMISSIONS, '').split(':')[0];
                 if (userId && mongoose_1.default.Types.ObjectId.isValid(userId)) {
@@ -481,7 +429,7 @@ class CacheManager {
                         const User = (await Promise.resolve().then(() => __importStar(require('../models/User')))).default;
                         const userExists = await User.exists({ _id: userId });
                         if (!userExists) {
-                            await this.redis.del(key);
+                            await redis.del(key);
                             issues.push(`Removed orphaned user permission cache: ${userId}`);
                             repaired++;
                         }
@@ -491,7 +439,7 @@ class CacheManager {
                     }
                 }
             }
-            const rolePermKeys = await this.redis.keys(`${this.PREFIXES.ROLE_PERMISSIONS}*`);
+            const rolePermKeys = await redis.keys(`${this.PREFIXES.ROLE_PERMISSIONS}*`);
             for (const key of rolePermKeys) {
                 const roleId = key.replace(this.PREFIXES.ROLE_PERMISSIONS, '');
                 if (roleId && mongoose_1.default.Types.ObjectId.isValid(roleId)) {
@@ -499,7 +447,7 @@ class CacheManager {
                         const Role = (await Promise.resolve().then(() => __importStar(require('../models/Role')))).default;
                         const roleExists = await Role.exists({ _id: roleId, isActive: true });
                         if (!roleExists) {
-                            await this.redis.del(key);
+                            await redis.del(key);
                             issues.push(`Removed orphaned role permission cache: ${roleId}`);
                             repaired++;
                         }
@@ -515,11 +463,12 @@ class CacheManager {
         }
     }
     async validateCacheKeyPatterns(issues) {
-        if (!this.isConnected || !this.redis) {
+        const redis = await this.getRedis();
+        if (!redis) {
             return;
         }
         try {
-            const allKeys = await this.redis.keys('*');
+            const allKeys = await redis.keys('*');
             const validPrefixes = Object.values(this.PREFIXES);
             for (const key of allKeys) {
                 const hasValidPrefix = validPrefixes.some(prefix => key.startsWith(prefix));
@@ -533,30 +482,31 @@ class CacheManager {
         }
     }
     async performMemoryCleanup() {
-        if (!this.isConnected || !this.redis) {
+        const redis = await this.getRedis();
+        if (!redis) {
             return;
         }
         try {
-            const allKeys = await this.redis.keys('*');
+            const allKeys = await redis.keys('*');
             const now = Date.now();
             let cleanedCount = 0;
             for (const key of allKeys) {
                 try {
-                    const value = await this.redis.get(key);
+                    const value = await redis.get(key);
                     if (value) {
                         const parsed = JSON.parse(value);
                         if (parsed.expiresAt && now > parsed.expiresAt) {
-                            await this.redis.del(key);
+                            await redis.del(key);
                             cleanedCount++;
                         }
                     }
                 }
                 catch (error) {
-                    await this.redis.del(key);
+                    await redis.del(key);
                     cleanedCount++;
                 }
             }
-            const memoryStats = await this.redis.memory('STATS');
+            const memoryStats = await redis.memory('STATS');
             const memoryUsage = memoryStats.length > 0 && memoryStats[0] ? parseInt(memoryStats[0]) : 0;
             if (memoryUsage > this.MAX_MEMORY_USAGE * 0.8) {
                 const keysToRemove = Math.floor(allKeys.length * 0.1);
@@ -564,7 +514,7 @@ class CacheManager {
                 for (let i = 0; i < keysToRemove && i < sortedKeys.length; i++) {
                     const key = sortedKeys[i];
                     if (key) {
-                        await this.redis.del(key);
+                        await redis.del(key);
                         cleanedCount++;
                     }
                 }
@@ -576,11 +526,12 @@ class CacheManager {
         }
     }
     async checkCacheFragmentation(issues) {
-        if (!this.isConnected || !this.redis) {
+        const redis = await this.getRedis();
+        if (!redis) {
             return;
         }
         try {
-            const info = await this.redis.info('memory');
+            const info = await redis.info('memory');
             const fragmentationMatch = info.match(/mem_fragmentation_ratio:(\d+\.?\d*)/);
             if (fragmentationMatch && fragmentationMatch[1]) {
                 const fragmentationRatio = parseFloat(fragmentationMatch[1]);
@@ -594,14 +545,15 @@ class CacheManager {
         }
     }
     async getMetrics() {
-        if (!this.isConnected || !this.redis) {
+        const redis = await this.getRedis();
+        if (!redis) {
             return this.metrics;
         }
         try {
-            const info = await this.redis.info('memory');
+            const info = await redis.info('memory');
             const memoryMatch = info.match(/used_memory:(\d+)/);
             this.metrics.memoryUsage = memoryMatch && memoryMatch[1] ? parseInt(memoryMatch[1]) : 0;
-            this.metrics.keyCount = await this.redis.dbsize();
+            this.metrics.keyCount = await redis.dbsize();
             this.metrics.totalOperations = this.metrics.hits + this.metrics.misses;
             this.metrics.hitRate = this.metrics.totalOperations > 0
                 ? (this.metrics.hits / this.metrics.totalOperations) * 100
@@ -614,11 +566,12 @@ class CacheManager {
         }
     }
     async clearAll() {
-        if (!this.isConnected || !this.redis) {
+        const redis = await this.getRedis();
+        if (!redis) {
             return;
         }
         try {
-            await this.redis.flushdb();
+            await redis.flushdb();
             this.resetMetrics();
             logger_1.default.info('All cache cleared');
         }
@@ -650,23 +603,6 @@ class CacheManager {
         return workspaceId ? `${base}:${workspaceId}` : base;
     }
     async close() {
-        try {
-            if (this.redis) {
-                logger_1.default.info('CacheManager: Closing Redis connection...');
-                await this.redis.quit();
-                this.redis = null;
-                this.isConnected = false;
-                logger_1.default.info('CacheManager: Redis connection closed gracefully');
-            }
-        }
-        catch (error) {
-            logger_1.default.error('CacheManager: Error during close:', error);
-            if (this.redis) {
-                this.redis.disconnect();
-                this.redis = null;
-                this.isConnected = false;
-            }
-        }
     }
 }
 exports.default = CacheManager;

@@ -14,18 +14,12 @@ export interface CacheStats {
 }
 export default class PerformanceCacheService {
     private static instance;
-    private redis;
-    private isConnected;
-    private isInitializing;
-    private initializationFailed;
     private readonly DEFAULT_TTL;
     private readonly COMPRESSION_THRESHOLD;
     private readonly PREFIXES;
     private stats;
     private constructor();
     static getInstance(): PerformanceCacheService;
-    private initializeRedis;
-    private ensureConnection;
     cacheApiResponse(key: string, data: any, options?: CacheOptions): Promise<boolean>;
     getCachedApiResponse<T = any>(key: string): Promise<T | null>;
     cacheDashboardOverview(userId: string, workspaceId: string, data: any, ttl?: number): Promise<boolean>;

@@ -16,19 +16,17 @@ import SocketNotificationService from './services/socketNotificationService';
 import AppointmentSocketService from './services/AppointmentSocketService';
 import { QueueService } from './services/QueueService';
 import { initializeWorkers } from './jobs/workers';
+import { closeRedis } from './config/redis'; // CRITICAL: Use shared connection
 
 // Import models to ensure they are registered with Mongoose
 import './models/Medication';
 import './models/Conversation';
 import './models/Message';
 
-// Environment variables already loaded at the top
-
 const PORT: number = parseInt(process.env.PORT || '5000', 10);
 
 // Global variables for graceful shutdown
 let server: any;
-let redisClient: any = null;
 
 // Async function to initialize server
 async function initializeServer() {
@@ -101,51 +99,23 @@ async function initializeServer() {
   // Initialize new Chat Socket Service
   const { initializeChatSocketService } = await import('./services/chat/ChatSocketService');
   const { initializePresenceModel } = await import('./models/chat/Presence');
-  const Redis = (await import('ioredis')).default;
+  const { getRedisClient } = await import('./config/redis');
 
-  // Initialize Redis for presence tracking (use global variable)
+  // Initialize Redis for presence tracking (use SHARED connection)
   if (process.env.REDIS_URL) {
     try {
-      redisClient = new Redis(process.env.REDIS_URL, {
-        maxRetriesPerRequest: 3,
-        connectTimeout: 10000,
-        commandTimeout: 5000,
-        enableOfflineQueue: false, // Prevent queue buildup
-        retryStrategy: (times) => {
-          const delay = Math.min(times * 200, 2000);
-          if (times > 10) {
-            console.log('❌ Redis presence tracking: Max retry attempts reached');
-            return null; // Stop retrying
-          }
-          return delay;
-        },
-        reconnectOnError: (err) => {
-          console.log('Redis presence tracking: Reconnect attempt:', err.message);
-          return true;
-        },
-      });
+      console.log('📡 Initializing Redis presence tracking using shared connection...');
+      const sharedRedisClient = await getRedisClient();
 
-      redisClient.on('connect', () => {
-        console.log('✅ Redis connected for presence tracking');
-      });
-
-      redisClient.on('error', (err: Error) => {
-        console.error('❌ Redis presence tracking error:', err.message);
-      });
-
-      redisClient.on('close', () => {
-        console.log('Redis presence tracking connection closed');
-      });
-
-      redisClient.on('end', () => {
-        console.log('Redis presence tracking connection ended');
-      });
-
-      // Initialize presence model
-      initializePresenceModel(redisClient);
+      if (sharedRedisClient) {
+        // Initialize presence model with shared connection
+        initializePresenceModel(sharedRedisClient);
+        console.log('✅ Redis presence tracking initialized with shared connection');
+      } else {
+        console.log('⚠️ Redis not available - presence tracking disabled');
+      }
     } catch (error) {
       console.error('❌ Failed to initialize Redis presence tracking:', error);
-      redisClient = null;
     }
   } else {
     console.log('ℹ️ Redis presence tracking disabled (no REDIS_URL configured)');
@@ -211,49 +181,12 @@ const gracefulShutdown = async (signal: string) => {
       });
     }
 
-    // Close Redis connection first to prevent new operations
-    if (redisClient) {
-      try {
-        await redisClient.quit();
-        console.log('✅ Redis presence tracking closed');
-      } catch (error) {
-        console.error('Error closing Redis presence tracking:', error);
-        // Force disconnect
-        redisClient.disconnect();
-      }
-    }
-
-    // Cleanup cache services
+    // Close SHARED Redis connection (only once)
     try {
-      const PerformanceCacheService = (await import('./services/PerformanceCacheService')).default;
-      await PerformanceCacheService.getInstance().close();
-      console.log('✅ Performance cache service shut down');
+      await closeRedis();
+      console.log('✅ Shared Redis connection closed');
     } catch (error) {
-      console.log('ℹ️ Performance cache service not active or already shut down');
-    }
-
-    try {
-      const CacheManager = (await import('./services/CacheManager')).default;
-      await CacheManager.getInstance().close();
-      console.log('✅ Cache manager shut down');
-    } catch (error) {
-      console.log('ℹ️ Cache manager not active or already shut down');
-    }
-
-    try {
-      const RedisCacheService = (await import('./services/RedisCacheService')).default;
-      await RedisCacheService.close();
-      console.log('✅ Redis cache service shut down');
-    } catch (error) {
-      console.log('ℹ️ Redis cache service not active or already shut down');
-    }
-
-    try {
-      const { shutdownRedisCache } = await import('./utils/performanceOptimization');
-      await shutdownRedisCache();
-      console.log('✅ Performance optimization cache shut down');
-    } catch (error) {
-      console.log('ℹ️ Performance optimization cache not active or already shut down');
+      console.error('Error closing shared Redis connection:', error);
     }
 
     // Cleanup Queue Service

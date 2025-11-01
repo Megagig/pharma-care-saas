@@ -35,8 +35,6 @@ export interface CacheMetrics {
 }
 declare class CacheManager {
     private static instance;
-    private redis;
-    private isConnected;
     private readonly DEFAULT_TTL;
     private readonly MAX_MEMORY_USAGE;
     private readonly CACHE_VERSION;
@@ -44,7 +42,7 @@ declare class CacheManager {
     private readonly PREFIXES;
     private constructor();
     static getInstance(): CacheManager;
-    private initializeRedis;
+    private getRedis;
     cacheUserPermissions(userId: mongoose.Types.ObjectId, permissions: string[], sources: Record<string, string>, deniedPermissions?: string[], workspaceId?: mongoose.Types.ObjectId, ttl?: number): Promise<boolean>;
     getCachedUserPermissions(userId: mongoose.Types.ObjectId, workspaceId?: mongoose.Types.ObjectId): Promise<PermissionCacheEntry | null>;
     cacheRolePermissions(roleId: mongoose.Types.ObjectId, permissions: string[], inheritedPermissions: string[], hierarchyLevel: number, parentRoleId?: mongoose.Types.ObjectId, ttl?: number): Promise<boolean>;

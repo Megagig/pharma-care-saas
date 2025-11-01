@@ -486,7 +486,7 @@ class ManualLabCacheService {
     }
     static async getCacheStats() {
         try {
-            const redisClient = (0, performanceOptimization_1.getRedisClient)();
+            const redisClient = await (0, performanceOptimization_1.getRedisClient)();
             if (!redisClient) {
                 return {
                     redisConnected: false,

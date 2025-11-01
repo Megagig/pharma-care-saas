@@ -12,13 +12,10 @@ interface CacheStats {
 }
 export declare class RedisCacheService {
     private static instance;
-    private redis;
-    private isConnected;
     private stats;
     private responseTimes;
     constructor();
     static getInstance(): RedisCacheService;
-    private setupEventHandlers;
     set<T>(key: string, value: T, options?: CacheOptions): Promise<boolean>;
     get<T>(key: string): Promise<T | null>;
     mget<T>(keys: string[]): Promise<(T | null)[]>;

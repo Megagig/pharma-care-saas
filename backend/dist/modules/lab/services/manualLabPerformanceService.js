@@ -9,7 +9,7 @@ const performanceOptimization_1 = require("../../../utils/performanceOptimizatio
 class ManualLabPerformanceService {
     static async recordOrderProcessingMetrics(metrics) {
         try {
-            const redisClient = (0, performanceOptimization_1.getRedisClient)();
+            const redisClient = await (0, performanceOptimization_1.getRedisClient)();
             if (!redisClient) {
                 logger_1.default.warn('Redis not available for metrics storage');
                 return;
@@ -36,7 +36,7 @@ class ManualLabPerformanceService {
     }
     static async recordPDFGenerationMetrics(metrics) {
         try {
-            const redisClient = (0, performanceOptimization_1.getRedisClient)();
+            const redisClient = await (0, performanceOptimization_1.getRedisClient)();
             if (!redisClient) {
                 logger_1.default.warn('Redis not available for metrics storage');
                 return;
@@ -64,7 +64,7 @@ class ManualLabPerformanceService {
     }
     static async recordAIServiceMetrics(metrics) {
         try {
-            const redisClient = (0, performanceOptimization_1.getRedisClient)();
+            const redisClient = await (0, performanceOptimization_1.getRedisClient)();
             if (!redisClient) {
                 logger_1.default.warn('Redis not available for metrics storage');
                 return;
@@ -92,7 +92,7 @@ class ManualLabPerformanceService {
     }
     static async recordDatabaseQueryMetrics(metrics) {
         try {
-            const redisClient = (0, performanceOptimization_1.getRedisClient)();
+            const redisClient = await (0, performanceOptimization_1.getRedisClient)();
             if (!redisClient) {
                 logger_1.default.warn('Redis not available for metrics storage');
                 return;
@@ -123,7 +123,7 @@ class ManualLabPerformanceService {
     }
     static async recordCacheMetrics(metrics) {
         try {
-            const redisClient = (0, performanceOptimization_1.getRedisClient)();
+            const redisClient = await (0, performanceOptimization_1.getRedisClient)();
             if (!redisClient) {
                 logger_1.default.warn('Redis not available for metrics storage');
                 return;
@@ -152,7 +152,7 @@ class ManualLabPerformanceService {
     }
     static async getPerformanceSummary(workplaceId, startTime, endTime) {
         try {
-            const redisClient = (0, performanceOptimization_1.getRedisClient)();
+            const redisClient = await (0, performanceOptimization_1.getRedisClient)();
             if (!redisClient) {
                 throw new Error('Redis not available for metrics retrieval');
             }
@@ -207,7 +207,7 @@ class ManualLabPerformanceService {
     }
     static async getRealTimeMetrics(workplaceId) {
         try {
-            const redisClient = (0, performanceOptimization_1.getRedisClient)();
+            const redisClient = await (0, performanceOptimization_1.getRedisClient)();
             if (!redisClient) {
                 throw new Error('Redis not available for metrics retrieval');
             }
@@ -371,7 +371,7 @@ class ManualLabPerformanceService {
     }
     static async cleanupOldMetrics() {
         try {
-            const redisClient = (0, performanceOptimization_1.getRedisClient)();
+            const redisClient = await (0, performanceOptimization_1.getRedisClient)();
             if (!redisClient) {
                 logger_1.default.warn('Redis not available for metrics cleanup');
                 return;

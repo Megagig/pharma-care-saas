@@ -1,6 +1,6 @@
 import Redis from 'ioredis';
 import logger from '../utils/logger';
-import CacheManager from './CacheManager';
+import { getRedisClient, isRedisAvailable } from '../config/redis';
 
 export interface CacheOptions {
   ttl?: number; // Time to live in seconds
@@ -24,10 +24,6 @@ export interface CacheStats {
  */
 export default class PerformanceCacheService {
   private static instance: PerformanceCacheService;
-  private redis: Redis | null = null;
-  private isConnected = false;
-  private isInitializing = false;
-  private initializationFailed = false;
   private readonly DEFAULT_TTL = 300; // 5 minutes
   private readonly COMPRESSION_THRESHOLD = 1024; // 1KB
 
@@ -56,9 +52,7 @@ export default class PerformanceCacheService {
   };
 
   private constructor() {
-    // Don't initialize Redis immediately - do it lazily
-    this.redis = null;
-    this.isConnected = false;
+    // Use shared Redis connection from config/redis
   }
 
   public static getInstance(): PerformanceCacheService {
@@ -66,134 +60,6 @@ export default class PerformanceCacheService {
       PerformanceCacheService.instance = new PerformanceCacheService();
     }
     return PerformanceCacheService.instance;
-  }
-
-  /**
-   * Initialize Redis connection with robust error handling
-   */
-  private async initializeRedis(): Promise<void> {
-    try {
-      const redisUrl = process.env.REDIS_URL;
-
-      if (!redisUrl) {
-        logger.info('Performance cache: REDIS_URL not configured, using in-memory fallback');
-        this.isConnected = false;
-        this.initializationFailed = true;
-        return;
-      }
-
-      this.redis = new Redis(redisUrl, {
-        maxRetriesPerRequest: 3,
-        lazyConnect: false,
-        keepAlive: 30000,
-        connectTimeout: 10000,
-        commandTimeout: 5000,
-        enableReadyCheck: true,
-        enableOfflineQueue: false, // Prevent queue buildup causing crashes
-        db: 1,
-        retryStrategy: (times) => {
-          const delay = Math.min(times * 200, 3000);
-          if (times > 10) {
-            logger.error('Performance cache: Max Redis retry attempts reached, disabling cache');
-            this.isConnected = false;
-            this.initializationFailed = true;
-            return null; // Stop retrying
-          }
-          return delay;
-        },
-        reconnectOnError: (err) => {
-          logger.warn('Performance cache: Redis reconnect attempt:', err.message);
-          return true;
-        },
-      });
-
-      this.redis.on('connect', () => {
-        logger.info('✅ Performance cache: Redis connected successfully');
-        this.isConnected = true;
-        this.initializationFailed = false;
-      });
-
-      this.redis.on('ready', () => {
-        logger.info('Performance cache: Redis ready to accept commands');
-        this.isConnected = true;
-        this.initializationFailed = false;
-      });
-
-      this.redis.on('error', (err) => {
-        logger.error('Performance cache: Redis error:', err.message);
-        this.isConnected = false;
-        // Don't set initializationFailed here to allow reconnection attempts
-      });
-
-      this.redis.on('close', () => {
-        logger.warn('Performance cache: Redis connection closed');
-        this.isConnected = false;
-      });
-
-      this.redis.on('reconnecting', () => {
-        logger.info('Performance cache: Redis reconnecting...');
-      });
-
-      this.redis.on('end', () => {
-        logger.warn('Performance cache: Redis connection ended');
-        this.isConnected = false;
-      });
-
-      // Test connection
-      await this.redis.ping();
-      this.isConnected = true;
-      this.initializationFailed = false;
-      logger.info('Performance cache: Redis connection verified');
-
-    } catch (error) {
-      logger.error('Performance cache: Failed to initialize Redis:', error);
-      this.isConnected = false;
-      this.initializationFailed = true;
-      this.redis = null;
-
-      // Reset failure flag after 60 seconds to allow retry
-      setTimeout(() => {
-        this.initializationFailed = false;
-      }, 60000);
-    }
-  }
-
-  /**
-   * Ensure Redis connection is initialized
-   */
-  private async ensureConnection(): Promise<boolean> {
-    // If already connected, return true
-    if (this.isConnected && this.redis) {
-      try {
-        await this.redis.ping();
-        return true;
-      } catch (error) {
-        logger.warn('Performance cache: Redis ping failed, connection lost');
-        this.isConnected = false;
-      }
-    }
-
-    // If initialization failed before, don't retry immediately
-    if (this.initializationFailed) {
-      return false;
-    }
-
-    // If currently initializing, wait a bit
-    if (this.isInitializing) {
-      return false;
-    }
-
-    // Try to initialize if not already done
-    if (!this.redis) {
-      this.isInitializing = true;
-      try {
-        await this.initializeRedis();
-      } finally {
-        this.isInitializing = false;
-      }
-    }
-
-    return this.isConnected;
   }
 
   /**
@@ -205,9 +71,13 @@ export default class PerformanceCacheService {
     options: CacheOptions = {}
   ): Promise<boolean> {
     try {
-      const hasConnection = await this.ensureConnection();
-      if (!hasConnection || !this.redis) {
-        logger.debug('Performance cache: Cache set skipped (no Redis connection)');
+      if (!isRedisAvailable()) {
+        logger.debug('Performance cache: Redis not available');
+        return false;
+      }
+
+      const redis = await getRedisClient();
+      if (!redis) {
         return false;
       }
 
@@ -215,7 +85,7 @@ export default class PerformanceCacheService {
       const serialized = JSON.stringify(data);
 
       // Store in Redis
-      await this.redis.setex(key, ttl, serialized);
+      await redis.setex(key, ttl, serialized);
       this.stats.sets++;
 
       return true;
@@ -230,13 +100,18 @@ export default class PerformanceCacheService {
    */
   public async getCachedApiResponse<T = any>(key: string): Promise<T | null> {
     try {
-      const hasConnection = await this.ensureConnection();
-      if (!hasConnection || !this.redis) {
+      if (!isRedisAvailable()) {
         this.stats.misses++;
         return null;
       }
 
-      const cached = await this.redis.get(key);
+      const redis = await getRedisClient();
+      if (!redis) {
+        this.stats.misses++;
+        return null;
+      }
+
+      const cached = await redis.get(key);
 
       if (!cached) {
         this.stats.misses++;
@@ -419,8 +294,7 @@ export default class PerformanceCacheService {
    */
   public async invalidateByTags(tags: string[]): Promise<number> {
     try {
-      const hasConnection = await this.ensureConnection();
-      if (!hasConnection || !this.redis) {
+      if (!isRedisAvailable()) {
         return 0;
       }
 
@@ -444,15 +318,19 @@ export default class PerformanceCacheService {
    */
   public async invalidateByPattern(pattern: string): Promise<number> {
     try {
-      const hasConnection = await this.ensureConnection();
-      if (!hasConnection || !this.redis) {
+      if (!isRedisAvailable()) {
         return 0;
       }
 
-      const keys = await this.redis.keys(pattern);
+      const redis = await getRedisClient();
+      if (!redis) {
+        return 0;
+      }
+
+      const keys = await redis.keys(pattern);
       if (keys.length === 0) return 0;
 
-      const deleted = await this.redis.del(...keys);
+      const deleted = await redis.del(...keys);
       this.stats.deletes += deleted;
 
       logger.debug(`Performance cache: Invalidated ${deleted} cache entries by pattern: ${pattern}`);
@@ -489,17 +367,22 @@ export default class PerformanceCacheService {
    * Get cache statistics
    */
   public async getStats(): Promise<CacheStats> {
-    if (!(await this.ensureConnection())) {
+    if (!isRedisAvailable()) {
       return this.stats;
     }
 
     try {
+      const redis = await getRedisClient();
+      if (!redis) {
+        return this.stats;
+      }
+
       // Update memory usage and key count
-      const info = await this.redis.info('memory');
+      const info = await redis.info('memory');
       const memoryMatch = info.match(/used_memory:(\d+)/);
       this.stats.memoryUsage = memoryMatch?.[1] ? parseInt(memoryMatch[1]) : 0;
 
-      this.stats.keyCount = await this.redis.dbsize();
+      this.stats.keyCount = await redis.dbsize();
 
       // Calculate hit rate
       const totalOperations = this.stats.hits + this.stats.misses;
@@ -520,12 +403,16 @@ export default class PerformanceCacheService {
    */
   public async clearAll(): Promise<void> {
     try {
-      const hasConnection = await this.ensureConnection();
-      if (!hasConnection || !this.redis) {
+      if (!isRedisAvailable()) {
         return;
       }
 
-      await this.redis.flushdb();
+      const redis = await getRedisClient();
+      if (!redis) {
+        return;
+      }
+
+      await redis.flushdb();
       this.resetStats();
       logger.info('Performance cache cleared');
     } catch (error) {
@@ -567,25 +454,11 @@ export default class PerformanceCacheService {
 
   /**
    * Close Redis connection gracefully
+   * Note: This is now managed by the centralized RedisConnectionManager
    */
   public async close(): Promise<void> {
-    try {
-      if (this.redis) {
-        logger.info('Performance cache: Closing Redis connection...');
-        await this.redis.quit();
-        this.redis = null;
-        this.isConnected = false;
-        logger.info('Performance cache: Redis connection closed gracefully');
-      }
-    } catch (error) {
-      logger.error('Performance cache: Error during close:', error);
-      // Force disconnect even if quit fails
-      if (this.redis) {
-        this.redis.disconnect();
-        this.redis = null;
-        this.isConnected = false;
-      }
-    }
+    // No-op: Connection is managed centrally
+    logger.info('Performance cache: Connection managed by RedisConnectionManager');
   }
 
   /**
