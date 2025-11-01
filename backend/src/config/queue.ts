@@ -1,91 +1,97 @@
 /**
  * Queue Configuration
  * Centralized configuration for Bull job queues
+ * Uses shared Redis connection to prevent "max clients reached" error
  */
 
 import Redis from 'ioredis';
 import { QueueOptions, JobOptions } from 'bull';
 import logger from '../utils/logger';
+import { getRedisClient } from './redis';
 
 /**
- * Redis connection configuration for Bull queues
+ * Get Redis configuration for Bull queues
+ * This creates the config object but doesn't create the client yet
  */
-export const redisConfig = process.env.REDIS_URL
-  ? {
-    // Use Redis URL
-    host: new URL(process.env.REDIS_URL).hostname,
-    port: parseInt(new URL(process.env.REDIS_URL).port || '6379'),
-    password: new URL(process.env.REDIS_URL).password || undefined,
-    maxRetriesPerRequest: 3, // Changed from null to prevent infinite retries
-    enableReadyCheck: true,
-    lazyConnect: false,
-    connectTimeout: 10000,
-    commandTimeout: 5000,
-    enableOfflineQueue: false, // Prevent queue buildup
-    retryStrategy: (times: number) => {
-      const delay = Math.min(times * 200, 3000);
-      if (times > 10) {
-        console.error('Queue Redis: Max retry attempts reached');
-        return null; // Stop retrying
-      }
-      return delay;
-    },
+export const getRedisConfig = () => {
+  if (!process.env.REDIS_URL) {
+    return {
+      host: process.env.REDIS_HOST || 'localhost',
+      port: parseInt(process.env.REDIS_PORT || '6379'),
+      password: process.env.REDIS_PASSWORD,
+      db: parseInt(process.env.REDIS_QUEUE_DB || '1'),
+      maxRetriesPerRequest: null, // Bull compatibility
+      enableReadyCheck: false,
+      lazyConnect: true,
+      connectTimeout: 30000,
+      commandTimeout: 10000,
+      enableOfflineQueue: true, // Allow queuing during connection
+      retryStrategy: (times: number) => {
+        if (times > 50) {
+          logger.error('Queue Redis: Max retry attempts (50) reached');
+          return null;
+        }
+        const delay = Math.min(times * 500, 30000);
+        return delay;
+      },
+    };
   }
-  : {
-    // Fallback to individual parameters
-    host: process.env.REDIS_HOST || 'localhost',
-    port: parseInt(process.env.REDIS_PORT || '6379'),
-    password: process.env.REDIS_PASSWORD,
-    db: parseInt(process.env.REDIS_QUEUE_DB || '1'),
-    maxRetriesPerRequest: 3,
-    enableReadyCheck: true,
-    lazyConnect: false,
-    connectTimeout: 10000,
-    commandTimeout: 5000,
-    enableOfflineQueue: false,
+
+  const url = new URL(process.env.REDIS_URL);
+  // Only use TLS if URL explicitly starts with rediss://
+  const useTLS = process.env.REDIS_URL.startsWith('rediss://');
+
+  return {
+    host: url.hostname,
+    port: parseInt(url.port || '6379'),
+    password: url.password || undefined,
+    maxRetriesPerRequest: null, // Bull compatibility
+    enableReadyCheck: false,
+    lazyConnect: true,
+    connectTimeout: 30000,
+    commandTimeout: 10000,
+    enableOfflineQueue: true, // Allow queuing during connection
     retryStrategy: (times: number) => {
-      const delay = Math.min(times * 200, 3000);
-      if (times > 10) {
-        console.error('Queue Redis: Max retry attempts reached');
+      if (times > 50) {
+        logger.error('Queue Redis: Max retry attempts (50) reached');
         return null;
       }
+      const delay = Math.min(times * 500, 30000);
       return delay;
     },
+    // Only enable TLS if rediss:// protocol
+    tls: useTLS ? {
+      rejectUnauthorized: false,
+    } : undefined,
   };
+};
+
+// Keep for backward compatibility but use lazy connection
+export const redisConfig = getRedisConfig();
 
 /**
- * Create Redis client for Bull
+ * Create Redis client for Bull using shared connection approach
  */
-export const createRedisClient = (): Redis => {
-  const client = typeof redisConfig === 'string'
-    ? new Redis(redisConfig)
-    : new Redis(redisConfig);
+export const createRedisClient = async (): Promise<Redis | null> => {
+  try {
+    const sharedClient = await getRedisClient();
+    if (sharedClient) {
+      logger.info('✅ Queue: Using shared Redis connection');
+      return sharedClient;
+    }
 
-  client.on('connect', () => {
-    logger.info('✅ Queue Redis client connected');
-  });
+    logger.warn('⚠️ Queue: Shared Redis not available, creating fallback client');
+    const client = new Redis(redisConfig);
 
-  client.on('ready', () => {
-    logger.info('Queue Redis client ready');
-  });
+    client.on('error', (error) => {
+      logger.error('❌ Queue Redis connection error:', error.message);
+    });
 
-  client.on('error', (error) => {
-    logger.error('❌ Queue Redis connection error:', error.message);
-  });
-
-  client.on('close', () => {
-    logger.warn('Queue Redis client connection closed');
-  });
-
-  client.on('end', () => {
-    logger.warn('Queue Redis client connection ended');
-  });
-
-  client.on('reconnecting', () => {
-    logger.info('Queue Redis client reconnecting...');
-  });
-
-  return client;
+    return client;
+  } catch (error) {
+    logger.error('❌ Queue: Failed to get Redis client:', error);
+    return null;
+  }
 };
 
 /**

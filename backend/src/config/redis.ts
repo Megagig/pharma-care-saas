@@ -62,31 +62,46 @@ class RedisConnectionManager {
 
     try {
       logger.info('🔌 Redis: Connecting to Redis...');
+      logger.info(`🔗 Redis: Host - ${redisUrl.substring(0, 30)}...`);
+
+      // Only use TLS if URL explicitly starts with rediss://
+      const useTLS = redisUrl.startsWith('rediss://');
+      if (useTLS) {
+        logger.info('🔒 Redis: Using TLS connection');
+      }
 
       this.client = new Redis(redisUrl, {
-        maxRetriesPerRequest: 3,
+        maxRetriesPerRequest: null, // Bull compatibility
         lazyConnect: false,
         keepAlive: 30000,
-        connectTimeout: 10000,
-        commandTimeout: 5000,
+        connectTimeout: 30000,
+        commandTimeout: 10000,
         enableReadyCheck: true,
-        enableOfflineQueue: false,
+        enableOfflineQueue: true, // Allow queuing during connection
         retryStrategy: (times) => {
-          const delay = Math.min(times * 200, 3000);
-          if (times > 10) {
-            logger.error('❌ Redis: Max retry attempts reached');
+          if (times > 50) {
+            logger.error('❌ Redis: Max retry attempts (50) reached');
             this.isConnected = false;
             return null;
+          }
+          const delay = Math.min(times * 500, 30000);
+          if (times % 10 === 0) {
+            logger.info(`🔄 Redis: Retry attempt ${times}, waiting ${delay}ms...`);
           }
           return delay;
         },
         reconnectOnError: (err) => {
-          const targetErrors = ['READONLY', 'ECONNRESET', 'ETIMEDOUT'];
+          const targetErrors = ['READONLY', 'ECONNRESET', 'ETIMEDOUT', 'ENOTFOUND'];
           if (targetErrors.some(e => err.message.includes(e))) {
+            logger.warn(`⚠️ Redis: Reconnecting due to: ${err.message}`);
             return true;
           }
           return false;
         },
+        // Only enable TLS if rediss:// protocol is used
+        tls: useTLS ? {
+          rejectUnauthorized: false,
+        } : undefined,
       });
 
       // Set up event handlers

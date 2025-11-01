@@ -105,6 +105,8 @@ async function initializeServer() {
   if (process.env.REDIS_URL) {
     try {
       console.log('📡 Initializing Redis presence tracking using shared connection...');
+      console.log(`🔗 Redis URL configured: ${process.env.REDIS_URL.substring(0, 20)}...`);
+
       const sharedRedisClient = await getRedisClient();
 
       if (sharedRedisClient) {
@@ -113,9 +115,11 @@ async function initializeServer() {
         console.log('✅ Redis presence tracking initialized with shared connection');
       } else {
         console.log('⚠️ Redis not available - presence tracking disabled');
+        console.log('ℹ️ Application will continue without Redis caching');
       }
     } catch (error) {
       console.error('❌ Failed to initialize Redis presence tracking:', error);
+      console.log('ℹ️ Application will continue without Redis caching');
     }
   } else {
     console.log('ℹ️ Redis presence tracking disabled (no REDIS_URL configured)');
