@@ -104,36 +104,29 @@ async function initializeServer() {
   // Initialize new Chat Socket Service
   const { initializeChatSocketService } = await import('./services/chat/ChatSocketService');
   const { initializePresenceModel } = await import('./models/chat/Presence');
-  const Redis = (await import('ioredis')).default;
 
-  // Initialize Redis for presence tracking (only if REDIS_URL is explicitly set)
+  // Initialize Redis for presence tracking using Upstash REST API
   let redisClient: any = null;
   
-  if (process.env.REDIS_URL && process.env.REDIS_URL.trim() !== '') {
-    redisClient = new Redis(process.env.REDIS_URL, {
-      tls: process.env.REDIS_URL.includes('upstash.io') 
-        ? { rejectUnauthorized: false } 
-        : undefined,
-      family: process.env.REDIS_URL.includes('upstash.io') ? 6 : 4,
-      connectTimeout: 30000,
-      retryStrategy: (times) => {
-        const delay = Math.min(times * 50, 2000);
-        return delay;
-      },
-    });
-  } else {
-    console.log('ℹ️ Redis presence tracking disabled (no REDIS_URL configured)');
+  try {
+    // Try Upstash REST API first (HTTP-based, no DNS issues)
+    if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+      console.log('ℹ️ Presence tracking: Using Upstash REST API');
+      const { Redis: UpstashRedis } = await import('@upstash/redis');
+      redisClient = new UpstashRedis({
+        url: process.env.UPSTASH_REDIS_REST_URL,
+        token: process.env.UPSTASH_REDIS_REST_TOKEN,
+      });
+      console.log('✅ Presence tracking connected via Upstash REST API');
+    } else {
+      console.log('ℹ️ Redis presence tracking disabled (no Upstash REST API configured)');
+    }
+  } catch (error) {
+    console.error('❌ Failed to initialize presence tracking:', error);
+    redisClient = null;
   }
 
   if (redisClient) {
-    redisClient.on('connect', () => {
-      console.log('✅ Redis connected for presence tracking');
-    });
-
-    redisClient.on('error', (err) => {
-      console.error('❌ Redis connection error:', err);
-    });
-
     // Initialize presence model
     initializePresenceModel(redisClient);
   }

@@ -4,49 +4,37 @@
  */
 
 import mongoose from 'mongoose';
-import Redis from 'ioredis';
 import logger from './logger';
 
 // ===============================
 // REDIS CACHE CONFIGURATION
 // ===============================
 
-let redisClient: Redis | null = null;
+let redisClient: any = null;
 
-export const initializeRedisCache = () => {
+export const initializeRedisCache = async () => {
     try {
-        // Only initialize if REDIS_URL is explicitly set
-        if (!process.env.REDIS_URL || process.env.REDIS_URL.trim() === '') {
-            logger.info('Redis cache disabled (no REDIS_URL configured)');
-            return null;
+        // Try Upstash REST API first (HTTP-based, no DNS issues)
+        if (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_REST_TOKEN) {
+            logger.info('ℹ️ Performance cache: Using Upstash REST API');
+            const { Redis: UpstashRedis } = await import('@upstash/redis');
+            redisClient = new UpstashRedis({
+                url: process.env.UPSTASH_REDIS_REST_URL,
+                token: process.env.UPSTASH_REDIS_REST_TOKEN,
+            });
+            logger.info('✅ Performance cache connected via Upstash REST API');
+            return redisClient;
         }
 
-        redisClient = new Redis(process.env.REDIS_URL, {
-            tls: process.env.REDIS_URL.includes('upstash.io') 
-                ? { rejectUnauthorized: false } 
-                : undefined,
-            family: process.env.REDIS_URL.includes('upstash.io') ? 6 : 4,
-            maxRetriesPerRequest: 3,
-            lazyConnect: true,
-            connectTimeout: 30000,
-        });
-
-        redisClient.on('connect', () => {
-            logger.info('Redis cache connected successfully');
-        });
-
-        redisClient.on('error', (error: Error) => {
-            logger.error('Redis cache connection error:', error);
-        });
-
-        return redisClient;
+        logger.info('ℹ️ Performance cache disabled (no Upstash REST API configured)');
+        return null;
     } catch (error) {
-        logger.error('Failed to initialize Redis cache:', error);
+        logger.error('Failed to initialize performance cache:', error);
         return null;
     }
 };
 
-export const getRedisClient = (): Redis | null => {
+export const getRedisClient = (): any => {
     return redisClient;
 };
 
@@ -604,9 +592,9 @@ export class MemoryOptimizer {
 // INITIALIZATION
 // ===============================
 
-export const initializePerformanceOptimization = () => {
+export const initializePerformanceOptimization = async () => {
     // Initialize Redis cache
-    initializeRedisCache();
+    await initializeRedisCache();
 
     // Set up performance monitoring
     logger.info('Performance optimization initialized');
