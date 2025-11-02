@@ -37,14 +37,28 @@ export const getRedisConfig = () => {
     };
   }
 
-  const url = new URL(process.env.REDIS_URL);
-  // Only use TLS if URL explicitly starts with rediss://
+  // Parse Redis URL using same logic as redis.ts
+  const urlMatch = process.env.REDIS_URL.match(/redis:\/\/:?([^@]*)@([^:]+):(\d+)/);
+
+  if (!urlMatch) {
+    logger.warn('Invalid REDIS_URL format, using defaults');
+    return {
+      host: 'localhost',
+      port: 6379,
+      maxRetriesPerRequest: null,
+      enableReadyCheck: false,
+      lazyConnect: true,
+    };
+  }
+
+  const [, password, host, portStr] = urlMatch;
+  const port = parseInt(portStr, 10);
   const useTLS = process.env.REDIS_URL.startsWith('rediss://');
 
   return {
-    host: url.hostname,
-    port: parseInt(url.port || '6379'),
-    password: url.password || undefined,
+    host,
+    port,
+    password: password || undefined,
     maxRetriesPerRequest: null, // Bull compatibility
     enableReadyCheck: false,
     lazyConnect: true,

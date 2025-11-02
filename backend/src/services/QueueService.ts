@@ -108,20 +108,12 @@ export class QueueService {
         createClient: (type: string) => {
           logger.debug(`Bull queue ${name} requesting ${type} client - returning shared connection`);
 
-          // For subscriber/bclient, Bull doesn't allow enableReadyCheck or maxRetriesPerRequest
-          // See: https://github.com/OptimalBits/bull/issues/1873
-          if (type === 'subscriber' || type === 'bclient') {
-            return sharedClient.duplicate({
-              maxRetriesPerRequest: null,
-              enableReadyCheck: false,
-              enableOfflineQueue: false,
-            });
-          }
-
-          // For regular client connection
+          // All Bull clients need enableOfflineQueue: true to prevent crashes
+          // when Redis connection temporarily fails
           return sharedClient.duplicate({
             maxRetriesPerRequest: null,
-            enableOfflineQueue: true,
+            enableReadyCheck: false,
+            enableOfflineQueue: true, // Critical: Prevents "Stream isn't writeable" errors
           });
         },
         defaultJobOptions: {
