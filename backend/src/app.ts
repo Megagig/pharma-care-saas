@@ -66,7 +66,8 @@ import mentionRoutes from './routes/mentionRoutes';
 import manualLabRoutes from './modules/lab/routes/manualLabRoutes';
 import publicApiRoutes from './routes/publicApiRoutes';
 import publicDrugDetailsRoutes from './routes/publicDrugDetailsRoutes';
-import diagnosticRoutes from './routes/diagnosticRoutes';
+import diagnosticDebugRoutes from './routes/diagnosticRoutes';
+import diagnosticRoutes from './modules/diagnostics/routes/diagnosticRoutes';
 import communicationRoutes from './routes/communicationRoutes';
 import notificationRoutes from './routes/notificationRoutes';
 import notificationManagementRoutes from './routes/notificationManagementRoutes';
@@ -257,7 +258,7 @@ app.use('/api/', responseSizeMonitoringMiddleware());
 
 // Environment diagnostic routes (FOR DEBUGGING - REMOVE IN PRODUCTION)
 import envDiagnosticRoutes from './routes/diagnosticRoutes';
-app.use('/api/env-diagnostic', envDiagnosticRoutes);
+app.use('/api/env-diagnostic', diagnosticDebugRoutes);
 
 // Health check routes
 app.get('/api/health', (req: Request, res: Response) => {

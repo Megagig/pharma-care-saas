@@ -100,6 +100,7 @@ const manualLabRoutes_1 = __importDefault(require("./modules/lab/routes/manualLa
 const publicApiRoutes_1 = __importDefault(require("./routes/publicApiRoutes"));
 const publicDrugDetailsRoutes_1 = __importDefault(require("./routes/publicDrugDetailsRoutes"));
 const diagnosticRoutes_1 = __importDefault(require("./routes/diagnosticRoutes"));
+const diagnosticRoutes_2 = __importDefault(require("./modules/diagnostics/routes/diagnosticRoutes"));
 const communicationRoutes_1 = __importDefault(require("./routes/communicationRoutes"));
 const notificationRoutes_1 = __importDefault(require("./routes/notificationRoutes"));
 const notificationManagementRoutes_1 = __importDefault(require("./routes/notificationManagementRoutes"));
@@ -225,8 +226,7 @@ app.use('/api/', clinicalInterventionSync_1.clinicalInterventionSyncMiddleware);
 app.use('/api/', clinicalInterventionSync_1.followUpCompletionSyncMiddleware);
 const compressionMiddleware_1 = require("./middlewares/compressionMiddleware");
 app.use('/api/', (0, compressionMiddleware_1.responseSizeMonitoringMiddleware)());
-const diagnosticRoutes_2 = __importDefault(require("./routes/diagnosticRoutes"));
-app.use('/api/env-diagnostic', diagnosticRoutes_2.default);
+app.use('/api/env-diagnostic', diagnosticRoutes_1.default);
 app.get('/api/health', (req, res) => {
     res.json({
         status: 'OK',
@@ -381,7 +381,7 @@ app.use('/api', carePlanRoutes_1.default);
 app.use('/api', visitRoutes_1.default);
 app.use('/api/drugs', drugRoutes_1.default);
 app.use('/api/manual-lab', manualLabRoutes_1.default);
-app.use('/api/diagnostics', diagnosticRoutes_1.default);
+app.use('/api/diagnostics', diagnosticRoutes_2.default);
 app.use('/api/communication', communicationRoutes_1.default);
 const chatRoutes_1 = __importDefault(require("./routes/chatRoutes"));
 const auditLogRoutes_1 = __importDefault(require("./routes/auditLogRoutes"));

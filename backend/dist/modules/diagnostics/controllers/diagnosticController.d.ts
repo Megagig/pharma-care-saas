@@ -11,4 +11,6 @@ export declare const getPendingReviews: (req: import("express").Request, res: Re
 export declare const createInterventionFromResult: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
 export declare const getReviewWorkflowStatus: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
 export declare const getDiagnosticAnalytics: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
+export declare const getAllDiagnosticCases: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
+export declare const getDiagnosticReferrals: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
 //# sourceMappingURL=diagnosticController.d.ts.map

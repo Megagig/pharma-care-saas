@@ -12,6 +12,8 @@ import {
     createInterventionFromResult,
     getReviewWorkflowStatus,
     getDiagnosticAnalytics,
+    getAllDiagnosticCases,
+    getDiagnosticReferrals,
 } from '../controllers/diagnosticController';
 
 // Import middleware
@@ -108,6 +110,28 @@ router.get(
     ...diagnosticAnalyticsMiddleware,
     validateRequest(analyticsQuerySchema, 'query'),
     getDiagnosticAnalytics
+);
+
+/**
+ * GET /api/diagnostics/cases/all
+ * Get all diagnostic cases with pagination
+ */
+router.get(
+    '/cases/all',
+    requirePharmacistRole,
+    requireDiagnosticRead,
+    getAllDiagnosticCases
+);
+
+/**
+ * GET /api/diagnostics/referrals
+ * Get all diagnostic referrals with pagination
+ */
+router.get(
+    '/referrals',
+    requirePharmacistRole,
+    requireDiagnosticRead,
+    getDiagnosticReferrals
 );
 
 /**

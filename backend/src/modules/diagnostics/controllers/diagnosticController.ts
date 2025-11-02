@@ -20,6 +20,9 @@ import { PharmacistReviewService } from '../services/pharmacistReviewService';
 // Import models
 import DiagnosticRequest from '../models/DiagnosticRequest';
 import DiagnosticResult from '../models/DiagnosticResult';
+// Import legacy models for backward compatibility
+import DiagnosticCase from '../../../models/DiagnosticCase';
+import DiagnosticHistory from '../../../models/DiagnosticHistory';
 
 const diagnosticService = new DiagnosticService();
 const pharmacistReviewService = new PharmacistReviewService();
@@ -344,9 +347,9 @@ export const getPatientDiagnosticHistory = asyncHandler(
         try {
             // Get patient diagnostic history
             if (!patientId) {
-            return sendError(res, 'VALIDATION_ERROR', 'Patient ID is required', 400);
-        }
-        const history = await diagnosticService.getPatientDiagnosticHistory(
+                return sendError(res, 'VALIDATION_ERROR', 'Patient ID is required', 400);
+            }
+            const history = await diagnosticService.getPatientDiagnosticHistory(
                 patientId,
                 context.workplaceId,
                 parsedPage,
@@ -761,26 +764,124 @@ export const getReviewWorkflowStatus = asyncHandler(
  */
 export const getDiagnosticAnalytics = asyncHandler(
     async (req: AuthRequest, res: Response) => {
-        const { from, to } = req.query as any;
+        const { from, to, dateFrom, dateTo } = req.query as any;
         const context = getRequestContext(req);
 
-        // Default to last 30 days if no date range provided
-        const fromDate = from ? new Date(from) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-        const toDate = to ? new Date(to) : new Date();
+        // Support both 'from/to' and 'dateFrom/dateTo' query params for backwards compatibility
+        const fromDate = from || dateFrom
+            ? new Date(from || dateFrom)
+            : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+        const toDate = to || dateTo
+            ? new Date(to || dateTo)
+            : new Date();
 
         try {
-            // Get analytics
-            const analytics = await pharmacistReviewService.getReviewAnalytics(
-                context.workplaceId,
-                { from: fromDate, to: toDate }
-            );
+            // Query legacy DiagnosticCase collection for analytics
+            const matchStage = {
+                workplaceId: new Types.ObjectId(context.workplaceId),
+                createdAt: {
+                    $gte: fromDate,
+                    $lte: toDate,
+                },
+            };
+
+            // Get basic counts and averages
+            const [
+                totalCases,
+                completedCases,
+                pendingFollowUps,
+                avgMetrics,
+                topDiagnoses,
+                completionTrends,
+                referralsCount
+            ] = await Promise.all([
+                DiagnosticCase.countDocuments(matchStage),
+                DiagnosticCase.countDocuments({ ...matchStage, status: 'completed' }),
+                DiagnosticHistory.countDocuments({
+                    workplaceId: new Types.ObjectId(context.workplaceId),
+                    'followUp.required': true,
+                    'followUp.completed': false,
+                }),
+                DiagnosticCase.aggregate([
+                    { $match: matchStage },
+                    {
+                        $group: {
+                            _id: null,
+                            avgConfidence: { $avg: '$aiAnalysis.confidenceScore' },
+                            avgProcessingTime: { $avg: '$aiAnalysis.processingTime' },
+                        },
+                    },
+                ]),
+                // Get top diagnoses
+                DiagnosticCase.aggregate([
+                    { $match: matchStage },
+                    { $unwind: '$aiAnalysis.differentialDiagnoses' },
+                    {
+                        $group: {
+                            _id: '$aiAnalysis.differentialDiagnoses.condition',
+                            count: { $sum: 1 },
+                            averageConfidence: { $avg: '$aiAnalysis.differentialDiagnoses.probability' },
+                        },
+                    },
+                    { $sort: { count: -1 } },
+                    { $limit: 10 },
+                    {
+                        $project: {
+                            _id: 0,
+                            condition: '$_id',
+                            count: 1,
+                            averageConfidence: { $multiply: ['$averageConfidence', 100] },
+                        },
+                    },
+                ]),
+                // Get completion trends (group by day)
+                DiagnosticCase.aggregate([
+                    { $match: matchStage },
+                    {
+                        $group: {
+                            _id: {
+                                $dateToString: {
+                                    format: '%Y-%m-%d',
+                                    date: '$createdAt',
+                                },
+                            },
+                            casesCreated: { $sum: 1 },
+                            casesCompleted: {
+                                $sum: {
+                                    $cond: [{ $eq: ['$status', 'completed'] }, 1, 0],
+                                },
+                            },
+                        },
+                    },
+                    { $sort: { _id: 1 } },
+                ]),
+                DiagnosticHistory.countDocuments({
+                    workplaceId: new Types.ObjectId(context.workplaceId),
+                    'referral.generated': true,
+                    createdAt: {
+                        $gte: fromDate,
+                        $lte: toDate,
+                    },
+                }),
+            ]);
+
+            const analytics = {
+                summary: {
+                    totalCases,
+                    averageConfidence: avgMetrics.length > 0 ? avgMetrics[0].avgConfidence || 0 : 0,
+                    averageProcessingTime: avgMetrics.length > 0 ? avgMetrics[0].avgProcessingTime || 0 : 0,
+                    completedCases,
+                    pendingFollowUps,
+                    referralsGenerated: referralsCount,
+                },
+                topDiagnoses,
+                completionTrends,
+                dateRange: { from: fromDate, to: toDate },
+            };
 
             sendSuccess(
                 res,
-                {
-                    analytics,
-                    dateRange: { from: fromDate, to: toDate },
-                },
+                analytics,
                 'Diagnostic analytics retrieved successfully'
             );
         } catch (error) {
@@ -789,6 +890,222 @@ export const getDiagnosticAnalytics = asyncHandler(
                 res,
                 'SERVER_ERROR',
                 `Failed to get diagnostic analytics: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                500
+            );
+        }
+    }
+);
+
+/**
+ * GET /api/diagnostics/cases/all
+ * Get all diagnostic cases with pagination and filters
+ */
+export const getAllDiagnosticCases = asyncHandler(
+    async (req: AuthRequest, res: Response) => {
+        const context = getRequestContext(req);
+        const {
+            page = 1,
+            limit = 20,
+            status,
+            patientId,
+            search,
+            sortBy = 'createdAt',
+            sortOrder = 'desc',
+        } = req.query as any;
+
+        try {
+            // Build query
+            const query: any = {
+                workplaceId: new Types.ObjectId(context.workplaceId),
+            };
+
+            if (status) {
+                query.status = status;
+            }
+
+            if (patientId) {
+                query.patientId = new Types.ObjectId(patientId);
+            }
+
+            if (search) {
+                query.$or = [
+                    { caseId: { $regex: search, $options: 'i' } },
+                    { 'inputSnapshot.symptoms.subjective': { $regex: search, $options: 'i' } },
+                    { 'inputSnapshot.symptoms.objective': { $regex: search, $options: 'i' } },
+                ];
+            }
+
+            // Get paginated results
+            const skip = (parseInt(page) - 1) * parseInt(limit);
+            const sortOptions: any = {};
+            sortOptions[sortBy] = sortOrder === 'asc' ? 1 : -1;
+
+            const [cases, totalCases] = await Promise.all([
+                DiagnosticCase.find(query)
+                    .populate('patientId', 'firstName lastName age gender')
+                    .populate('pharmacistId', 'firstName lastName')
+                    .sort(sortOptions)
+                    .skip(skip)
+                    .limit(parseInt(limit))
+                    .lean(),
+                DiagnosticCase.countDocuments(query),
+            ]);
+
+            // Format cases
+            const formattedCases = cases.map((caseItem: any) => ({
+                _id: caseItem._id,
+                caseId: caseItem.caseId,
+                patientId: caseItem.patientId,
+                pharmacistId: caseItem.pharmacistId,
+                symptoms: caseItem.inputSnapshot?.symptoms || {},
+                status: caseItem.status,
+                createdAt: caseItem.createdAt,
+                updatedAt: caseItem.updatedAt,
+            }));
+
+            sendSuccess(
+                res,
+                {
+                    cases: formattedCases,
+                    pagination: {
+                        current: parseInt(page),
+                        total: Math.ceil(totalCases / parseInt(limit)),
+                        count: formattedCases.length,
+                        totalCases,
+                    },
+                    filters: {
+                        status,
+                        patientId,
+                        search,
+                        sortBy,
+                        sortOrder,
+                    },
+                },
+                'Diagnostic cases retrieved successfully'
+            );
+        } catch (error) {
+            logger.error('Failed to get diagnostic cases:', error);
+            sendError(
+                res,
+                'SERVER_ERROR',
+                `Failed to get diagnostic cases: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                500
+            );
+        }
+    }
+);
+
+/**
+ * GET /api/diagnostics/referrals
+ * Get all diagnostic referrals with pagination and filters
+ */
+export const getDiagnosticReferrals = asyncHandler(
+    async (req: AuthRequest, res: Response) => {
+        const context = getRequestContext(req);
+        const {
+            page = 1,
+            limit = 20,
+            status,
+            specialty,
+        } = req.query as any;
+
+        try {
+            // Build query for diagnostic history with referral recommendations
+            const query: any = {
+                workplaceId: new Types.ObjectId(context.workplaceId),
+                'referral.generated': true,  // Changed to match DiagnosticHistory schema
+            };
+
+            if (status) {
+                query['referral.status'] = status;
+            }
+
+            if (specialty) {
+                query['referral.specialty'] = specialty;  // Changed to match DiagnosticHistory schema
+            }
+
+            // Get paginated results
+            const skip = (parseInt(page) - 1) * parseInt(limit);
+
+            const [results, totalReferrals] = await Promise.all([
+                DiagnosticHistory.find(query)
+                    .populate('patientId', 'firstName lastName age gender')
+                    .populate('pharmacistId', 'firstName lastName')
+                    .populate('diagnosticCaseId', 'caseId status')
+                    .sort({ createdAt: -1 })
+                    .skip(skip)
+                    .limit(parseInt(limit))
+                    .lean(),
+                DiagnosticHistory.countDocuments(query),
+            ]);
+
+            // Count statistics
+            const statistics = {
+                pending: await DiagnosticHistory.countDocuments({
+                    ...query,
+                    'referral.status': 'pending',
+                }),
+                sent: await DiagnosticHistory.countDocuments({
+                    ...query,
+                    'referral.status': 'sent',
+                }),
+                acknowledged: await DiagnosticHistory.countDocuments({
+                    ...query,
+                    'referral.status': 'acknowledged',
+                }),
+                completed: await DiagnosticHistory.countDocuments({
+                    ...query,
+                    'referral.status': 'completed',
+                }),
+            };
+
+            // Format referrals
+            const formattedReferrals = results.map((result: any) => ({
+                _id: result._id,
+                patientId: result.patientId,
+                pharmacistId: result.pharmacistId,
+                caseId: result.caseId || (result.diagnosticCaseId?.caseId),
+                referral: {
+                    generated: result.referral?.generated || false,
+                    generatedAt: result.referral?.generatedAt,
+                    specialty: result.referral?.specialty || result.analysisSnapshot?.referralRecommendation?.specialty,
+                    urgency: result.referral?.urgency || result.analysisSnapshot?.referralRecommendation?.urgency,
+                    status: result.referral?.status || 'pending',
+                    sentAt: result.referral?.sentAt,
+                    acknowledgedAt: result.referral?.acknowledgedAt,
+                    completedAt: result.referral?.completedAt,
+                    feedback: result.referral?.feedback,
+                },
+                analysisSnapshot: {
+                    referralRecommendation: result.analysisSnapshot?.referralRecommendation,
+                },
+                createdAt: result.createdAt,
+            }));
+
+            sendSuccess(
+                res,
+                {
+                    referrals: formattedReferrals,
+                    pagination: {
+                        current: parseInt(page),
+                        total: Math.ceil(totalReferrals / parseInt(limit)),
+                        count: formattedReferrals.length,
+                        totalReferrals,
+                    },
+                    statistics,
+                    filters: {
+                        status,
+                        specialty,
+                    },
+                },
+                'Diagnostic referrals retrieved successfully'
+            );
+        } catch (error) {
+            logger.error('Failed to get diagnostic referrals:', error);
+            sendError(
+                res,
+                'SERVER_ERROR',
+                `Failed to get diagnostic referrals: ${error instanceof Error ? error.message : 'Unknown error'}`,
                 500
             );
         }

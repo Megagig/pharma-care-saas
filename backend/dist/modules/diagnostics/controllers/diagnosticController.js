@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getDiagnosticAnalytics = exports.getReviewWorkflowStatus = exports.createInterventionFromResult = exports.getPendingReviews = exports.rejectDiagnosticResult = exports.approveDiagnosticResult = exports.getDiagnosticDashboard = exports.getPatientDiagnosticHistory = exports.cancelDiagnosticRequest = exports.retryDiagnosticRequest = exports.getDiagnosticRequest = exports.createDiagnosticRequest = void 0;
+exports.getDiagnosticReferrals = exports.getAllDiagnosticCases = exports.getDiagnosticAnalytics = exports.getReviewWorkflowStatus = exports.createInterventionFromResult = exports.getPendingReviews = exports.rejectDiagnosticResult = exports.approveDiagnosticResult = exports.getDiagnosticDashboard = exports.getPatientDiagnosticHistory = exports.cancelDiagnosticRequest = exports.retryDiagnosticRequest = exports.getDiagnosticRequest = exports.createDiagnosticRequest = void 0;
 const mongoose_1 = require("mongoose");
 const logger_1 = __importDefault(require("../../../utils/logger"));
 const responseHelpers_1 = require("../../../utils/responseHelpers");
@@ -11,6 +11,8 @@ const diagnosticService_1 = require("../services/diagnosticService");
 const pharmacistReviewService_1 = require("../services/pharmacistReviewService");
 const DiagnosticRequest_1 = __importDefault(require("../models/DiagnosticRequest"));
 const DiagnosticResult_1 = __importDefault(require("../models/DiagnosticResult"));
+const DiagnosticCase_1 = __importDefault(require("../../../models/DiagnosticCase"));
+const DiagnosticHistory_1 = __importDefault(require("../../../models/DiagnosticHistory"));
 const diagnosticService = new diagnosticService_1.DiagnosticService();
 const pharmacistReviewService = new pharmacistReviewService_1.PharmacistReviewService();
 exports.createDiagnosticRequest = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
@@ -357,20 +359,258 @@ exports.getReviewWorkflowStatus = (0, responseHelpers_1.asyncHandler)(async (req
     }
 });
 exports.getDiagnosticAnalytics = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
-    const { from, to } = req.query;
+    const { from, to, dateFrom, dateTo } = req.query;
     const context = (0, responseHelpers_1.getRequestContext)(req);
-    const fromDate = from ? new Date(from) : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
-    const toDate = to ? new Date(to) : new Date();
+    const fromDate = from || dateFrom
+        ? new Date(from || dateFrom)
+        : new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const toDate = to || dateTo
+        ? new Date(to || dateTo)
+        : new Date();
     try {
-        const analytics = await pharmacistReviewService.getReviewAnalytics(context.workplaceId, { from: fromDate, to: toDate });
-        (0, responseHelpers_1.sendSuccess)(res, {
-            analytics,
+        const matchStage = {
+            workplaceId: new mongoose_1.Types.ObjectId(context.workplaceId),
+            createdAt: {
+                $gte: fromDate,
+                $lte: toDate,
+            },
+        };
+        const [totalCases, completedCases, pendingFollowUps, avgMetrics, topDiagnoses, completionTrends, referralsCount] = await Promise.all([
+            DiagnosticCase_1.default.countDocuments(matchStage),
+            DiagnosticCase_1.default.countDocuments({ ...matchStage, status: 'completed' }),
+            DiagnosticHistory_1.default.countDocuments({
+                workplaceId: new mongoose_1.Types.ObjectId(context.workplaceId),
+                'followUp.required': true,
+                'followUp.completed': false,
+            }),
+            DiagnosticCase_1.default.aggregate([
+                { $match: matchStage },
+                {
+                    $group: {
+                        _id: null,
+                        avgConfidence: { $avg: '$aiAnalysis.confidenceScore' },
+                        avgProcessingTime: { $avg: '$aiAnalysis.processingTime' },
+                    },
+                },
+            ]),
+            DiagnosticCase_1.default.aggregate([
+                { $match: matchStage },
+                { $unwind: '$aiAnalysis.differentialDiagnoses' },
+                {
+                    $group: {
+                        _id: '$aiAnalysis.differentialDiagnoses.condition',
+                        count: { $sum: 1 },
+                        averageConfidence: { $avg: '$aiAnalysis.differentialDiagnoses.probability' },
+                    },
+                },
+                { $sort: { count: -1 } },
+                { $limit: 10 },
+                {
+                    $project: {
+                        _id: 0,
+                        condition: '$_id',
+                        count: 1,
+                        averageConfidence: { $multiply: ['$averageConfidence', 100] },
+                    },
+                },
+            ]),
+            DiagnosticCase_1.default.aggregate([
+                { $match: matchStage },
+                {
+                    $group: {
+                        _id: {
+                            $dateToString: {
+                                format: '%Y-%m-%d',
+                                date: '$createdAt',
+                            },
+                        },
+                        casesCreated: { $sum: 1 },
+                        casesCompleted: {
+                            $sum: {
+                                $cond: [{ $eq: ['$status', 'completed'] }, 1, 0],
+                            },
+                        },
+                    },
+                },
+                { $sort: { _id: 1 } },
+            ]),
+            DiagnosticHistory_1.default.countDocuments({
+                workplaceId: new mongoose_1.Types.ObjectId(context.workplaceId),
+                'referral.generated': true,
+                createdAt: {
+                    $gte: fromDate,
+                    $lte: toDate,
+                },
+            }),
+        ]);
+        const analytics = {
+            summary: {
+                totalCases,
+                averageConfidence: avgMetrics.length > 0 ? avgMetrics[0].avgConfidence || 0 : 0,
+                averageProcessingTime: avgMetrics.length > 0 ? avgMetrics[0].avgProcessingTime || 0 : 0,
+                completedCases,
+                pendingFollowUps,
+                referralsGenerated: referralsCount,
+            },
+            topDiagnoses,
+            completionTrends,
             dateRange: { from: fromDate, to: toDate },
-        }, 'Diagnostic analytics retrieved successfully');
+        };
+        (0, responseHelpers_1.sendSuccess)(res, analytics, 'Diagnostic analytics retrieved successfully');
     }
     catch (error) {
         logger_1.default.error('Failed to get diagnostic analytics:', error);
         (0, responseHelpers_1.sendError)(res, 'SERVER_ERROR', `Failed to get diagnostic analytics: ${error instanceof Error ? error.message : 'Unknown error'}`, 500);
+    }
+});
+exports.getAllDiagnosticCases = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
+    const context = (0, responseHelpers_1.getRequestContext)(req);
+    const { page = 1, limit = 20, status, patientId, search, sortBy = 'createdAt', sortOrder = 'desc', } = req.query;
+    try {
+        const query = {
+            workplaceId: new mongoose_1.Types.ObjectId(context.workplaceId),
+        };
+        if (status) {
+            query.status = status;
+        }
+        if (patientId) {
+            query.patientId = new mongoose_1.Types.ObjectId(patientId);
+        }
+        if (search) {
+            query.$or = [
+                { caseId: { $regex: search, $options: 'i' } },
+                { 'inputSnapshot.symptoms.subjective': { $regex: search, $options: 'i' } },
+                { 'inputSnapshot.symptoms.objective': { $regex: search, $options: 'i' } },
+            ];
+        }
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+        const sortOptions = {};
+        sortOptions[sortBy] = sortOrder === 'asc' ? 1 : -1;
+        const [cases, totalCases] = await Promise.all([
+            DiagnosticCase_1.default.find(query)
+                .populate('patientId', 'firstName lastName age gender')
+                .populate('pharmacistId', 'firstName lastName')
+                .sort(sortOptions)
+                .skip(skip)
+                .limit(parseInt(limit))
+                .lean(),
+            DiagnosticCase_1.default.countDocuments(query),
+        ]);
+        const formattedCases = cases.map((caseItem) => ({
+            _id: caseItem._id,
+            caseId: caseItem.caseId,
+            patientId: caseItem.patientId,
+            pharmacistId: caseItem.pharmacistId,
+            symptoms: caseItem.inputSnapshot?.symptoms || {},
+            status: caseItem.status,
+            createdAt: caseItem.createdAt,
+            updatedAt: caseItem.updatedAt,
+        }));
+        (0, responseHelpers_1.sendSuccess)(res, {
+            cases: formattedCases,
+            pagination: {
+                current: parseInt(page),
+                total: Math.ceil(totalCases / parseInt(limit)),
+                count: formattedCases.length,
+                totalCases,
+            },
+            filters: {
+                status,
+                patientId,
+                search,
+                sortBy,
+                sortOrder,
+            },
+        }, 'Diagnostic cases retrieved successfully');
+    }
+    catch (error) {
+        logger_1.default.error('Failed to get diagnostic cases:', error);
+        (0, responseHelpers_1.sendError)(res, 'SERVER_ERROR', `Failed to get diagnostic cases: ${error instanceof Error ? error.message : 'Unknown error'}`, 500);
+    }
+});
+exports.getDiagnosticReferrals = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
+    const context = (0, responseHelpers_1.getRequestContext)(req);
+    const { page = 1, limit = 20, status, specialty, } = req.query;
+    try {
+        const query = {
+            workplaceId: new mongoose_1.Types.ObjectId(context.workplaceId),
+            'referral.generated': true,
+        };
+        if (status) {
+            query['referral.status'] = status;
+        }
+        if (specialty) {
+            query['referral.specialty'] = specialty;
+        }
+        const skip = (parseInt(page) - 1) * parseInt(limit);
+        const [results, totalReferrals] = await Promise.all([
+            DiagnosticHistory_1.default.find(query)
+                .populate('patientId', 'firstName lastName age gender')
+                .populate('pharmacistId', 'firstName lastName')
+                .populate('diagnosticCaseId', 'caseId status')
+                .sort({ createdAt: -1 })
+                .skip(skip)
+                .limit(parseInt(limit))
+                .lean(),
+            DiagnosticHistory_1.default.countDocuments(query),
+        ]);
+        const statistics = {
+            pending: await DiagnosticHistory_1.default.countDocuments({
+                ...query,
+                'referral.status': 'pending',
+            }),
+            sent: await DiagnosticHistory_1.default.countDocuments({
+                ...query,
+                'referral.status': 'sent',
+            }),
+            acknowledged: await DiagnosticHistory_1.default.countDocuments({
+                ...query,
+                'referral.status': 'acknowledged',
+            }),
+            completed: await DiagnosticHistory_1.default.countDocuments({
+                ...query,
+                'referral.status': 'completed',
+            }),
+        };
+        const formattedReferrals = results.map((result) => ({
+            _id: result._id,
+            patientId: result.patientId,
+            pharmacistId: result.pharmacistId,
+            caseId: result.caseId || (result.diagnosticCaseId?.caseId),
+            referral: {
+                generated: result.referral?.generated || false,
+                generatedAt: result.referral?.generatedAt,
+                specialty: result.referral?.specialty || result.analysisSnapshot?.referralRecommendation?.specialty,
+                urgency: result.referral?.urgency || result.analysisSnapshot?.referralRecommendation?.urgency,
+                status: result.referral?.status || 'pending',
+                sentAt: result.referral?.sentAt,
+                acknowledgedAt: result.referral?.acknowledgedAt,
+                completedAt: result.referral?.completedAt,
+                feedback: result.referral?.feedback,
+            },
+            analysisSnapshot: {
+                referralRecommendation: result.analysisSnapshot?.referralRecommendation,
+            },
+            createdAt: result.createdAt,
+        }));
+        (0, responseHelpers_1.sendSuccess)(res, {
+            referrals: formattedReferrals,
+            pagination: {
+                current: parseInt(page),
+                total: Math.ceil(totalReferrals / parseInt(limit)),
+                count: formattedReferrals.length,
+                totalReferrals,
+            },
+            statistics,
+            filters: {
+                status,
+                specialty,
+            },
+        }, 'Diagnostic referrals retrieved successfully');
+    }
+    catch (error) {
+        logger_1.default.error('Failed to get diagnostic referrals:', error);
+        (0, responseHelpers_1.sendError)(res, 'SERVER_ERROR', `Failed to get diagnostic referrals: ${error instanceof Error ? error.message : 'Unknown error'}`, 500);
     }
 });
 //# sourceMappingURL=diagnosticController.js.map
