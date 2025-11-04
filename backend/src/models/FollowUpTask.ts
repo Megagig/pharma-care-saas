@@ -13,7 +13,7 @@ export interface IFollowUpTask extends Document {
   // Task details
   type: 'medication_start_followup' | 'lab_result_review' | 'hospital_discharge_followup' |
         'medication_change_followup' | 'chronic_disease_monitoring' | 'adherence_check' |
-        'refill_reminder' | 'preventive_care' | 'general_followup';
+        'refill_reminder' | 'preventive_care' | 'general_followup' | 'medication_refill_request';
   title: string;
   description: string;
   objectives: string[];
@@ -57,6 +57,27 @@ export interface IFollowUpTask extends Document {
     diagnosticCaseId?: mongoose.Types.ObjectId;
   };
   
+  // Metadata for different task types
+  metadata?: {
+    refillRequest?: {
+      medicationId: mongoose.Types.ObjectId;
+      medicationName: string;
+      currentRefillsRemaining: number;
+      requestedQuantity: number;
+      patientNotes?: string;
+      urgency: 'routine' | 'urgent';
+      estimatedPickupDate?: Date;
+      requestedBy: mongoose.Types.ObjectId; // Patient who requested
+      requestedAt: Date;
+      pharmacistNotes?: string;
+      approvedQuantity?: number;
+      denialReason?: string;
+      prescriptionRequired?: boolean;
+    };
+    // Other metadata types can be added here for different task types
+    [key: string]: any;
+  };
+  
   // Escalation tracking
   escalationHistory: Array<{
     escalatedAt: Date;
@@ -96,6 +117,23 @@ export interface IFollowUpTask extends Document {
     recipientId: mongoose.Types.ObjectId
   ): void;
   isCriticallyOverdue(days?: number): boolean;
+  
+  // Refill request specific methods
+  approveRefillRequest(
+    approvedQuantity: number,
+    pharmacistId: mongoose.Types.ObjectId,
+    pharmacistNotes?: string
+  ): void;
+  denyRefillRequest(
+    denialReason: string,
+    pharmacistId: mongoose.Types.ObjectId
+  ): void;
+  requireNewPrescription(
+    pharmacistId: mongoose.Types.ObjectId,
+    notes?: string
+  ): void;
+  isRefillEligible(): boolean;
+  getRefillRequestDetails(): any;
 }
 
 const followUpTaskSchema = new Schema(
@@ -134,6 +172,7 @@ const followUpTaskSchema = new Schema(
         'refill_reminder',
         'preventive_care',
         'general_followup',
+        'medication_refill_request',
       ],
       required: [true, 'Follow-up type is required'],
       index: true,
@@ -265,6 +304,101 @@ const followUpTaskSchema = new Schema(
         ref: 'DiagnosticCase',
       },
     },
+    
+    metadata: {
+      refillRequest: {
+        medicationId: {
+          type: Schema.Types.ObjectId,
+          ref: 'Medication',
+          required: function(this: IFollowUpTask) {
+            return this.type === 'medication_refill_request';
+          },
+        },
+        medicationName: {
+          type: String,
+          required: function(this: IFollowUpTask) {
+            return this.type === 'medication_refill_request';
+          },
+          trim: true,
+          maxlength: [200, 'Medication name cannot exceed 200 characters'],
+        },
+        currentRefillsRemaining: {
+          type: Number,
+          required: function(this: IFollowUpTask) {
+            return this.type === 'medication_refill_request';
+          },
+          min: [0, 'Refills remaining cannot be negative'],
+          max: [12, 'Refills remaining cannot exceed 12'],
+        },
+        requestedQuantity: {
+          type: Number,
+          required: function(this: IFollowUpTask) {
+            return this.type === 'medication_refill_request';
+          },
+          min: [1, 'Requested quantity must be at least 1'],
+          max: [365, 'Requested quantity cannot exceed 365 days supply'],
+        },
+        patientNotes: {
+          type: String,
+          trim: true,
+          maxlength: [1000, 'Patient notes cannot exceed 1000 characters'],
+        },
+        urgency: {
+          type: String,
+          enum: {
+            values: ['routine', 'urgent'],
+            message: 'Urgency must be routine or urgent',
+          },
+          default: 'routine',
+          required: function(this: IFollowUpTask) {
+            return this.type === 'medication_refill_request';
+          },
+        },
+        estimatedPickupDate: {
+          type: Date,
+          validate: {
+            validator: function (value: Date) {
+              if (!value) return true; // Optional field
+              return value >= new Date();
+            },
+            message: 'Estimated pickup date cannot be in the past',
+          },
+        },
+        requestedBy: {
+          type: Schema.Types.ObjectId,
+          ref: 'PatientUser',
+          required: function(this: IFollowUpTask) {
+            return this.type === 'medication_refill_request';
+          },
+        },
+        requestedAt: {
+          type: Date,
+          required: function(this: IFollowUpTask) {
+            return this.type === 'medication_refill_request';
+          },
+          default: Date.now,
+        },
+        pharmacistNotes: {
+          type: String,
+          trim: true,
+          maxlength: [1000, 'Pharmacist notes cannot exceed 1000 characters'],
+        },
+        approvedQuantity: {
+          type: Number,
+          min: [0, 'Approved quantity cannot be negative'],
+          max: [365, 'Approved quantity cannot exceed 365 days supply'],
+        },
+        denialReason: {
+          type: String,
+          trim: true,
+          maxlength: [500, 'Denial reason cannot exceed 500 characters'],
+        },
+        prescriptionRequired: {
+          type: Boolean,
+          default: false,
+        },
+      },
+    },
     escalationHistory: [
       {
         escalatedAt: {
@@ -331,6 +465,12 @@ followUpTaskSchema.index({ workplaceId: 1, type: 1, status: 1 });
 followUpTaskSchema.index({ status: 1, dueDate: 1 });
 followUpTaskSchema.index({ 'trigger.type': 1, 'trigger.sourceId': 1 });
 followUpTaskSchema.index({ createdAt: -1 });
+
+// Indexes for refill requests
+followUpTaskSchema.index({ type: 1, 'metadata.refillRequest.urgency': 1, status: 1 });
+followUpTaskSchema.index({ type: 1, 'metadata.refillRequest.medicationId': 1 });
+followUpTaskSchema.index({ type: 1, 'metadata.refillRequest.requestedBy': 1 });
+followUpTaskSchema.index({ type: 1, 'metadata.refillRequest.requestedAt': -1 });
 
 // Virtual for patient details
 followUpTaskSchema.virtual('patient', {
@@ -412,6 +552,37 @@ followUpTaskSchema.pre('save', function (this: IFollowUpTask) {
   // Validate objectives
   if (!this.objectives || this.objectives.length === 0) {
     throw new Error('At least one objective is required');
+  }
+  
+  // Validate refill request specific fields
+  if (this.type === 'medication_refill_request') {
+    if (!this.metadata?.refillRequest) {
+      throw new Error('Refill request metadata is required for medication refill request tasks');
+    }
+    
+    const refillData = this.metadata.refillRequest;
+    
+    // Validate that requested quantity doesn't exceed reasonable limits
+    if (refillData.requestedQuantity > refillData.currentRefillsRemaining * 30) {
+      throw new Error('Requested quantity exceeds reasonable limits based on remaining refills');
+    }
+    
+    // Validate estimated pickup date is not too far in the future
+    if (refillData.estimatedPickupDate) {
+      const maxFutureDate = new Date();
+      maxFutureDate.setDate(maxFutureDate.getDate() + 90); // 90 days max
+      
+      if (refillData.estimatedPickupDate > maxFutureDate) {
+        throw new Error('Estimated pickup date cannot be more than 90 days in the future');
+      }
+    }
+    
+    // Set appropriate priority based on urgency and refills remaining
+    if (refillData.urgency === 'urgent' || refillData.currentRefillsRemaining <= 1) {
+      this.priority = 'high';
+    } else if (refillData.currentRefillsRemaining <= 3) {
+      this.priority = 'medium';
+    }
   }
 });
 
@@ -528,6 +699,149 @@ followUpTaskSchema.statics.findByTrigger = function (
   return this.find(query);
 };
 
+// Static method to find refill requests
+followUpTaskSchema.statics.findRefillRequests = function (
+  workplaceId?: mongoose.Types.ObjectId,
+  options?: {
+    status?: string;
+    urgency?: string;
+    patientId?: mongoose.Types.ObjectId;
+    medicationId?: mongoose.Types.ObjectId;
+    limit?: number;
+    skip?: number;
+  }
+) {
+  const query: any = {
+    type: 'medication_refill_request',
+  };
+  
+  if (options?.status) {
+    query.status = options.status;
+  }
+  
+  if (options?.urgency) {
+    query['metadata.refillRequest.urgency'] = options.urgency;
+  }
+  
+  if (options?.patientId) {
+    query.patientId = options.patientId;
+  }
+  
+  if (options?.medicationId) {
+    query['metadata.refillRequest.medicationId'] = options.medicationId;
+  }
+  
+  let baseQuery;
+  if (workplaceId) {
+    baseQuery = this.find(query).setOptions({ workplaceId });
+  } else {
+    baseQuery = this.find(query);
+  }
+  
+  baseQuery = baseQuery
+    .populate('patientId', 'firstName lastName phone email')
+    .populate('assignedTo', 'firstName lastName')
+    .populate('metadata.refillRequest.medicationId', 'name strength dosageForm')
+    .sort({ 'metadata.refillRequest.urgency': -1, createdAt: -1 });
+  
+  if (options?.skip) {
+    baseQuery = baseQuery.skip(options.skip);
+  }
+  
+  if (options?.limit) {
+    baseQuery = baseQuery.limit(options.limit);
+  }
+  
+  return baseQuery;
+};
+
+// Static method to find urgent refill requests
+followUpTaskSchema.statics.findUrgentRefillRequests = function (
+  workplaceId?: mongoose.Types.ObjectId
+) {
+  const query = {
+    type: 'medication_refill_request',
+    status: { $in: ['pending', 'in_progress'] },
+    'metadata.refillRequest.urgency': 'urgent',
+  };
+  
+  if (workplaceId) {
+    return this.find(query)
+      .setOptions({ workplaceId })
+      .populate('patientId', 'firstName lastName phone')
+      .populate('assignedTo', 'firstName lastName')
+      .sort({ createdAt: 1 }); // Oldest first for urgent requests
+  }
+  
+  return this.find(query)
+    .populate('patientId', 'firstName lastName phone')
+    .populate('assignedTo', 'firstName lastName')
+    .sort({ createdAt: 1 });
+};
+
+// Static method to create refill request task
+followUpTaskSchema.statics.createRefillRequest = function (
+  refillRequestData: {
+    workplaceId: mongoose.Types.ObjectId;
+    patientId: mongoose.Types.ObjectId;
+    assignedTo: mongoose.Types.ObjectId;
+    medicationId: mongoose.Types.ObjectId;
+    medicationName: string;
+    currentRefillsRemaining: number;
+    requestedQuantity: number;
+    urgency?: 'routine' | 'urgent';
+    patientNotes?: string;
+    estimatedPickupDate?: Date;
+    requestedBy: mongoose.Types.ObjectId;
+  }
+) {
+  const taskData = {
+    workplaceId: refillRequestData.workplaceId,
+    patientId: refillRequestData.patientId,
+    assignedTo: refillRequestData.assignedTo,
+    type: 'medication_refill_request',
+    title: `Refill Request: ${refillRequestData.medicationName}`,
+    description: `Patient has requested a refill for ${refillRequestData.medicationName}. ${refillRequestData.requestedQuantity} units requested.`,
+    objectives: [
+      'Review refill eligibility',
+      'Verify remaining refills',
+      'Process refill request',
+      'Notify patient of decision',
+    ],
+    priority: refillRequestData.urgency === 'urgent' ? 'high' : 'medium',
+    dueDate: new Date(Date.now() + (refillRequestData.urgency === 'urgent' ? 24 : 72) * 60 * 60 * 1000), // 1 day for urgent, 3 days for routine
+    trigger: {
+      type: 'manual',
+      sourceId: refillRequestData.medicationId,
+      sourceType: 'Medication',
+      triggerDate: new Date(),
+      triggerDetails: {
+        source: 'patient_portal',
+        requestedBy: refillRequestData.requestedBy,
+      },
+    },
+    relatedRecords: {
+      medicationId: refillRequestData.medicationId,
+    },
+    metadata: {
+      refillRequest: {
+        medicationId: refillRequestData.medicationId,
+        medicationName: refillRequestData.medicationName,
+        currentRefillsRemaining: refillRequestData.currentRefillsRemaining,
+        requestedQuantity: refillRequestData.requestedQuantity,
+        urgency: refillRequestData.urgency || 'routine',
+        patientNotes: refillRequestData.patientNotes,
+        estimatedPickupDate: refillRequestData.estimatedPickupDate,
+        requestedBy: refillRequestData.requestedBy,
+        requestedAt: new Date(),
+      },
+    },
+    createdBy: refillRequestData.requestedBy,
+  };
+  
+  return this.create(taskData);
+};
+
 // Instance method to escalate priority
 followUpTaskSchema.methods.escalate = function (
   this: IFollowUpTask,
@@ -606,6 +920,147 @@ followUpTaskSchema.methods.isCriticallyOverdue = function (
 ): boolean {
   const daysOverdue = this.get('daysOverdue');
   return daysOverdue > days;
+};
+
+// Refill request specific methods
+followUpTaskSchema.methods.approveRefillRequest = function (
+  this: IFollowUpTask,
+  approvedQuantity: number,
+  pharmacistId: mongoose.Types.ObjectId,
+  pharmacistNotes?: string
+): void {
+  if (this.type !== 'medication_refill_request') {
+    throw new Error('This method can only be called on refill request tasks');
+  }
+  
+  if (!this.metadata?.refillRequest) {
+    throw new Error('Refill request metadata is missing');
+  }
+  
+  this.status = 'completed';
+  this.completedAt = new Date();
+  this.completedBy = pharmacistId;
+  
+  this.metadata.refillRequest.approvedQuantity = approvedQuantity;
+  if (pharmacistNotes) {
+    this.metadata.refillRequest.pharmacistNotes = pharmacistNotes;
+  }
+  
+  this.outcome = {
+    status: 'successful',
+    notes: `Refill approved for ${approvedQuantity} units`,
+    nextActions: ['Prepare medication for pickup', 'Notify patient'],
+    appointmentCreated: false,
+  };
+};
+
+followUpTaskSchema.methods.denyRefillRequest = function (
+  this: IFollowUpTask,
+  denialReason: string,
+  pharmacistId: mongoose.Types.ObjectId
+): void {
+  if (this.type !== 'medication_refill_request') {
+    throw new Error('This method can only be called on refill request tasks');
+  }
+  
+  if (!this.metadata?.refillRequest) {
+    throw new Error('Refill request metadata is missing');
+  }
+  
+  this.status = 'completed';
+  this.completedAt = new Date();
+  this.completedBy = pharmacistId;
+  
+  this.metadata.refillRequest.denialReason = denialReason;
+  
+  this.outcome = {
+    status: 'unsuccessful',
+    notes: `Refill denied: ${denialReason}`,
+    nextActions: ['Notify patient of denial', 'Suggest alternatives if applicable'],
+    appointmentCreated: false,
+  };
+};
+
+followUpTaskSchema.methods.requireNewPrescription = function (
+  this: IFollowUpTask,
+  pharmacistId: mongoose.Types.ObjectId,
+  notes?: string
+): void {
+  if (this.type !== 'medication_refill_request') {
+    throw new Error('This method can only be called on refill request tasks');
+  }
+  
+  if (!this.metadata?.refillRequest) {
+    throw new Error('Refill request metadata is missing');
+  }
+  
+  this.status = 'completed';
+  this.completedAt = new Date();
+  this.completedBy = pharmacistId;
+  
+  this.metadata.refillRequest.prescriptionRequired = true;
+  if (notes) {
+    this.metadata.refillRequest.pharmacistNotes = notes;
+  }
+  
+  this.outcome = {
+    status: 'partially_successful',
+    notes: 'New prescription required from doctor',
+    nextActions: ['Contact doctor for new prescription', 'Schedule appointment if needed'],
+    appointmentCreated: false,
+  };
+};
+
+followUpTaskSchema.methods.isRefillEligible = function (this: IFollowUpTask): boolean {
+  if (this.type !== 'medication_refill_request') {
+    return false;
+  }
+  
+  if (!this.metadata?.refillRequest) {
+    return false;
+  }
+  
+  const refillData = this.metadata.refillRequest;
+  
+  // Check if there are refills remaining
+  if (refillData.currentRefillsRemaining <= 0) {
+    return false;
+  }
+  
+  // Check if task is still pending
+  if (this.status !== 'pending' && this.status !== 'in_progress') {
+    return false;
+  }
+  
+  return true;
+};
+
+followUpTaskSchema.methods.getRefillRequestDetails = function (this: IFollowUpTask): any {
+  if (this.type !== 'medication_refill_request') {
+    return null;
+  }
+  
+  if (!this.metadata?.refillRequest) {
+    return null;
+  }
+  
+  const refillData = this.metadata.refillRequest;
+  
+  return {
+    medicationName: refillData.medicationName,
+    requestedQuantity: refillData.requestedQuantity,
+    currentRefillsRemaining: refillData.currentRefillsRemaining,
+    urgency: refillData.urgency,
+    patientNotes: refillData.patientNotes,
+    requestedAt: refillData.requestedAt,
+    estimatedPickupDate: refillData.estimatedPickupDate,
+    isEligible: this.isRefillEligible(),
+    status: this.status,
+    approvedQuantity: refillData.approvedQuantity,
+    denialReason: refillData.denialReason,
+    pharmacistNotes: refillData.pharmacistNotes,
+    prescriptionRequired: refillData.prescriptionRequired,
+  };
 };
 
 export default mongoose.model<IFollowUpTask>('FollowUpTask', followUpTaskSchema);
