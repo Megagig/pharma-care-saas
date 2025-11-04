@@ -288,95 +288,7 @@ export const validatePharmacist = async (
     }
 };
 
-/**
- * Validate appointment status transition
- */
-export const validateStatusTransition = (
-    currentStatus: IAppointment['status'],
-    newStatus: IAppointment['status']
-): void => {
-    const validTransitions: Record<string, string[]> = {
-        scheduled: ['confirmed', 'in_progress', 'cancelled', 'rescheduled', 'no_show'],
-        confirmed: ['in_progress', 'completed', 'cancelled', 'no_show'],
-        in_progress: ['completed', 'cancelled'],
-        completed: [], // Cannot transition from completed
-        cancelled: [], // Cannot transition from cancelled
-        no_show: [], // Cannot transition from no_show
-        rescheduled: [] // Cannot transition from rescheduled (new appointment created)
-    };
 
-    const allowedTransitions = validTransitions[currentStatus] || [];
-
-    if (!allowedTransitions.includes(newStatus)) {
-        throw createAppointmentBusinessLogicError(
-            `Cannot transition from ${currentStatus} to ${newStatus}`,
-            'INVALID_STATUS_TRANSITION'
-        );
-    }
-};
-
-/**
- * Validate recurrence pattern
- */
-export const validateRecurrencePattern = (
-    recurrencePattern: IAppointment['recurrencePattern']
-): void => {
-    if (!recurrencePattern) return;
-
-    // Validate frequency
-    const validFrequencies = ['daily', 'weekly', 'biweekly', 'monthly', 'quarterly'];
-    if (!validFrequencies.includes(recurrencePattern.frequency)) {
-        throw createValidationError(
-            'recurrencePattern.frequency',
-            'Invalid recurrence frequency',
-            recurrencePattern.frequency
-        );
-    }
-
-    // Validate interval
-    if (recurrencePattern.interval < 1 || recurrencePattern.interval > 12) {
-        throw createValidationError(
-            'recurrencePattern.interval',
-            'Interval must be between 1 and 12',
-            recurrencePattern.interval
-        );
-    }
-
-    // Validate end conditions
-    if (!recurrencePattern.endDate && !recurrencePattern.endAfterOccurrences) {
-        throw createValidationError(
-            'recurrencePattern',
-            'Either endDate or endAfterOccurrences must be specified',
-            recurrencePattern
-        );
-    }
-
-    // Validate end date is in the future
-    if (recurrencePattern.endDate) {
-        const endDate = new Date(recurrencePattern.endDate);
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
-
-        if (endDate < today) {
-            throw createValidationError(
-                'recurrencePattern.endDate',
-                'End date cannot be in the past',
-                recurrencePattern.endDate
-            );
-        }
-    }
-
-    // Validate end after occurrences
-    if (recurrencePattern.endAfterOccurrences) {
-        if (recurrencePattern.endAfterOccurrences < 1 || recurrencePattern.endAfterOccurrences > 52) {
-            throw createValidationError(
-                'recurrencePattern.endAfterOccurrences',
-                'End after occurrences must be between 1 and 52',
-                recurrencePattern.endAfterOccurrences
-            );
-        }
-    }
-};
 
 /**
  * Validate follow-up task priority and due date
@@ -488,6 +400,308 @@ export const validateAppointmentCancellation = (
             'Appointment is already cancelled',
             'APPOINTMENT_ALREADY_CANCELLED'
         );
+    }
+};
+
+/**
+ * Validate appointment data structure
+ */
+export const validateAppointmentData = (data: any): void => {
+    // Check required fields
+    if (!data.patientId) {
+        throw new Error('patientId is required');
+    }
+
+    if (!data.type) {
+        throw new Error('Appointment type is required');
+    }
+
+    if (!data.scheduledDate) {
+        throw new Error('Scheduled date is required');
+    }
+
+    if (!data.scheduledTime) {
+        throw new Error('Scheduled time is required');
+    }
+
+    if (!data.duration) {
+        throw new Error('Duration is required');
+    }
+
+    // Validate appointment type
+    const validTypes = [
+        'mtm_session',
+        'chronic_disease_review',
+        'new_medication_consultation',
+        'vaccination',
+        'health_check',
+        'smoking_cessation',
+        'general_followup'
+    ];
+
+    if (!validTypes.includes(data.type)) {
+        throw new Error('Invalid appointment type');
+    }
+
+    // Validate scheduled date is not in the past
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const appointmentDate = new Date(data.scheduledDate);
+    appointmentDate.setHours(0, 0, 0, 0);
+
+    if (appointmentDate < today) {
+        throw new Error('Appointment date cannot be in the past');
+    }
+
+    // Validate duration
+    if (data.duration < 5 || data.duration > 120) {
+        throw new Error('Duration must be between 5 and 120 minutes');
+    }
+
+    // Validate title if provided
+    if (data.title && (data.title.length < 3 || data.title.length > 200)) {
+        throw new Error('Title must be between 3 and 200 characters');
+    }
+};
+
+/**
+ * Validate time slot format
+ */
+export const validateTimeSlot = (time: any): void => {
+    if (typeof time !== 'string') {
+        throw new Error('Time must be a string');
+    }
+
+    const timeRegex = /^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/;
+    if (!timeRegex.test(time)) {
+        throw new Error('Invalid time format. Expected HH:mm');
+    }
+};
+
+/**
+ * Validate appointment conflict between two appointments
+ */
+export const validateAppointmentConflict = (
+    existing: { scheduledDate: Date; scheduledTime: string; duration: number },
+    newAppointment: { scheduledDate: Date; scheduledTime: string; duration: number },
+    bufferMinutes: number = 0
+): boolean => {
+    // Different dates = no conflict
+    if (existing.scheduledDate.toDateString() !== newAppointment.scheduledDate.toDateString()) {
+        return false;
+    }
+
+    // Calculate time ranges
+    const [existingHours, existingMinutes] = existing.scheduledTime.split(':').map(Number);
+    const existingStart = existingHours * 60 + existingMinutes;
+    const existingEnd = existingStart + existing.duration + bufferMinutes;
+
+    const [newHours, newMinutes] = newAppointment.scheduledTime.split(':').map(Number);
+    const newStart = newHours * 60 + newMinutes;
+    const newEnd = newStart + newAppointment.duration + bufferMinutes;
+
+    // Check for overlap
+    return (
+        (newStart >= existingStart && newStart < existingEnd) ||
+        (newEnd > existingStart && newEnd <= existingEnd) ||
+        (newStart <= existingStart && newEnd >= existingEnd)
+    );
+};
+
+/**
+ * Validate outcome data
+ */
+export const validateOutcomeData = (outcome: any): void => {
+    if (!outcome.status) {
+        throw new Error('Outcome status is required');
+    }
+
+    const validStatuses = ['successful', 'partially_successful', 'unsuccessful', 'cancelled', 'no_show'];
+    if (!validStatuses.includes(outcome.status)) {
+        throw new Error('Invalid outcome status');
+    }
+
+    if (!outcome.notes || outcome.notes.trim().length === 0) {
+        throw new Error('Outcome notes are required');
+    }
+
+    if (outcome.notes.length > 2000) {
+        throw new Error('Outcome notes cannot exceed 2000 characters');
+    }
+};
+
+/**
+ * Calculate appointment end time
+ */
+export const calculateAppointmentEndTime = (date: Date, time: string, duration: number): Date => {
+    const [hours, minutes] = time.split(':').map(Number);
+    const endTime = new Date(date);
+    endTime.setHours(hours, minutes + duration, 0, 0);
+    return endTime;
+};
+
+/**
+ * Check if a date is a working day
+ */
+export const isWorkingDay = (
+    date: Date,
+    workingHours: Array<{ dayOfWeek: number; isWorkingDay: boolean }>
+): boolean => {
+    const dayOfWeek = date.getDay();
+    const workingDay = workingHours.find(wh => wh.dayOfWeek === dayOfWeek);
+    return workingDay?.isWorkingDay || false;
+};
+
+/**
+ * Check if time is within working hours
+ */
+export const isWithinWorkingHours = (
+    time: string,
+    shifts: Array<{
+        startTime: string;
+        endTime: string;
+        breakStart?: string;
+        breakEnd?: string;
+    }>
+): boolean => {
+    const [hours, minutes] = time.split(':').map(Number);
+    const timeInMinutes = hours * 60 + minutes;
+
+    for (const shift of shifts) {
+        const [startHours, startMinutes] = shift.startTime.split(':').map(Number);
+        const [endHours, endMinutes] = shift.endTime.split(':').map(Number);
+        const startTime = startHours * 60 + startMinutes;
+        const endTime = endHours * 60 + endMinutes;
+
+        // Check if within shift hours
+        if (timeInMinutes >= startTime && timeInMinutes < endTime) {
+            // Check if during break time
+            if (shift.breakStart && shift.breakEnd) {
+                const [breakStartHours, breakStartMinutes] = shift.breakStart.split(':').map(Number);
+                const [breakEndHours, breakEndMinutes] = shift.breakEnd.split(':').map(Number);
+                const breakStart = breakStartHours * 60 + breakStartMinutes;
+                const breakEnd = breakEndHours * 60 + breakEndMinutes;
+
+                if (timeInMinutes >= breakStart && timeInMinutes < breakEnd) {
+                    continue; // During break, check next shift
+                }
+            }
+            return true;
+        }
+    }
+
+    return false;
+};
+
+/**
+ * Format appointment time
+ */
+export const formatAppointmentTime = (hours: number, minutes: number): string => {
+    const paddedHours = hours.toString().padStart(2, '0');
+    const paddedMinutes = minutes.toString().padStart(2, '0');
+    return `${paddedHours}:${paddedMinutes}`;
+};
+
+/**
+ * Parse appointment time
+ */
+export const parseAppointmentTime = (time: string): { hours: number; minutes: number } => {
+    const timeRegex = /^([0-1]?[0-9]|2[0-3]):([0-5][0-9])$/;
+    const match = time.match(timeRegex);
+
+    if (!match) {
+        throw new Error('Invalid time format. Expected HH:mm');
+    }
+
+    return {
+        hours: parseInt(match[1], 10),
+        minutes: parseInt(match[2], 10)
+    };
+};
+
+/**
+ * Enhanced validate status transition with unknown status check
+ */
+export const validateStatusTransition = (
+    currentStatus: IAppointment['status'],
+    newStatus: IAppointment['status']
+): void => {
+    const validStatuses = ['scheduled', 'confirmed', 'in_progress', 'completed', 'cancelled', 'no_show', 'rescheduled'];
+    
+    if (!validStatuses.includes(currentStatus)) {
+        throw new Error(`Unknown status: ${currentStatus}`);
+    }
+
+    if (!validStatuses.includes(newStatus)) {
+        throw new Error(`Unknown status: ${newStatus}`);
+    }
+
+    const validTransitions: Record<string, string[]> = {
+        scheduled: ['confirmed', 'in_progress', 'cancelled', 'rescheduled', 'no_show'],
+        confirmed: ['in_progress', 'completed', 'cancelled', 'no_show'],
+        in_progress: ['completed', 'cancelled'],
+        completed: [], // Cannot transition from completed
+        cancelled: [], // Cannot transition from cancelled
+        no_show: [], // Cannot transition from no_show
+        rescheduled: [] // Cannot transition from rescheduled (new appointment created)
+    };
+
+    const allowedTransitions = validTransitions[currentStatus] || [];
+
+    if (!allowedTransitions.includes(newStatus)) {
+        throw new Error(`Invalid status transition from ${currentStatus} to ${newStatus}`);
+    }
+};
+
+/**
+ * Enhanced validate recurrence pattern
+ */
+export const validateRecurrencePattern = (
+    recurrencePattern: IAppointment['recurrencePattern']
+): void => {
+    if (!recurrencePattern) return;
+
+    // Validate frequency
+    const validFrequencies = ['daily', 'weekly', 'biweekly', 'monthly', 'quarterly'];
+    if (!validFrequencies.includes(recurrencePattern.frequency)) {
+        throw new Error('Invalid frequency');
+    }
+
+    // Validate interval
+    if (recurrencePattern.interval < 1 || recurrencePattern.interval > 12) {
+        throw new Error('Interval must be between 1 and 12');
+    }
+
+    // Validate days of week if provided
+    if (recurrencePattern.daysOfWeek) {
+        for (const day of recurrencePattern.daysOfWeek) {
+            if (day < 0 || day > 6) {
+                throw new Error('Days of week must be between 0 and 6');
+            }
+        }
+    }
+
+    // Validate end conditions
+    if (!recurrencePattern.endDate && !recurrencePattern.endAfterOccurrences) {
+        throw new Error('must specify either endDate or endAfterOccurrences');
+    }
+
+    // Validate end date is in the future
+    if (recurrencePattern.endDate) {
+        const endDate = new Date(recurrencePattern.endDate);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (endDate < today) {
+            throw new Error('End date cannot be in the past');
+        }
+    }
+
+    // Validate end after occurrences
+    if (recurrencePattern.endAfterOccurrences) {
+        if (recurrencePattern.endAfterOccurrences < 1 || recurrencePattern.endAfterOccurrences > 52) {
+            throw new Error('End after occurrences must be between 1 and 52');
+        }
     }
 };
 
