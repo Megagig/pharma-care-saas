@@ -1,529 +1,231 @@
-import * as jwt from 'jsonwebtoken';
 import { Request, Response, NextFunction } from 'express';
+import jwt from 'jsonwebtoken';
+import mongoose from 'mongoose';
 import PatientUser, { IPatientUser } from '../models/PatientUser';
-import Workplace from '../models/Workplace';
+import logger from '../utils/logger';
 
-export interface PatientAuthRequest extends Request {
-  patient?: {
-    _id: string;
-    email: string;
-    workplaceId: string;
+// Extend Request interface for patient portal authentication
+export interface PatientPortalRequest extends Request {
+  patientUser?: {
+    _id: mongoose.Types.ObjectId;
+    workplaceId: mongoose.Types.ObjectId;
     firstName: string;
     lastName: string;
+    email: string;
     status: string;
-    patientId?: string;
-    emailVerified: boolean;
-    phoneVerified: boolean;
-    isAccountLocked: boolean;
+    patientId?: mongoose.Types.ObjectId;
   };
-  patientUser?: IPatientUser;
-  workplaceId?: string;
-  workplace?: {
-    _id: string;
-    name: string;
-    isActive: boolean;
-    status: string;
-  };
+  workplaceId?: mongoose.Types.ObjectId;
 }
 
 /**
- * Enhanced authentication middleware for patient portal
- * Validates patient JWT tokens and performs comprehensive status checks
- * Includes account status validation and workspace context
+ * Patient Portal Authentication Middleware
+ * Verifies JWT token and ensures patient user is active
  */
-export const patientAuth = async (
-  req: PatientAuthRequest,
+export const patientPortalAuth = async (
+  req: PatientPortalRequest,
   res: Response,
   next: NextFunction
 ): Promise<void> => {
   try {
-    // Get token from httpOnly cookie or Authorization header
-    const token = 
-      req.cookies.patientAccessToken ||
-      req.header('Authorization')?.replace('Bearer ', '');
-
-    if (!token) {
+    // Extract token from Authorization header
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer ')) {
       res.status(401).json({
         success: false,
-        message: 'Access denied. Please log in to continue.',
-        code: 'NO_TOKEN',
-        requiresAuth: true,
+        message: 'Access token is required',
+        code: 'TOKEN_MISSING',
       });
       return;
     }
 
-    // Verify token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-      patientUserId: string;
-      workspaceId: string;
-      email: string;
-      type: string;
-    };
+    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
-    // Validate token type
-    if (decoded.type !== 'patient') {
+    // Verify JWT token
+    let decoded: any;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_SECRET!);
+    } catch (jwtError: any) {
+      logger.warn('Invalid JWT token for patient portal', {
+        error: jwtError.message,
+        token: token.substring(0, 20) + '...',
+      });
+
       res.status(401).json({
         success: false,
-        message: 'Invalid token type. Patient authentication required.',
-        code: 'INVALID_TOKEN_TYPE',
+        message: 'Invalid or expired token',
+        code: 'TOKEN_INVALID',
       });
       return;
     }
 
-    // Get patient from database with populated fields
-    const patient = await PatientUser.findById(decoded.patientUserId)
-      .select('-passwordHash -refreshTokens -verificationToken -resetToken')
-      .populate('patientId', 'firstName lastName dateOfBirth')
-      .lean();
-
-    if (!patient) {
+    // Validate token payload
+    if (!decoded.patientUserId) {
       res.status(401).json({
         success: false,
-        message: 'Patient account not found. Please register or contact support.',
-        code: 'PATIENT_NOT_FOUND',
+        message: 'Invalid token format',
+        code: 'TOKEN_INVALID_FORMAT',
       });
       return;
     }
 
-    // Check if account is locked due to failed login attempts
-    if (patient.lockUntil && patient.lockUntil > new Date()) {
-      const lockTimeRemaining = Math.ceil((patient.lockUntil.getTime() - Date.now()) / (1000 * 60));
+    // Fetch patient user from database
+    const patientUser = await PatientUser.findOne({
+      _id: decoded.patientUserId,
+      isDeleted: false,
+    }).lean();
+
+    if (!patientUser) {
+      res.status(401).json({
+        success: false,
+        message: 'Patient user not found',
+        code: 'USER_NOT_FOUND',
+      });
+      return;
+    }
+
+    // Check account status
+    if (patientUser.status === 'suspended') {
+      res.status(403).json({
+        success: false,
+        message: 'Account has been suspended',
+        code: 'ACCOUNT_SUSPENDED',
+      });
+      return;
+    }
+
+    if (patientUser.status === 'pending') {
+      res.status(403).json({
+        success: false,
+        message: 'Account is pending approval',
+        code: 'ACCOUNT_PENDING',
+      });
+      return;
+    }
+
+    if (patientUser.status !== 'active') {
+      res.status(403).json({
+        success: false,
+        message: 'Account is not active',
+        code: 'ACCOUNT_INACTIVE',
+      });
+      return;
+    }
+
+    // Check if account is locked
+    if (patientUser.isLocked && patientUser.isLocked()) {
       res.status(423).json({
         success: false,
-        message: `Account is temporarily locked due to multiple failed login attempts. Please try again in ${lockTimeRemaining} minutes.`,
+        message: 'Account is temporarily locked due to multiple failed login attempts',
         code: 'ACCOUNT_LOCKED',
-        lockUntil: patient.lockUntil,
-        minutesRemaining: lockTimeRemaining,
       });
       return;
     }
 
-    // Enhanced account status checks
-    switch (patient.status) {
-      case 'pending':
-        // Check if email verification is required
-        if (!patient.emailVerified) {
-          res.status(403).json({
-            success: false,
-            message: 'Please verify your email address before accessing the patient portal.',
-            code: 'EMAIL_VERIFICATION_REQUIRED',
-            status: patient.status,
-            requiresAction: 'email_verification',
-            email: patient.email,
-          });
-          return;
-        }
-        
-        // Account is pending approval from workspace admin
-        res.status(403).json({
-          success: false,
-          message: 'Your account is pending approval from the pharmacy administrator. You will be notified once approved.',
-          code: 'ACCOUNT_PENDING_APPROVAL',
-          status: patient.status,
-          requiresAction: 'admin_approval',
-        });
-        return;
-
-      case 'suspended':
-        res.status(403).json({
-          success: false,
-          message: 'Your account has been suspended. Please contact the pharmacy for assistance.',
-          code: 'ACCOUNT_SUSPENDED',
-          status: patient.status,
-          requiresAction: 'contact_support',
-        });
-        return;
-
-      case 'inactive':
-        res.status(403).json({
-          success: false,
-          message: 'Your account is inactive. Please contact the pharmacy to reactivate your account.',
-          code: 'ACCOUNT_INACTIVE',
-          status: patient.status,
-          requiresAction: 'account_reactivation',
-        });
-        return;
-
-      case 'active':
-        // Account is active, continue with additional checks
-        break;
-
-      default:
-        res.status(403).json({
-          success: false,
-          message: 'Account status is invalid. Please contact support.',
-          code: 'INVALID_ACCOUNT_STATUS',
-          status: patient.status,
-        });
-        return;
-    }
-
-    // Check if patient account is marked as inactive
-    if (!patient.isActive) {
-      res.status(403).json({
-        success: false,
-        message: 'Your account access has been disabled. Please contact the pharmacy.',
-        code: 'ACCOUNT_DISABLED',
-        requiresAction: 'contact_support',
-      });
-      return;
-    }
-
-    // Validate workspace context
-    const workspaceId = patient.workplaceId.toString();
-    
-    // Verify workspace exists and is active
-    const workplace = await Workplace.findById(workspaceId)
-      .select('name isActive status subscriptionStatus')
-      .lean();
-
-    if (!workplace) {
-      res.status(403).json({
-        success: false,
-        message: 'Associated pharmacy not found. Please contact support.',
-        code: 'WORKPLACE_NOT_FOUND',
-        requiresAction: 'contact_support',
-      });
-      return;
-    }
-
-    if (workplace.subscriptionStatus !== 'active' && workplace.subscriptionStatus !== 'trial') {
-      res.status(403).json({
-        success: false,
-        message: 'The associated pharmacy is currently inactive. Please contact them directly.',
-        code: 'WORKPLACE_INACTIVE',
-        workplaceStatus: workplace.subscriptionStatus,
-        requiresAction: 'contact_pharmacy',
-      });
-      return;
-    }
-
-    // Check workspace context matches token
-    if (decoded.workspaceId !== workspaceId) {
-      res.status(403).json({
-        success: false,
-        message: 'Workspace context mismatch. Please log in again.',
-        code: 'WORKSPACE_MISMATCH',
-        requiresAuth: true,
-      });
-      return;
-    }
-
-    // Attach comprehensive patient info to request
-    req.patient = {
-      _id: patient._id.toString(),
-      email: patient.email,
-      workplaceId: workspaceId,
-      firstName: patient.firstName,
-      lastName: patient.lastName,
-      status: patient.status,
-      patientId: patient.patientId?.toString(),
-      emailVerified: patient.emailVerified,
-      phoneVerified: patient.phoneVerified,
-      isAccountLocked: !!(patient.lockUntil && patient.lockUntil > new Date()),
+    // Attach patient user data to request
+    req.patientUser = {
+      _id: patientUser._id,
+      workplaceId: patientUser.workplaceId,
+      firstName: patientUser.firstName,
+      lastName: patientUser.lastName,
+      email: patientUser.email,
+      status: patientUser.status,
+      patientId: patientUser.patientId,
     };
 
-    req.patientUser = patient as IPatientUser;
-    req.workplaceId = workspaceId;
-    req.workplace = {
-      _id: workplace._id.toString(),
-      name: workplace.name,
-      isActive: workplace.subscriptionStatus === 'active' || workplace.subscriptionStatus === 'trial',
-      status: workplace.subscriptionStatus,
-    };
+    req.workplaceId = patientUser.workplaceId;
 
-    // Update last login time (async, don't wait)
-    PatientUser.updateOne(
-      { _id: patient._id },
-      { 
-        lastLoginAt: new Date(),
-        $unset: { loginAttempts: 1, lockUntil: 1 } // Reset failed attempts on successful auth
-      }
-    ).exec().catch(err => {
-      console.error('Failed to update patient last login:', err);
+    // Update last activity (optional - can be done periodically instead)
+    try {
+      await PatientUser.updateOne(
+        { _id: patientUser._id },
+        { lastLoginAt: new Date() }
+      );
+    } catch (updateError: any) {
+      // Don't fail the request if activity update fails
+      logger.warn('Failed to update patient last activity', {
+        error: updateError.message,
+        patientUserId: patientUser._id,
+      });
+    }
+
+    logger.debug('Patient portal authentication successful', {
+      patientUserId: patientUser._id,
+      workplaceId: patientUser.workplaceId,
+      email: patientUser.email,
     });
 
     next();
   } catch (error: any) {
-    // Handle JWT-specific errors
-    if (error.name === 'JsonWebTokenError') {
-      res.status(401).json({
-        success: false,
-        message: 'Invalid authentication token. Please log in again.',
-        code: 'INVALID_TOKEN',
-        requiresAuth: true,
-      });
-      return;
-    }
+    logger.error('Error in patient portal authentication middleware', {
+      error: error.message,
+      stack: error.stack,
+    });
 
-    if (error.name === 'TokenExpiredError') {
-      res.status(401).json({
-        success: false,
-        message: 'Your session has expired. Please log in again.',
-        code: 'TOKEN_EXPIRED',
-        requiresRefresh: true,
-        requiresAuth: true,
-      });
-      return;
-    }
-
-    if (error.name === 'NotBeforeError') {
-      res.status(401).json({
-        success: false,
-        message: 'Authentication token is not yet valid.',
-        code: 'TOKEN_NOT_ACTIVE',
-      });
-      return;
-    }
-
-    // Log error for debugging (in development)
-    if (process.env.NODE_ENV === 'development') {
-      console.error('Patient auth middleware error:', {
-        error: error.message,
-        stack: error.stack,
-        url: req.url,
-        method: req.method,
-      });
-    }
-
-    // Generic server error
     res.status(500).json({
       success: false,
-      message: 'Authentication failed due to server error. Please try again.',
-      code: 'AUTH_ERROR',
+      message: 'Authentication service error',
+      code: 'AUTH_SERVICE_ERROR',
     });
   }
 };
 
 /**
- * Optional patient authentication
- * Allows requests to proceed even without authentication
- * Sets patient info if valid token is provided
- */
-export const patientAuthOptional = async (
-  req: PatientAuthRequest,
-  res: Response,
-  next: NextFunction
-): Promise<void> => {
-  try {
-    const token = 
-      req.cookies.patientAccessToken ||
-      req.header('Authorization')?.replace('Bearer ', '');
-
-    if (!token) {
-      // No token, but that's okay for optional auth
-      next();
-      return;
-    }
-
-    // Try to validate token
-    const decoded = jwt.verify(token, process.env.JWT_SECRET!) as {
-      patientUserId: string;
-      workspaceId: string;
-      email: string;
-      type: string;
-    };
-
-    if (decoded.type === 'patient') {
-      const patient = await PatientUser.findById(decoded.patientUserId)
-        .select('-passwordHash -refreshTokens -verificationToken -resetToken')
-        .populate('patientId', 'firstName lastName')
-        .lean();
-
-      // Only set patient info if account is active and not locked
-      if (patient && 
-          patient.status === 'active' && 
-          patient.isActive &&
-          (!patient.lockUntil || patient.lockUntil <= new Date())) {
-        
-        req.patient = {
-          _id: patient._id.toString(),
-          email: patient.email,
-          workplaceId: patient.workplaceId.toString(),
-          firstName: patient.firstName,
-          lastName: patient.lastName,
-          status: patient.status,
-          patientId: patient.patientId?.toString(),
-          emailVerified: patient.emailVerified,
-          phoneVerified: patient.phoneVerified,
-          isAccountLocked: false,
-        };
-
-        req.patientUser = patient as IPatientUser;
-        req.workplaceId = patient.workplaceId.toString();
-      }
-    }
-
-    next();
-  } catch (error) {
-    // Ignore errors for optional auth - just proceed without patient info
-    next();
-  }
-};
-
-/**
- * Middleware to require active patient status
- * Must be used after patientAuth middleware
- */
-export const requireActivePatient = (
-  req: PatientAuthRequest,
-  res: Response,
-  next: NextFunction
-): void => {
-  if (!req.patient) {
-    res.status(401).json({
-      success: false,
-      message: 'Patient authentication required.',
-      code: 'NO_PATIENT_AUTH',
-      requiresAuth: true,
-    });
-    return;
-  }
-
-  if (req.patient.status !== 'active') {
-    res.status(403).json({
-      success: false,
-      message: 'Active patient account required.',
-      code: 'PATIENT_NOT_ACTIVE',
-      status: req.patient.status,
-    });
-    return;
-  }
-
-  next();
-};
-
-/**
- * Middleware to require email verification
- * Must be used after patientAuth middleware
- */
-export const requireEmailVerification = (
-  req: PatientAuthRequest,
-  res: Response,
-  next: NextFunction
-): void => {
-  if (!req.patient) {
-    res.status(401).json({
-      success: false,
-      message: 'Patient authentication required.',
-      code: 'NO_PATIENT_AUTH',
-      requiresAuth: true,
-    });
-    return;
-  }
-
-  if (!req.patient.emailVerified) {
-    res.status(403).json({
-      success: false,
-      message: 'Email verification required to access this feature.',
-      code: 'EMAIL_VERIFICATION_REQUIRED',
-      requiresAction: 'email_verification',
-      email: req.patient.email,
-    });
-    return;
-  }
-
-  next();
-};
-
-/**
- * Middleware to require linked patient record
- * Must be used after patientAuth middleware
- */
-export const requireLinkedPatient = (
-  req: PatientAuthRequest,
-  res: Response,
-  next: NextFunction
-): void => {
-  if (!req.patient) {
-    res.status(401).json({
-      success: false,
-      message: 'Patient authentication required.',
-      code: 'NO_PATIENT_AUTH',
-      requiresAuth: true,
-    });
-    return;
-  }
-
-  if (!req.patient.patientId) {
-    res.status(403).json({
-      success: false,
-      message: 'Your account must be linked to a patient record to access this feature. Please contact the pharmacy.',
-      code: 'PATIENT_RECORD_NOT_LINKED',
-      requiresAction: 'contact_pharmacy',
-    });
-    return;
-  }
-
-  next();
-};
-
-/**
- * Middleware to validate workspace context
+ * Optional middleware to validate workspace context
  * Ensures the patient belongs to the specified workspace
  */
 export const validateWorkspaceContext = (
-  req: PatientAuthRequest,
+  req: PatientPortalRequest,
   res: Response,
   next: NextFunction
 ): void => {
-  if (!req.patient || !req.workplaceId) {
-    res.status(401).json({
-      success: false,
-      message: 'Patient authentication and workspace context required.',
-      code: 'NO_WORKSPACE_CONTEXT',
-      requiresAuth: true,
-    });
-    return;
-  }
-
-  // Check if workspace ID from URL params matches authenticated patient's workspace
-  const urlWorkspaceId = req.params.workspaceId || req.query.workspaceId;
+  const workspaceIdParam = req.params.workspaceId;
   
-  if (urlWorkspaceId && urlWorkspaceId !== req.workplaceId) {
-    res.status(403).json({
-      success: false,
-      message: 'Access denied. You can only access resources from your associated pharmacy.',
-      code: 'WORKSPACE_ACCESS_DENIED',
-      userWorkspaceId: req.workplaceId,
-      requestedWorkspaceId: urlWorkspaceId,
-    });
-    return;
+  if (workspaceIdParam) {
+    if (!mongoose.Types.ObjectId.isValid(workspaceIdParam)) {
+      res.status(400).json({
+        success: false,
+        message: 'Invalid workspace ID format',
+        code: 'INVALID_WORKSPACE_ID',
+      });
+      return;
+    }
+
+    const requestedWorkspaceId = new mongoose.Types.ObjectId(workspaceIdParam);
+    
+    if (!req.patientUser?.workplaceId.equals(requestedWorkspaceId)) {
+      res.status(403).json({
+        success: false,
+        message: 'Access denied to this workspace',
+        code: 'WORKSPACE_ACCESS_DENIED',
+      });
+      return;
+    }
   }
 
   next();
 };
 
 /**
- * Middleware for patient portal rate limiting
- * Implements basic rate limiting per patient
+ * Rate limiting middleware for patient portal endpoints
  */
-export const patientRateLimit = (
-  maxRequests: number = 100,
-  windowMs: number = 15 * 60 * 1000 // 15 minutes
-) => {
-  const requestCounts = new Map<string, { count: number; resetTime: number }>();
+export const patientPortalRateLimit = (maxRequests: number = 100, windowMs: number = 15 * 60 * 1000) => {
+  const requests = new Map<string, { count: number; resetTime: number }>();
 
-  return (
-    req: PatientAuthRequest,
-    res: Response,
-    next: NextFunction
-  ): void => {
-    const patientId = req.patient?._id;
+  return (req: PatientPortalRequest, res: Response, next: NextFunction): void => {
+    const patientUserId = req.patientUser?._id.toString();
     
-    if (!patientId) {
-      // No patient auth, skip rate limiting
+    if (!patientUserId) {
       next();
       return;
     }
 
     const now = Date.now();
-    const patientKey = `patient:${patientId}`;
-    const record = requestCounts.get(patientKey);
+    const userRequests = requests.get(patientUserId);
 
-    if (!record || now > record.resetTime) {
-      // First request or window expired
-      requestCounts.set(patientKey, {
+    if (!userRequests || now > userRequests.resetTime) {
+      // Reset or initialize counter
+      requests.set(patientUserId, {
         count: 1,
         resetTime: now + windowMs,
       });
@@ -531,69 +233,50 @@ export const patientRateLimit = (
       return;
     }
 
-    if (record.count >= maxRequests) {
-      const resetIn = Math.ceil((record.resetTime - now) / 1000);
+    if (userRequests.count >= maxRequests) {
       res.status(429).json({
         success: false,
         message: 'Too many requests. Please try again later.',
         code: 'RATE_LIMIT_EXCEEDED',
-        retryAfter: resetIn,
-        limit: maxRequests,
-        windowMs: windowMs,
+        retryAfter: Math.ceil((userRequests.resetTime - now) / 1000),
       });
       return;
     }
 
-    // Increment count
-    record.count++;
+    // Increment counter
+    userRequests.count++;
     next();
   };
 };
 
 /**
- * Audit logging middleware for patient actions
- * Logs patient actions for security and compliance
+ * Middleware to log patient portal activity for audit purposes
  */
-export const auditPatientAction = (action: string) => {
-  return (
-    req: PatientAuthRequest,
-    res: Response,
-    next: NextFunction
-  ): void => {
-    // Log the action (in production, this would go to a proper audit log)
-    const auditData = {
-      timestamp: new Date().toISOString(),
-      action,
-      patientId: req.patient?._id,
-      patientEmail: req.patient?.email,
-      workplaceId: req.workplaceId,
-      method: req.method,
-      url: req.url,
-      userAgent: req.get('User-Agent'),
-      ip: req.ip || req.connection.remoteAddress,
-      body: req.method !== 'GET' ? req.body : undefined,
-      query: req.query,
+export const logPatientActivity = (action: string) => {
+  return (req: PatientPortalRequest, res: Response, next: NextFunction): void => {
+    const originalSend = res.send;
+    
+    res.send = function(data: any) {
+      // Log activity after response is sent
+      setImmediate(() => {
+        logger.info('Patient portal activity', {
+          action,
+          patientUserId: req.patientUser?._id,
+          workplaceId: req.patientUser?.workplaceId,
+          method: req.method,
+          path: req.path,
+          statusCode: res.statusCode,
+          userAgent: req.headers['user-agent'],
+          ip: req.ip,
+          timestamp: new Date(),
+        });
+      });
+
+      return originalSend.call(this, data);
     };
-
-    // In development, log to console
-    if (process.env.NODE_ENV === 'development') {
-      console.log('👤 Patient Action Audit:', auditData);
-    }
-
-    // In production, this would be sent to a secure audit logging service
-    // Example: await PatientAuditLog.create(auditData);
 
     next();
   };
 };
 
-export default {
-  patientAuth,
-  patientAuthOptional,
-  requireActivePatient,
-  requireEmailVerification,
-  requireLinkedPatient,
-  validateWorkspaceContext,
-  patientRateLimit,
-  auditPatientAction,
-};
+export default patientPortalAuth;
