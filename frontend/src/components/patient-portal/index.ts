@@ -14,3 +14,6 @@ export { default as VitalsLogging } from './VitalsLogging';
 export { default as MessageThread } from './MessageThread';
 export { default as MessageInput } from './MessageInput';
 export { default as FileAttachment } from './FileAttachment';
+
+// Rating and Feedback Components
+export { default as ConsultationRating } from './ConsultationRating';
