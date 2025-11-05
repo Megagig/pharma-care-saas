@@ -16,7 +16,7 @@ interface SEOHeadProps {
 }
 
 const SEOHead: React.FC<SEOHeadProps> = ({
-  title = 'PharmaCare Patient Portal',
+  title = 'PharmacyCopilot Patient Portal',
   description = 'Access your pharmacy services online. Book appointments, manage prescriptions, communicate with your pharmacist, and take control of your health journey.',
   keywords = ['pharmacy', 'healthcare', 'patient portal', 'prescriptions', 'health'],
   image = '/images/og-default.jpg',
@@ -28,7 +28,7 @@ const SEOHead: React.FC<SEOHeadProps> = ({
   section,
   tags = [],
 }) => {
-  const siteName = 'PharmaCare Patient Portal';
+  const siteName = 'PharmacyCopilot Patient Portal';
   const fullTitle = title.includes(siteName) ? title : `${title} | ${siteName}`;
   const keywordsString = [...keywords, ...tags].join(', ');
 
