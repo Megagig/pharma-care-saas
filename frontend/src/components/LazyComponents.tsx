@@ -73,6 +73,12 @@ export const LazyLicenseUpload = lazy(() => import('../components/license/Licens
 // Workspace management components
 export const LazyWorkspaceTeam = lazy(() => import('../pages/workspace/WorkspaceTeam'));
 
+// Blog components
+export const LazyBlogPage = lazy(() => import('../pages/public/BlogPage'));
+export const LazyBlogPostDetails = lazy(() => import('../components/blog/BlogPostDetails'));
+export const LazyBlogManagement = lazy(() => import('../pages/super-admin/BlogManagement'));
+export const LazyBlogPostEditor = lazy(() => import('../pages/super-admin/BlogPostEditor'));
+
 // Preloading functions for critical routes
 export const preloadCriticalRoutes = () => {
   // Preload dashboard and patients as they are most commonly accessed

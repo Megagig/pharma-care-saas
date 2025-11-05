@@ -78,6 +78,10 @@ import {
   LazyPatientPortal,
   LazyPatientAuth,
   LazyPublicPatientPortal,
+  LazyBlogPage,
+  LazyBlogPostDetails,
+  LazyBlogManagement,
+  LazyBlogPostEditor,
 } from './components/LazyComponents';
 
 // Additional lazy imports
@@ -250,6 +254,25 @@ function App(): JSX.Element {
                             path="/reset-password"
                             element={<ResetPassword />}
                           />
+
+                          {/* Blog Routes - Public */}
+                          <Route
+                            path="/blog"
+                            element={
+                              <LazyWrapper fallback={PageSkeleton}>
+                                <LazyBlogPage />
+                              </LazyWrapper>
+                            }
+                          />
+                          <Route
+                            path="/blog/:slug"
+                            element={
+                              <LazyWrapper fallback={PageSkeleton}>
+                                <LazyBlogPostDetails />
+                              </LazyWrapper>
+                            }
+                          />
+
                           {/* Protected Routes */}
                           <Route
                             path="/dashboard"
@@ -884,6 +907,44 @@ function App(): JSX.Element {
                                 <AppLayout>
                                   <LazyWrapper fallback={PageSkeleton}>
                                     <LazyFeatureManagement />
+                                  </LazyWrapper>
+                                </AppLayout>
+                              </ProtectedRoute>
+                            }
+                          />
+
+                          {/* Super Admin Blog Management Routes */}
+                          <Route
+                            path="/super-admin/blog"
+                            element={
+                              <ProtectedRoute requiredRole="super_admin">
+                                <AppLayout>
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyBlogManagement />
+                                  </LazyWrapper>
+                                </AppLayout>
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/super-admin/blog/new"
+                            element={
+                              <ProtectedRoute requiredRole="super_admin">
+                                <AppLayout>
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyBlogPostEditor />
+                                  </LazyWrapper>
+                                </AppLayout>
+                              </ProtectedRoute>
+                            }
+                          />
+                          <Route
+                            path="/super-admin/blog/edit/:id"
+                            element={
+                              <ProtectedRoute requiredRole="super_admin">
+                                <AppLayout>
+                                  <LazyWrapper fallback={PageSkeleton}>
+                                    <LazyBlogPostEditor />
                                   </LazyWrapper>
                                 </AppLayout>
                               </ProtectedRoute>

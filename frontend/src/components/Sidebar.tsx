@@ -211,6 +211,12 @@ const Sidebar = () => {
       show: hasRole('super_admin'),
     },
     {
+      name: 'Blog Management',
+      path: '/super-admin/blog',
+      icon: MenuBookIcon,
+      show: hasRole('super_admin'),
+    },
+    {
       name: 'Audit Trail',
       path: '/super-admin/audit-trail',
       icon: AssessmentIcon,
