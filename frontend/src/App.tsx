@@ -14,6 +14,7 @@ import { createAppTheme } from './theme';
 import { AuthProvider } from './context/AuthContext';
 import { FeatureFlagProvider } from './context/FeatureFlagContext';
 import { SubscriptionProvider } from './context/SubscriptionContext';
+import { PatientAuthProvider } from './contexts/PatientAuthContext';
 import { initializeStores } from './stores';
 import { queryClient, queryPrefetcher } from './lib/queryClient';
 import { initializeQueryDevtools } from './lib/queryDevtools';
@@ -26,10 +27,12 @@ import Sidebar from './components/Sidebar';
 import { NotificationProvider } from './components/common/NotificationSystem';
 import CustomThemeProvider from './components/providers/ThemeProvider';
 import ServiceWorkerUpdateNotification from './components/ServiceWorkerUpdateNotification';
+import PatientPortalRoutes from './routes/PatientPortalRoutes';
 
 // Import theme styles
 import './styles/theme.css';
 import './styles/dark-mode-overrides.css';
+import './styles/accessibility.css';
 
 // Lazy loading components and utilities
 import {
@@ -182,7 +185,8 @@ function App(): JSX.Element {
             <AuthProvider>
               <SubscriptionProvider>
                 <FeatureFlagProvider>
-                  <NotificationProvider>
+                  <PatientAuthProvider>
+                    <NotificationProvider>
                     <Router>
                       <AppHooks />
                       <Box
@@ -255,23 +259,7 @@ function App(): JSX.Element {
                             element={<ResetPassword />}
                           />
 
-                          {/* Blog Routes - Public */}
-                          <Route
-                            path="/blog"
-                            element={
-                              <LazyWrapper fallback={PageSkeleton}>
-                                <LazyBlogPage />
-                              </LazyWrapper>
-                            }
-                          />
-                          <Route
-                            path="/blog/:slug"
-                            element={
-                              <LazyWrapper fallback={PageSkeleton}>
-                                <LazyBlogPostDetails />
-                              </LazyWrapper>
-                            }
-                          />
+                          {/* Blog Routes - Now handled by PatientPortalRoutes */}
 
                           {/* Protected Routes */}
                           <Route
@@ -563,43 +551,11 @@ function App(): JSX.Element {
                               </ProtectedRoute>
                             }
                           />
-                          <Route
-                            path="/patient-portal"
-                            element={
-                              <ProtectedRoute>
-                                <AppLayout>
-                                  <LazyWrapper fallback={PageSkeleton}>
-                                    <LazyPatientPortal />
-                                  </LazyWrapper>
-                                </AppLayout>
-                              </ProtectedRoute>
-                            }
-                          />
-                          {/* Public Patient Portal Routes */}
-                          <Route
-                            path="/patient-portal-public"
-                            element={
-                              <LazyWrapper fallback={PageSkeleton}>
-                                <LazyPublicPatientPortal />
-                              </LazyWrapper>
-                            }
-                          />
-                          <Route
-                            path="/patient-auth/:workspaceId"
-                            element={
-                              <LazyWrapper fallback={PageSkeleton}>
-                                <LazyPatientAuth />
-                              </LazyWrapper>
-                            }
-                          />
-                          <Route
-                            path="/patient-portal/:workspaceId"
-                            element={
-                              <LazyWrapper fallback={PageSkeleton}>
-                                <LazyPatientPortal />
-                              </LazyWrapper>
-                            }
-                          />
+                          {/* Patient Portal Routes - Comprehensive routing system */}
+                          <Route path="/patient-*" element={<PatientPortalRoutes />} />
+                          <Route path="/blog/*" element={<PatientPortalRoutes />} />
+                          <Route path="/super-admin/blog/*" element={<PatientPortalRoutes />} />
+                          <Route path="/workspace-admin/patient-portal/*" element={<PatientPortalRoutes />} />
 
                           {/* Pharmacy Module Routes */}
                           <Route
@@ -1094,7 +1050,8 @@ function App(): JSX.Element {
                         </Routes>
                       </Box>
                     </Router>
-                  </NotificationProvider>
+                    </NotificationProvider>
+                  </PatientAuthProvider>
                 </FeatureFlagProvider>
               </SubscriptionProvider>
             </AuthProvider>
