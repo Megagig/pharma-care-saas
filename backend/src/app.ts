@@ -89,6 +89,8 @@ import dashboardRoutes from './routes/dashboardRoutes';
 import superAdminDashboardRoutes from './routes/superAdminDashboardRoutes';
 import superAdminAuditRoutes from './routes/superAdminAuditRoutes';
 import patientNotificationPreferencesRoutes from './routes/patientNotificationPreferencesRoutes';
+import healthBlogRoutes from './routes/healthBlog.routes';
+import healthBlogAdminRoutes from './routes/healthBlogAdmin.routes';
 import SystemIntegrationService from './services/systemIntegrationService';
 
 const app: Application = express();
@@ -392,6 +394,9 @@ app.get('/api/health/cache', async (req: Request, res: Response) => {
 app.use('/api/public', publicApiRoutes);
 app.use('/api/public/drugs', publicDrugDetailsRoutes);
 
+// Public Blog routes (no authentication required)
+app.use('/api/public/blog', healthBlogRoutes);
+
 // Public Appointment routes (no authentication required)
 import publicAppointmentRoutes from './routes/publicAppointmentRoutes';
 app.use('/api/public/appointments', publicAppointmentRoutes);
@@ -439,6 +444,9 @@ app.use('/api/super-admin/dashboard', superAdminDashboardRoutes);
 
 // Super Admin Audit Trail routes (Super Admin only)
 app.use('/api/super-admin/audit-trail', superAdminAuditRoutes);
+
+// Super Admin Blog Management routes (Super Admin only)
+app.use('/api/super-admin/blog', healthBlogAdminRoutes);
 
 // Patient Management routes
 app.use('/api/patients', patientRoutes);
