@@ -139,6 +139,237 @@ const patientSchema = new mongoose_1.Schema({
         min: [0, 'Weight cannot be negative'],
         max: [1000, 'Weight seems unrealistic'],
     },
+    allergies: [
+        {
+            allergen: {
+                type: String,
+                required: [true, 'Allergen name is required'],
+                trim: true,
+                maxlength: [100, 'Allergen name cannot exceed 100 characters'],
+            },
+            reaction: {
+                type: String,
+                required: [true, 'Reaction description is required'],
+                trim: true,
+                maxlength: [500, 'Reaction description cannot exceed 500 characters'],
+            },
+            severity: {
+                type: String,
+                enum: {
+                    values: ['mild', 'moderate', 'severe'],
+                    message: 'Severity must be mild, moderate, or severe',
+                },
+                required: [true, 'Severity level is required'],
+            },
+            recordedDate: {
+                type: Date,
+                required: [true, 'Recorded date is required'],
+                default: Date.now,
+            },
+            recordedBy: {
+                type: mongoose_1.Schema.Types.ObjectId,
+                ref: 'User',
+            },
+            notes: {
+                type: String,
+                trim: true,
+                maxlength: [1000, 'Notes cannot exceed 1000 characters'],
+            },
+        },
+    ],
+    chronicConditions: [
+        {
+            condition: {
+                type: String,
+                required: [true, 'Condition name is required'],
+                trim: true,
+                maxlength: [200, 'Condition name cannot exceed 200 characters'],
+            },
+            diagnosedDate: {
+                type: Date,
+                required: [true, 'Diagnosed date is required'],
+                validate: {
+                    validator: function (value) {
+                        return value <= new Date();
+                    },
+                    message: 'Diagnosed date cannot be in the future',
+                },
+            },
+            managementPlan: {
+                type: String,
+                trim: true,
+                maxlength: [2000, 'Management plan cannot exceed 2000 characters'],
+            },
+            status: {
+                type: String,
+                enum: {
+                    values: ['active', 'managed', 'resolved'],
+                    message: 'Status must be active, managed, or resolved',
+                },
+                default: 'active',
+                required: true,
+            },
+            recordedBy: {
+                type: mongoose_1.Schema.Types.ObjectId,
+                ref: 'User',
+            },
+            notes: {
+                type: String,
+                trim: true,
+                maxlength: [1000, 'Notes cannot exceed 1000 characters'],
+            },
+        },
+    ],
+    enhancedEmergencyContacts: [
+        {
+            name: {
+                type: String,
+                required: [true, 'Emergency contact name is required'],
+                trim: true,
+                maxlength: [100, 'Name cannot exceed 100 characters'],
+            },
+            relationship: {
+                type: String,
+                required: [true, 'Relationship is required'],
+                trim: true,
+                maxlength: [50, 'Relationship cannot exceed 50 characters'],
+            },
+            phone: {
+                type: String,
+                required: [true, 'Phone number is required'],
+                validate: {
+                    validator: function (phone) {
+                        return /^\+234[0-9]{10}$/.test(phone);
+                    },
+                    message: 'Phone must be in Nigerian format (+234XXXXXXXXXX)',
+                },
+            },
+            email: {
+                type: String,
+                lowercase: true,
+                validate: {
+                    validator: function (email) {
+                        if (!email)
+                            return true;
+                        return /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(email);
+                    },
+                    message: 'Please enter a valid email',
+                },
+            },
+            isPrimary: {
+                type: Boolean,
+                default: false,
+            },
+            priority: {
+                type: Number,
+                required: [true, 'Priority is required'],
+                min: [1, 'Priority must be at least 1'],
+                max: [10, 'Priority cannot exceed 10'],
+            },
+        },
+    ],
+    insuranceInfo: {
+        provider: {
+            type: String,
+            trim: true,
+            maxlength: [100, 'Insurance provider name cannot exceed 100 characters'],
+        },
+        policyNumber: {
+            type: String,
+            trim: true,
+            maxlength: [50, 'Policy number cannot exceed 50 characters'],
+        },
+        expiryDate: {
+            type: Date,
+            validate: {
+                validator: function (value) {
+                    if (!value)
+                        return true;
+                    return value > new Date();
+                },
+                message: 'Insurance expiry date must be in the future',
+            },
+        },
+        coverageDetails: {
+            type: String,
+            trim: true,
+            maxlength: [1000, 'Coverage details cannot exceed 1000 characters'],
+        },
+        copayAmount: {
+            type: Number,
+            min: [0, 'Copay amount cannot be negative'],
+            max: [1000000, 'Copay amount seems unrealistic'],
+        },
+        isActive: {
+            type: Boolean,
+            default: true,
+        },
+    },
+    patientLoggedVitals: [
+        {
+            recordedDate: {
+                type: Date,
+                required: [true, 'Recorded date is required'],
+                default: Date.now,
+            },
+            bloodPressure: {
+                systolic: {
+                    type: Number,
+                    min: [50, 'Systolic BP too low'],
+                    max: [300, 'Systolic BP too high'],
+                },
+                diastolic: {
+                    type: Number,
+                    min: [30, 'Diastolic BP too low'],
+                    max: [200, 'Diastolic BP too high'],
+                },
+            },
+            heartRate: {
+                type: Number,
+                min: [30, 'Heart rate too low'],
+                max: [250, 'Heart rate too high'],
+            },
+            temperature: {
+                type: Number,
+                min: [30, 'Temperature too low'],
+                max: [45, 'Temperature too high'],
+            },
+            weight: {
+                type: Number,
+                min: [0, 'Weight cannot be negative'],
+                max: [1000, 'Weight seems unrealistic'],
+            },
+            glucose: {
+                type: Number,
+                min: [20, 'Glucose level too low'],
+                max: [800, 'Glucose level too high'],
+            },
+            oxygenSaturation: {
+                type: Number,
+                min: [50, 'Oxygen saturation too low'],
+                max: [100, 'Oxygen saturation cannot exceed 100%'],
+            },
+            notes: {
+                type: String,
+                trim: true,
+                maxlength: [500, 'Notes cannot exceed 500 characters'],
+            },
+            source: {
+                type: String,
+                enum: ['patient_portal'],
+                default: 'patient_portal',
+                required: true,
+            },
+            verifiedBy: {
+                type: mongoose_1.Schema.Types.ObjectId,
+                ref: 'User',
+            },
+            isVerified: {
+                type: Boolean,
+                default: false,
+            },
+        },
+    ],
     latestVitals: {
         bpSystolic: {
             type: Number,
@@ -331,6 +562,15 @@ patientSchema.index({ workplaceId: 1, locationId: 1 }, { sparse: true });
 patientSchema.index({ workplaceId: 1, 'metadata.sharedAccess.sharedWithLocations': 1 }, { sparse: true });
 patientSchema.index({ hasActiveDTP: 1 });
 patientSchema.index({ createdAt: -1 });
+patientSchema.index({ 'allergies.allergen': 1 });
+patientSchema.index({ 'allergies.severity': 1 });
+patientSchema.index({ 'chronicConditions.condition': 1 });
+patientSchema.index({ 'chronicConditions.status': 1 });
+patientSchema.index({ 'enhancedEmergencyContacts.isPrimary': 1 });
+patientSchema.index({ 'insuranceInfo.provider': 1 });
+patientSchema.index({ 'insuranceInfo.isActive': 1 });
+patientSchema.index({ 'patientLoggedVitals.recordedDate': -1 });
+patientSchema.index({ 'patientLoggedVitals.isVerified': 1 });
 patientSchema.virtual('name').get(function () {
     const parts = [this.firstName, this.otherNames, this.lastName].filter(Boolean);
     return parts.join(' ');
@@ -443,12 +683,157 @@ patientSchema.methods.getLatestDiagnosticHistory = async function () {
         .populate('pharmacistId', 'firstName lastName')
         .sort({ createdAt: -1 });
 };
+patientSchema.methods.addAllergy = function (allergyData, recordedBy) {
+    const allergy = {
+        ...allergyData,
+        recordedDate: new Date(),
+        recordedBy,
+    };
+    this.allergies.push(allergy);
+};
+patientSchema.methods.removeAllergy = function (allergyId) {
+    const initialLength = this.allergies.length;
+    this.allergies = this.allergies.filter(allergy => allergy._id?.toString() !== allergyId);
+    return this.allergies.length < initialLength;
+};
+patientSchema.methods.updateAllergy = function (allergyId, updates) {
+    const allergy = this.allergies.find(allergy => allergy._id?.toString() === allergyId);
+    if (allergy) {
+        Object.assign(allergy, updates);
+        return true;
+    }
+    return false;
+};
+patientSchema.methods.addChronicCondition = function (conditionData, recordedBy) {
+    const condition = {
+        ...conditionData,
+        recordedBy,
+    };
+    this.chronicConditions.push(condition);
+};
+patientSchema.methods.removeChronicCondition = function (conditionId) {
+    const initialLength = this.chronicConditions.length;
+    this.chronicConditions = this.chronicConditions.filter(condition => condition._id?.toString() !== conditionId);
+    return this.chronicConditions.length < initialLength;
+};
+patientSchema.methods.updateChronicCondition = function (conditionId, updates) {
+    const condition = this.chronicConditions.find(condition => condition._id?.toString() === conditionId);
+    if (condition) {
+        Object.assign(condition, updates);
+        return true;
+    }
+    return false;
+};
+patientSchema.methods.addEmergencyContact = function (contactData) {
+    if (contactData.isPrimary) {
+        this.enhancedEmergencyContacts.forEach(contact => {
+            contact.isPrimary = false;
+        });
+    }
+    this.enhancedEmergencyContacts.push(contactData);
+    this.enhancedEmergencyContacts.sort((a, b) => a.priority - b.priority);
+};
+patientSchema.methods.removeEmergencyContact = function (contactId) {
+    const initialLength = this.enhancedEmergencyContacts.length;
+    this.enhancedEmergencyContacts = this.enhancedEmergencyContacts.filter(contact => contact._id?.toString() !== contactId);
+    return this.enhancedEmergencyContacts.length < initialLength;
+};
+patientSchema.methods.updateEmergencyContact = function (contactId, updates) {
+    const contact = this.enhancedEmergencyContacts.find(contact => contact._id?.toString() === contactId);
+    if (contact) {
+        if (updates.isPrimary) {
+            this.enhancedEmergencyContacts.forEach(c => {
+                if (c._id?.toString() !== contactId) {
+                    c.isPrimary = false;
+                }
+            });
+        }
+        Object.assign(contact, updates);
+        if (updates.priority !== undefined) {
+            this.enhancedEmergencyContacts.sort((a, b) => a.priority - b.priority);
+        }
+        return true;
+    }
+    return false;
+};
+patientSchema.methods.setPrimaryEmergencyContact = function (contactId) {
+    let found = false;
+    this.enhancedEmergencyContacts.forEach(contact => {
+        if (contact._id?.toString() === contactId) {
+            contact.isPrimary = true;
+            found = true;
+        }
+        else {
+            contact.isPrimary = false;
+        }
+    });
+    return found;
+};
+patientSchema.methods.updateInsuranceInfo = function (insuranceData) {
+    this.insuranceInfo = { ...this.insuranceInfo, ...insuranceData };
+};
+patientSchema.methods.logVitals = function (vitalsData) {
+    const vitals = {
+        ...vitalsData,
+        recordedDate: new Date(),
+        source: 'patient_portal',
+        isVerified: false,
+    };
+    this.patientLoggedVitals.push(vitals);
+    if (this.patientLoggedVitals.length > 100) {
+        this.patientLoggedVitals = this.patientLoggedVitals
+            .sort((a, b) => b.recordedDate.getTime() - a.recordedDate.getTime())
+            .slice(0, 100);
+    }
+};
+patientSchema.methods.getVitalsHistory = function (limit = 20) {
+    return this.patientLoggedVitals
+        .sort((a, b) => b.recordedDate.getTime() - a.recordedDate.getTime())
+        .slice(0, limit);
+};
+patientSchema.methods.getLatestVitals = function () {
+    if (this.patientLoggedVitals.length === 0)
+        return null;
+    return this.patientLoggedVitals
+        .sort((a, b) => b.recordedDate.getTime() - a.recordedDate.getTime())[0];
+};
+patientSchema.methods.verifyVitals = function (vitalsId, verifiedBy) {
+    const vitals = this.patientLoggedVitals.find(vitals => vitals._id?.toString() === vitalsId);
+    if (vitals) {
+        vitals.isVerified = true;
+        vitals.verifiedBy = verifiedBy;
+        return true;
+    }
+    return false;
+};
 patientSchema.pre('save', function () {
     if (!this.dob && !this.age) {
         throw new Error('Either date of birth or age must be provided');
     }
     if (this.dob) {
         this.age = this.getAge();
+    }
+    const primaryContacts = this.enhancedEmergencyContacts.filter(contact => contact.isPrimary);
+    if (primaryContacts.length > 1) {
+        throw new Error('Only one emergency contact can be set as primary');
+    }
+    const priorities = this.enhancedEmergencyContacts.map(contact => contact.priority);
+    const uniquePriorities = new Set(priorities);
+    if (priorities.length !== uniquePriorities.size) {
+        throw new Error('Emergency contact priorities must be unique');
+    }
+    for (const condition of this.chronicConditions) {
+        if (condition.diagnosedDate > new Date()) {
+            throw new Error('Chronic condition diagnosed date cannot be in the future');
+        }
+    }
+    for (const vitals of this.patientLoggedVitals) {
+        if (vitals.bloodPressure) {
+            const { systolic, diastolic } = vitals.bloodPressure;
+            if (systolic && diastolic && systolic <= diastolic) {
+                throw new Error('Systolic blood pressure must be higher than diastolic');
+            }
+        }
     }
 });
 patientSchema.statics.generateNextMRN = async function (workplaceId, workplaceCode) {

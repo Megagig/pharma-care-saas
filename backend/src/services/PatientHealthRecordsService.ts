@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 import Patient, { IPatient } from '../models/Patient';
 import Visit, { IVisit } from '../models/Visit';
 import DiagnosticCase, { IDiagnosticCase } from '../models/DiagnosticCase';
-import { AppError } from '../utils/AppError';
+import AppError from '../utils/AppError';
 import logger from '../utils/logger';
 
 export interface IVitalsData {
@@ -491,7 +491,7 @@ export class PatientHealthRecordsService {
       // Blood pressure alerts
       if (vitalsData.bloodPressure) {
         const { systolic, diastolic } = vitalsData.bloodPressure;
-        
+
         if (systolic >= 180 || diastolic >= 120) {
           alerts.push({
             type: 'critical',

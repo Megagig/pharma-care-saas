@@ -3,7 +3,7 @@ import { PatientHealthRecordsService, IVitalsData } from '../../services/Patient
 import Patient from '../../models/Patient';
 import Visit from '../../models/Visit';
 import DiagnosticCase from '../../models/DiagnosticCase';
-import { AppError } from '../../utils/AppError';
+import AppError from '../../utils/AppError';
 
 // Mock the models
 jest.mock('../../models/Patient');

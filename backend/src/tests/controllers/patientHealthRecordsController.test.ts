@@ -4,7 +4,7 @@ import mongoose from 'mongoose';
 import { PatientHealthRecordsController } from '../../controllers/patientHealthRecordsController';
 import { PatientHealthRecordsService } from '../../services/PatientHealthRecordsService';
 import { PDFGenerationService } from '../../services/PDFGenerationService';
-import { AppError } from '../../utils/AppError';
+import AppError from '../../utils/AppError';
 
 // Mock the services
 jest.mock('../../services/PatientHealthRecordsService');

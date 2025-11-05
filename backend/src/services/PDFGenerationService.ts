@@ -5,7 +5,7 @@ import Medication, { IMedication } from '../models/Medication';
 import Visit, { IVisit } from '../models/Visit';
 import DiagnosticCase, { IDiagnosticCase } from '../models/DiagnosticCase';
 import Workplace, { IWorkplace } from '../models/Workplace';
-import { AppError } from '../utils/AppError';
+import AppError from '../utils/AppError';
 import logger from '../utils/logger';
 
 export interface IPDFOptions {
@@ -143,7 +143,7 @@ export class PDFGenerationService {
     try {
       // If specific result IDs provided, fetch only those
       let labResults: IDiagnosticCase[] = [];
-      
+
       if (resultIds && resultIds.length > 0) {
         const validIds = resultIds.filter(id => mongoose.Types.ObjectId.isValid(id));
         if (validIds.length === 0) {
@@ -323,28 +323,28 @@ export class PDFGenerationService {
 
     // Workplace name and details
     doc.fontSize(20)
-       .font('Helvetica-Bold')
-       .text(workplace.name, 50, 50)
-       .fontSize(12)
-       .font('Helvetica')
-       .text(workplace.address || '', 50, 75)
-       .text(`Phone: ${workplace.phone || 'N/A'}`, 50, 90)
-       .text(`Email: ${workplace.email || 'N/A'}`, 50, 105);
+      .font('Helvetica-Bold')
+      .text(workplace.name, 50, 50)
+      .fontSize(12)
+      .font('Helvetica')
+      .text(workplace.address || '', 50, 75)
+      .text(`Phone: ${workplace.phone || 'N/A'}`, 50, 90)
+      .text(`Email: ${workplace.email || 'N/A'}`, 50, 105);
 
     // Document title
     doc.fontSize(18)
-       .font('Helvetica-Bold')
-       .text('MEDICAL RECORDS', 400, 50, { align: 'right' })
-       .fontSize(12)
-       .font('Helvetica')
-       .text(`Generated: ${new Date().toLocaleDateString()}`, 400, 75, { align: 'right' })
-       .text(`Patient: ${patient.firstName} ${patient.lastName}`, 400, 90, { align: 'right' })
-       .text(`MRN: ${patient.mrn}`, 400, 105, { align: 'right' });
+      .font('Helvetica-Bold')
+      .text('MEDICAL RECORDS', 400, 50, { align: 'right' })
+      .fontSize(12)
+      .font('Helvetica')
+      .text(`Generated: ${new Date().toLocaleDateString()}`, 400, 75, { align: 'right' })
+      .text(`Patient: ${patient.firstName} ${patient.lastName}`, 400, 90, { align: 'right' })
+      .text(`MRN: ${patient.mrn}`, 400, 105, { align: 'right' });
 
     // Add line separator
     doc.moveTo(50, 130)
-       .lineTo(550, 130)
-       .stroke();
+      .lineTo(550, 130)
+      .stroke();
 
     doc.y = 150;
   }
@@ -354,9 +354,9 @@ export class PDFGenerationService {
    */
   private static addPatientProfile(doc: PDFKit.PDFDocument, patient: IPatient): void {
     doc.fontSize(16)
-       .font('Helvetica-Bold')
-       .text('PATIENT INFORMATION', 50, doc.y)
-       .moveDown();
+      .font('Helvetica-Bold')
+      .text('PATIENT INFORMATION', 50, doc.y)
+      .moveDown();
 
     const profileData = [
       ['Name:', `${patient.firstName} ${patient.otherNames || ''} ${patient.lastName}`.trim()],
@@ -375,39 +375,39 @@ export class PDFGenerationService {
     doc.fontSize(12).font('Helvetica');
     profileData.forEach(([label, value]) => {
       doc.text(`${label}`, 70, doc.y, { continued: true, width: 120 })
-         .font('Helvetica-Bold')
-         .text(value, { width: 300 })
-         .font('Helvetica')
-         .moveDown(0.5);
+        .font('Helvetica-Bold')
+        .text(value, { width: 300 })
+        .font('Helvetica')
+        .moveDown(0.5);
     });
 
     // Add allergies if present
     if (patient.allergies && patient.allergies.length > 0) {
       doc.moveDown()
-         .fontSize(14)
-         .font('Helvetica-Bold')
-         .text('ALLERGIES:', 70, doc.y)
-         .fontSize(12)
-         .font('Helvetica');
+        .fontSize(14)
+        .font('Helvetica-Bold')
+        .text('ALLERGIES:', 70, doc.y)
+        .fontSize(12)
+        .font('Helvetica');
 
       patient.allergies.forEach(allergy => {
         doc.text(`• ${allergy.allergen} (${allergy.severity}): ${allergy.reaction}`, 90, doc.y)
-           .moveDown(0.5);
+          .moveDown(0.5);
       });
     }
 
     // Add chronic conditions if present
     if (patient.chronicConditions && patient.chronicConditions.length > 0) {
       doc.moveDown()
-         .fontSize(14)
-         .font('Helvetica-Bold')
-         .text('CHRONIC CONDITIONS:', 70, doc.y)
-         .fontSize(12)
-         .font('Helvetica');
+        .fontSize(14)
+        .font('Helvetica-Bold')
+        .text('CHRONIC CONDITIONS:', 70, doc.y)
+        .fontSize(12)
+        .font('Helvetica');
 
       patient.chronicConditions.forEach(condition => {
         doc.text(`• ${condition.condition} (${condition.status}) - Diagnosed: ${condition.diagnosedDate.toLocaleDateString()}`, 90, doc.y)
-           .moveDown(0.5);
+          .moveDown(0.5);
       });
     }
 
@@ -421,21 +421,21 @@ export class PDFGenerationService {
     this.checkPageBreak(doc, 100);
 
     doc.fontSize(16)
-       .font('Helvetica-Bold')
-       .text('CURRENT MEDICATIONS', 50, doc.y)
-       .moveDown();
+      .font('Helvetica-Bold')
+      .text('CURRENT MEDICATIONS', 50, doc.y)
+      .moveDown();
 
     medications.forEach((medication, index) => {
       this.checkPageBreak(doc, 80);
 
       doc.fontSize(12)
-         .font('Helvetica-Bold')
-         .text(`${index + 1}. ${medication.drugName}`, 70, doc.y)
-         .font('Helvetica')
-         .text(`Dosage: ${medication.instructions?.dosage || 'N/A'}`, 90, doc.y + 15)
-         .text(`Frequency: ${medication.instructions?.frequency || 'N/A'}`, 90, doc.y + 30)
-         .text(`Instructions: ${medication.instructions?.specialInstructions || 'N/A'}`, 90, doc.y + 45)
-         .text(`Prescribed: ${medication.createdAt.toLocaleDateString()}`, 90, doc.y + 60);
+        .font('Helvetica-Bold')
+        .text(`${index + 1}. ${medication.drugName}`, 70, doc.y)
+        .font('Helvetica')
+        .text(`Dosage: ${medication.instructions?.dosage || 'N/A'}`, 90, doc.y + 15)
+        .text(`Frequency: ${medication.instructions?.frequency || 'N/A'}`, 90, doc.y + 30)
+        .text(`Instructions: ${medication.instructions?.specialInstructions || 'N/A'}`, 90, doc.y + 45)
+        .text(`Prescribed: ${medication.createdAt.toLocaleDateString()}`, 90, doc.y + 60);
 
       doc.y += 80;
       doc.moveDown(0.5);
@@ -463,17 +463,17 @@ export class PDFGenerationService {
     if (filteredVitals.length === 0) return;
 
     doc.fontSize(16)
-       .font('Helvetica-Bold')
-       .text('RECENT VITALS', 50, doc.y)
-       .moveDown();
+      .font('Helvetica-Bold')
+      .text('RECENT VITALS', 50, doc.y)
+      .moveDown();
 
     filteredVitals.forEach((vital, index) => {
       this.checkPageBreak(doc, 60);
 
       doc.fontSize(12)
-         .font('Helvetica-Bold')
-         .text(`${vital.recordedDate.toLocaleDateString()}`, 70, doc.y)
-         .font('Helvetica');
+        .font('Helvetica-Bold')
+        .text(`${vital.recordedDate.toLocaleDateString()}`, 70, doc.y)
+        .font('Helvetica');
 
       const vitalEntries = [];
       if (vital.bloodPressure) {
@@ -504,25 +504,25 @@ export class PDFGenerationService {
     this.checkPageBreak(doc, 100);
 
     doc.fontSize(16)
-       .font('Helvetica-Bold')
-       .text('LABORATORY RESULTS', 50, doc.y)
-       .moveDown();
+      .font('Helvetica-Bold')
+      .text('LABORATORY RESULTS', 50, doc.y)
+      .moveDown();
 
     labResults.forEach((result, index) => {
       this.checkPageBreak(doc, 120);
 
       doc.fontSize(14)
-         .font('Helvetica-Bold')
-         .text(`${result.createdAt.toLocaleDateString()} - Case ID: ${result.caseId}`, 70, doc.y)
-         .fontSize(12)
-         .font('Helvetica')
-         .moveDown(0.5);
+        .font('Helvetica-Bold')
+        .text(`${result.createdAt.toLocaleDateString()} - Case ID: ${result.caseId}`, 70, doc.y)
+        .fontSize(12)
+        .font('Helvetica')
+        .moveDown(0.5);
 
       if (result.labResults && result.labResults.length > 0) {
         result.labResults.forEach(lab => {
           doc.text(`• ${lab.testName}: ${lab.value}`, 90, doc.y)
-             .text(`  Reference Range: ${lab.referenceRange}`, 110, doc.y + 15)
-             .text(`  Status: ${lab.abnormal ? 'ABNORMAL' : 'Normal'}`, 110, doc.y + 30);
+            .text(`  Reference Range: ${lab.referenceRange}`, 110, doc.y + 15)
+            .text(`  Status: ${lab.abnormal ? 'ABNORMAL' : 'Normal'}`, 110, doc.y + 30);
           doc.y += 50;
         });
       }
@@ -540,41 +540,41 @@ export class PDFGenerationService {
     this.checkPageBreak(doc, 100);
 
     doc.fontSize(16)
-       .font('Helvetica-Bold')
-       .text('VISIT HISTORY', 50, doc.y)
-       .moveDown();
+      .font('Helvetica-Bold')
+      .text('VISIT HISTORY', 50, doc.y)
+      .moveDown();
 
     visits.forEach((visit, index) => {
       this.checkPageBreak(doc, 150);
 
       doc.fontSize(14)
-         .font('Helvetica-Bold')
-         .text(`${visit.date.toLocaleDateString()}`, 70, doc.y)
-         .fontSize(12)
-         .font('Helvetica')
-         .moveDown(0.5);
+        .font('Helvetica-Bold')
+        .text(`${visit.date.toLocaleDateString()}`, 70, doc.y)
+        .fontSize(12)
+        .font('Helvetica')
+        .moveDown(0.5);
 
       if (visit.soap.subjective) {
         doc.font('Helvetica-Bold').text('Subjective:', 90, doc.y)
-           .font('Helvetica').text(visit.soap.subjective, 90, doc.y + 15, { width: 450 });
+          .font('Helvetica').text(visit.soap.subjective, 90, doc.y + 15, { width: 450 });
         doc.y += 35;
       }
 
       if (visit.soap.objective) {
         doc.font('Helvetica-Bold').text('Objective:', 90, doc.y)
-           .font('Helvetica').text(visit.soap.objective, 90, doc.y + 15, { width: 450 });
+          .font('Helvetica').text(visit.soap.objective, 90, doc.y + 15, { width: 450 });
         doc.y += 35;
       }
 
       if (visit.soap.assessment) {
         doc.font('Helvetica-Bold').text('Assessment:', 90, doc.y)
-           .font('Helvetica').text(visit.soap.assessment, 90, doc.y + 15, { width: 450 });
+          .font('Helvetica').text(visit.soap.assessment, 90, doc.y + 15, { width: 450 });
         doc.y += 35;
       }
 
       if (visit.soap.plan) {
         doc.font('Helvetica-Bold').text('Plan:', 90, doc.y)
-           .font('Helvetica').text(visit.soap.plan, 90, doc.y + 15, { width: 450 });
+          .font('Helvetica').text(visit.soap.plan, 90, doc.y + 15, { width: 450 });
         doc.y += 35;
       }
 
@@ -592,19 +592,19 @@ export class PDFGenerationService {
     const pageHeight = doc.page.height;
 
     doc.fontSize(10)
-       .font('Helvetica')
-       .text(
-         'This document contains confidential medical information. Please handle with appropriate care.',
-         50,
-         pageHeight - bottomMargin - 30,
-         { align: 'center', width: 500 }
-       )
-       .text(
-         `Generated by ${workplace.name} - PharmaCare Patient Portal`,
-         50,
-         pageHeight - bottomMargin - 15,
-         { align: 'center', width: 500 }
-       );
+      .font('Helvetica')
+      .text(
+        'This document contains confidential medical information. Please handle with appropriate care.',
+        50,
+        pageHeight - bottomMargin - 30,
+        { align: 'center', width: 500 }
+      )
+      .text(
+        `Generated by ${workplace.name} - PharmaCare Patient Portal`,
+        50,
+        pageHeight - bottomMargin - 15,
+        { align: 'center', width: 500 }
+      );
   }
 
   /**
@@ -623,11 +623,11 @@ export class PDFGenerationService {
     const now = new Date();
     const age = now.getFullYear() - dob.getFullYear();
     const monthDiff = now.getMonth() - dob.getMonth();
-    
+
     if (monthDiff < 0 || (monthDiff === 0 && now.getDate() < dob.getDate())) {
       return age - 1;
     }
-    
+
     return age;
   }
 }

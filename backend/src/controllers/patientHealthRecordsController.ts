@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { PatientHealthRecordsService, IVitalsData } from '../services/PatientHealthRecordsService';
 import { PDFGenerationService, IPDFOptions } from '../services/PDFGenerationService';
-import { AppError } from '../utils/AppError';
+import AppError from '../utils/AppError';
 import logger from '../utils/logger';
 import { validationResult } from 'express-validator';
 

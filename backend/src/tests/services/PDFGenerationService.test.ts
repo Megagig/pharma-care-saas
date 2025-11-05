@@ -5,7 +5,7 @@ import Medication from '../../models/Medication';
 import Visit from '../../models/Visit';
 import DiagnosticCase from '../../models/DiagnosticCase';
 import Workplace from '../../models/Workplace';
-import { AppError } from '../../utils/AppError';
+import AppError from '../../utils/AppError';
 
 // Mock the models
 jest.mock('../../models/Patient');

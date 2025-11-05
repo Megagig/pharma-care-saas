@@ -1236,4 +1236,3 @@ describe('ChatService - Conversation Management', () => {
       expect(messages.every(m => m.isReadBy(doctorId))).toBe(true);
     });
   });
-});

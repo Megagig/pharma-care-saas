@@ -213,7 +213,7 @@ export class HealthBlogController {
       sendSuccess(res, { tags }, 'Blog tags retrieved successfully');
     } catch (error: any) {
       logger.error('Error retrieving blog tags', { error: error.message });
-      sendError(res, 'INTERNAL_ERROR', 'Error retrieving blog tags', 500);
+      sendError(res, 'SERVER_ERROR', 'Error retrieving blog tags', 500);
     }
   });
 

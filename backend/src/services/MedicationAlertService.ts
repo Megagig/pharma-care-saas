@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import cron from 'node-cron';
+import * as cron from 'node-cron';
 import Medication, { IMedication } from '../models/Medication';
 import AdherenceTracking, { IAdherenceTracking } from '../modules/diagnostics/models/AdherenceTracking';
 import FollowUpTask from '../models/FollowUpTask';
@@ -34,7 +34,7 @@ export interface IRefillStatusCheck {
 
 export class MedicationAlertService {
   private static isJobRunning = false;
-  private static cronJob: cron.ScheduledTask | null = null;
+  private static cronJob: any | null = null;
 
   /**
    * Initialize the daily medication alert checking job
@@ -61,7 +61,6 @@ export class MedicationAlertService {
         this.isJobRunning = false;
       }
     }, {
-      scheduled: true,
       timezone: 'Africa/Lagos' // Nigerian timezone
     });
 

@@ -30,6 +30,58 @@ export interface IPatient extends Document {
     genotype?: 'AA' | 'AS' | 'SS' | 'AC' | 'SC' | 'CC';
     weightKg?: number;
     name?: string;
+    allergies: Array<{
+        _id?: mongoose.Types.ObjectId;
+        allergen: string;
+        reaction: string;
+        severity: 'mild' | 'moderate' | 'severe';
+        recordedDate: Date;
+        recordedBy?: mongoose.Types.ObjectId;
+        notes?: string;
+    }>;
+    chronicConditions: Array<{
+        _id?: mongoose.Types.ObjectId;
+        condition: string;
+        diagnosedDate: Date;
+        managementPlan?: string;
+        status: 'active' | 'managed' | 'resolved';
+        recordedBy?: mongoose.Types.ObjectId;
+        notes?: string;
+    }>;
+    enhancedEmergencyContacts: Array<{
+        _id?: mongoose.Types.ObjectId;
+        name: string;
+        relationship: string;
+        phone: string;
+        email?: string;
+        isPrimary: boolean;
+        priority: number;
+    }>;
+    insuranceInfo: {
+        provider?: string;
+        policyNumber?: string;
+        expiryDate?: Date;
+        coverageDetails?: string;
+        copayAmount?: number;
+        isActive?: boolean;
+    };
+    patientLoggedVitals: Array<{
+        _id?: mongoose.Types.ObjectId;
+        recordedDate: Date;
+        bloodPressure?: {
+            systolic: number;
+            diastolic: number;
+        };
+        heartRate?: number;
+        temperature?: number;
+        weight?: number;
+        glucose?: number;
+        oxygenSaturation?: number;
+        notes?: string;
+        source: 'patient_portal';
+        verifiedBy?: mongoose.Types.ObjectId;
+        isVerified?: boolean;
+    }>;
     latestVitals?: IPatientVitals;
     notificationPreferences?: {
         email: boolean;
@@ -111,6 +163,21 @@ export interface IPatient extends Document {
     updateInterventionFlags(): Promise<void>;
     getDiagnosticHistoryCount(): Promise<number>;
     getLatestDiagnosticHistory(): Promise<any>;
+    addAllergy(allergyData: any, recordedBy?: mongoose.Types.ObjectId): void;
+    removeAllergy(allergyId: string): boolean;
+    updateAllergy(allergyId: string, updates: any): boolean;
+    addChronicCondition(conditionData: any, recordedBy?: mongoose.Types.ObjectId): void;
+    removeChronicCondition(conditionId: string): boolean;
+    updateChronicCondition(conditionId: string, updates: any): boolean;
+    addEmergencyContact(contactData: any): void;
+    removeEmergencyContact(contactId: string): boolean;
+    updateEmergencyContact(contactId: string, updates: any): boolean;
+    setPrimaryEmergencyContact(contactId: string): boolean;
+    updateInsuranceInfo(insuranceData: any): void;
+    logVitals(vitalsData: any): void;
+    getVitalsHistory(limit?: number): any[];
+    getLatestVitals(): any;
+    verifyVitals(vitalsId: string, verifiedBy: mongoose.Types.ObjectId): boolean;
 }
 declare const Patient: mongoose.Model<IPatient, {}, {}, {}, mongoose.Document<unknown, {}, IPatient> & IPatient & Required<{
     _id: mongoose.Types.ObjectId;
