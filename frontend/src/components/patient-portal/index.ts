@@ -9,3 +9,8 @@ export { default as NotificationChannelSelector } from './NotificationChannelSel
 export { default as VitalsChart } from './VitalsChart';
 export { default as LabResultCard } from './LabResultCard';
 export { default as VitalsLogging } from './VitalsLogging';
+
+// Messaging Components
+export { default as MessageThread } from './MessageThread';
+export { default as MessageInput } from './MessageInput';
+export { default as FileAttachment } from './FileAttachment';
