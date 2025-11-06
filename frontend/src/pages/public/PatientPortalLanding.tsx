@@ -9,7 +9,6 @@ import {
   CardContent,
   AppBar,
   Toolbar,
-  Paper,
   useTheme,
   Drawer,
   IconButton,
@@ -18,24 +17,23 @@ import {
   ListItemButton,
   ListItemText,
   Divider,
-  Grid,
   Chip,
   Avatar,
+  CardMedia,
+  CardActions,
 } from '@mui/material';
-import {
-  Menu as MenuIcon,
-  Close as CloseIcon,
-  LocalPharmacy as LocalPharmacyIcon,
-  ArrowForward as ArrowForwardIcon,
-  CheckCircle as CheckCircleIcon,
-  Schedule as ScheduleIcon,
-  Security as SecurityIcon,
-  Chat as ChatIcon,
-  Assessment as AssessmentIcon,
-  Favorite as FavoriteIcon,
-  AccessTime as AccessTimeIcon,
-  Visibility as VisibilityIcon,
-} from '@mui/icons-material';
+import MenuIcon from '@mui/icons-material/Menu';
+import CloseIcon from '@mui/icons-material/Close';
+import LocalPharmacyIcon from '@mui/icons-material/LocalPharmacy';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+import SecurityIcon from '@mui/icons-material/Security';
+import ChatIcon from '@mui/icons-material/Chat';
+import AssessmentIcon from '@mui/icons-material/Assessment';
+import FavoriteIcon from '@mui/icons-material/Favorite';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import Footer from '../../components/Footer';
 import ThemeToggle from '../../components/common/ThemeToggle';
 import { useHealthBlog } from '../../hooks/useHealthBlog';
@@ -86,14 +84,15 @@ const PatientPortalLanding: React.FC = () => {
 
   // Debug logging
   React.useEffect(() => {
-    console.log('🔍 Blog Debug:', {
-      featuredLoading,
-      featuredPosts: featuredPosts?.data,
-      featuredCount: featuredPosts?.data?.length,
-      latestLoading,
-      latestPosts: latestPosts?.data,
-      latestPostsCount: latestPosts?.data?.posts?.length
+    console.log('%c🔍 BLOG DEBUG', 'background: #0891b2; color: white; font-size: 20px; padding: 10px;');
+    console.table({
+      'Featured Loading': featuredLoading,
+      'Featured Posts Count': featuredPosts?.data?.length || 0,
+      'Latest Loading': latestLoading,
+      'Latest Posts Count': latestPosts?.data?.posts?.length || 0,
     });
+    console.log('Featured Posts Data:', featuredPosts);
+    console.log('Latest Posts Data:', latestPosts);
   }, [featuredLoading, featuredPosts, latestLoading, latestPosts]);
 
   const toggleMobileMenu = () => {
@@ -631,109 +630,166 @@ const PatientPortalLanding: React.FC = () => {
                 ? 'translateY(0)'
                 : 'translateY(30px)',
               transition: 'all 0.6s ease-out 0.2s',
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 4,
             }}
           >
-            <Grid container spacing={4}>
-              {featuredPosts.data.slice(0, 3).map((post: BlogPost, index: number) => (
-                <Grid item xs={12} md={4} key={post._id}>
-                  <Card
-                    sx={{
-                      height: '100%',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-                      '&:hover': {
-                        transform: 'translateY(-8px)',
-                        boxShadow: '0 12px 24px rgba(8, 145, 178, 0.15)',
-                      },
-                    }}
-                  >
-                    {post.featuredImage && (
-                      <Box
-                        component="img"
-                        src={post.featuredImage.url}
-                        alt={post.featuredImage.alt}
+            {featuredPosts.data.slice(0, 3).map((post: BlogPost) => (
+              <Box
+                key={post._id}
+                sx={{
+                  flex: {
+                    xs: '1 1 100%',
+                    md: '1 1 calc(33.333% - 22px)',
+                  },
+                  display: 'flex',
+                }}
+              >
+                <Card
+                  sx={{
+                    height: '100%',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    borderRadius: 2,
+                    overflow: 'hidden',
+                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    '&:hover': {
+                      transform: 'translateY(-8px)',
+                      boxShadow: theme.palette.mode === 'dark'
+                        ? '0 12px 40px rgba(8, 145, 178, 0.3)'
+                        : '0 12px 40px rgba(8, 145, 178, 0.15)',
+                      borderColor: 'primary.main',
+                    },
+                  }}
+                >
+                  {post.featuredImage && (
+                    <CardMedia
+                      component="img"
+                      image={post.featuredImage.url}
+                      alt={post.featuredImage.alt}
+                      sx={{
+                        height: 220,
+                        objectFit: 'cover',
+                        borderBottom: '1px solid',
+                        borderColor: 'divider',
+                      }}
+                      onError={(e) => {
+                        const target = e.target as HTMLImageElement;
+                        target.style.display = 'none';
+                      }}
+                    />
+                  )}
+                  <CardContent sx={{ flexGrow: 1, p: 3, display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    <Box>
+                      <Chip
+                        label={post.category.replace(/_/g, ' ').toUpperCase()}
+                        color={getCategoryColor(post.category)}
+                        size="small"
                         sx={{
-                          width: '100%',
-                          height: 200,
-                          objectFit: 'cover',
-                        }}
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = 'none';
+                          fontWeight: 600,
+                          fontSize: '0.7rem',
+                          height: 24,
                         }}
                       />
-                    )}
-                    <CardContent sx={{ flexGrow: 1, p: 3 }}>
-                      <Box sx={{ mb: 2 }}>
-                        <Chip
-                          label={post.category.replace('_', ' ').toUpperCase()}
-                          color={getCategoryColor(post.category)}
-                          size="small"
-                          sx={{ mb: 1 }}
-                        />
+                    </Box>
+                    <Typography
+                      variant="h5"
+                      component="h3"
+                      sx={{
+                        fontWeight: 700,
+                        lineHeight: 1.3,
+                        color: 'text.primary',
+                        display: '-webkit-box',
+                        WebkitLineClamp: 2,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                        minHeight: '3.6em',
+                      }}
+                    >
+                      {post.title}
+                    </Typography>
+                    <Typography
+                      variant="body2"
+                      color="text.secondary"
+                      sx={{
+                        lineHeight: 1.6,
+                        display: '-webkit-box',
+                        WebkitLineClamp: 3,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden',
+                        flexGrow: 1,
+                      }}
+                    >
+                      {post.excerpt}
+                    </Typography>
+                    <Divider sx={{ my: 1 }} />
+                    <Box
+                      sx={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        mt: 'auto',
+                      }}
+                    >
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1.5 }}>
+                        <Avatar
+                          sx={{
+                            width: 32,
+                            height: 32,
+                            fontSize: '0.875rem',
+                            bgcolor: 'primary.main',
+                          }}
+                          src={post.author.avatar}
+                        >
+                          {post.author.name.charAt(0)}
+                        </Avatar>
+                        <Typography variant="body2" fontWeight={500} color="text.primary">
+                          {post.author.name}
+                        </Typography>
                       </Box>
-                      <Typography
-                        variant="h6"
-                        component="h3"
-                        sx={{ fontWeight: 600, mb: 2, lineHeight: 1.3 }}
-                      >
-                        {post.title}
-                      </Typography>
-                      <Typography
-                        variant="body2"
-                        color="text.secondary"
-                        sx={{ mb: 3, lineHeight: 1.5 }}
-                      >
-                        {post.excerpt}
-                      </Typography>
-                      <Box
-                        sx={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'space-between',
-                          mt: 'auto',
-                        }}
-                      >
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                          <Avatar
-                            sx={{ width: 24, height: 24, fontSize: '0.75rem' }}
-                            src={post.author.avatar}
-                          >
-                            {post.author.name.charAt(0)}
-                          </Avatar>
-                          <Typography variant="caption" color="text.secondary">
-                            {post.author.name}
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <AccessTimeIcon sx={{ fontSize: 18, color: 'text.secondary' }} />
+                          <Typography variant="caption" color="text.secondary" fontWeight={500}>
+                            {post.readTime} min
                           </Typography>
                         </Box>
-                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <AccessTimeIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                            <Typography variant="caption" color="text.secondary">
-                              {post.readTime} min
-                            </Typography>
-                          </Box>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
-                            <VisibilityIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
-                            <Typography variant="caption" color="text.secondary">
-                              {post.viewCount}
-                            </Typography>
-                          </Box>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <VisibilityIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                          <Typography variant="caption" color="text.secondary">
+                            {post.viewCount}
+                          </Typography>
                         </Box>
                       </Box>
-                      <Button
-                        component={Link}
-                        to={`/blog/${post.slug}`}
-                        variant="text"
-                        endIcon={<ArrowForwardIcon />}
-                        sx={{ mt: 2, p: 0, justifyContent: 'flex-start' }}
-                      >
-                        Read More
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              ))}
-            </Grid>
+                    </Box>
+                  </CardContent>
+                  <CardActions sx={{ p: 3, pt: 0 }}>
+                    <Button
+                      component={Link}
+                      to={`/blog/${post.slug}`}
+                      variant="text"
+                      color="primary"
+                      endIcon={<ArrowForwardIcon />}
+                      fullWidth
+                      sx={{
+                        justifyContent: 'space-between',
+                        fontWeight: 600,
+                        py: 1.5,
+                        '&:hover': {
+                          bgcolor: 'primary.main',
+                          color: 'primary.contrastText',
+                        },
+                      }}
+                    >
+                      Read Article
+                    </Button>
+                  </CardActions>
+                </Card>
+              </Box>
+            ))}
           </Box>
         </Container>
       )}
@@ -883,93 +939,147 @@ const PatientPortalLanding: React.FC = () => {
                   ? 'translateY(0)'
                   : 'translateY(30px)',
                 transition: 'all 0.6s ease-out 0.2s',
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 3,
               }}
             >
-              <Grid container spacing={3}>
-                {latestPosts.data.posts.slice(0, 9).map((post: BlogPost) => (
-                  <Grid item xs={12} sm={6} md={4} key={post._id}>
-                    <Card
-                      sx={{
-                        height: '100%',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        transition: 'transform 0.3s ease, box-shadow 0.3s ease',
-                        '&:hover': {
-                          transform: 'translateY(-4px)',
-                          boxShadow: '0 8px 16px rgba(8, 145, 178, 0.1)',
-                        },
-                      }}
-                    >
-                      {post.featuredImage && (
-                        <Box
-                          component="img"
-                          src={post.featuredImage.url}
-                          alt={post.featuredImage.alt}
+              {latestPosts.data.posts.slice(0, 9).map((post: BlogPost) => (
+                <Box
+                  key={post._id}
+                  sx={{
+                    flex: {
+                      xs: '1 1 100%',
+                      sm: '1 1 calc(50% - 12px)',
+                      md: '1 1 calc(33.333% - 16px)',
+                    },
+                    display: 'flex',
+                  }}
+                >
+                  <Card
+                    sx={{
+                      height: '100%',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      borderRadius: 2,
+                      overflow: 'hidden',
+                      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                      border: '1px solid',
+                      borderColor: 'divider',
+                      '&:hover': {
+                        transform: 'translateY(-6px)',
+                        boxShadow: theme.palette.mode === 'dark'
+                          ? '0 8px 24px rgba(8, 145, 178, 0.25)'
+                          : '0 8px 24px rgba(8, 145, 178, 0.12)',
+                        borderColor: 'primary.light',
+                      },
+                    }}
+                  >
+                    {post.featuredImage && (
+                      <CardMedia
+                        component="img"
+                        image={post.featuredImage.url}
+                        alt={post.featuredImage.alt}
+                        sx={{
+                          height: 180,
+                          objectFit: 'cover',
+                        }}
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.style.display = 'none';
+                        }}
+                      />
+                    )}
+                    <CardContent sx={{ flexGrow: 1, p: 2.5, display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+                      <Box>
+                        <Chip
+                          label={post.category.replace(/_/g, ' ').toUpperCase()}
+                          color={getCategoryColor(post.category)}
+                          size="small"
                           sx={{
-                            width: '100%',
-                            height: 160,
-                            objectFit: 'cover',
-                          }}
-                          onError={(e) => {
-                            (e.target as HTMLImageElement).style.display = 'none';
+                            fontWeight: 600,
+                            fontSize: '0.65rem',
+                            height: 22,
                           }}
                         />
-                      )}
-                      <CardContent sx={{ flexGrow: 1, p: 2 }}>
-                        <Box sx={{ mb: 1 }}>
-                          <Chip
-                            label={post.category.replace('_', ' ').toUpperCase()}
-                            color={getCategoryColor(post.category)}
-                            size="small"
-                          />
-                        </Box>
-                        <Typography
-                          variant="subtitle1"
-                          component="h3"
-                          sx={{ fontWeight: 600, mb: 1, lineHeight: 1.3 }}
-                        >
-                          {post.title}
-                        </Typography>
-                        <Typography
-                          variant="body2"
-                          color="text.secondary"
-                          sx={{ mb: 2, lineHeight: 1.4 }}
-                        >
-                          {post.excerpt.substring(0, 100)}...
-                        </Typography>
-                        <Box
-                          sx={{
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'space-between',
-                            mt: 'auto',
-                          }}
-                        >
-                          <Typography variant="caption" color="text.secondary">
-                            {formatDate(post.publishedAt)}
+                      </Box>
+                      <Typography
+                        variant="h6"
+                        component="h3"
+                        sx={{
+                          fontWeight: 700,
+                          lineHeight: 1.3,
+                          fontSize: '1.1rem',
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                          minHeight: '2.6em',
+                        }}
+                      >
+                        {post.title}
+                      </Typography>
+                      <Typography
+                        variant="body2"
+                        color="text.secondary"
+                        sx={{
+                          lineHeight: 1.5,
+                          display: '-webkit-box',
+                          WebkitLineClamp: 2,
+                          WebkitBoxOrient: 'vertical',
+                          overflow: 'hidden',
+                          flexGrow: 1,
+                        }}
+                      >
+                        {post.excerpt}
+                      </Typography>
+                      <Divider />
+                      <Box
+                        sx={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          mt: 'auto',
+                        }}
+                      >
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <AccessTimeIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                          <Typography variant="caption" color="text.secondary" fontWeight={500}>
+                            {post.readTime} min read
                           </Typography>
-                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                            <AccessTimeIcon sx={{ fontSize: 14, color: 'text.secondary' }} />
-                            <Typography variant="caption" color="text.secondary">
-                              {post.readTime} min
-                            </Typography>
-                          </Box>
                         </Box>
-                        <Button
-                          component={Link}
-                          to={`/blog/${post.slug}`}
-                          variant="text"
-                          size="small"
-                          endIcon={<ArrowForwardIcon />}
-                          sx={{ mt: 1, p: 0, justifyContent: 'flex-start' }}
-                        >
-                          Read More
-                        </Button>
-                      </CardContent>
-                    </Card>
-                  </Grid>
-                ))}
-              </Grid>
+                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 0.5 }}>
+                          <VisibilityIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                          <Typography variant="caption" color="text.secondary">
+                            {post.viewCount}
+                          </Typography>
+                        </Box>
+                      </Box>
+                    </CardContent>
+                    <CardActions sx={{ p: 2.5, pt: 0 }}>
+                      <Button
+                        component={Link}
+                        to={`/blog/${post.slug}`}
+                        variant="outlined"
+                        size="small"
+                        endIcon={<ArrowForwardIcon />}
+                        fullWidth
+                        sx={{
+                          fontWeight: 600,
+                          py: 1,
+                          '&:hover': {
+                            bgcolor: 'primary.main',
+                            color: 'primary.contrastText',
+                            borderColor: 'primary.main',
+                          },
+                        }}
+                      >
+                        Read More
+                      </Button>
+                    </CardActions>
+                  </Card>
+                </Box>
+              ))}
             </Box>
 
             <Box sx={{ textAlign: 'center', mt: 6 }}>
