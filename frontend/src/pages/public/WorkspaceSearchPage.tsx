@@ -1,17 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import {
   Box,
   Container,
   Typography,
   TextField,
   InputAdornment,
-  Card,
-  CardContent,
-  CardActionArea,
   Grid,
-  Chip,
-  Avatar,
   CircularProgress,
   Alert,
   AppBar,
@@ -24,51 +19,35 @@ import {
   ListItemButton,
   ListItemText,
   Divider,
-  useTheme,
+  FormControl,
+  InputLabel,
+  Select,
+  MenuItem,
 } from '@mui/material';
-import {
-  Search as SearchIcon,
-  LocalPharmacy as LocalPharmacyIcon,
-  LocationOn as LocationOnIcon,
-  Phone as PhoneIcon,
-  Email as EmailIcon,
-  Schedule as ScheduleIcon,
-  VerifiedUser as VerifiedUserIcon,
-  ArrowBack as ArrowBackIcon,
-  Menu as MenuIcon,
-  Close as CloseIcon,
-  Login as LoginIcon,
-  PersonAdd as PersonAddIcon,
-} from '@mui/icons-material';
-import { Link } from 'react-router-dom';
+import SearchIcon from '@mui/icons-material/Search';
+import LocalPharmacyIcon from '@mui/icons-material/LocalPharmacy';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import MenuIcon from '@mui/icons-material/Menu';
+import CloseIcon from '@mui/icons-material/Close';
+import FilterListIcon from '@mui/icons-material/FilterList';
 import { useDebounce } from '../../hooks/useDebounce';
-import apiClient from '../../services/apiClient';
+import publicApiClient from '../../services/publicApiClient';
 import Footer from '../../components/Footer';
 import ThemeToggle from '../../components/common/ThemeToggle';
+import WorkspaceSelectionCard, { WorkspaceCardData } from '../../components/patient-portal/WorkspaceSelectionCard';
 
-interface Workspace {
-  id: string;
-  workspaceId: string;
-  name: string;
-  type: string;
-  email: string;
-  phone: string;
-  address: string;
-  state: string;
-  lga: string;
-  logoUrl?: string;
-  description?: string;
-  hours?: string;
-}
+interface Workspace extends WorkspaceCardData { }
 
 const WorkspaceSearchPage: React.FC = () => {
-  const theme = useTheme();
   const navigate = useNavigate();
   const [searchQuery, setSearchQuery] = useState('');
+  const [selectedState, setSelectedState] = useState<string>('');
+  const [selectedLGA, setSelectedLGA] = useState<string>('');
+  const [states, setStates] = useState<string[]>([]);
+  const [lgas, setLGAs] = useState<string[]>([]);
   const [workspaces, setWorkspaces] = useState<Workspace[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedWorkspace, setSelectedWorkspace] = useState<Workspace | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const debouncedSearchQuery = useDebounce(searchQuery, 500);
@@ -88,10 +67,47 @@ const WorkspaceSearchPage: React.FC = () => {
     { label: 'Blog', path: '/blog' },
   ];
 
+  // Fetch states on mount
+  useEffect(() => {
+    const fetchStates = async () => {
+      try {
+        const response = await publicApiClient.get('/public/workspaces/states');
+        if (response.data.success) {
+          setStates(response.data.data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch states:', err);
+      }
+    };
+    fetchStates();
+  }, []);
+
+  // Fetch LGAs when state changes
+  useEffect(() => {
+    const fetchLGAs = async () => {
+      if (!selectedState) {
+        setLGAs([]);
+        return;
+      }
+
+      try {
+        const response = await publicApiClient.get(`/public/workspaces/lgas/${selectedState}`);
+        if (response.data.success) {
+          setLGAs(response.data.data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch LGAs:', err);
+        setLGAs([]);
+      }
+    };
+    fetchLGAs();
+  }, [selectedState]);
+
   // Search workspaces
   useEffect(() => {
     const searchWorkspaces = async () => {
-      if (!debouncedSearchQuery || debouncedSearchQuery.trim().length < 2) {
+      // Only search if we have a query or filters
+      if (!debouncedSearchQuery && !selectedState && !selectedLGA) {
         setWorkspaces([]);
         setError(null);
         return;
@@ -101,10 +117,19 @@ const WorkspaceSearchPage: React.FC = () => {
       setError(null);
 
       try {
-        const response = await apiClient.get('/api/public/workspaces/search', {
-          params: {
-            query: debouncedSearchQuery,
-          },
+        const params: any = {};
+        if (debouncedSearchQuery && debouncedSearchQuery.trim().length >= 2) {
+          params.query = debouncedSearchQuery;
+        }
+        if (selectedState) {
+          params.state = selectedState;
+        }
+        if (selectedLGA) {
+          params.lga = selectedLGA;
+        }
+
+        const response = await publicApiClient.get('/public/workspaces/search', {
+          params,
         });
 
         if (response.data.success) {
@@ -124,28 +149,30 @@ const WorkspaceSearchPage: React.FC = () => {
     };
 
     searchWorkspaces();
-  }, [debouncedSearchQuery]);
+  }, [debouncedSearchQuery, selectedState, selectedLGA]);
 
-  const handleWorkspaceSelect = (workspace: Workspace) => {
-    setSelectedWorkspace(workspace);
-    // Store the selected workspace in sessionStorage for the registration/login flow
+  const handleWorkspaceRegister = (workspace: Workspace) => {
+    // Store the selected workspace in sessionStorage
     sessionStorage.setItem('selectedWorkspace', JSON.stringify(workspace));
-    // Navigate to a page where user can choose to register or login
-    navigate(`/patient-portal/workspace/${workspace.workspaceId}`);
+    // Navigate to registration page
+    navigate(`/patient-auth/${workspace.workspaceId}/register`, {
+      state: { workspaceInfo: workspace },
+    });
   };
 
-  const getWorkspaceInitial = (name: string) => {
-    return name.charAt(0).toUpperCase();
+  const handleWorkspaceLogin = (workspace: Workspace) => {
+    // Store the selected workspace in sessionStorage
+    sessionStorage.setItem('selectedWorkspace', JSON.stringify(workspace));
+    // Navigate to login page
+    navigate(`/patient-auth/${workspace.workspaceId}/login`, {
+      state: { workspaceInfo: workspace },
+    });
   };
 
-  const getTypeColor = (type: string) => {
-    const colors: { [key: string]: 'primary' | 'secondary' | 'success' | 'warning' | 'info' | 'error' } = {
-      pharmacy: 'primary',
-      hospital: 'secondary',
-      clinic: 'info',
-      laboratory: 'success',
-    };
-    return colors[type.toLowerCase()] || 'default';
+  const handleClearFilters = () => {
+    setSearchQuery('');
+    setSelectedState('');
+    setSelectedLGA('');
   };
 
   return (
@@ -353,6 +380,70 @@ const WorkspaceSearchPage: React.FC = () => {
               },
             }}
           />
+
+          {/* Filters */}
+          <Box
+            sx={{
+              maxWidth: '700px',
+              mx: 'auto',
+              mt: 3,
+              display: 'flex',
+              gap: 2,
+              flexWrap: 'wrap',
+            }}
+          >
+            <FormControl sx={{ minWidth: 200, flex: 1 }}>
+              <InputLabel>State</InputLabel>
+              <Select
+                value={selectedState}
+                onChange={(e) => {
+                  setSelectedState(e.target.value);
+                  setSelectedLGA(''); // Reset LGA when state changes
+                }}
+                label="State"
+                sx={{ borderRadius: 2 }}
+              >
+                <MenuItem value="">
+                  <em>All States</em>
+                </MenuItem>
+                {states.map((state) => (
+                  <MenuItem key={state} value={state}>
+                    {state}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            <FormControl sx={{ minWidth: 200, flex: 1 }} disabled={!selectedState}>
+              <InputLabel>LGA</InputLabel>
+              <Select
+                value={selectedLGA}
+                onChange={(e) => setSelectedLGA(e.target.value)}
+                label="LGA"
+                sx={{ borderRadius: 2 }}
+              >
+                <MenuItem value="">
+                  <em>All LGAs</em>
+                </MenuItem>
+                {lgas.map((lga) => (
+                  <MenuItem key={lga} value={lga}>
+                    {lga}
+                  </MenuItem>
+                ))}
+              </Select>
+            </FormControl>
+
+            {(searchQuery || selectedState || selectedLGA) && (
+              <Button
+                variant="outlined"
+                startIcon={<FilterListIcon />}
+                onClick={handleClearFilters}
+                sx={{ borderRadius: 2, minWidth: 120 }}
+              >
+                Clear Filters
+              </Button>
+            )}
+          </Box>
         </Box>
 
         {/* Loading State */}
@@ -370,16 +461,16 @@ const WorkspaceSearchPage: React.FC = () => {
         )}
 
         {/* Search Prompt */}
-        {!loading && !error && searchQuery.trim().length === 0 && (
+        {!loading && !error && !searchQuery && !selectedState && !selectedLGA && (
           <Box sx={{ textAlign: 'center', py: 8 }}>
             <LocalPharmacyIcon
               sx={{ fontSize: 80, color: 'text.secondary', mb: 2 }}
             />
             <Typography variant="h6" color="text.secondary">
-              Start typing to search for your pharmacy
+              Start searching for your pharmacy
             </Typography>
             <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-              Enter at least 2 characters to begin searching
+              Use the search box or filters above to find pharmacies near you
             </Typography>
           </Box>
         )}
@@ -387,7 +478,7 @@ const WorkspaceSearchPage: React.FC = () => {
         {/* No Results */}
         {!loading &&
           !error &&
-          searchQuery.trim().length >= 2 &&
+          (searchQuery.trim().length >= 2 || selectedState || selectedLGA) &&
           workspaces.length === 0 && (
             <Box sx={{ textAlign: 'center', py: 8 }}>
               <SearchIcon
@@ -397,7 +488,7 @@ const WorkspaceSearchPage: React.FC = () => {
                 No pharmacies found
               </Typography>
               <Typography variant="body2" color="text.secondary" sx={{ mt: 1 }}>
-                Try adjusting your search query or check the spelling
+                Try adjusting your search criteria or filters
               </Typography>
             </Box>
           )}
@@ -405,159 +496,24 @@ const WorkspaceSearchPage: React.FC = () => {
         {/* Results */}
         {!loading && !error && workspaces.length > 0 && (
           <>
-            <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-              Found {workspaces.length} workspace{workspaces.length !== 1 ? 's' : ''}
-            </Typography>
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
+              <Typography variant="body2" color="text.secondary">
+                Found {workspaces.length} workspace{workspaces.length !== 1 ? 's' : ''}
+              </Typography>
+              <Typography variant="caption" color="text.secondary">
+                {selectedState && `in ${selectedState}`}
+                {selectedLGA && `, ${selectedLGA}`}
+              </Typography>
+            </Box>
 
             <Grid container spacing={3}>
               {workspaces.map((workspace) => (
                 <Grid item xs={12} md={6} key={workspace.id}>
-                  <Card
-                    sx={{
-                      height: '100%',
-                      transition: 'transform 0.2s ease, box-shadow 0.2s ease',
-                      '&:hover': {
-                        transform: 'translateY(-4px)',
-                        boxShadow: '0 8px 24px rgba(8, 145, 178, 0.15)',
-                      },
-                    }}
-                  >
-                    <CardActionArea
-                      onClick={() => handleWorkspaceSelect(workspace)}
-                      sx={{ height: '100%' }}
-                    >
-                      <CardContent sx={{ p: 3 }}>
-                        <Box sx={{ display: 'flex', gap: 2 }}>
-                          {/* Logo */}
-                          <Avatar
-                            src={workspace.logoUrl}
-                            sx={{
-                              width: 64,
-                              height: 64,
-                              bgcolor: 'primary.main',
-                              fontSize: '1.5rem',
-                            }}
-                          >
-                            {getWorkspaceInitial(workspace.name)}
-                          </Avatar>
-
-                          {/* Content */}
-                          <Box sx={{ flex: 1 }}>
-                            <Box
-                              sx={{
-                                display: 'flex',
-                                alignItems: 'flex-start',
-                                justifyContent: 'space-between',
-                                mb: 1,
-                              }}
-                            >
-                              <Typography
-                                variant="h6"
-                                sx={{ fontWeight: 600, lineHeight: 1.3 }}
-                              >
-                                {workspace.name}
-                              </Typography>
-                              <Chip
-                                label={workspace.type}
-                                color={getTypeColor(workspace.type)}
-                                size="small"
-                                sx={{ ml: 1 }}
-                              />
-                            </Box>
-
-                            {workspace.description && (
-                              <Typography
-                                variant="body2"
-                                color="text.secondary"
-                                sx={{ mb: 2 }}
-                              >
-                                {workspace.description}
-                              </Typography>
-                            )}
-
-                            {/* Address */}
-                            <Box
-                              sx={{
-                                display: 'flex',
-                                alignItems: 'flex-start',
-                                gap: 1,
-                                mb: 1,
-                              }}
-                            >
-                              <LocationOnIcon
-                                sx={{ fontSize: 18, color: 'text.secondary', mt: 0.2 }}
-                              />
-                              <Typography variant="body2" color="text.secondary">
-                                {workspace.address}
-                                {workspace.state && `, ${workspace.state}`}
-                                {workspace.lga && ` (${workspace.lga})`}
-                              </Typography>
-                            </Box>
-
-                            {/* Phone */}
-                            {workspace.phone && (
-                              <Box
-                                sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}
-                              >
-                                <PhoneIcon
-                                  sx={{ fontSize: 18, color: 'text.secondary' }}
-                                />
-                                <Typography variant="body2" color="text.secondary">
-                                  {workspace.phone}
-                                </Typography>
-                              </Box>
-                            )}
-
-                            {/* Email */}
-                            {workspace.email && (
-                              <Box
-                                sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}
-                              >
-                                <EmailIcon
-                                  sx={{ fontSize: 18, color: 'text.secondary' }}
-                                />
-                                <Typography variant="body2" color="text.secondary">
-                                  {workspace.email}
-                                </Typography>
-                              </Box>
-                            )}
-
-                            {/* Hours */}
-                            {workspace.hours && (
-                              <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                <ScheduleIcon
-                                  sx={{ fontSize: 18, color: 'text.secondary' }}
-                                />
-                                <Typography variant="body2" color="text.secondary">
-                                  {workspace.hours}
-                                </Typography>
-                              </Box>
-                            )}
-
-                            {/* Actions */}
-                            <Box sx={{ display: 'flex', gap: 2, mt: 3 }}>
-                              <Button
-                                variant="contained"
-                                size="small"
-                                startIcon={<PersonAddIcon />}
-                                sx={{ borderRadius: 2 }}
-                              >
-                                Register
-                              </Button>
-                              <Button
-                                variant="outlined"
-                                size="small"
-                                startIcon={<LoginIcon />}
-                                sx={{ borderRadius: 2 }}
-                              >
-                                Sign In
-                              </Button>
-                            </Box>
-                          </Box>
-                        </Box>
-                      </CardContent>
-                    </CardActionArea>
-                  </Card>
+                  <WorkspaceSelectionCard
+                    workspace={workspace}
+                    onRegister={handleWorkspaceRegister}
+                    onLogin={handleWorkspaceLogin}
+                  />
                 </Grid>
               ))}
             </Grid>

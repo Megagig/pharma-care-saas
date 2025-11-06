@@ -4,27 +4,27 @@ import { tenancyGuardPlugin, addAuditFields } from '../utils/tenancyGuard';
 export interface IEducationalResource extends Document {
   _id: mongoose.Types.ObjectId;
   workplaceId?: mongoose.Types.ObjectId; // null for global resources
-  
+
   // Content details
   title: string;
   description: string;
   content: string;
   category: 'medication' | 'condition' | 'wellness' | 'faq' | 'prevention' | 'nutrition' | 'lifestyle';
   tags: string[];
-  
+
   // Media information
   mediaType: 'article' | 'video' | 'infographic' | 'pdf' | 'audio' | 'interactive';
   mediaUrl?: string;
   thumbnail?: string;
   duration?: number; // For video/audio content in seconds
   fileSize?: number; // For downloadable content in bytes
-  
+
   // Publishing and visibility
   isPublished: boolean;
   publishedAt?: Date;
   viewCount: number;
   downloadCount: number;
-  
+
   // Targeting and personalization
   targetAudience: {
     conditions?: string[]; // Target specific medical conditions
@@ -32,28 +32,28 @@ export interface IEducationalResource extends Document {
     ageGroups?: ('child' | 'teen' | 'adult' | 'senior')[]; // Target age groups
     demographics?: ('male' | 'female' | 'pregnant' | 'elderly')[]; // Target demographics
   };
-  
+
   // Localization
   localizedFor: string; // 'nigeria', 'general', 'west_africa'
   language: string; // 'en', 'yo', 'ig', 'ha', 'fr'
-  
+
   // Content metadata
   difficulty: 'beginner' | 'intermediate' | 'advanced';
   readingTime?: number; // Estimated reading time in minutes
   lastReviewed?: Date;
   reviewedBy?: mongoose.Types.ObjectId;
-  
+
   // SEO and discoverability
   slug: string;
   metaTitle?: string;
   metaDescription?: string;
   keywords: string[];
-  
+
   // Content relationships
   relatedResources: mongoose.Types.ObjectId[]; // ref: EducationalResource
   prerequisites: mongoose.Types.ObjectId[]; // Resources that should be read first
   followUpResources: mongoose.Types.ObjectId[]; // Recommended next resources
-  
+
   // Engagement metrics
   ratings: {
     averageRating: number;
@@ -66,7 +66,7 @@ export interface IEducationalResource extends Document {
       5: number;
     };
   };
-  
+
   // Content validation
   isFactChecked: boolean;
   factCheckedBy?: mongoose.Types.ObjectId;
@@ -78,18 +78,18 @@ export interface IEducationalResource extends Document {
     publishedDate?: Date;
     type: 'journal' | 'website' | 'book' | 'guideline' | 'study';
   }>;
-  
+
   // Access control
   accessLevel: 'public' | 'patient_only' | 'premium' | 'staff_only';
   requiredSubscription?: string;
-  
+
   // Audit fields
   isDeleted: boolean;
   createdBy: mongoose.Types.ObjectId;
   updatedBy?: mongoose.Types.ObjectId;
   createdAt: Date;
   updatedAt: Date;
-  
+
   // Instance methods
   generateSlug(): string;
   calculateReadingTime(): number;
@@ -101,6 +101,11 @@ export interface IEducationalResource extends Document {
   needsReview(): boolean;
 }
 
+// Model interface with static methods
+export interface IEducationalResourceModel extends mongoose.Model<IEducationalResource> {
+  ensureUniqueSlug(baseSlug: string, excludeId?: mongoose.Types.ObjectId): Promise<string>;
+}
+
 const educationalResourceSchema = new Schema(
   {
     workplaceId: {
@@ -109,7 +114,7 @@ const educationalResourceSchema = new Schema(
       index: true,
       sparse: true, // Allow null values for global resources
     },
-    
+
     title: {
       type: String,
       required: [true, 'Resource title is required'],
@@ -149,7 +154,7 @@ const educationalResourceSchema = new Schema(
       },
       index: true,
     },
-    
+
     mediaType: {
       type: String,
       enum: {
@@ -189,7 +194,7 @@ const educationalResourceSchema = new Schema(
       min: [1, 'File size must be at least 1 byte'],
       max: [104857600, 'File size cannot exceed 100MB'],
     },
-    
+
     isPublished: {
       type: Boolean,
       default: false,
@@ -211,7 +216,7 @@ const educationalResourceSchema = new Schema(
       default: 0,
       min: [0, 'Download count cannot be negative'],
     },
-    
+
     targetAudience: {
       conditions: {
         type: [String],
@@ -240,7 +245,7 @@ const educationalResourceSchema = new Schema(
         enum: ['male', 'female', 'pregnant', 'elderly'],
       },
     },
-    
+
     localizedFor: {
       type: String,
       enum: {
@@ -261,7 +266,7 @@ const educationalResourceSchema = new Schema(
       required: true,
       index: true,
     },
-    
+
     difficulty: {
       type: String,
       enum: {
@@ -282,7 +287,7 @@ const educationalResourceSchema = new Schema(
       type: Schema.Types.ObjectId,
       ref: 'User',
     },
-    
+
     slug: {
       type: String,
       required: true,
@@ -316,7 +321,7 @@ const educationalResourceSchema = new Schema(
         message: 'Cannot have more than 20 keywords',
       },
     },
-    
+
     relatedResources: {
       type: [Schema.Types.ObjectId],
       ref: 'EducationalResource',
@@ -347,7 +352,7 @@ const educationalResourceSchema = new Schema(
         message: 'Cannot have more than 10 follow-up resources',
       },
     },
-    
+
     ratings: {
       averageRating: {
         type: Number,
@@ -368,7 +373,7 @@ const educationalResourceSchema = new Schema(
         5: { type: Number, default: 0, min: 0 },
       },
     },
-    
+
     isFactChecked: {
       type: Boolean,
       default: false,
@@ -410,7 +415,7 @@ const educationalResourceSchema = new Schema(
         },
       },
     ],
-    
+
     accessLevel: {
       type: String,
       enum: {
@@ -446,7 +451,7 @@ const educationalResourceSchema = new Schema(
 addAuditFields(educationalResourceSchema);
 
 // Apply tenancy guard plugin (optional for global resources)
-educationalResourceSchema.plugin(tenancyGuardPlugin, { 
+educationalResourceSchema.plugin(tenancyGuardPlugin, {
   pharmacyIdField: 'workplaceId',
   allowGlobal: true // Allow resources without workplaceId
 });
@@ -490,10 +495,10 @@ educationalResourceSchema.virtual('readingTimeDisplay').get(function (this: IEdu
 // Virtual for duration display
 educationalResourceSchema.virtual('durationDisplay').get(function (this: IEducationalResource) {
   if (!this.duration) return null;
-  
+
   const minutes = Math.floor(this.duration / 60);
   const seconds = this.duration % 60;
-  
+
   if (minutes > 0) {
     return seconds > 0 ? `${minutes}:${seconds.toString().padStart(2, '0')}` : `${minutes} min`;
   }
@@ -503,16 +508,16 @@ educationalResourceSchema.virtual('durationDisplay').get(function (this: IEducat
 // Virtual for file size display
 educationalResourceSchema.virtual('fileSizeDisplay').get(function (this: IEducationalResource) {
   if (!this.fileSize) return null;
-  
+
   const units = ['B', 'KB', 'MB', 'GB'];
   let size = this.fileSize;
   let unitIndex = 0;
-  
+
   while (size >= 1024 && unitIndex < units.length - 1) {
     size /= 1024;
     unitIndex++;
   }
-  
+
   return `${size.toFixed(1)} ${units[unitIndex]}`;
 });
 
@@ -521,11 +526,11 @@ educationalResourceSchema.virtual('engagementScore').get(function (this: IEducat
   const viewWeight = 1;
   const downloadWeight = 3;
   const ratingWeight = 2;
-  
+
   const viewScore = this.viewCount * viewWeight;
   const downloadScore = this.downloadCount * downloadWeight;
   const ratingScore = this.ratings.averageRating * this.ratings.totalRatings * ratingWeight;
-  
+
   return viewScore + downloadScore + ratingScore;
 });
 
@@ -535,22 +540,22 @@ educationalResourceSchema.pre('save', function (this: IEducationalResource) {
   if (!this.slug || this.isModified('title')) {
     this.slug = this.generateSlug();
   }
-  
+
   // Calculate reading time if content changed
   if (this.isModified('content') && this.mediaType === 'article') {
     this.readingTime = this.calculateReadingTime();
   }
-  
+
   // Set published date when status changes to published
   if (this.isModified('isPublished') && this.isPublished && !this.publishedAt) {
     this.publishedAt = new Date();
   }
-  
+
   // Clear published date when unpublished
   if (this.isModified('isPublished') && !this.isPublished) {
     this.publishedAt = undefined;
   }
-  
+
   // Set meta fields if not provided
   if (!this.metaTitle) {
     this.metaTitle = this.title.substring(0, 60);
@@ -558,7 +563,7 @@ educationalResourceSchema.pre('save', function (this: IEducationalResource) {
   if (!this.metaDescription) {
     this.metaDescription = this.description.substring(0, 160);
   }
-  
+
   // Clean up tags and keywords
   if (this.tags) {
     this.tags = this.tags
@@ -566,7 +571,7 @@ educationalResourceSchema.pre('save', function (this: IEducationalResource) {
       .filter(tag => tag.length > 0)
       .slice(0, 15);
   }
-  
+
   if (this.keywords) {
     this.keywords = this.keywords
       .map(keyword => keyword.trim().toLowerCase())
@@ -578,7 +583,7 @@ educationalResourceSchema.pre('save', function (this: IEducationalResource) {
 // Instance method to generate slug
 educationalResourceSchema.methods.generateSlug = function (this: IEducationalResource): string {
   if (!this.title) return '';
-  
+
   return this.title
     .toLowerCase()
     .trim()
@@ -590,15 +595,15 @@ educationalResourceSchema.methods.generateSlug = function (this: IEducationalRes
 // Instance method to calculate reading time
 educationalResourceSchema.methods.calculateReadingTime = function (this: IEducationalResource): number {
   if (!this.content) return 1;
-  
+
   // Remove HTML tags and count words
   const plainText = this.content.replace(/<[^>]*>/g, '');
   const wordCount = plainText.trim().split(/\s+/).length;
-  
+
   // Average reading speed: 200-250 words per minute
   const wordsPerMinute = 225;
   const readTime = Math.ceil(wordCount / wordsPerMinute);
-  
+
   return Math.max(1, readTime);
 };
 
@@ -625,17 +630,17 @@ educationalResourceSchema.methods.addRating = function (this: IEducationalResour
   if (rating < 1 || rating > 5) {
     throw new Error('Rating must be between 1 and 5');
   }
-  
+
   // Update rating breakdown
   this.ratings.ratingBreakdown[rating as keyof typeof this.ratings.ratingBreakdown] += 1;
   this.ratings.totalRatings += 1;
-  
+
   // Recalculate average rating
   const totalScore = Object.entries(this.ratings.ratingBreakdown).reduce(
     (sum, [rating, count]) => sum + (parseInt(rating) * count),
     0
   );
-  
+
   this.ratings.averageRating = Math.round((totalScore / this.ratings.totalRatings) * 10) / 10;
 };
 
@@ -645,7 +650,7 @@ educationalResourceSchema.methods.getRelatedResources = async function (
   limit: number = 5
 ): Promise<IEducationalResource[]> {
   const EducationalResource = this.constructor as mongoose.Model<IEducationalResource>;
-  
+
   // First try manually set related resources
   if (this.relatedResources && this.relatedResources.length > 0) {
     const relatedResources = await EducationalResource.find({
@@ -655,12 +660,12 @@ educationalResourceSchema.methods.getRelatedResources = async function (
     })
       .select('title slug description thumbnail category mediaType readingTime viewCount ratings')
       .limit(limit);
-    
+
     if (relatedResources.length >= limit) {
       return relatedResources;
     }
   }
-  
+
   // Find by category and tags
   const query: any = {
     _id: { $ne: this._id },
@@ -671,12 +676,12 @@ educationalResourceSchema.methods.getRelatedResources = async function (
       { tags: { $in: this.tags } },
     ],
   };
-  
+
   // Prefer same workplace if applicable
   if (this.workplaceId) {
     query.$or.push({ workplaceId: this.workplaceId });
   }
-  
+
   return await EducationalResource.find(query)
     .select('title slug description thumbnail category mediaType readingTime viewCount ratings')
     .sort({ viewCount: -1, 'ratings.averageRating': -1 })
@@ -706,10 +711,10 @@ educationalResourceSchema.methods.isAccessibleTo = function (
 // Instance method to check if needs review
 educationalResourceSchema.methods.needsReview = function (this: IEducationalResource): boolean {
   if (!this.lastReviewed) return true;
-  
+
   const sixMonthsAgo = new Date();
   sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
-  
+
   return this.lastReviewed < sixMonthsAgo;
 };
 
@@ -732,54 +737,54 @@ educationalResourceSchema.statics.findPublished = function (
     isPublished: true,
     isDeleted: false,
   };
-  
+
   if (options?.category) {
     query.category = options.category;
   }
-  
+
   if (options?.tags && options.tags.length > 0) {
     query.tags = { $in: options.tags };
   }
-  
+
   if (options?.mediaType) {
     query.mediaType = options.mediaType;
   }
-  
+
   if (options?.difficulty) {
     query.difficulty = options.difficulty;
   }
-  
+
   if (options?.language) {
     query.language = options.language;
   }
-  
+
   if (options?.localizedFor) {
     query.localizedFor = options.localizedFor;
   }
-  
+
   if (options?.accessLevel) {
     query.accessLevel = options.accessLevel;
   }
-  
+
   if (options?.workplaceId) {
     query.$or = [
       { workplaceId: options.workplaceId },
       { workplaceId: null }, // Include global resources
     ];
   }
-  
+
   let queryBuilder = this.find(query)
     .select('title slug description thumbnail category mediaType difficulty language readingTime viewCount ratings publishedAt')
     .sort({ publishedAt: -1 });
-  
+
   if (options?.skip) {
     queryBuilder = queryBuilder.skip(options.skip);
   }
-  
+
   if (options?.limit) {
     queryBuilder = queryBuilder.limit(options.limit);
   }
-  
+
   return queryBuilder;
 };
 
@@ -802,46 +807,46 @@ educationalResourceSchema.statics.searchResources = function (
     isDeleted: false,
     $text: { $search: searchQuery },
   };
-  
+
   if (options?.category) {
     query.category = options.category;
   }
-  
+
   if (options?.mediaType) {
     query.mediaType = options.mediaType;
   }
-  
+
   if (options?.difficulty) {
     query.difficulty = options.difficulty;
   }
-  
+
   if (options?.language) {
     query.language = options.language;
   }
-  
+
   if (options?.accessLevel) {
     query.accessLevel = options.accessLevel;
   }
-  
+
   if (options?.workplaceId) {
     query.$or = [
       { workplaceId: options.workplaceId },
       { workplaceId: null },
     ];
   }
-  
+
   let queryBuilder = this.find(query)
     .select('title slug description thumbnail category mediaType difficulty language readingTime viewCount ratings score')
     .sort({ score: { $meta: 'textScore' }, viewCount: -1 });
-  
+
   if (options?.skip) {
     queryBuilder = queryBuilder.skip(options.skip);
   }
-  
+
   if (options?.limit) {
     queryBuilder = queryBuilder.limit(options.limit);
   }
-  
+
   return queryBuilder;
 };
 
@@ -854,14 +859,14 @@ educationalResourceSchema.statics.getPopularResources = function (
     isPublished: true,
     isDeleted: false,
   };
-  
+
   if (workplaceId) {
     query.$or = [
       { workplaceId },
       { workplaceId: null },
     ];
   }
-  
+
   return this.find(query)
     .select('title slug description thumbnail category mediaType readingTime viewCount ratings')
     .sort({ viewCount: -1, 'ratings.averageRating': -1 })
@@ -875,21 +880,21 @@ educationalResourceSchema.statics.ensureUniqueSlug = async function (
 ): Promise<string> {
   let slug = baseSlug;
   let counter = 1;
-  
+
   while (true) {
     const query: any = { slug };
     if (excludeId) {
       query._id = { $ne: excludeId };
     }
-    
+
     const existingResource = await this.findOne(query);
     if (!existingResource) {
       return slug;
     }
-    
+
     slug = `${baseSlug}-${counter}`;
     counter++;
   }
 };
 
-export default mongoose.model<IEducationalResource>('EducationalResource', educationalResourceSchema);
+export default mongoose.model<IEducationalResource, IEducationalResourceModel>('EducationalResource', educationalResourceSchema);

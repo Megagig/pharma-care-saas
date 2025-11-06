@@ -98,6 +98,10 @@ const notificationDataSchema = new mongoose_1.Schema({
         ref: 'FollowUpTask',
         index: true,
     },
+    requestId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        index: true,
+    },
     medicationName: {
         type: String,
     },
@@ -187,7 +191,9 @@ const notificationSchema = new mongoose_1.Schema({
             'medication_reminder', 'missed_medication', 'reminder_setup', 'flagged_message',
             'appointment_reminder', 'appointment_confirmed', 'appointment_rescheduled',
             'appointment_cancelled', 'followup_task_assigned', 'followup_task_overdue',
-            'medication_refill_due', 'adherence_check_reminder'
+            'medication_refill_due', 'adherence_check_reminder',
+            'account_approved', 'account_suspended', 'account_reactivated',
+            'refill_approved', 'refill_denied', 'refill_assigned'
         ],
         required: true,
         index: true,

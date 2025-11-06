@@ -298,6 +298,7 @@ export class PatientPortalAdminService implements IPatientPortalAdminService {
           type: 'account_approved',
           title: 'Account Approved',
           content: 'Your patient portal account has been approved. You can now access all features.',
+          data: {},
           workplaceId,
           createdBy: approvedBy,
         });
@@ -364,6 +365,7 @@ export class PatientPortalAdminService implements IPatientPortalAdminService {
           type: 'account_suspended',
           title: 'Account Suspended',
           content: `Your patient portal account has been suspended. Reason: ${reason}`,
+          data: { reason },
           workplaceId,
           createdBy: suspendedBy,
         });
@@ -428,6 +430,7 @@ export class PatientPortalAdminService implements IPatientPortalAdminService {
           type: 'account_reactivated',
           title: 'Account Reactivated',
           content: 'Your patient portal account has been reactivated. You can now access all features.',
+          data: {},
           workplaceId,
           createdBy: reactivatedBy,
         });
@@ -830,7 +833,7 @@ export class PatientPortalAdminService implements IPatientPortalAdminService {
     try {
       const now = new Date();
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      
+
       // User metrics
       const [
         totalUsers,

@@ -9,6 +9,19 @@ export interface AuthenticatedRequest extends Request {
   };
 }
 
+// Export PatientAuthRequest for use in controllers
+export interface PatientAuthRequest extends Request {
+  patientUser?: {
+    _id: string;
+    workplaceId: string;
+    patientId?: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    status: string;
+  };
+}
+
 /**
  * Middleware to validate patient access to their own data
  * Allows:
@@ -50,7 +63,7 @@ export const validatePatientAccess = (
     // Patients can only access their own data
     if (user.role === 'patient') {
       if (user._id !== patientId) {
-        res.status(403).json({ 
+        res.status(403).json({
           error: 'Access denied',
           message: 'Patients can only access their own data'
         });
@@ -61,13 +74,13 @@ export const validatePatientAccess = (
     }
 
     // Default deny for any other roles
-    res.status(403).json({ 
+    res.status(403).json({
       error: 'Access denied',
       message: 'Insufficient permissions'
     });
   } catch (error) {
     logger.error('Error in validatePatientAccess middleware:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Internal server error',
       message: 'Failed to validate patient access'
     });
@@ -108,7 +121,7 @@ export const validatePharmacistAccess = (
     // Pharmacists can only access their own ratings
     if (user.role === 'pharmacist') {
       if (user._id !== pharmacistId) {
-        res.status(403).json({ 
+        res.status(403).json({
           error: 'Access denied',
           message: 'Pharmacists can only access their own ratings'
         });
@@ -119,13 +132,13 @@ export const validatePharmacistAccess = (
     }
 
     // Default deny for any other roles
-    res.status(403).json({ 
+    res.status(403).json({
       error: 'Access denied',
       message: 'Insufficient permissions'
     });
   } catch (error) {
     logger.error('Error in validatePharmacistAccess middleware:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Internal server error',
       message: 'Failed to validate pharmacist access'
     });
@@ -149,7 +162,7 @@ export const requireAdminAccess = (
     }
 
     if (user.role !== 'admin') {
-      res.status(403).json({ 
+      res.status(403).json({
         error: 'Access denied',
         message: 'Admin access required'
       });
@@ -159,9 +172,14 @@ export const requireAdminAccess = (
     next();
   } catch (error) {
     logger.error('Error in requireAdminAccess middleware:', error);
-    res.status(500).json({ 
+    res.status(500).json({
       error: 'Internal server error',
       message: 'Failed to validate admin access'
     });
   }
 };
+
+/**
+ * Export patientAuth middleware (alias for patientPortalAuth)
+ */
+export { patientPortalAuth as patientAuth } from './patientPortalAuth';

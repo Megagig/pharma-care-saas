@@ -39,6 +39,7 @@ import {
 import Footer from '../../components/Footer';
 import ThemeToggle from '../../components/common/ThemeToggle';
 import { useHealthBlog } from '../../hooks/useHealthBlog';
+import WorkspaceSearch from '../../components/patient-portal/WorkspaceSearch';
 
 interface BlogPost {
   _id: string;
@@ -60,6 +61,12 @@ interface BlogPost {
   isFeatured: boolean;
 }
 
+interface MenuItem {
+  label: string;
+  path?: string;
+  action?: () => void;
+}
+
 const PatientPortalLanding: React.FC = () => {
   const theme = useTheme();
   const [isVisible, setIsVisible] = useState<{ [key: string]: boolean }>({});
@@ -67,14 +74,14 @@ const PatientPortalLanding: React.FC = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Fetch blog posts
-  const { 
-    data: featuredPosts, 
-    isLoading: featuredLoading 
+  const {
+    data: featuredPosts,
+    isLoading: featuredLoading
   } = useHealthBlog.useFeaturedPosts(3);
-  
-  const { 
-    data: latestPosts, 
-    isLoading: latestLoading 
+
+  const {
+    data: latestPosts,
+    isLoading: latestLoading
   } = useHealthBlog.useLatestPosts({ limit: 9 });
 
   const toggleMobileMenu = () => {
@@ -85,11 +92,16 @@ const PatientPortalLanding: React.FC = () => {
     setMobileMenuOpen(false);
   };
 
-  const menuItems = [
+  const scrollToWorkspaceSearch = () => {
+    const element = document.getElementById('workspace-search-section');
+    element?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const menuItems: MenuItem[] = [
     { label: 'About', path: '/about' },
     { label: 'Contact', path: '/contact' },
     { label: 'Pricing', path: '/pricing' },
-    { label: 'Find My Pharmacy', path: '/patient-portal/search' },
+    { label: 'Find My Pharmacy', action: scrollToWorkspaceSearch },
     { label: 'Sign In', path: '/patient-portal/login' },
     { label: 'Get Started', path: '/register' },
   ];
@@ -216,9 +228,8 @@ const PatientPortalLanding: React.FC = () => {
               gap: 3,
             }}
           >
-            <Button 
-              component={Link} 
-              to="/patient-portal/search" 
+            <Button
+              onClick={scrollToWorkspaceSearch}
               color="inherit"
               startIcon={<LocalPharmacyIcon />}
               sx={{
@@ -334,9 +345,14 @@ const PatientPortalLanding: React.FC = () => {
             {menuItems.map((item, index) => (
               <ListItem key={index} disablePadding>
                 <ListItemButton
-                  component={Link}
+                  component={item.path ? Link : 'div'}
                   to={item.path}
-                  onClick={closeMobileMenu}
+                  onClick={() => {
+                    if (item.action) {
+                      item.action();
+                    }
+                    closeMobileMenu();
+                  }}
                   sx={{
                     py: 1.5,
                     borderRadius: 1,
@@ -438,7 +454,7 @@ const PatientPortalLanding: React.FC = () => {
                   mx: { xs: 'auto', md: 0 },
                 }}
               >
-                Access your pharmacy services online. Book appointments, manage prescriptions, 
+                Access your pharmacy services online. Book appointments, manage prescriptions,
                 communicate with your pharmacist, and take control of your health journey.
               </Typography>
               <Box
@@ -450,8 +466,7 @@ const PatientPortalLanding: React.FC = () => {
                 }}
               >
                 <Button
-                  component={Link}
-                  to="/patient-portal/search"
+                  onClick={scrollToWorkspaceSearch}
                   variant="contained"
                   size="large"
                   endIcon={<ArrowForwardIcon />}
@@ -465,9 +480,9 @@ const PatientPortalLanding: React.FC = () => {
                   variant="outlined"
                   size="large"
                   startIcon={<LocalPharmacyIcon />}
-                  sx={{ 
-                    py: 1.5, 
-                    px: 4, 
+                  sx={{
+                    py: 1.5,
+                    px: 4,
                     borderRadius: 3,
                     borderColor: 'primary.main',
                     color: 'primary.main',
@@ -520,6 +535,50 @@ const PatientPortalLanding: React.FC = () => {
           </Box>
         </Container>
       </Box>
+
+      {/* Workspace Search Section */}
+      <Container maxWidth="lg" sx={{ py: { xs: 8, md: 12 } }} id="workspace-search-section">
+        <Box
+          ref={(el) => (observerRefs.current['workspace-search-header'] = el as HTMLDivElement | null)}
+          sx={{
+            textAlign: 'center',
+            mb: 6,
+            opacity: isVisible['workspace-search-header'] ? 1 : 0,
+            transform: isVisible['workspace-search-header']
+              ? 'translateY(0)'
+              : 'translateY(30px)',
+            transition: 'all 0.6s ease-out',
+          }}
+        >
+          <Typography
+            variant="h3"
+            component="h2"
+            sx={{ fontWeight: 600, mb: 2 }}
+          >
+            Find Your Pharmacy
+          </Typography>
+          <Typography
+            variant="h6"
+            color="text.secondary"
+            sx={{ maxWidth: '600px', mx: 'auto' }}
+          >
+            Search for pharmacies in your area and get started with your patient portal account
+          </Typography>
+        </Box>
+
+        <Box
+          ref={(el) => (observerRefs.current['workspace-search'] = el as HTMLDivElement | null)}
+          sx={{
+            opacity: isVisible['workspace-search'] ? 1 : 0,
+            transform: isVisible['workspace-search']
+              ? 'translateY(0)'
+              : 'translateY(30px)',
+            transition: 'all 0.6s ease-out 0.2s',
+          }}
+        >
+          <WorkspaceSearch maxResults={6} />
+        </Box>
+      </Container>
 
       {/* Featured Blog Posts Section */}
       {!featuredLoading && featuredPosts?.data && featuredPosts.data.length > 0 && (
@@ -1024,7 +1083,7 @@ const PatientPortalLanding: React.FC = () => {
               variant="h6"
               sx={{ mb: 4, opacity: 0.9, maxWidth: '600px', mx: 'auto' }}
             >
-              Join thousands of patients who are already using our portal to manage 
+              Join thousands of patients who are already using our portal to manage
               their health more effectively.
             </Typography>
             <Box

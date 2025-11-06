@@ -22,6 +22,10 @@ export interface IPayment extends Document {
             amount?: number;
             quantity?: number;
         }>;
+        metadata?: {
+            invoiceId?: string;
+            [key: string]: any;
+        };
     };
     billingAddress: {
         street?: string;

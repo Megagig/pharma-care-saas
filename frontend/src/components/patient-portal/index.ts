@@ -26,3 +26,7 @@ export { default as FileAttachment } from './FileAttachment';
 
 // Rating and Feedback Components
 export { default as ConsultationRating } from './ConsultationRating';
+
+// Workspace Search and Onboarding Components
+export { default as WorkspaceSearch } from './WorkspaceSearch';
+export { default as PatientOnboarding } from './PatientOnboarding';

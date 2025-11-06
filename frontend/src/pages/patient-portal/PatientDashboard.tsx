@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   Calendar,
   Pill,
@@ -21,6 +21,7 @@ import { Button } from '../../components/common/Button';
 import { Badge } from '../../components/common/Badge';
 import { Alert } from '../../components/common/Alert';
 import { Box, Typography, Grid, LinearProgress, Divider } from '@mui/material';
+import PatientOnboarding from '../../components/patient-portal/PatientOnboarding';
 
 interface DashboardStats {
   upcomingAppointments: number;
@@ -75,6 +76,18 @@ interface VitalReading {
 
 export const PatientDashboard: React.FC = () => {
   const [loading, setLoading] = useState(false);
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  // Check if this is the user's first visit
+  useEffect(() => {
+    const hasCompletedOnboarding = localStorage.getItem('patientOnboardingCompleted');
+    const patientUser = localStorage.getItem('patientUser');
+    
+    if (!hasCompletedOnboarding && patientUser) {
+      // Show onboarding for first-time users
+      setShowOnboarding(true);
+    }
+  }, []);
 
   // Mock data - replace with actual API calls
   const stats: DashboardStats = {
@@ -576,6 +589,14 @@ export const PatientDashboard: React.FC = () => {
           </Grid>
         </Grid>
       </Box>
+
+      {/* Patient Onboarding Modal */}
+      <PatientOnboarding
+        open={showOnboarding}
+        onClose={() => setShowOnboarding(false)}
+        workspaceName="Your Pharmacy" // This should be dynamic based on workspace
+        patientName="Patient" // This should be dynamic based on patient user
+      />
     </Box>
   );
 };

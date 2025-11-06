@@ -16,7 +16,7 @@ export class PatientProfileController {
   static async getProfile(req: PatientPortalRequest, res: Response): Promise<void> {
     try {
       const patientUserId = req.patientUser?._id.toString();
-      const workplaceId = req.workplaceId;
+      const workplaceId = req.workplaceId?.toString();
 
       if (!patientUserId || !workplaceId) {
         res.status(401).json({
@@ -64,17 +64,17 @@ export class PatientProfileController {
             bloodGroup: profile.bloodGroup,
             genotype: profile.genotype,
             weightKg: profile.weightKg,
-            
+
             // Enhanced fields
             allergies: profile.allergies,
             chronicConditions: profile.chronicConditions,
             emergencyContacts: profile.enhancedEmergencyContacts,
             insuranceInfo: profile.insuranceInfo,
-            
+
             // Preferences
             notificationPreferences: profile.notificationPreferences,
             appointmentPreferences: profile.appointmentPreferences,
-            
+
             // Metadata
             createdAt: profile.createdAt,
             updatedAt: profile.updatedAt,
@@ -103,7 +103,7 @@ export class PatientProfileController {
   static async updateProfile(req: PatientPortalRequest, res: Response): Promise<void> {
     try {
       const patientUserId = req.patientUser?._id.toString();
-      const workplaceId = req.workplaceId;
+      const workplaceId = req.workplaceId?.toString();
 
       if (!patientUserId || !workplaceId) {
         res.status(401).json({
@@ -190,7 +190,7 @@ export class PatientProfileController {
   static async addAllergy(req: PatientPortalRequest, res: Response): Promise<void> {
     try {
       const patientUserId = req.patientUser?._id.toString();
-      const workplaceId = req.workplaceId;
+      const workplaceId = req.workplaceId?.toString();
 
       if (!patientUserId || !workplaceId) {
         res.status(401).json({
@@ -268,7 +268,7 @@ export class PatientProfileController {
   static async updateAllergy(req: PatientPortalRequest, res: Response): Promise<void> {
     try {
       const patientUserId = req.patientUser?._id.toString();
-      const workplaceId = req.workplaceId;
+      const workplaceId = req.workplaceId?.toString();
       const { allergyId } = req.params;
 
       if (!patientUserId || !workplaceId) {
@@ -352,7 +352,7 @@ export class PatientProfileController {
   static async removeAllergy(req: PatientPortalRequest, res: Response): Promise<void> {
     try {
       const patientUserId = req.patientUser?._id.toString();
-      const workplaceId = req.workplaceId;
+      const workplaceId = req.workplaceId?.toString();
       const { allergyId } = req.params;
 
       if (!patientUserId || !workplaceId) {
@@ -406,7 +406,7 @@ export class PatientProfileController {
   static async addChronicCondition(req: PatientPortalRequest, res: Response): Promise<void> {
     try {
       const patientUserId = req.patientUser?._id.toString();
-      const workplaceId = req.workplaceId;
+      const workplaceId = req.workplaceId?.toString();
 
       if (!patientUserId || !workplaceId) {
         res.status(401).json({
@@ -484,7 +484,7 @@ export class PatientProfileController {
   static async updateChronicCondition(req: PatientPortalRequest, res: Response): Promise<void> {
     try {
       const patientUserId = req.patientUser?._id.toString();
-      const workplaceId = req.workplaceId;
+      const workplaceId = req.workplaceId?.toString();
       const { conditionId } = req.params;
 
       if (!patientUserId || !workplaceId) {
@@ -573,7 +573,7 @@ export class PatientProfileController {
   static async removeChronicCondition(req: PatientPortalRequest, res: Response): Promise<void> {
     try {
       const patientUserId = req.patientUser?._id.toString();
-      const workplaceId = req.workplaceId;
+      const workplaceId = req.workplaceId?.toString();
       const { conditionId } = req.params;
 
       if (!patientUserId || !workplaceId) {
@@ -627,7 +627,7 @@ export class PatientProfileController {
   static async addEmergencyContact(req: PatientPortalRequest, res: Response): Promise<void> {
     try {
       const patientUserId = req.patientUser?._id.toString();
-      const workplaceId = req.workplaceId;
+      const workplaceId = req.workplaceId?.toString();
 
       if (!patientUserId || !workplaceId) {
         res.status(401).json({
@@ -696,7 +696,7 @@ export class PatientProfileController {
   static async updateEmergencyContact(req: PatientPortalRequest, res: Response): Promise<void> {
     try {
       const patientUserId = req.patientUser?._id.toString();
-      const workplaceId = req.workplaceId;
+      const workplaceId = req.workplaceId?.toString();
       const { contactId } = req.params;
 
       if (!patientUserId || !workplaceId) {
@@ -780,7 +780,7 @@ export class PatientProfileController {
   static async removeEmergencyContact(req: PatientPortalRequest, res: Response): Promise<void> {
     try {
       const patientUserId = req.patientUser?._id.toString();
-      const workplaceId = req.workplaceId;
+      const workplaceId = req.workplaceId?.toString();
       const { contactId } = req.params;
 
       if (!patientUserId || !workplaceId) {
@@ -834,7 +834,7 @@ export class PatientProfileController {
   static async updateInsuranceInfo(req: PatientPortalRequest, res: Response): Promise<void> {
     try {
       const patientUserId = req.patientUser?._id.toString();
-      const workplaceId = req.workplaceId;
+      const workplaceId = req.workplaceId?.toString();
 
       if (!patientUserId || !workplaceId) {
         res.status(401).json({
@@ -897,7 +897,7 @@ export class PatientProfileController {
   static async logVitals(req: PatientPortalRequest, res: Response): Promise<void> {
     try {
       const patientUserId = req.patientUser?._id.toString();
-      const workplaceId = req.workplaceId;
+      const workplaceId = req.workplaceId?.toString();
 
       if (!patientUserId || !workplaceId) {
         res.status(401).json({
@@ -957,7 +957,7 @@ export class PatientProfileController {
   static async getVitalsHistory(req: PatientPortalRequest, res: Response): Promise<void> {
     try {
       const patientUserId = req.patientUser?._id.toString();
-      const workplaceId = req.workplaceId;
+      const workplaceId = req.workplaceId?.toString();
 
       if (!patientUserId || !workplaceId) {
         res.status(401).json({
@@ -1007,7 +1007,7 @@ export class PatientProfileController {
   static async getLatestVitals(req: PatientPortalRequest, res: Response): Promise<void> {
     try {
       const patientUserId = req.patientUser?._id.toString();
-      const workplaceId = req.workplaceId;
+      const workplaceId = req.workplaceId?.toString();
 
       if (!patientUserId || !workplaceId) {
         res.status(401).json({

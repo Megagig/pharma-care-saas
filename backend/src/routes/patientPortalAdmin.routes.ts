@@ -24,12 +24,7 @@ router.use(workspaceAdminAuth);
 router.use(rateLimiter({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // Limit each IP to 100 requests per windowMs
-  message: {
-    success: false,
-    error: 'Too many admin requests, please try again later',
-  },
-  standardHeaders: true,
-  legacyHeaders: false,
+  message: 'Too many admin requests, please try again later',
 }));
 
 /**
@@ -200,10 +195,7 @@ router.post(
   rateLimiter({
     windowMs: 60 * 60 * 1000, // 1 hour
     max: 10, // Limit to 10 bulk operations per hour
-    message: {
-      success: false,
-      error: 'Too many bulk operations, please try again later',
-    },
+    message: 'Too many bulk operations, please try again later',
   }),
   auditWorkspaceAdminAction('bulk_approve_patient_users'),
   (req, res) => {
@@ -220,10 +212,7 @@ router.post(
   rateLimiter({
     windowMs: 60 * 60 * 1000, // 1 hour
     max: 10, // Limit to 10 bulk operations per hour
-    message: {
-      success: false,
-      error: 'Too many bulk operations, please try again later',
-    },
+    message: 'Too many bulk operations, please try again later',
   }),
   auditWorkspaceAdminAction('bulk_assign_refill_requests'),
   (req, res) => {
@@ -244,10 +233,7 @@ router.get(
   rateLimiter({
     windowMs: 24 * 60 * 60 * 1000, // 24 hours
     max: 5, // Limit to 5 exports per day
-    message: {
-      success: false,
-      error: 'Export limit exceeded, please try again tomorrow',
-    },
+    message: 'Export limit exceeded, please try again tomorrow',
   }),
   auditWorkspaceAdminAction('export_patient_data'),
   (req, res) => {
@@ -264,10 +250,7 @@ router.get(
   rateLimiter({
     windowMs: 24 * 60 * 60 * 1000, // 24 hours
     max: 5, // Limit to 5 exports per day
-    message: {
-      success: false,
-      error: 'Export limit exceeded, please try again tomorrow',
-    },
+    message: 'Export limit exceeded, please try again tomorrow',
   }),
   auditWorkspaceAdminAction('export_analytics_data'),
   (req, res) => {

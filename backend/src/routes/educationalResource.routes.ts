@@ -61,6 +61,38 @@ const categoryValidation = [
     .withMessage('Invalid category'),
 ];
 
+const categoryWithQueryValidation = [
+  param('category')
+    .isIn(['medication', 'condition', 'wellness', 'faq', 'prevention', 'nutrition', 'lifestyle'])
+    .withMessage('Invalid category'),
+  query('language').optional().isIn(['en', 'yo', 'ig', 'ha', 'fr']).withMessage('Invalid language'),
+  query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),
+  query('skip').optional().isInt({ min: 0 }).withMessage('Skip must be non-negative'),
+  query('page').optional().isInt({ min: 1 }).withMessage('Page must be positive'),
+];
+
+const limitValidation = [
+  query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),
+];
+
+const recommendationValidation = [
+  query('limit').optional().isInt({ min: 1, max: 50 }).withMessage('Limit must be between 1 and 50'),
+  query('includeGeneral').optional().isBoolean().withMessage('includeGeneral must be boolean'),
+];
+
+const adminQueryValidation = [
+  query('category').optional().isIn(['medication', 'condition', 'wellness', 'faq', 'prevention', 'nutrition', 'lifestyle']),
+  query('status').optional().isIn(['published', 'draft', 'all']),
+  query('limit').optional().isInt({ min: 1, max: 100 }),
+  query('skip').optional().isInt({ min: 0 }),
+  query('page').optional().isInt({ min: 1 }),
+];
+
+const analyticsValidation = [
+  query('startDate').optional().isISO8601().withMessage('Start date must be valid ISO 8601 date'),
+  query('endDate').optional().isISO8601().withMessage('End date must be valid ISO 8601 date'),
+];
+
 const resourceIdValidation = [
   param('resourceId')
     .isMongoId()
@@ -224,7 +256,7 @@ router.get(
   '/public',
   rateLimiter({ windowMs: 15 * 60 * 1000, max: 100 }), // 100 requests per 15 minutes
   resourceSearchValidation,
-  validateRequest,
+  validateRequest([...resourceIdValidation, ...ratingValidation]),
   EducationalResourceController.getPublicResources
 );
 
@@ -232,7 +264,7 @@ router.get(
   '/public/slug/:slug',
   rateLimiter({ windowMs: 15 * 60 * 1000, max: 200 }), // 200 requests per 15 minutes
   slugValidation,
-  validateRequest,
+  validateRequest(slugValidation),
   EducationalResourceController.getPublicResourceBySlug
 );
 
@@ -240,19 +272,15 @@ router.get(
   '/public/popular',
   rateLimiter({ windowMs: 15 * 60 * 1000, max: 100 }),
   query('limit').optional().isInt({ min: 1, max: 50 }).withMessage('Limit must be between 1 and 50'),
-  validateRequest,
+  validateRequest([query('limit').optional().isInt({ min: 1, max: 50 })]),
   EducationalResourceController.getPopularResources
 );
 
 router.get(
   '/public/category/:category',
   rateLimiter({ windowMs: 15 * 60 * 1000, max: 100 }),
-  categoryValidation,
-  query('language').optional().isIn(['en', 'yo', 'ig', 'ha', 'fr']).withMessage('Invalid language'),
-  query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),
-  query('skip').optional().isInt({ min: 0 }).withMessage('Skip must be non-negative'),
-  query('page').optional().isInt({ min: 1 }).withMessage('Page must be positive'),
-  validateRequest,
+  categoryWithQueryValidation,
+  validateRequest(categoryWithQueryValidation),
   EducationalResourceController.getResourcesByCategory
 );
 
@@ -265,8 +293,8 @@ router.get(
 router.get(
   '/public/tags',
   rateLimiter({ windowMs: 15 * 60 * 1000, max: 50 }),
-  query('limit').optional().isInt({ min: 1, max: 100 }).withMessage('Limit must be between 1 and 100'),
-  validateRequest,
+  limitValidation,
+  validateRequest(limitValidation),
   EducationalResourceController.getAvailableTags
 );
 
@@ -276,7 +304,7 @@ router.get(
   patientAuth,
   rateLimiter({ windowMs: 15 * 60 * 1000, max: 200 }), // Higher limit for authenticated users
   resourceSearchValidation,
-  validateRequest,
+  validateRequest([...resourceIdValidation, ...ratingValidation]),
   EducationalResourceController.getPatientResources
 );
 
@@ -285,7 +313,7 @@ router.get(
   patientAuth,
   rateLimiter({ windowMs: 15 * 60 * 1000, max: 300 }),
   slugValidation,
-  validateRequest,
+  validateRequest(slugValidation),
   EducationalResourceController.getPatientResourceBySlug
 );
 
@@ -293,9 +321,8 @@ router.get(
   '/patient/recommendations',
   patientAuth,
   rateLimiter({ windowMs: 15 * 60 * 1000, max: 100 }),
-  query('limit').optional().isInt({ min: 1, max: 50 }).withMessage('Limit must be between 1 and 50'),
-  query('includeGeneral').optional().isBoolean().withMessage('includeGeneral must be boolean'),
-  validateRequest,
+  recommendationValidation,
+  validateRequest(recommendationValidation),
   EducationalResourceController.getPatientRecommendations
 );
 
@@ -303,9 +330,8 @@ router.post(
   '/patient/:resourceId/rate',
   patientAuth,
   rateLimiter({ windowMs: 60 * 60 * 1000, max: 10 }), // 10 ratings per hour
-  resourceIdValidation,
-  ratingValidation,
-  validateRequest,
+  [...resourceIdValidation, ...ratingValidation],
+  validateRequest([...resourceIdValidation, ...ratingValidation]),
   EducationalResourceController.rateResource
 );
 
@@ -314,7 +340,7 @@ router.post(
   patientAuth,
   rateLimiter({ windowMs: 15 * 60 * 1000, max: 100 }),
   resourceIdValidation,
-  validateRequest,
+  validateRequest(resourceIdValidation),
   EducationalResourceController.trackResourceView
 );
 
@@ -323,7 +349,7 @@ router.post(
   patientAuth,
   rateLimiter({ windowMs: 15 * 60 * 1000, max: 50 }),
   resourceIdValidation,
-  validateRequest,
+  validateRequest(resourceIdValidation),
   EducationalResourceController.trackResourceDownload
 );
 
@@ -332,12 +358,8 @@ router.get(
   '/admin',
   workspaceAuth,
   rateLimiter({ windowMs: 15 * 60 * 1000, max: 500 }), // Higher limit for admin users
-  query('category').optional().isIn(['medication', 'condition', 'wellness', 'faq', 'prevention', 'nutrition', 'lifestyle']),
-  query('status').optional().isIn(['published', 'draft', 'all']),
-  query('limit').optional().isInt({ min: 1, max: 100 }),
-  query('skip').optional().isInt({ min: 0 }),
-  query('page').optional().isInt({ min: 1 }),
-  validateRequest,
+  adminQueryValidation,
+  validateRequest(adminQueryValidation),
   EducationalResourceController.getAdminResources
 );
 
@@ -346,7 +368,7 @@ router.post(
   workspaceAuth,
   rateLimiter({ windowMs: 60 * 60 * 1000, max: 50 }), // 50 creates per hour
   createResourceValidation,
-  validateRequest,
+  validateRequest(createResourceValidation),
   EducationalResourceController.createResource
 );
 
@@ -354,9 +376,8 @@ router.put(
   '/admin/:resourceId',
   workspaceAuth,
   rateLimiter({ windowMs: 60 * 60 * 1000, max: 100 }), // 100 updates per hour
-  resourceIdValidation,
-  updateResourceValidation,
-  validateRequest,
+  [...resourceIdValidation, ...updateResourceValidation],
+  validateRequest([...resourceIdValidation, ...updateResourceValidation]),
   EducationalResourceController.updateResource
 );
 
@@ -365,7 +386,7 @@ router.delete(
   workspaceAuth,
   rateLimiter({ windowMs: 60 * 60 * 1000, max: 20 }), // 20 deletes per hour
   resourceIdValidation,
-  validateRequest,
+  validateRequest(resourceIdValidation),
   EducationalResourceController.deleteResource
 );
 
@@ -373,9 +394,8 @@ router.get(
   '/admin/analytics',
   workspaceAuth,
   rateLimiter({ windowMs: 15 * 60 * 1000, max: 100 }),
-  query('startDate').optional().isISO8601().withMessage('Start date must be valid ISO 8601 date'),
-  query('endDate').optional().isISO8601().withMessage('End date must be valid ISO 8601 date'),
-  validateRequest,
+  analyticsValidation,
+  validateRequest(analyticsValidation),
   EducationalResourceController.getResourceAnalytics
 );
 

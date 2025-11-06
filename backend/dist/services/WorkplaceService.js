@@ -10,7 +10,15 @@ class WorkplaceService {
     async createWorkplace(data) {
         const workplace = new Workplace_1.default({
             ...data,
-            verificationStatus: 'unverified',
+            verificationStatus: 'verified',
+            patientPortalEnabled: true,
+            patientPortalSettings: {
+                allowSelfRegistration: true,
+                requireEmailVerification: true,
+                requireAdminApproval: true,
+                operatingHours: 'Monday-Friday: 8:00 AM - 5:00 PM',
+                services: ['Prescription Refills', 'Medication Consultation', 'Health Screening'],
+            },
             teamMembers: [data.ownerId],
         });
         const savedWorkplace = await workplace.save();

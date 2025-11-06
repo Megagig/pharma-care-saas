@@ -95,6 +95,10 @@ const paymentSchema = new mongoose_1.Schema({
                 quantity: { type: Number, default: 1 },
             },
         ],
+        metadata: {
+            type: mongoose_1.Schema.Types.Mixed,
+            default: {},
+        },
     },
     billingAddress: {
         street: String,

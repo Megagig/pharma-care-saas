@@ -163,6 +163,32 @@ const workplaceSchema = new mongoose_1.Schema({
             ref: 'User',
         },
     ],
+    patientPortalEnabled: {
+        type: Boolean,
+        default: true,
+        index: true,
+    },
+    patientPortalSettings: {
+        allowSelfRegistration: {
+            type: Boolean,
+            default: true,
+        },
+        requireEmailVerification: {
+            type: Boolean,
+            default: true,
+        },
+        requireAdminApproval: {
+            type: Boolean,
+            default: true,
+        },
+        operatingHours: {
+            type: String,
+            default: 'Monday-Friday: 8:00 AM - 5:00 PM',
+        },
+        services: [{
+                type: String,
+            }],
+    },
     currentSubscriptionId: {
         type: mongoose_1.default.Schema.Types.ObjectId,
         ref: 'Subscription',
@@ -296,6 +322,15 @@ workplaceSchema.pre('save', async function (next) {
             },
         ];
     }
+    if (this.isNew && !this.patientPortalSettings) {
+        this.patientPortalSettings = {
+            allowSelfRegistration: true,
+            requireEmailVerification: true,
+            requireAdminApproval: true,
+            operatingHours: 'Monday-Friday: 8:00 AM - 5:00 PM',
+            services: ['Prescription Management', 'Appointment Booking', 'Health Records Access'],
+        };
+    }
     next();
 });
 workplaceSchema.post('save', async function (doc) {
@@ -316,6 +351,9 @@ workplaceSchema.index({ currentSubscriptionId: 1 });
 workplaceSchema.index({ subscriptionStatus: 1 });
 workplaceSchema.index({ trialEndDate: 1 });
 workplaceSchema.index({ 'stats.lastUpdated': 1 });
+workplaceSchema.index({ patientPortalEnabled: 1 });
+workplaceSchema.index({ state: 1, lga: 1 });
+workplaceSchema.index({ patientPortalEnabled: 1, verificationStatus: 1 });
 workplaceSchema.virtual('subscriptionId').get(function () {
     return this.currentSubscriptionId;
 });

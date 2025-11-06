@@ -27,7 +27,7 @@ import {
   Schedule as ScheduleIcon,
 } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
-import apiClient from '../../services/apiClient';
+import publicApiClient from '../../services/publicApiClient';
 import ThemeToggle from '../../components/common/ThemeToggle';
 
 interface Workspace {
@@ -62,7 +62,7 @@ const PatientWorkspaceDetailPage: React.FC = () => {
   const { data, isLoading } = useQuery({
     queryKey: ['workspace', workspaceId],
     queryFn: async () => {
-      const response = await apiClient.get(`/api/public/workspaces/${workspaceId}`);
+      const response = await publicApiClient.get(`/public/workspaces/${workspaceId}`);
       return response.data.data;
     },
     enabled: !workspace && !!workspaceId,

@@ -73,6 +73,16 @@ declare class NombaService {
     private generateSignature;
     private getHeaders;
     initiatePayment(paymentData: NombaPaymentData): Promise<NombaPaymentResponse>;
+    createPaymentIntent(data: {
+        amount: number;
+        currency?: string;
+        description?: string;
+        metadata?: Record<string, any>;
+    }): Promise<{
+        reference: string;
+        transactionId: string;
+        paymentUrl?: string;
+    }>;
     verifyPayment(reference: string): Promise<NombaVerifyResponse>;
     refundPayment(reference: string, amount?: number): Promise<{
         success: boolean;

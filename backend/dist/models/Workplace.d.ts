@@ -36,6 +36,14 @@ export interface IWorkplace extends Document {
     logoUrl?: string;
     inviteCode: string;
     teamMembers: mongoose.Types.ObjectId[];
+    patientPortalEnabled: boolean;
+    patientPortalSettings?: {
+        allowSelfRegistration: boolean;
+        requireEmailVerification: boolean;
+        requireAdminApproval: boolean;
+        operatingHours?: string;
+        services?: string[];
+    };
     currentSubscriptionId?: mongoose.Types.ObjectId;
     subscriptionId?: mongoose.Types.ObjectId;
     currentPlanId?: mongoose.Types.ObjectId;

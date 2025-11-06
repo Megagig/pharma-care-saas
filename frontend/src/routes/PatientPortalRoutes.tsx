@@ -70,6 +70,22 @@ const PatientPortalRoutes: React.FC = () => {
           </LazyWrapper>
         }
       />
+      <Route
+        path="/patient-auth/:workspaceId/login"
+        element={
+          <LazyWrapper fallback={PageSkeleton}>
+            <LazyPatientAuth />
+          </LazyWrapper>
+        }
+      />
+      <Route
+        path="/patient-auth/:workspaceId/register"
+        element={
+          <LazyWrapper fallback={PageSkeleton}>
+            <LazyPatientAuth />
+          </LazyWrapper>
+        }
+      />
 
       {/* Protected Patient Portal Routes */}
       

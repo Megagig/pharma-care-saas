@@ -84,6 +84,34 @@ class NombaService {
             };
         }
     }
+    async createPaymentIntent(data) {
+        try {
+            const paymentData = {
+                amount: data.amount,
+                currency: data.currency || 'NGN',
+                description: data.description || 'Payment',
+                customerEmail: data.metadata?.email || 'customer@example.com',
+                customerName: data.metadata?.name || 'Customer',
+                callbackUrl: process.env.NOMBA_CALLBACK_URL || `${process.env.API_BASE_URL}/api/payments/callback`,
+                metadata: data.metadata,
+            };
+            const result = await this.initiatePayment(paymentData);
+            if (result.success && result.data) {
+                return {
+                    reference: result.data.reference,
+                    transactionId: result.data.reference,
+                    paymentUrl: result.data.checkoutUrl,
+                };
+            }
+            else {
+                throw new Error(result.message || 'Payment creation failed');
+            }
+        }
+        catch (error) {
+            console.error('Create payment intent error:', error.message);
+            throw error;
+        }
+    }
     async verifyPayment(reference) {
         try {
             const headers = this.getHeaders();

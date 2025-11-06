@@ -52,7 +52,7 @@ export interface BlogSearchParams {
 
 // Health Blog Service
 class HealthBlogService {
-  private baseUrl = '/api/public/blog';
+  private baseUrl = '/public/blog';
 
   /**
    * Base request method with error handling
@@ -62,10 +62,10 @@ class HealthBlogService {
     options: RequestInit = {}
   ): Promise<{ success: boolean; data: T; message: string }> {
     try {
-      // Import the configured API client
-      const { default: apiClient } = await import('../services/apiClient');
+      // Import the public API client (no authentication)
+      const { default: publicApiClient } = await import('../services/publicApiClient');
 
-      const response = await apiClient({
+      const response = await publicApiClient({
         url: url,
         method: options.method || 'GET',
         data: options.body ? JSON.parse(options.body as string) : undefined,
@@ -92,7 +92,7 @@ class HealthBlogService {
    */
   async getPublishedPosts(params: BlogSearchParams = {}): Promise<{ success: boolean; data: BlogPostsResponse; message: string }> {
     const searchParams = new URLSearchParams();
-    
+
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
         searchParams.append(key, String(value));
@@ -136,7 +136,7 @@ class HealthBlogService {
    */
   async searchPosts(query: string, filters: Omit<BlogSearchParams, 'search'> = {}): Promise<{ success: boolean; data: BlogPostsResponse; message: string }> {
     const searchParams = new URLSearchParams({ search: query });
-    
+
     Object.entries(filters).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
         searchParams.append(key, String(value));
@@ -321,7 +321,7 @@ export const useIncrementViewCount = () => {
 
   return useMutation({
     mutationFn: (postId: string) => healthBlogService.incrementViewCount(postId),
-    
+
     onSuccess: (response, postId) => {
       // Update the post in cache with new view count
       queryClient.setQueryData(
@@ -341,12 +341,12 @@ export const useIncrementViewCount = () => {
       );
 
       // Invalidate posts lists to reflect updated view count
-      queryClient.invalidateQueries({ 
+      queryClient.invalidateQueries({
         queryKey: healthBlogKeys.posts({}),
         exact: false,
       });
     },
-    
+
     onError: (error) => {
       console.error('Failed to increment view count:', error);
     },

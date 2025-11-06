@@ -23,7 +23,11 @@ interface PublicResourceRequest extends Request {
   };
 }
 
-interface PatientResourceRequest extends PatientAuthRequest {
+interface PatientResourceRequest extends Request {
+  params: {
+    slug?: string;
+    resourceId?: string;
+  };
   query: {
     category?: string;
     tags?: string;
@@ -34,10 +38,26 @@ interface PatientResourceRequest extends PatientAuthRequest {
     limit?: string;
     skip?: string;
     page?: string;
+    includeGeneral?: string;
+  };
+  body: {
+    rating?: number;
+  };
+  patientUser?: {
+    _id: string;
+    workplaceId: string;
+    patientId?: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+    status: string;
   };
 }
 
-interface AdminResourceRequest extends WorkspaceAuthRequest {
+interface AdminResourceRequest extends Request {
+  params: {
+    resourceId?: string;
+  };
   body: {
     title?: string;
     description?: string;
@@ -73,6 +93,13 @@ interface AdminResourceRequest extends WorkspaceAuthRequest {
     limit?: string;
     skip?: string;
     page?: string;
+    startDate?: string;
+    endDate?: string;
+  };
+  user?: {
+    _id: string;
+    workplaceId: string;
+    role: string;
   };
 }
 
@@ -175,8 +202,8 @@ export class EducationalResourceController {
         searchQuery: search,
         sortBy: sortBy as any,
         accessLevel: undefined, // Allow public and patient_only resources
-        workplaceId,
-        patientId,
+        workplaceId: workplaceId ? new mongoose.Types.ObjectId(workplaceId) : undefined,
+        patientId: patientId ? new mongoose.Types.ObjectId(patientId) : undefined,
         limit: limitNum,
         skip: skipNum,
       };
@@ -244,7 +271,7 @@ export class EducationalResourceController {
       const workplaceId = req.patientUser?.workplaceId;
 
       const resource = await EducationalResourceService.getResourceBySlug(slug, {
-        workplaceId,
+        workplaceId: workplaceId ? new mongoose.Types.ObjectId(workplaceId) : undefined,
         userType: 'patient',
         incrementView: true,
       });
@@ -291,8 +318,8 @@ export class EducationalResourceController {
       }
 
       const recommendations = await EducationalResourceService.getRecommendationsForPatient({
-        patientId,
-        workplaceId: workplaceId!,
+        patientId: new mongoose.Types.ObjectId(patientId),
+        workplaceId: new mongoose.Types.ObjectId(workplaceId!),
         limit: parseInt(limit, 10),
         includeGeneral: includeGeneral === 'true',
       });
@@ -316,7 +343,7 @@ export class EducationalResourceController {
       const workplaceId = (req as any).patientUser?.workplaceId; // Optional workplace context
 
       const resources = await EducationalResourceService.getPopularResources(
-        workplaceId,
+        workplaceId ? new mongoose.Types.ObjectId(workplaceId) : undefined,
         parseInt(limit as string, 10)
       );
 
@@ -348,7 +375,7 @@ export class EducationalResourceController {
       }
 
       const result = await EducationalResourceService.getResourcesByCategory(category, {
-        workplaceId,
+        workplaceId: workplaceId ? new mongoose.Types.ObjectId(workplaceId) : undefined,
         language: language as string,
         limit: limitNum,
         skip: skipNum,
@@ -401,7 +428,7 @@ export class EducationalResourceController {
       const workplaceId = (req as any).patientUser?.workplaceId; // Optional workplace context
 
       const tags = await EducationalResourceService.getAvailableTags(
-        workplaceId,
+        workplaceId ? new mongoose.Types.ObjectId(workplaceId) : undefined,
         parseInt(limit as string, 10)
       );
 
@@ -450,7 +477,7 @@ export class EducationalResourceController {
       const updatedResource = await EducationalResourceService.rateResource(
         new mongoose.Types.ObjectId(resourceId),
         rating,
-        { patientId, workplaceId }
+        { patientId: patientId ? new mongoose.Types.ObjectId(patientId) : undefined, workplaceId: workplaceId ? new mongoose.Types.ObjectId(workplaceId) : undefined }
       );
 
       res.json({
@@ -492,7 +519,7 @@ export class EducationalResourceController {
 
       await EducationalResourceService.trackResourceView(
         new mongoose.Types.ObjectId(resourceId),
-        { patientId, workplaceId, userType: 'patient' }
+        { patientId: new mongoose.Types.ObjectId(patientId), workplaceId: new mongoose.Types.ObjectId(workplaceId), userType: 'patient' }
       );
 
       res.json({
@@ -527,7 +554,7 @@ export class EducationalResourceController {
 
       await EducationalResourceService.trackResourceDownload(
         new mongoose.Types.ObjectId(resourceId),
-        { patientId, workplaceId, userType: 'patient' }
+        { patientId: new mongoose.Types.ObjectId(patientId), workplaceId: new mongoose.Types.ObjectId(workplaceId), userType: 'patient' }
       );
 
       res.json({
@@ -559,7 +586,7 @@ export class EducationalResourceController {
       }
 
       let query: any = {
-        workplaceId,
+        workplaceId: workplaceId ? new mongoose.Types.ObjectId(workplaceId) : undefined,
         isDeleted: false,
       };
 
@@ -610,9 +637,9 @@ export class EducationalResourceController {
       const workplaceId = req.user?.workplaceId;
       const createdBy = req.user?._id;
 
-      const resourceData = {
+      const resourceData: any = {
         ...req.body,
-        workplaceId,
+        workplaceId: workplaceId ? new mongoose.Types.ObjectId(workplaceId) : undefined,
         createdBy,
       };
 
@@ -624,7 +651,7 @@ export class EducationalResourceController {
           .replace(/[^\w\s-]/g, '')
           .replace(/[\s_-]+/g, '-')
           .replace(/^-+|-+$/g, '');
-        
+
         resourceData.slug = await EducationalResource.ensureUniqueSlug(baseSlug);
       }
 
@@ -634,7 +661,7 @@ export class EducationalResourceController {
       logger.info('Educational resource created', {
         resourceId: resource._id,
         title: resource.title,
-        workplaceId,
+        workplaceId: workplaceId ? new mongoose.Types.ObjectId(workplaceId) : undefined,
         createdBy,
       });
 
@@ -671,7 +698,7 @@ export class EducationalResourceController {
 
       const resource = await EducationalResource.findOne({
         _id: resourceId,
-        workplaceId,
+        workplaceId: workplaceId ? new mongoose.Types.ObjectId(workplaceId) : undefined,
         isDeleted: false,
       });
 
@@ -697,7 +724,7 @@ export class EducationalResourceController {
           .replace(/[^\w\s-]/g, '')
           .replace(/[\s_-]+/g, '-')
           .replace(/^-+|-+$/g, '');
-        
+
         resource.slug = await EducationalResource.ensureUniqueSlug(baseSlug, resource._id);
       }
 
@@ -706,7 +733,7 @@ export class EducationalResourceController {
       logger.info('Educational resource updated', {
         resourceId: resource._id,
         title: resource.title,
-        workplaceId,
+        workplaceId: workplaceId ? new mongoose.Types.ObjectId(workplaceId) : undefined,
         updatedBy,
       });
 
@@ -743,7 +770,7 @@ export class EducationalResourceController {
 
       const resource = await EducationalResource.findOne({
         _id: resourceId,
-        workplaceId,
+        workplaceId: workplaceId ? new mongoose.Types.ObjectId(workplaceId) : undefined,
         isDeleted: false,
       });
 
@@ -760,13 +787,13 @@ export class EducationalResourceController {
 
       // Soft delete
       resource.isDeleted = true;
-      resource.updatedBy = updatedBy;
+      resource.updatedBy = updatedBy ? new mongoose.Types.ObjectId(updatedBy) : undefined;
       await resource.save();
 
       logger.info('Educational resource deleted', {
         resourceId: resource._id,
         title: resource.title,
-        workplaceId,
+        workplaceId: workplaceId ? workplaceId.toString() : undefined,
         deletedBy: updatedBy,
       });
 
@@ -796,7 +823,7 @@ export class EducationalResourceController {
         };
       }
 
-      const analytics = await EducationalResourceService.getResourceAnalytics(workplaceId, dateRange);
+      const analytics = await EducationalResourceService.getResourceAnalytics(new mongoose.Types.ObjectId(workplaceId), dateRange);
 
       res.json({
         success: true,
