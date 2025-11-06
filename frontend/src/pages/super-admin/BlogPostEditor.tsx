@@ -76,9 +76,9 @@ const BlogPostEditor: React.FC<BlogPostEditorProps> = ({ className }) => {
   const [imagePreview, setImagePreview] = useState<string>('');
 
   // Fetch existing post if editing
-  const { 
-    data: postResponse, 
-    isLoading: postLoading 
+  const {
+    data: postResponse,
+    isLoading: postLoading
   } = useHealthBlogAdmin.useAdminPost(id || '', isEditing);
 
   // Fetch categories and tags for form options
@@ -146,14 +146,14 @@ const BlogPostEditor: React.FC<BlogPostEditorProps> = ({ className }) => {
         excerpt: post.excerpt,
         content: post.content,
         category: post.category,
-        tags: post.tags,
-        isFeatured: post.isFeatured,
+        tags: post.tags || [],
+        isFeatured: post.isFeatured || false,
         status: post.status,
         featuredImage: post.featuredImage,
         seo: {
-          metaTitle: post.seo.metaTitle || '',
-          metaDescription: post.seo.metaDescription || '',
-          keywords: post.seo.keywords,
+          metaTitle: post.seo?.metaTitle || '',
+          metaDescription: post.seo?.metaDescription || '',
+          keywords: post.seo?.keywords || [],
         },
       });
     }
@@ -196,7 +196,7 @@ const BlogPostEditor: React.FC<BlogPostEditorProps> = ({ className }) => {
       formData.append('image', selectedImageFile);
 
       const response = await uploadImageMutation.mutateAsync(formData);
-      
+
       setValue('featuredImage', {
         url: response.data.url,
         alt: response.data.alt || selectedImageFile.name,
@@ -327,7 +327,7 @@ const BlogPostEditor: React.FC<BlogPostEditorProps> = ({ className }) => {
                   render={({ field }) => (
                     <Box sx={{ mb: 2 }}>
                       <Editor
-                        apiKey={process.env.REACT_APP_TINYMCE_API_KEY}
+                        apiKey={import.meta.env.VITE_TINYMCE_API_KEY || 'no-api-key'}
                         value={field.value}
                         onEditorChange={field.onChange}
                         init={{
@@ -477,12 +477,12 @@ const BlogPostEditor: React.FC<BlogPostEditorProps> = ({ className }) => {
                     startIcon={<SaveIcon />}
                     disabled={createPostMutation.isPending || updatePostMutation.isPending}
                   >
-                    {createPostMutation.isPending || updatePostMutation.isPending 
-                      ? 'Saving...' 
+                    {createPostMutation.isPending || updatePostMutation.isPending
+                      ? 'Saving...'
                       : 'Save Draft'
                     }
                   </Button>
-                  
+
                   <Button
                     variant="contained"
                     color="success"
@@ -490,12 +490,12 @@ const BlogPostEditor: React.FC<BlogPostEditorProps> = ({ className }) => {
                     onClick={handleSubmit((data) => handleSave(data, true))}
                     disabled={createPostMutation.isPending || updatePostMutation.isPending}
                   >
-                    {createPostMutation.isPending || updatePostMutation.isPending 
-                      ? 'Publishing...' 
+                    {createPostMutation.isPending || updatePostMutation.isPending
+                      ? 'Publishing...'
                       : 'Publish'
                     }
                   </Button>
-                  
+
                   <Button
                     variant="outlined"
                     startIcon={<PreviewIcon />}
@@ -633,7 +633,7 @@ const BlogPostEditor: React.FC<BlogPostEditorProps> = ({ className }) => {
                 Select Image
               </Button>
             </label>
-            
+
             {imagePreview && (
               <Box sx={{ mt: 2 }}>
                 <img

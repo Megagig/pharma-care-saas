@@ -6,11 +6,12 @@
 
 import { Response } from 'express';
 import mongoose from 'mongoose';
-import HealthBlogAdminService, { 
-  CreatePostData, 
-  UpdatePostData, 
-  AdminPostFilters, 
-  AdminPaginationOptions 
+import HealthBlogPost from '../models/HealthBlogPost';
+import HealthBlogAdminService, {
+  CreatePostData,
+  UpdatePostData,
+  AdminPostFilters,
+  AdminPaginationOptions
 } from '../services/HealthBlogAdminService';
 import { SuperAdminAuthRequest } from '../middlewares/superAdminAuth';
 import logger from '../utils/logger';
@@ -412,18 +413,13 @@ export class HealthBlogAdminController {
       return;
     }
 
-    // Use the admin service to get all posts with a specific ID filter
-    const result = await HealthBlogAdminService.getAllPosts(
-      { search: postId }, // This will match the ObjectId
-      { page: 1, limit: 1 }
-    );
+    // Get post directly using findById instead of search
+    const post = await HealthBlogPost.findById(postId);
 
-    if (result.posts.length === 0) {
+    if (!post) {
       sendError(res, 'NOT_FOUND', 'Blog post not found', 404);
       return;
     }
-
-    const post = result.posts[0];
 
     logger.info('Admin blog post retrieved by ID', {
       postId: post._id.toString(),
@@ -458,7 +454,7 @@ export class HealthBlogAdminController {
     // Manually set status to archived (this would typically be handled in the service)
     // For now, we'll use the update method and then manually update the status
     // In a real implementation, you'd add an archivePost method to the service
-    
+
     logger.info('Blog post archived successfully', {
       postId: post._id.toString(),
       title: post.title,
