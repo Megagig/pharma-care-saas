@@ -20,8 +20,8 @@ export class HealthBlogController {
     // Parse query parameters
     const filters: BlogPostFilters = {
       category: req.query.category as string,
-      tags: req.query.tags ? 
-        (Array.isArray(req.query.tags) ? req.query.tags as string[] : [req.query.tags as string]) : 
+      tags: req.query.tags ?
+        (Array.isArray(req.query.tags) ? req.query.tags as string[] : [req.query.tags as string]) :
         undefined,
       featured: req.query.featured === 'true' ? true : req.query.featured === 'false' ? false : undefined,
       search: req.query.search as string,
@@ -105,13 +105,13 @@ export class HealthBlogController {
         resultCount: posts.length,
       });
 
-      sendSuccess(res, { posts }, 'Featured blog posts retrieved successfully');
+      sendSuccess(res, posts, 'Featured blog posts retrieved successfully');
     } catch (error) {
       logger.error('Error getting featured blog posts:', {
         error: error instanceof Error ? error.message : 'Unknown error',
         limit: req.query.limit,
       });
-      
+
       sendError(res, 'SERVER_ERROR', 'Failed to retrieve featured blog posts', 500);
     }
   });
@@ -138,7 +138,7 @@ export class HealthBlogController {
 
       // First, get the post to find its ID
       const post = await HealthBlogService.getPostBySlug(slug);
-      
+
       if (!post) {
         sendError(res, 'NOT_FOUND', 'Blog post not found', 404);
         return;
@@ -160,7 +160,7 @@ export class HealthBlogController {
         slug: req.params.slug,
         limit: req.query.limit,
       });
-      
+
       sendError(res, 'SERVER_ERROR', 'Failed to retrieve related blog posts', 500);
     }
   });
@@ -183,7 +183,7 @@ export class HealthBlogController {
       logger.error('Error getting blog categories:', {
         error: error instanceof Error ? error.message : 'Unknown error',
       });
-      
+
       sendError(res, 'SERVER_ERROR', 'Failed to retrieve blog categories', 500);
     }
   });
@@ -244,7 +244,7 @@ export class HealthBlogController {
         error: error instanceof Error ? error.message : 'Unknown error',
         limit: req.query.limit,
       });
-      
+
       sendError(res, 'SERVER_ERROR', 'Failed to retrieve popular blog posts', 500);
     }
   });
@@ -276,7 +276,7 @@ export class HealthBlogController {
         error: error instanceof Error ? error.message : 'Unknown error',
         limit: req.query.limit,
       });
-      
+
       sendError(res, 'SERVER_ERROR', 'Failed to retrieve recent blog posts', 500);
     }
   });
@@ -297,7 +297,7 @@ export class HealthBlogController {
 
       // First, get the post to find its ID
       const post = await HealthBlogService.getPostBySlug(slug);
-      
+
       if (!post) {
         sendError(res, 'NOT_FOUND', 'Blog post not found', 404);
         return;
@@ -318,7 +318,7 @@ export class HealthBlogController {
         error: error instanceof Error ? error.message : 'Unknown error',
         slug: req.params.slug,
       });
-      
+
       sendError(res, 'SERVER_ERROR', 'Failed to increment view count', 500);
     }
   });
@@ -339,8 +339,8 @@ export class HealthBlogController {
 
       const filters: BlogPostFilters = {
         category: req.query.category as string,
-        tags: req.query.tags ? 
-          (Array.isArray(req.query.tags) ? req.query.tags as string[] : [req.query.tags as string]) : 
+        tags: req.query.tags ?
+          (Array.isArray(req.query.tags) ? req.query.tags as string[] : [req.query.tags as string]) :
           undefined,
         featured: req.query.featured === 'true' ? true : req.query.featured === 'false' ? false : undefined,
       };
@@ -377,7 +377,7 @@ export class HealthBlogController {
         error: error instanceof Error ? error.message : 'Unknown error',
         query: req.query,
       });
-      
+
       sendError(res, 'SERVER_ERROR', 'Failed to search blog posts', 500);
     }
   });

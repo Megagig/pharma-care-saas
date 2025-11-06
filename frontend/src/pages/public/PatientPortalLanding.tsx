@@ -84,6 +84,18 @@ const PatientPortalLanding: React.FC = () => {
     isLoading: latestLoading
   } = useHealthBlog.useLatestPosts({ limit: 9 });
 
+  // Debug logging
+  React.useEffect(() => {
+    console.log('🔍 Blog Debug:', {
+      featuredLoading,
+      featuredPosts: featuredPosts?.data,
+      featuredCount: featuredPosts?.data?.length,
+      latestLoading,
+      latestPosts: latestPosts?.data,
+      latestPostsCount: latestPosts?.data?.posts?.length
+    });
+  }, [featuredLoading, featuredPosts, latestLoading, latestPosts]);
+
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
   };
@@ -824,7 +836,7 @@ const PatientPortalLanding: React.FC = () => {
       </Container>
 
       {/* Latest Blog Posts Grid */}
-      {!latestLoading && latestPosts?.data && latestPosts.data.length > 0 && (
+      {!latestLoading && latestPosts?.data?.posts && latestPosts.data.posts.length > 0 && (
         <Box
           sx={{
             bgcolor:
@@ -874,7 +886,7 @@ const PatientPortalLanding: React.FC = () => {
               }}
             >
               <Grid container spacing={3}>
-                {latestPosts.data.slice(0, 9).map((post: BlogPost) => (
+                {latestPosts.data.posts.slice(0, 9).map((post: BlogPost) => (
                   <Grid item xs={12} sm={6} md={4} key={post._id}>
                     <Card
                       sx={{
