@@ -62,21 +62,21 @@ export const intelligentCompressionMiddleware = (options: CompressionOptions = {
     const originalSend = res.send;
     const originalJson = res.json;
 
-    res.send = function(data: any) {
+    res.send = function (data: any) {
       const originalSize = Buffer.byteLength(data);
-      
+
       // Set compression headers for monitoring
       res.setHeader('X-Original-Size', originalSize);
-      
+
       return originalSend.call(this, data);
     };
 
-    res.json = function(data: any) {
+    res.json = function (data: any) {
       const originalSize = Buffer.byteLength(JSON.stringify(data));
-      
+
       // Set compression headers for monitoring
       res.setHeader('X-Original-Size', originalSize);
-      
+
       return originalJson.call(this, data);
     };
 
@@ -91,14 +91,14 @@ export const intelligentCompressionMiddleware = (options: CompressionOptions = {
 export const brotliCompressionMiddleware = () => {
   return (req: Request, res: Response, next: NextFunction) => {
     const acceptEncoding = req.headers['accept-encoding'] || '';
-    
+
     // Check if client supports Brotli
     if (acceptEncoding.includes('br')) {
       // Set Brotli as preferred encoding
       res.setHeader('Content-Encoding', 'br');
       res.setHeader('Vary', 'Accept-Encoding');
     }
-    
+
     next();
   };
 };
@@ -109,15 +109,17 @@ export const brotliCompressionMiddleware = () => {
 export const responseSizeMonitoringMiddleware = () => {
   return (req: Request, res: Response, next: NextFunction) => {
     const startTime = Date.now();
-    
+
     const originalSend = res.send;
     const originalJson = res.json;
 
-    res.send = function(data: any) {
+    res.send = function (data: any) {
       const responseTime = Date.now() - startTime;
-      const responseSize = Buffer.byteLength(data);
+      // Convert data to string for Buffer.byteLength
+      const dataString = typeof data === 'string' ? data : JSON.stringify(data);
+      const responseSize = Buffer.byteLength(dataString);
       const originalSize = res.getHeader('X-Original-Size') as string;
-      
+
       // Log large responses
       if (responseSize > 100 * 1024) { // 100KB
         logger.warn('Large API response detected', {
@@ -133,16 +135,16 @@ export const responseSizeMonitoringMiddleware = () => {
       // Add performance headers
       res.setHeader('X-Response-Time', responseTime);
       res.setHeader('X-Response-Size', responseSize);
-      
+
       return originalSend.call(this, data);
     };
 
-    res.json = function(data: any) {
+    res.json = function (data: any) {
       const responseTime = Date.now() - startTime;
       const jsonString = JSON.stringify(data);
       const responseSize = Buffer.byteLength(jsonString);
       const originalSize = res.getHeader('X-Original-Size') as string;
-      
+
       // Log large JSON responses
       if (responseSize > 100 * 1024) { // 100KB
         logger.warn('Large JSON API response detected', {
@@ -159,7 +161,7 @@ export const responseSizeMonitoringMiddleware = () => {
       // Add performance headers
       res.setHeader('X-Response-Time', responseTime);
       res.setHeader('X-Response-Size', responseSize);
-      
+
       return originalJson.call(this, data);
     };
 
@@ -174,23 +176,23 @@ export const adaptiveCompressionMiddleware = () => {
   return (req: Request, res: Response, next: NextFunction) => {
     const acceptEncoding = req.headers['accept-encoding'] || '';
     const userAgent = req.headers['user-agent'] || '';
-    
+
     // Determine best compression method
     let compressionLevel = 6; // Default
-    
+
     // Use higher compression for slow connections (mobile indicators)
     if (userAgent.includes('Mobile') || userAgent.includes('Android')) {
       compressionLevel = 8; // Higher compression for mobile
     }
-    
+
     // Use lower compression for fast connections (desktop browsers)
     if (userAgent.includes('Chrome') || userAgent.includes('Firefox')) {
       compressionLevel = 4; // Lower compression for desktop
     }
-    
+
     // Store compression preference for this request
     (req as any).compressionLevel = compressionLevel;
-    
+
     next();
   };
 };

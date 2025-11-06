@@ -32,7 +32,7 @@ const PatientPortalRoutes: React.FC = () => {
   return (
     <Routes>
       {/* Public Routes - No authentication required */}
-      
+
       {/* Public Landing Page */}
       <Route
         path="/patient-access"
@@ -43,7 +43,7 @@ const PatientPortalRoutes: React.FC = () => {
         }
       />
 
-      {/* Blog Routes - Public */}
+      {/* Blog Routes - Public - relative paths when mounted at /blog/* */}
       <Route
         path="/blog"
         element={
@@ -54,6 +54,23 @@ const PatientPortalRoutes: React.FC = () => {
       />
       <Route
         path="/blog/:slug"
+        element={
+          <LazyWrapper fallback={PageSkeleton}>
+            <LazyBlogPostDetails />
+          </LazyWrapper>
+        }
+      />
+      {/* Also support when called from /blog/* wildcard */}
+      <Route
+        path="/"
+        element={
+          <LazyWrapper fallback={PageSkeleton}>
+            <LazyBlogPage />
+          </LazyWrapper>
+        }
+      />
+      <Route
+        path="/:slug"
         element={
           <LazyWrapper fallback={PageSkeleton}>
             <LazyBlogPostDetails />
@@ -88,7 +105,7 @@ const PatientPortalRoutes: React.FC = () => {
       />
 
       {/* Protected Patient Portal Routes */}
-      
+
       {/* Dashboard - Default route for authenticated patients */}
       <Route
         path="/patient-portal/:workspaceId"

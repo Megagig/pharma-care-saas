@@ -41,9 +41,22 @@ const BlogPage: React.FC = () => {
     search: search || undefined,
     category: category || undefined,
     tag: tag || undefined,
-  }); const posts = postsResponse?.data?.posts || [];
+  });
+
+  const posts = postsResponse?.data?.posts || [];
   const totalCount = postsResponse?.data?.totalCount || 0;
   const totalPages = Math.ceil(totalCount / 12);
+
+  // Debug logging
+  React.useEffect(() => {
+    console.log('🔍 BLOG PAGE DEBUG:', {
+      isLoading,
+      hasError: !!error,
+      postsResponse,
+      postsCount: posts.length,
+      totalCount,
+    });
+  }, [isLoading, error, postsResponse, posts.length, totalCount]);
 
   const handlePageChange = (_event: React.ChangeEvent<unknown>, value: number) => {
     setPage(value);

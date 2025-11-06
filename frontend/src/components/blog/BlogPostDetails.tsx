@@ -8,24 +8,19 @@ import {
   Avatar,
   Divider,
   Button,
-  Grid,
-  Card,
-  CardContent,
   IconButton,
   Skeleton,
   Alert,
 } from '@mui/material';
 import SEOHead from '../common/SEOHead';
-import {
-  AccessTime as AccessTimeIcon,
-  Visibility as VisibilityIcon,
-  ArrowBack as ArrowBackIcon,
-  Share as ShareIcon,
-  Facebook as FacebookIcon,
-  Twitter as TwitterIcon,
-  LinkedIn as LinkedInIcon,
-  Link as LinkIcon,
-} from '@mui/icons-material';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ShareIcon from '@mui/icons-material/Share';
+import FacebookIcon from '@mui/icons-material/Facebook';
+import TwitterIcon from '@mui/icons-material/Twitter';
+import LinkedInIcon from '@mui/icons-material/LinkedIn';
+import LinkIcon from '@mui/icons-material/Link';
 import { useHealthBlog, BlogPost } from '../../hooks/useHealthBlog';
 import BlogPostCard from './BlogPostCard';
 
@@ -57,12 +52,25 @@ const BlogPostDetails: React.FC<BlogPostDetailsProps> = ({ slug: propSlug }) => 
   const post = postResponse?.data;
   const relatedPosts = relatedPostsResponse?.data || [];
 
-  // Increment view count when post loads
+  // Debug logging
+  useEffect(() => {
+    console.log('🔍 BLOG POST DETAILS DEBUG:', {
+      slug,
+      isLoading,
+      hasError: !!error,
+      postResponse,
+      hasPost: !!post,
+      relatedPostsCount: relatedPosts.length,
+    });
+  }, [slug, isLoading, error, postResponse, post, relatedPosts.length]);
+
+  // Increment view count when post loads (only once per slug)
   useEffect(() => {
     if (slug) {
       incrementViewCount.mutate(slug);
     }
-  }, [slug, incrementViewCount]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [slug]);
 
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -378,17 +386,25 @@ const BlogPostDetails: React.FC<BlogPostDetailsProps> = ({ slug: propSlug }) => 
             <Typography variant="h5" sx={{ mb: 3, fontWeight: 600 }}>
               Related Articles
             </Typography>
-            <Grid container spacing={3}>
+            <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3 }}>
               {relatedPosts.map((relatedPost: BlogPost) => (
-                <Grid item xs={12} md={4} key={relatedPost._id}>
+                <Box
+                  key={relatedPost._id}
+                  sx={{
+                    flex: {
+                      xs: '1 1 100%',
+                      md: '1 1 calc(33.333% - 16px)',
+                    },
+                  }}
+                >
                   <BlogPostCard
                     post={relatedPost}
                     variant="compact"
                     showExcerpt={false}
                   />
-                </Grid>
+                </Box>
               ))}
-            </Grid>
+            </Box>
           </Box>
         )}
       </Container>

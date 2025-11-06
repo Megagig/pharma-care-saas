@@ -178,7 +178,7 @@ export class HealthBlogController {
         categoryCount: categories.length,
       });
 
-      sendSuccess(res, { categories }, 'Blog categories retrieved successfully');
+      sendSuccess(res, categories, 'Blog categories retrieved successfully');
     } catch (error) {
       logger.error('Error getting blog categories:', {
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -210,7 +210,7 @@ export class HealthBlogController {
         resultCount: tags.length,
       });
 
-      sendSuccess(res, { tags }, 'Blog tags retrieved successfully');
+      sendSuccess(res, tags, 'Blog tags retrieved successfully');
     } catch (error: any) {
       logger.error('Error retrieving blog tags', { error: error.message });
       sendError(res, 'SERVER_ERROR', 'Error retrieving blog tags', 500);
