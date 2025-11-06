@@ -142,7 +142,7 @@ const PatientPortalLanding: React.FC = () => {
     return () => {
       observers.forEach((observer) => observer.disconnect());
     };
-  }, []);
+  }, [featuredLoading, latestLoading]); // Re-run when blog data loads
 
   const features = [
     {
