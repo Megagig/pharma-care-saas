@@ -9,7 +9,7 @@ import {
   Button,
   Avatar,
   Chip,
-  Grid,
+  Grid2 as Grid,
   CircularProgress,
   Alert,
   InputAdornment,
@@ -20,15 +20,13 @@ import {
   Divider,
   useTheme,
 } from '@mui/material';
-import {
-  Search as SearchIcon,
-  LocationOn as LocationIcon,
-  Phone as PhoneIcon,
-  Email as EmailIcon,
-  Schedule as ScheduleIcon,
-  LocalPharmacy as PharmacyIcon,
-  ArrowForward as ArrowForwardIcon,
-} from '@mui/icons-material';
+import SearchIcon from '@mui/icons-material/Search';
+import LocationIcon from '@mui/icons-material/LocationOn';
+import PhoneIcon from '@mui/icons-material/Phone';
+import EmailIcon from '@mui/icons-material/Email';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+import PharmacyIcon from '@mui/icons-material/LocalPharmacy';
+import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import { useNavigate } from 'react-router-dom';
 import { debounce } from 'lodash';
 import { useWorkspaceSearch, Workspace } from '../../hooks/useWorkspaceSearch';
@@ -127,8 +125,8 @@ const WorkspaceSearch: React.FC<WorkspaceSearchProps> = ({
     <Box sx={{ width: '100%' }}>
       {/* Search Controls */}
       <Box sx={{ mb: 4 }}>
-        <Grid container spacing={2}>
-          <Grid item xs={12} md={8}>
+        <Grid container spacing={2} alignItems="stretch">
+          <Grid item xs={12} md={7}>
             <TextField
               fullWidth
               placeholder="Search by pharmacy name, location, or type..."
@@ -145,20 +143,38 @@ const WorkspaceSearch: React.FC<WorkspaceSearchProps> = ({
                 '& .MuiOutlinedInput-root': {
                   borderRadius: 3,
                   backgroundColor: theme.palette.background.paper,
+                  height: '56px', // Match Select height
                 },
               }}
             />
           </Grid>
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} md={5}>
             <FormControl fullWidth>
               <InputLabel>Filter by State</InputLabel>
               <Select
                 value={selectedState}
                 onChange={(e) => setSelectedState(e.target.value)}
                 label="Filter by State"
+                startAdornment={
+                  <InputAdornment position="start">
+                    <LocationIcon color="action" sx={{ ml: 1 }} />
+                  </InputAdornment>
+                }
                 sx={{
                   borderRadius: 3,
                   backgroundColor: theme.palette.background.paper,
+                  height: '56px',
+                  '& .MuiSelect-select': {
+                    display: 'flex',
+                    alignItems: 'center',
+                    py: 1.75,
+                  },
+                  '& .MuiOutlinedInput-notchedOutline': {
+                    borderWidth: '1.5px',
+                  },
+                  '&:hover .MuiOutlinedInput-notchedOutline': {
+                    borderColor: theme.palette.primary.main,
+                  },
                 }}
               >
                 <MenuItem value="">All States</MenuItem>
