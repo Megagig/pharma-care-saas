@@ -528,8 +528,8 @@ const PatientPortalLanding: React.FC = () => {
             >
               <Box
                 component="img"
-                src="/images/patient-using-portal.jpg"
-                alt="Patient using portal"
+                src="/images/pharmacist-counselling-pharmacycopilot.jpg"
+                alt="Pharmacist counselling patient - PharmacyCopilot"
                 sx={{
                   width: '100%',
                   maxWidth: 500,

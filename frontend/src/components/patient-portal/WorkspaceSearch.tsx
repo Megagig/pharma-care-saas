@@ -9,7 +9,6 @@ import {
   Button,
   Avatar,
   Chip,
-  Grid2 as Grid,
   CircularProgress,
   Alert,
   InputAdornment,
@@ -125,8 +124,15 @@ const WorkspaceSearch: React.FC<WorkspaceSearchProps> = ({
     <Box sx={{ width: '100%' }}>
       {/* Search Controls */}
       <Box sx={{ mb: 4 }}>
-        <Grid container spacing={2} alignItems="stretch">
-          <Grid item xs={12} md={7}>
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: { xs: 'column', md: 'row' },
+            gap: 2,
+            alignItems: 'stretch',
+          }}
+        >
+          <Box sx={{ flex: { xs: '1', md: '0 0 58%' } }}>
             <TextField
               fullWidth
               placeholder="Search by pharmacy name, location, or type..."
@@ -147,8 +153,8 @@ const WorkspaceSearch: React.FC<WorkspaceSearchProps> = ({
                 },
               }}
             />
-          </Grid>
-          <Grid item xs={12} md={5}>
+          </Box>
+          <Box sx={{ flex: { xs: '1', md: '0 0 40%' } }}>
             <FormControl fullWidth>
               <InputLabel>Filter by State</InputLabel>
               <Select
@@ -185,8 +191,8 @@ const WorkspaceSearch: React.FC<WorkspaceSearchProps> = ({
                 ))}
               </Select>
             </FormControl>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
       </Box>
 
       {/* Loading State */}
@@ -223,9 +229,9 @@ const WorkspaceSearch: React.FC<WorkspaceSearchProps> = ({
             Found {workspaces.length} pharmacy{workspaces.length !== 1 ? 'ies' : ''}
           </Typography>
 
-          <Grid container spacing={3}>
+          <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3 }}>
             {workspaces.map((workspace) => (
-              <Grid item xs={12} key={workspace._id}>
+              <Box key={workspace._id}>
                 <Card
                   sx={{
                     transition: 'all 0.3s ease',
@@ -347,9 +353,9 @@ const WorkspaceSearch: React.FC<WorkspaceSearchProps> = ({
                     </Box>
                   </CardContent>
                 </Card>
-              </Grid>
+              </Box>
             ))}
-          </Grid>
+          </Box>
         </Box>
       )}
 
