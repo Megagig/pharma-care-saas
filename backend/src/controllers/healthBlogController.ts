@@ -81,7 +81,7 @@ export class HealthBlogController {
       title: post.title,
     });
 
-    sendSuccess(res, { post }, 'Blog post retrieved successfully');
+    sendSuccess(res, post, 'Blog post retrieved successfully');
   });
 
   /**
@@ -153,7 +153,7 @@ export class HealthBlogController {
         resultCount: relatedPosts.length,
       });
 
-      sendSuccess(res, { posts: relatedPosts }, 'Related blog posts retrieved successfully');
+      sendSuccess(res, relatedPosts, 'Related blog posts retrieved successfully');
     } catch (error) {
       logger.error('Error getting related blog posts:', {
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -304,15 +304,16 @@ export class HealthBlogController {
       }
 
       // Increment view count (this method doesn't throw errors for view count failures)
-      await HealthBlogService.incrementViewCount(post._id);
+      const viewCount = await HealthBlogService.incrementViewCount(post._id);
 
       logger.info('Blog post view count incremented', {
         slug,
         postId: post._id.toString(),
         title: post.title,
+        newViewCount: viewCount,
       });
 
-      sendSuccess(res, { success: true }, 'View count incremented successfully');
+      sendSuccess(res, { viewCount }, 'View count incremented successfully');
     } catch (error) {
       logger.error('Error incrementing view count:', {
         error: error instanceof Error ? error.message : 'Unknown error',

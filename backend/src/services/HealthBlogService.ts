@@ -339,9 +339,9 @@ export class HealthBlogService {
    * Increment view count for a blog post
    * Requirement: 1.7
    */
-  static async incrementViewCount(postId: mongoose.Types.ObjectId): Promise<void> {
+  static async incrementViewCount(postId: mongoose.Types.ObjectId): Promise<number> {
     try {
-      const result = await HealthBlogPost.updateOne(
+      const result = await HealthBlogPost.findOneAndUpdate(
         {
           _id: postId,
           status: 'published',
@@ -349,20 +349,28 @@ export class HealthBlogService {
         },
         {
           $inc: { viewCount: 1 },
+        },
+        {
+          new: true,
+          select: 'viewCount',
         }
       );
 
-      if (result.matchedCount === 0) {
+      if (!result) {
         logger.warn('Attempted to increment view count for non-existent or unpublished post:', {
           postId: postId.toString(),
         });
+        return 0;
       }
+
+      return result.viewCount;
     } catch (error) {
       logger.error('Error incrementing view count:', {
         error: error instanceof Error ? error.message : 'Unknown error',
         postId: postId.toString(),
       });
       // Don't throw error for view count increment failures
+      return 0;
     }
   }
 
@@ -372,7 +380,7 @@ export class HealthBlogService {
   static async getCategories(): Promise<Array<{ category: string; count: number; label: string }>> {
     try {
       const categories = await this.getCategoryAggregation();
-      
+
       // Add human-readable labels
       const categoryLabels: Record<string, string> = {
         nutrition: 'Nutrition & Diet',
@@ -685,7 +693,7 @@ export class HealthBlogService {
    */
   private static calculateWordCount(content: string): number {
     if (!content) return 0;
-    
+
     // Remove HTML tags and count words
     const plainText = content.replace(/<[^>]*>/g, '');
     return plainText.trim().split(/\s+/).length;

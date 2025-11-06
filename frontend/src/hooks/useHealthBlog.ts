@@ -125,9 +125,9 @@ class HealthBlogService {
   /**
    * Get related posts for a specific post
    */
-  async getRelatedPosts(postId: string, limit = 3): Promise<{ success: boolean; data: BlogPost[]; message: string }> {
+  async getRelatedPosts(slug: string, limit = 3): Promise<{ success: boolean; data: BlogPost[]; message: string }> {
     return this.makeRequest<BlogPost[]>(
-      `${this.baseUrl}/posts/${postId}/related?limit=${limit}`
+      `${this.baseUrl}/posts/${slug}/related?limit=${limit}`
     );
   }
 
@@ -151,9 +151,9 @@ class HealthBlogService {
   /**
    * Increment view count for a blog post
    */
-  async incrementViewCount(postId: string): Promise<{ success: boolean; data: { viewCount: number }; message: string }> {
+  async incrementViewCount(slug: string): Promise<{ success: boolean; data: { viewCount: number }; message: string }> {
     return this.makeRequest<{ viewCount: number }>(
-      `${this.baseUrl}/posts/${postId}/view`,
+      `${this.baseUrl}/posts/${slug}/view`,
       { method: 'POST' }
     );
   }
@@ -186,7 +186,7 @@ export const healthBlogKeys = {
   posts: (params: BlogSearchParams) => [...healthBlogKeys.all, 'posts', params] as const,
   featured: (limit: number) => [...healthBlogKeys.all, 'featured', limit] as const,
   post: (slug: string) => [...healthBlogKeys.all, 'post', slug] as const,
-  related: (postId: string, limit: number) => [...healthBlogKeys.all, 'related', postId, limit] as const,
+  related: (slug: string, limit: number) => [...healthBlogKeys.all, 'related', slug, limit] as const,
   search: (query: string, filters: Omit<BlogSearchParams, 'search'>) => [...healthBlogKeys.all, 'search', query, filters] as const,
   categories: () => [...healthBlogKeys.all, 'categories'] as const,
   tags: () => [...healthBlogKeys.all, 'tags'] as const,
@@ -256,11 +256,11 @@ export const usePostBySlug = (slug: string, enabled = true) => {
 /**
  * Hook to fetch related posts
  */
-export const useRelatedPosts = (postId: string, limit = 3, enabled = true) => {
+export const useRelatedPosts = (slug: string, limit = 3, enabled = true) => {
   return useQuery({
-    queryKey: healthBlogKeys.related(postId, limit),
-    queryFn: () => healthBlogService.getRelatedPosts(postId, limit),
-    enabled: enabled && !!postId,
+    queryKey: healthBlogKeys.related(slug, limit),
+    queryFn: () => healthBlogService.getRelatedPosts(slug, limit),
+    enabled: enabled && !!slug,
     staleTime: 15 * 60 * 1000, // 15 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes
     retry: 2,
@@ -320,12 +320,12 @@ export const useIncrementViewCount = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (postId: string) => healthBlogService.incrementViewCount(postId),
+    mutationFn: (slug: string) => healthBlogService.incrementViewCount(slug),
 
-    onSuccess: (response, postId) => {
+    onSuccess: (response, slug) => {
       // Update the post in cache with new view count
       queryClient.setQueryData(
-        healthBlogKeys.post(postId),
+        healthBlogKeys.post(slug),
         (oldData: any) => {
           if (oldData?.data) {
             return {
