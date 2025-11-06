@@ -1,225 +1,160 @@
 import React from 'react';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { ThemeProvider, createTheme } from '@mui/material/styles';
+import { BrowserRouter } from 'react-router-dom';
 import { vi } from 'vitest';
-import { PatientDashboard } from '../PatientDashboard';
+import PatientDashboard from '../PatientDashboard';
+import { PatientAuthContext } from '../../../contexts/PatientAuthContext';
 
-// Mock Material-UI components that might cause issues in tests
-vi.mock('@mui/material', async () => {
-  const actual = await vi.importActual('@mui/material');
-  return {
-    ...actual,
-    LinearProgress: ({ value, ...props }: any) => (
-      <div data-testid="linear-progress" data-value={value} {...props} />
-    ),
-  };
-});
+const theme = createTheme();
+
+const createWrapper = (authValue: any) => {
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: { retry: false },
+      mutations: { retry: false },
+    },
+  });
+
+  return ({ children }: { children: React.ReactNode }) => (
+    <BrowserRouter>
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider theme={theme}>
+          <PatientAuthContext.Provider value={authValue}>
+            {children}
+          </PatientAuthContext.Provider>
+        </ThemeProvider>
+      </QueryClientProvider>
+    </BrowserRouter>
+  );
+};
+
+// Mock hooks
+vi.mock('../../../hooks/usePatientAuth');
+vi.mock('../../../hooks/usePatientMedications', () => ({
+  usePatientMedications: () => ({
+    currentMedications: [
+      { _id: 'med1', name: 'Metformin', nextDose: '2024-03-10T20:00:00.000Z' },
+      { _id: 'med2', name: 'Lisinopril', nextDose: '2024-03-11T08:00:00.000Z' },
+    ],
+    loading: false,
+    error: null,
+  }),
+}));
+
+vi.mock('../../../hooks/usePatientMessages', () => ({
+  usePatientMessages: () => ({
+    conversations: [
+      { _id: 'conv1', unreadCount: 2 },
+      { _id: 'conv2', unreadCount: 1 },
+    ],
+    loading: false,
+    error: null,
+  }),
+}));
 
 describe('PatientDashboard', () => {
+  const mockUser = {
+    _id: 'patient-123',
+    firstName: 'John',
+    lastName: 'Doe',
+    email: 'john.doe@example.com',
+    workspaceId: 'workspace-456',
+    workspaceName: 'Test Pharmacy',
+  };
+
+  const mockAuthContextValue = {
+    user: mockUser,
+    isAuthenticated: true,
+    isLoading: false,
+    error: null,
+    login: vi.fn(),
+    logout: vi.fn(),
+    register: vi.fn(),
+    refreshUser: vi.fn(),
+  };
+
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
-  it('renders dashboard header correctly', () => {
-    render(<PatientDashboard />);
+  it('renders dashboard with user greeting', () => {
+    render(<PatientDashboard />, {
+      wrapper: createWrapper(mockAuthContextValue),
+    });
 
     expect(screen.getByText('Welcome back, John!')).toBeInTheDocument();
-    expect(screen.getByText("Here's an overview of your health information")).toBeInTheDocument();
+    expect(screen.getByText('Here\'s your health overview for today')).toBeInTheDocument();
   });
 
-  it('displays quick stats cards', () => {
-    render(<PatientDashboard />);
+  it('shows quick stats cards', () => {
+    render(<PatientDashboard />, {
+      wrapper: createWrapper(mockAuthContextValue),
+    });
 
-    expect(screen.getAllByText('Upcoming Appointments').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Active Medications').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Unread Messages').length).toBeGreaterThan(0);
-    expect(screen.getAllByText('Pending Refills').length).toBeGreaterThan(0);
-
-    // Check stat values
-    expect(screen.getByText('2')).toBeInTheDocument(); // Upcoming appointments
-    expect(screen.getByText('4')).toBeInTheDocument(); // Active medications
-    expect(screen.getByText('3')).toBeInTheDocument(); // Unread messages
-    expect(screen.getByText('1')).toBeInTheDocument(); // Pending refills
+    expect(screen.getByText('Active Medications')).toBeInTheDocument();
+    expect(screen.getByText('Unread Messages')).toBeInTheDocument();
+    expect(screen.getByText('Upcoming Appointments')).toBeInTheDocument();
+    expect(screen.getByText('Health Records')).toBeInTheDocument();
   });
 
-  it('displays upcoming appointments section', () => {
-    render(<PatientDashboard />);
+  it('displays upcoming medications widget', () => {
+    render(<PatientDashboard />, {
+      wrapper: createWrapper(mockAuthContextValue),
+    });
 
-    expect(screen.getAllByText('Upcoming Appointments').length).toBeGreaterThan(0);
-    expect(screen.getByText('Medication Review')).toBeInTheDocument();
-    expect(screen.getByText('Health Consultation')).toBeInTheDocument();
-    expect(screen.getByText('Dr. Sarah Johnson')).toBeInTheDocument();
-    expect(screen.getByText('Dr. Michael Chen')).toBeInTheDocument();
+    expect(screen.getByText('Upcoming Medications')).toBeInTheDocument();
+    expect(screen.getByText('Metformin')).toBeInTheDocument();
+    expect(screen.getByText('Lisinopril')).toBeInTheDocument();
   });
 
-  it('displays current medications with adherence scores', () => {
-    render(<PatientDashboard />);
-
-    expect(screen.getByText('Current Medications')).toBeInTheDocument();
-    expect(screen.getByText('Lisinopril 10mg')).toBeInTheDocument();
-    expect(screen.getByText('Metformin 500mg')).toBeInTheDocument();
-    expect(screen.getByText('Atorvastatin 20mg')).toBeInTheDocument();
-
-    // Check adherence scores
-    expect(screen.getByText('95%')).toBeInTheDocument();
-    expect(screen.getByText('88%')).toBeInTheDocument();
-    expect(screen.getByText('92%')).toBeInTheDocument();
-  });
-
-  it('shows refill warning for medications with no refills remaining', () => {
-    render(<PatientDashboard />);
-
-    expect(screen.getByText('Refill needed - contact your pharmacy')).toBeInTheDocument();
-  });
-
-  it('displays recent health records', () => {
-    render(<PatientDashboard />);
-
-    expect(screen.getByText('Recent Health Records')).toBeInTheDocument();
-    expect(screen.getByText('Complete Blood Count')).toBeInTheDocument();
-    expect(screen.getByText('Medication Review Visit')).toBeInTheDocument();
-    expect(screen.getByText('New Prescription - Lisinopril')).toBeInTheDocument();
-  });
-
-  it('shows new badge for unreviewed health records', () => {
-    render(<PatientDashboard />);
-
-    const newBadges = screen.getAllByText('New');
-    expect(newBadges.length).toBeGreaterThan(0);
-  });
-
-  it('displays quick action buttons', () => {
-    render(<PatientDashboard />);
-
-    expect(screen.getByText('Quick Actions')).toBeInTheDocument();
-    expect(screen.getByText('Book Appointment')).toBeInTheDocument();
-    expect(screen.getByText('Request Refill')).toBeInTheDocument();
-    expect(screen.getByText('Message Pharmacist')).toBeInTheDocument();
-    expect(screen.getByText('View Health Records')).toBeInTheDocument();
-  });
-
-  it('displays recent messages section', () => {
-    render(<PatientDashboard />);
+  it('shows recent messages widget', () => {
+    render(<PatientDashboard />, {
+      wrapper: createWrapper(mockAuthContextValue),
+    });
 
     expect(screen.getByText('Recent Messages')).toBeInTheDocument();
-    expect(screen.getByText('Lab Results Available')).toBeInTheDocument();
-    expect(screen.getByText('Prescription Ready')).toBeInTheDocument();
-    expect(screen.getByText('Appointment Reminder')).toBeInTheDocument();
+    expect(screen.getByText('3 unread messages')).toBeInTheDocument();
   });
 
-  it('shows unread message indicators', () => {
-    render(<PatientDashboard />);
-
-    // Check for unread message indicators (blue dots)
-    const unreadIndicators = screen.getAllByRole('generic').filter(
-      element => element.className?.includes('bg-blue-600') && element.className?.includes('rounded-full')
-    );
-    expect(unreadIndicators.length).toBeGreaterThan(0);
-  });
-
-  it('displays recent vitals section', () => {
-    render(<PatientDashboard />);
-
-    expect(screen.getByText('Recent Vitals')).toBeInTheDocument();
-    expect(screen.getByText(/blood pressure/i)).toBeInTheDocument();
-    expect(screen.getByText(/weight/i)).toBeInTheDocument();
-    expect(screen.getByText(/glucose/i)).toBeInTheDocument();
-
-    // Check vital values
-    expect(screen.getByText('120/80 mmHg')).toBeInTheDocument();
-    expect(screen.getByText('75.2 kg')).toBeInTheDocument();
-    expect(screen.getByText('95 mg/dL')).toBeInTheDocument();
-  });
-
-  it('shows normal status badges for vitals', () => {
-    render(<PatientDashboard />);
-
-    const normalBadges = screen.getAllByText('normal');
-    expect(normalBadges.length).toBe(3); // All three vitals are normal
-  });
-
-  it('has clickable View All buttons', () => {
-    render(<PatientDashboard />);
-
-    const viewAllButtons = screen.getAllByText('View All');
-    expect(viewAllButtons.length).toBeGreaterThan(0);
-
-    // Test that buttons are clickable
-    viewAllButtons.forEach(button => {
-      expect(button).toBeEnabled();
+  it('handles quick actions', () => {
+    render(<PatientDashboard />, {
+      wrapper: createWrapper(mockAuthContextValue),
     });
+
+    expect(screen.getByText('Quick Actions')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /book appointment/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /request refill/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /send message/i })).toBeInTheDocument();
   });
 
-  it('has clickable quick action buttons', () => {
-    render(<PatientDashboard />);
+  it('shows loading state when user is loading', () => {
+    const loadingContext = {
+      ...mockAuthContextValue,
+      isLoading: true,
+      user: null,
+    };
 
-    const bookAppointmentButton = screen.getByText('Book Appointment');
-    const requestRefillButton = screen.getByText('Request Refill');
-    const messagePharmacistButton = screen.getByText('Message Pharmacist');
-    const viewHealthRecordsButton = screen.getByText('View Health Records');
-
-    expect(bookAppointmentButton).toBeEnabled();
-    expect(requestRefillButton).toBeEnabled();
-    expect(messagePharmacistButton).toBeEnabled();
-    expect(viewHealthRecordsButton).toBeEnabled();
-  });
-
-  it('has clickable reschedule buttons for appointments', () => {
-    render(<PatientDashboard />);
-
-    const rescheduleButtons = screen.getAllByText('Reschedule');
-    expect(rescheduleButtons.length).toBe(2); // Two appointments
-
-    rescheduleButtons.forEach(button => {
-      expect(button).toBeEnabled();
+    render(<PatientDashboard />, {
+      wrapper: createWrapper(loadingContext),
     });
+
+    expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });
 
-  it('has clickable Log Vitals button', () => {
-    render(<PatientDashboard />);
+  it('redirects unauthenticated users', () => {
+    const unauthenticatedContext = {
+      ...mockAuthContextValue,
+      user: null,
+      isAuthenticated: false,
+      isLoading: false,
+    };
 
-    const logVitalsButton = screen.getByText('Log Vitals');
-    expect(logVitalsButton).toBeEnabled();
-  });
+    render(<PatientDashboard />, {
+      wrapper: createWrapper(unauthenticatedContext),
+    });
 
-  it('displays appointment status badges correctly', () => {
-    render(<PatientDashboard />);
-
-    expect(screen.getByText('Confirmed')).toBeInTheDocument();
-    expect(screen.getByText('Pending')).toBeInTheDocument();
-  });
-
-  it('formats dates correctly', () => {
-    render(<PatientDashboard />);
-
-    // Check that dates are displayed (exact format may vary based on locale)
-    expect(screen.getByText(/1\/15\/2024|15\/1\/2024|2024-01-15/)).toBeInTheDocument();
-    expect(screen.getByText(/1\/22\/2024|22\/1\/2024|2024-01-22/)).toBeInTheDocument();
-  });
-
-  it('displays medication frequencies correctly', () => {
-    render(<PatientDashboard />);
-
-    expect(screen.getAllByText('Once daily').length).toBeGreaterThan(0);
-    expect(screen.getByText('Twice daily')).toBeInTheDocument();
-  });
-
-  it('shows adherence progress bars', () => {
-    render(<PatientDashboard />);
-
-    const progressBars = screen.getAllByTestId('linear-progress');
-    expect(progressBars.length).toBe(3); // Three medications
-
-    // Check that progress bars have correct values
-    expect(progressBars[0]).toHaveAttribute('data-value', '95');
-    expect(progressBars[1]).toHaveAttribute('data-value', '88');
-    expect(progressBars[2]).toHaveAttribute('data-value', '92');
-  });
-
-  it('displays message timestamps', () => {
-    render(<PatientDashboard />);
-
-    expect(screen.getByText('2 hours ago')).toBeInTheDocument();
-    expect(screen.getByText('1 day ago')).toBeInTheDocument();
-    expect(screen.getByText('2 days ago')).toBeInTheDocument();
+    expect(screen.getByText('Please log in to access your dashboard')).toBeInTheDocument();
   });
 });

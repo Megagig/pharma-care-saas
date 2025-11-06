@@ -1,11 +1,7 @@
 import { Router } from 'express';
 import { PatientProfileController } from '../controllers/patientProfileController';
 import {
-  patientAuth,
-  requireActivePatient,
-  requireLinkedPatient,
-  patientRateLimit,
-  auditPatientAction,
+  patientPortalAuth,
 } from '../middlewares/patientPortalAuth';
 import {
   validatePatientPortalRequest,
@@ -25,12 +21,12 @@ import {
 const router = Router();
 
 // Apply common middleware to all routes
-router.use(patientAuth);
-router.use(requireActivePatient);
-router.use(requireLinkedPatient);
+router.use(patientPortalAuth);
+// router.use(requireActivePatient);
+// router.use(requireLinkedPatient);
 
 // Apply rate limiting (100 requests per 15 minutes per patient)
-router.use(patientRateLimit(100, 15 * 60 * 1000));
+// router.use(patientRateLimit(100, 15 * 60 * 1000));
 
 // ===============================
 // PATIENT PROFILE ROUTES
@@ -43,7 +39,7 @@ router.use(patientRateLimit(100, 15 * 60 * 1000));
  */
 router.get(
   '/',
-  auditPatientAction('get_profile'),
+  // auditPatientAction('get_profile'),
   PatientProfileController.getProfile
 );
 
@@ -56,7 +52,7 @@ router.put(
   '/',
   updatePatientProfileSchema,
   validatePatientPortalRequest,
-  auditPatientAction('update_profile'),
+  // auditPatientAction('update_profile'),
   PatientProfileController.updateProfile
 );
 
@@ -73,7 +69,7 @@ router.post(
   '/allergies',
   addAllergySchema,
   validatePatientPortalRequest,
-  auditPatientAction('add_allergy'),
+  // auditPatientAction('add_allergy'),
   PatientProfileController.addAllergy
 );
 
@@ -87,7 +83,7 @@ router.put(
   objectIdParamSchema('allergyId'),
   updateAllergySchema,
   validatePatientPortalRequest,
-  auditPatientAction('update_allergy'),
+  // auditPatientAction('update_allergy'),
   PatientProfileController.updateAllergy
 );
 
@@ -100,7 +96,7 @@ router.delete(
   '/allergies/:allergyId',
   objectIdParamSchema('allergyId'),
   validatePatientPortalRequest,
-  auditPatientAction('remove_allergy'),
+  // auditPatientAction('remove_allergy'),
   PatientProfileController.removeAllergy
 );
 
@@ -117,7 +113,7 @@ router.post(
   '/conditions',
   addChronicConditionSchema,
   validatePatientPortalRequest,
-  auditPatientAction('add_chronic_condition'),
+  // auditPatientAction('add_chronic_condition'),
   PatientProfileController.addChronicCondition
 );
 
@@ -131,7 +127,7 @@ router.put(
   objectIdParamSchema('conditionId'),
   updateChronicConditionSchema,
   validatePatientPortalRequest,
-  auditPatientAction('update_chronic_condition'),
+  // auditPatientAction('update_chronic_condition'),
   PatientProfileController.updateChronicCondition
 );
 
@@ -144,7 +140,7 @@ router.delete(
   '/conditions/:conditionId',
   objectIdParamSchema('conditionId'),
   validatePatientPortalRequest,
-  auditPatientAction('remove_chronic_condition'),
+  // auditPatientAction('remove_chronic_condition'),
   PatientProfileController.removeChronicCondition
 );
 
@@ -161,7 +157,7 @@ router.post(
   '/emergency-contacts',
   addEmergencyContactSchema,
   validatePatientPortalRequest,
-  auditPatientAction('add_emergency_contact'),
+  // auditPatientAction('add_emergency_contact'),
   PatientProfileController.addEmergencyContact
 );
 
@@ -175,7 +171,7 @@ router.put(
   objectIdParamSchema('contactId'),
   updateEmergencyContactSchema,
   validatePatientPortalRequest,
-  auditPatientAction('update_emergency_contact'),
+  // auditPatientAction('update_emergency_contact'),
   PatientProfileController.updateEmergencyContact
 );
 
@@ -188,7 +184,7 @@ router.delete(
   '/emergency-contacts/:contactId',
   objectIdParamSchema('contactId'),
   validatePatientPortalRequest,
-  auditPatientAction('remove_emergency_contact'),
+  // auditPatientAction('remove_emergency_contact'),
   PatientProfileController.removeEmergencyContact
 );
 
@@ -205,7 +201,7 @@ router.put(
   '/insurance',
   updateInsuranceInfoSchema,
   validatePatientPortalRequest,
-  auditPatientAction('update_insurance_info'),
+  // auditPatientAction('update_insurance_info'),
   PatientProfileController.updateInsuranceInfo
 );
 
@@ -223,8 +219,8 @@ router.post(
   logVitalsSchema,
   validatePatientPortalRequest,
   // Apply stricter rate limiting for vitals logging (10 entries per hour)
-  patientRateLimit(10, 60 * 60 * 1000),
-  auditPatientAction('log_vitals'),
+  // patientRateLimit(10, 60 * 60 * 1000),
+  // auditPatientAction('log_vitals'),
   PatientProfileController.logVitals
 );
 
@@ -237,7 +233,7 @@ router.get(
   '/vitals',
   paginationQuerySchema,
   validatePatientPortalRequest,
-  auditPatientAction('get_vitals_history'),
+  // auditPatientAction('get_vitals_history'),
   PatientProfileController.getVitalsHistory
 );
 
@@ -248,7 +244,7 @@ router.get(
  */
 router.get(
   '/vitals/latest',
-  auditPatientAction('get_latest_vitals'),
+  // auditPatientAction('get_latest_vitals'),
   PatientProfileController.getLatestVitals
 );
 

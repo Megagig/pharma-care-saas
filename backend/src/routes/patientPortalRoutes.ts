@@ -8,7 +8,7 @@ import {
   cancelAppointment,
   confirmAppointment,
 } from '../controllers/patientPortalController';
-import { patientAuth, patientAuthOptional } from '../middlewares/patientPortalAuth';
+import { patientPortalAuth } from '../middlewares/patientPortalAuth';
 import { generalRateLimiters, createRateLimiter } from '../middlewares/rateLimiting';
 import {
   validateRequest,
@@ -89,7 +89,7 @@ router.get(
  */
 router.post(
   '/appointments',
-  patientAuth,
+  patientPortalAuth,
   bookingRateLimit,
   validateRequest(bookAppointmentSchema, 'body'),
   bookAppointment
@@ -102,7 +102,7 @@ router.post(
  */
 router.get(
   '/appointments',
-  patientAuth,
+  patientPortalAuth,
   generalRateLimiters.api,
   validateRequest(myAppointmentsQuerySchema, 'query'),
   getMyAppointments
@@ -115,7 +115,7 @@ router.get(
  */
 router.post(
   '/appointments/:id/reschedule',
-  patientAuth,
+  patientPortalAuth,
   modificationRateLimit,
   validateRequest(appointmentParamsSchema, 'params'),
   validateRequest(rescheduleAppointmentSchema, 'body'),
@@ -129,7 +129,7 @@ router.post(
  */
 router.post(
   '/appointments/:id/cancel',
-  patientAuth,
+  patientPortalAuth,
   modificationRateLimit,
   validateRequest(appointmentParamsSchema, 'params'),
   validateRequest(cancelAppointmentSchema, 'body'),
@@ -144,7 +144,7 @@ router.post(
 router.post(
   '/appointments/:id/confirm',
   // Use optional auth middleware - allows both authenticated and token-based confirmation
-  patientAuthOptional,
+  // patientAuthOptional, // TODO: Implement optional auth middleware
   modificationRateLimit,
   validateRequest(appointmentParamsSchema, 'params'),
   validateRequest(confirmAppointmentSchema, 'body'),

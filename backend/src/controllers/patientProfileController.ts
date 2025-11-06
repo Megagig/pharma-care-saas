@@ -1,6 +1,6 @@
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
-import { PatientAuthRequest } from '../middlewares/patientPortalAuth';
+import { PatientPortalRequest } from '../middlewares/patientPortalAuth';
 import { PatientProfileService } from '../services/PatientProfileService';
 import logger from '../utils/logger';
 
@@ -13,9 +13,9 @@ export class PatientProfileController {
    * Get patient profile
    * GET /api/patient-portal/profile
    */
-  static async getProfile(req: PatientAuthRequest, res: Response): Promise<void> {
+  static async getProfile(req: PatientPortalRequest, res: Response): Promise<void> {
     try {
-      const patientUserId = req.patient?._id;
+      const patientUserId = req.patientUser?._id.toString();
       const workplaceId = req.workplaceId;
 
       if (!patientUserId || !workplaceId) {
@@ -84,7 +84,7 @@ export class PatientProfileController {
     } catch (error) {
       logger.error('Error getting patient profile', {
         error: error instanceof Error ? error.message : 'Unknown error',
-        patientUserId: req.patient?._id,
+        patientUserId: req.patientUser?._id.toString(),
         workplaceId: req.workplaceId,
       });
 
@@ -100,9 +100,9 @@ export class PatientProfileController {
    * Update patient profile
    * PUT /api/patient-portal/profile
    */
-  static async updateProfile(req: PatientAuthRequest, res: Response): Promise<void> {
+  static async updateProfile(req: PatientPortalRequest, res: Response): Promise<void> {
     try {
-      const patientUserId = req.patient?._id;
+      const patientUserId = req.patientUser?._id.toString();
       const workplaceId = req.workplaceId;
 
       if (!patientUserId || !workplaceId) {
@@ -161,7 +161,7 @@ export class PatientProfileController {
     } catch (error) {
       logger.error('Error updating patient profile', {
         error: error instanceof Error ? error.message : 'Unknown error',
-        patientUserId: req.patient?._id,
+        patientUserId: req.patientUser?._id.toString(),
         workplaceId: req.workplaceId,
         updateData: req.body,
       });
@@ -187,9 +187,9 @@ export class PatientProfileController {
    * Add allergy
    * POST /api/patient-portal/profile/allergies
    */
-  static async addAllergy(req: PatientAuthRequest, res: Response): Promise<void> {
+  static async addAllergy(req: PatientPortalRequest, res: Response): Promise<void> {
     try {
-      const patientUserId = req.patient?._id;
+      const patientUserId = req.patientUser?._id.toString();
       const workplaceId = req.workplaceId;
 
       if (!patientUserId || !workplaceId) {
@@ -230,7 +230,7 @@ export class PatientProfileController {
     } catch (error) {
       logger.error('Error adding allergy', {
         error: error instanceof Error ? error.message : 'Unknown error',
-        patientUserId: req.patient?._id,
+        patientUserId: req.patientUser?._id.toString(),
         workplaceId: req.workplaceId,
         allergyData: req.body,
       });
@@ -265,9 +265,9 @@ export class PatientProfileController {
    * Update allergy
    * PUT /api/patient-portal/profile/allergies/:allergyId
    */
-  static async updateAllergy(req: PatientAuthRequest, res: Response): Promise<void> {
+  static async updateAllergy(req: PatientPortalRequest, res: Response): Promise<void> {
     try {
-      const patientUserId = req.patient?._id;
+      const patientUserId = req.patientUser?._id.toString();
       const workplaceId = req.workplaceId;
       const { allergyId } = req.params;
 
@@ -313,7 +313,7 @@ export class PatientProfileController {
     } catch (error) {
       logger.error('Error updating allergy', {
         error: error instanceof Error ? error.message : 'Unknown error',
-        patientUserId: req.patient?._id,
+        patientUserId: req.patientUser?._id.toString(),
         workplaceId: req.workplaceId,
         allergyId: req.params.allergyId,
         updates: req.body,
@@ -349,9 +349,9 @@ export class PatientProfileController {
    * Remove allergy
    * DELETE /api/patient-portal/profile/allergies/:allergyId
    */
-  static async removeAllergy(req: PatientAuthRequest, res: Response): Promise<void> {
+  static async removeAllergy(req: PatientPortalRequest, res: Response): Promise<void> {
     try {
-      const patientUserId = req.patient?._id;
+      const patientUserId = req.patientUser?._id.toString();
       const workplaceId = req.workplaceId;
       const { allergyId } = req.params;
 
@@ -386,7 +386,7 @@ export class PatientProfileController {
     } catch (error) {
       logger.error('Error removing allergy', {
         error: error instanceof Error ? error.message : 'Unknown error',
-        patientUserId: req.patient?._id,
+        patientUserId: req.patientUser?._id.toString(),
         workplaceId: req.workplaceId,
         allergyId: req.params.allergyId,
       });
@@ -403,9 +403,9 @@ export class PatientProfileController {
    * Add chronic condition
    * POST /api/patient-portal/profile/conditions
    */
-  static async addChronicCondition(req: PatientAuthRequest, res: Response): Promise<void> {
+  static async addChronicCondition(req: PatientPortalRequest, res: Response): Promise<void> {
     try {
-      const patientUserId = req.patient?._id;
+      const patientUserId = req.patientUser?._id.toString();
       const workplaceId = req.workplaceId;
 
       if (!patientUserId || !workplaceId) {
@@ -446,7 +446,7 @@ export class PatientProfileController {
     } catch (error) {
       logger.error('Error adding chronic condition', {
         error: error instanceof Error ? error.message : 'Unknown error',
-        patientUserId: req.patient?._id,
+        patientUserId: req.patientUser?._id.toString(),
         workplaceId: req.workplaceId,
         conditionData: req.body,
       });
@@ -481,9 +481,9 @@ export class PatientProfileController {
    * Update chronic condition
    * PUT /api/patient-portal/profile/conditions/:conditionId
    */
-  static async updateChronicCondition(req: PatientAuthRequest, res: Response): Promise<void> {
+  static async updateChronicCondition(req: PatientPortalRequest, res: Response): Promise<void> {
     try {
-      const patientUserId = req.patient?._id;
+      const patientUserId = req.patientUser?._id.toString();
       const workplaceId = req.workplaceId;
       const { conditionId } = req.params;
 
@@ -534,7 +534,7 @@ export class PatientProfileController {
     } catch (error) {
       logger.error('Error updating chronic condition', {
         error: error instanceof Error ? error.message : 'Unknown error',
-        patientUserId: req.patient?._id,
+        patientUserId: req.patientUser?._id.toString(),
         workplaceId: req.workplaceId,
         conditionId: req.params.conditionId,
         updates: req.body,
@@ -570,9 +570,9 @@ export class PatientProfileController {
    * Remove chronic condition
    * DELETE /api/patient-portal/profile/conditions/:conditionId
    */
-  static async removeChronicCondition(req: PatientAuthRequest, res: Response): Promise<void> {
+  static async removeChronicCondition(req: PatientPortalRequest, res: Response): Promise<void> {
     try {
-      const patientUserId = req.patient?._id;
+      const patientUserId = req.patientUser?._id.toString();
       const workplaceId = req.workplaceId;
       const { conditionId } = req.params;
 
@@ -607,7 +607,7 @@ export class PatientProfileController {
     } catch (error) {
       logger.error('Error removing chronic condition', {
         error: error instanceof Error ? error.message : 'Unknown error',
-        patientUserId: req.patient?._id,
+        patientUserId: req.patientUser?._id.toString(),
         workplaceId: req.workplaceId,
         conditionId: req.params.conditionId,
       });
@@ -624,9 +624,9 @@ export class PatientProfileController {
    * Add emergency contact
    * POST /api/patient-portal/profile/emergency-contacts
    */
-  static async addEmergencyContact(req: PatientAuthRequest, res: Response): Promise<void> {
+  static async addEmergencyContact(req: PatientPortalRequest, res: Response): Promise<void> {
     try {
-      const patientUserId = req.patient?._id;
+      const patientUserId = req.patientUser?._id.toString();
       const workplaceId = req.workplaceId;
 
       if (!patientUserId || !workplaceId) {
@@ -667,7 +667,7 @@ export class PatientProfileController {
     } catch (error) {
       logger.error('Error adding emergency contact', {
         error: error instanceof Error ? error.message : 'Unknown error',
-        patientUserId: req.patient?._id,
+        patientUserId: req.patientUser?._id.toString(),
         workplaceId: req.workplaceId,
         contactData: req.body,
       });
@@ -693,9 +693,9 @@ export class PatientProfileController {
    * Update emergency contact
    * PUT /api/patient-portal/profile/emergency-contacts/:contactId
    */
-  static async updateEmergencyContact(req: PatientAuthRequest, res: Response): Promise<void> {
+  static async updateEmergencyContact(req: PatientPortalRequest, res: Response): Promise<void> {
     try {
-      const patientUserId = req.patient?._id;
+      const patientUserId = req.patientUser?._id.toString();
       const workplaceId = req.workplaceId;
       const { contactId } = req.params;
 
@@ -741,7 +741,7 @@ export class PatientProfileController {
     } catch (error) {
       logger.error('Error updating emergency contact', {
         error: error instanceof Error ? error.message : 'Unknown error',
-        patientUserId: req.patient?._id,
+        patientUserId: req.patientUser?._id.toString(),
         workplaceId: req.workplaceId,
         contactId: req.params.contactId,
         updates: req.body,
@@ -777,9 +777,9 @@ export class PatientProfileController {
    * Remove emergency contact
    * DELETE /api/patient-portal/profile/emergency-contacts/:contactId
    */
-  static async removeEmergencyContact(req: PatientAuthRequest, res: Response): Promise<void> {
+  static async removeEmergencyContact(req: PatientPortalRequest, res: Response): Promise<void> {
     try {
-      const patientUserId = req.patient?._id;
+      const patientUserId = req.patientUser?._id.toString();
       const workplaceId = req.workplaceId;
       const { contactId } = req.params;
 
@@ -814,7 +814,7 @@ export class PatientProfileController {
     } catch (error) {
       logger.error('Error removing emergency contact', {
         error: error instanceof Error ? error.message : 'Unknown error',
-        patientUserId: req.patient?._id,
+        patientUserId: req.patientUser?._id.toString(),
         workplaceId: req.workplaceId,
         contactId: req.params.contactId,
       });
@@ -831,9 +831,9 @@ export class PatientProfileController {
    * Update insurance information
    * PUT /api/patient-portal/profile/insurance
    */
-  static async updateInsuranceInfo(req: PatientAuthRequest, res: Response): Promise<void> {
+  static async updateInsuranceInfo(req: PatientPortalRequest, res: Response): Promise<void> {
     try {
-      const patientUserId = req.patient?._id;
+      const patientUserId = req.patientUser?._id.toString();
       const workplaceId = req.workplaceId;
 
       if (!patientUserId || !workplaceId) {
@@ -868,7 +868,7 @@ export class PatientProfileController {
     } catch (error) {
       logger.error('Error updating insurance information', {
         error: error instanceof Error ? error.message : 'Unknown error',
-        patientUserId: req.patient?._id,
+        patientUserId: req.patientUser?._id.toString(),
         workplaceId: req.workplaceId,
         insuranceData: req.body,
       });
@@ -894,9 +894,9 @@ export class PatientProfileController {
    * Log vitals
    * POST /api/patient-portal/profile/vitals
    */
-  static async logVitals(req: PatientAuthRequest, res: Response): Promise<void> {
+  static async logVitals(req: PatientPortalRequest, res: Response): Promise<void> {
     try {
-      const patientUserId = req.patient?._id;
+      const patientUserId = req.patientUser?._id.toString();
       const workplaceId = req.workplaceId;
 
       if (!patientUserId || !workplaceId) {
@@ -928,7 +928,7 @@ export class PatientProfileController {
     } catch (error) {
       logger.error('Error logging vitals', {
         error: error instanceof Error ? error.message : 'Unknown error',
-        patientUserId: req.patient?._id,
+        patientUserId: req.patientUser?._id.toString(),
         workplaceId: req.workplaceId,
         vitalsData: req.body,
       });
@@ -954,9 +954,9 @@ export class PatientProfileController {
    * Get vitals history
    * GET /api/patient-portal/profile/vitals
    */
-  static async getVitalsHistory(req: PatientAuthRequest, res: Response): Promise<void> {
+  static async getVitalsHistory(req: PatientPortalRequest, res: Response): Promise<void> {
     try {
-      const patientUserId = req.patient?._id;
+      const patientUserId = req.patientUser?._id.toString();
       const workplaceId = req.workplaceId;
 
       if (!patientUserId || !workplaceId) {
@@ -987,7 +987,7 @@ export class PatientProfileController {
     } catch (error) {
       logger.error('Error getting vitals history', {
         error: error instanceof Error ? error.message : 'Unknown error',
-        patientUserId: req.patient?._id,
+        patientUserId: req.patientUser?._id.toString(),
         workplaceId: req.workplaceId,
         limit: req.query.limit,
       });
@@ -1004,9 +1004,9 @@ export class PatientProfileController {
    * Get latest vitals
    * GET /api/patient-portal/profile/vitals/latest
    */
-  static async getLatestVitals(req: PatientAuthRequest, res: Response): Promise<void> {
+  static async getLatestVitals(req: PatientPortalRequest, res: Response): Promise<void> {
     try {
-      const patientUserId = req.patient?._id;
+      const patientUserId = req.patientUser?._id.toString();
       const workplaceId = req.workplaceId;
 
       if (!patientUserId || !workplaceId) {
@@ -1033,7 +1033,7 @@ export class PatientProfileController {
     } catch (error) {
       logger.error('Error getting latest vitals', {
         error: error instanceof Error ? error.message : 'Unknown error',
-        patientUserId: req.patient?._id,
+        patientUserId: req.patientUser?._id.toString(),
         workplaceId: req.workplaceId,
       });
 

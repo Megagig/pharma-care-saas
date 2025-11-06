@@ -467,19 +467,5 @@ export const useHealthBlogAdmin = {
   useInvalidateAdminBlog,
 };
 
-// Also export individual hooks for direct import
-export {
-  useAdminPosts,
-  useAdminPost,
-  useBlogAnalytics,
-  useCreatePost,
-  useUpdatePost,
-  useDeletePost,
-  useUpdatePostStatus,
-  useUploadImage,
-  useBulkUpdatePosts,
-  useInvalidateAdminBlog,
-};
-
 // Export the service for direct use if needed
 export { healthBlogAdminService };

@@ -1,7 +1,7 @@
 import { Response } from 'express';
 import mongoose from 'mongoose';
 import { AuthRequest } from '../middlewares/auth';
-import { PatientAuthRequest } from '../middlewares/patientPortalAuth';
+import { PatientPortalRequest } from '../middlewares/patientPortalAuth';
 import AppointmentService from '../services/AppointmentService';
 import CalendarService from '../services/CalendarService';
 import PatientPortalService from '../services/PatientPortalService';
@@ -82,7 +82,7 @@ export const getAvailableSlots = asyncHandler(
  * Requires authentication
  */
 export const bookAppointment = asyncHandler(
-  async (req: PatientAuthRequest, res: Response) => {
+  async (req: PatientPortalRequest, res: Response) => {
     if (!req.patient) {
       return sendError(res, 'UNAUTHORIZED', 'Patient authentication required', 401);
     }
@@ -110,7 +110,7 @@ export const bookAppointment = asyncHandler(
  * Requires authentication
  */
 export const getMyAppointments = asyncHandler(
-  async (req: PatientAuthRequest, res: Response) => {
+  async (req: PatientPortalRequest, res: Response) => {
     if (!req.patient) {
       return sendError(res, 'UNAUTHORIZED', 'Patient authentication required', 401);
     }
@@ -153,7 +153,7 @@ export const getMyAppointments = asyncHandler(
  * Requires authentication
  */
 export const rescheduleAppointment = asyncHandler(
-  async (req: PatientAuthRequest, res: Response) => {
+  async (req: PatientPortalRequest, res: Response) => {
     if (!req.patient) {
       return sendError(res, 'UNAUTHORIZED', 'Patient authentication required', 401);
     }
@@ -183,7 +183,7 @@ export const rescheduleAppointment = asyncHandler(
  * Requires authentication
  */
 export const cancelAppointment = asyncHandler(
-  async (req: PatientAuthRequest, res: Response) => {
+  async (req: PatientPortalRequest, res: Response) => {
     if (!req.patient) {
       return sendError(res, 'UNAUTHORIZED', 'Patient authentication required', 401);
     }

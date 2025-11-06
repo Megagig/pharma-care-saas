@@ -387,19 +387,5 @@ export const useHealthBlog = {
   useInvalidateHealthBlog,
 };
 
-// Also export individual hooks for direct import
-export {
-  usePublishedPosts,
-  useFeaturedPosts,
-  useLatestPosts,
-  usePostBySlug,
-  useRelatedPosts,
-  useSearchPosts,
-  useCategories,
-  useTags,
-  useIncrementViewCount,
-  useInvalidateHealthBlog,
-};
-
 // Export the service for direct use if needed
 export { healthBlogService };

@@ -15,9 +15,9 @@ const LazyPatientBilling = lazy(() => import('../pages/patient-portal/PatientBil
 
 // Lazy load public pages
 const LazyPublicPatientPortal = lazy(() => import('../pages/public/PatientPortalLanding'));
-const LazyPatientAuth = lazy(() => import('../pages/patient-portal/PatientAuth'));
-const LazyBlogPage = lazy(() => import('../pages/blog/BlogPage'));
-const LazyBlogPostDetails = lazy(() => import('../pages/blog/BlogPostDetails'));
+const LazyPatientAuth = lazy(() => import('../pages/PatientAuth'));
+const LazyBlogPage = lazy(() => import('../pages/public/BlogPage'));
+const LazyBlogPostDetails = lazy(() => import('../components/blog/BlogPostDetails'));
 
 // Lazy load admin pages
 const LazyBlogManagement = lazy(() => import('../pages/super-admin/BlogManagement'));

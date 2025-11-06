@@ -81,6 +81,8 @@ import {
   LazyPatientPortal,
   LazyPatientAuth,
   LazyPublicPatientPortal,
+  LazyWorkspaceSearchPage,
+  LazyPatientWorkspaceDetailPage,
   LazyBlogPage,
   LazyBlogPostDetails,
   LazyBlogManagement,
@@ -240,6 +242,16 @@ function App(): JSX.Element {
                           <Route path="/patient-access" element={
                             <LazyWrapper fallback={PageSkeleton}>
                               <LazyPublicPatientPortal />
+                            </LazyWrapper>
+                          } />
+                          <Route path="/patient-portal/search" element={
+                            <LazyWrapper fallback={PageSkeleton}>
+                              <LazyWorkspaceSearchPage />
+                            </LazyWrapper>
+                          } />
+                          <Route path="/patient-portal/workspace/:workspaceId" element={
+                            <LazyWrapper fallback={PageSkeleton}>
+                              <LazyPatientWorkspaceDetailPage />
                             </LazyWrapper>
                           } />
                           <Route
