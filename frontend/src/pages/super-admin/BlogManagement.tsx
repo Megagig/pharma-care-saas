@@ -53,13 +53,13 @@ interface BlogManagementProps {
 
 const BlogManagement: React.FC<BlogManagementProps> = ({ className }) => {
   const navigate = useNavigate();
-  
+
   // State for filters and pagination
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'draft' | 'published' | 'archived'>('all');
   const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  
+
   // State for actions
   const [selectedPost, setSelectedPost] = useState<BlogPost | null>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
@@ -67,10 +67,10 @@ const BlogManagement: React.FC<BlogManagementProps> = ({ className }) => {
   const [postToDelete, setPostToDelete] = useState<BlogPost | null>(null);
 
   // Fetch blog posts for admin
-  const { 
-    data: postsResponse, 
+  const {
+    data: postsResponse,
     isLoading: postsLoading,
-    error: postsError 
+    error: postsError
   } = useHealthBlogAdmin.useAdminPosts({
     page,
     limit: 10,
@@ -80,9 +80,9 @@ const BlogManagement: React.FC<BlogManagementProps> = ({ className }) => {
   });
 
   // Fetch analytics
-  const { 
+  const {
     data: analyticsResponse,
-    isLoading: analyticsLoading 
+    isLoading: analyticsLoading
   } = useHealthBlogAdmin.useBlogAnalytics();
 
   // Fetch categories for filter
@@ -227,7 +227,7 @@ const BlogManagement: React.FC<BlogManagementProps> = ({ className }) => {
                   </Box>
                   <Box>
                     <Typography variant="h4" sx={{ fontWeight: 600 }}>
-                      {analytics.totalPosts}
+                      {analytics.totalPosts || 0}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       Total Posts
@@ -237,7 +237,7 @@ const BlogManagement: React.FC<BlogManagementProps> = ({ className }) => {
               </CardContent>
             </Card>
           </Grid>
-          
+
           <Grid item xs={12} sm={6} md={3}>
             <Card>
               <CardContent>
@@ -254,7 +254,7 @@ const BlogManagement: React.FC<BlogManagementProps> = ({ className }) => {
                   </Box>
                   <Box>
                     <Typography variant="h4" sx={{ fontWeight: 600 }}>
-                      {analytics.totalViews.toLocaleString()}
+                      {(analytics.totalViews || 0).toLocaleString()}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       Total Views
@@ -264,7 +264,7 @@ const BlogManagement: React.FC<BlogManagementProps> = ({ className }) => {
               </CardContent>
             </Card>
           </Grid>
-          
+
           <Grid item xs={12} sm={6} md={3}>
             <Card>
               <CardContent>
@@ -281,7 +281,7 @@ const BlogManagement: React.FC<BlogManagementProps> = ({ className }) => {
                   </Box>
                   <Box>
                     <Typography variant="h4" sx={{ fontWeight: 600 }}>
-                      {analytics.avgViewsPerPost}
+                      {analytics.avgViewsPerPost || 0}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       Avg Views/Post
@@ -291,7 +291,7 @@ const BlogManagement: React.FC<BlogManagementProps> = ({ className }) => {
               </CardContent>
             </Card>
           </Grid>
-          
+
           <Grid item xs={12} sm={6} md={3}>
             <Card>
               <CardContent>
@@ -308,7 +308,7 @@ const BlogManagement: React.FC<BlogManagementProps> = ({ className }) => {
                   </Box>
                   <Box>
                     <Typography variant="h4" sx={{ fontWeight: 600 }}>
-                      {analytics.publishedThisMonth}
+                      {analytics.publishedThisMonth || 0}
                     </Typography>
                     <Typography variant="body2" color="text.secondary">
                       Published This Month
@@ -398,7 +398,7 @@ const BlogManagement: React.FC<BlogManagementProps> = ({ className }) => {
               Failed to load blog posts. Please try again.
             </Alert>
           )}
-          
+
           <TableContainer>
             <Table>
               <TableHead>

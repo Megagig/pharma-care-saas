@@ -63,7 +63,7 @@ export interface UpdatePostData extends Partial<CreatePostData> {
 
 // Health Blog Admin Service
 class HealthBlogAdminService {
-  private baseUrl = '/api/admin/blog';
+  private baseUrl = '/super-admin/blog';
 
   /**
    * Base request method with error handling and auth
@@ -103,7 +103,7 @@ class HealthBlogAdminService {
    */
   async getAdminPosts(params: AdminBlogSearchParams = {}): Promise<{ success: boolean; data: BlogPostsResponse; message: string }> {
     const searchParams = new URLSearchParams();
-    
+
     Object.entries(params).forEach(([key, value]) => {
       if (value !== undefined && value !== null) {
         searchParams.append(key, String(value));
@@ -214,7 +214,7 @@ class HealthBlogAdminService {
    * Bulk update posts
    */
   async bulkUpdatePosts(
-    postIds: string[], 
+    postIds: string[],
     updates: Partial<Pick<AdminBlogPost, 'status' | 'category' | 'isFeatured'>>
   ): Promise<{ success: boolean; data: { updated: number }; message: string }> {
     return this.makeRequest<{ updated: number }>(
@@ -296,16 +296,16 @@ export const useCreatePost = () => {
 
   return useMutation({
     mutationFn: (data: CreatePostData) => healthBlogAdminService.createPost(data),
-    
+
     onSuccess: () => {
       // Invalidate admin posts queries
       queryClient.invalidateQueries({ queryKey: adminBlogKeys.posts({}) });
       queryClient.invalidateQueries({ queryKey: adminBlogKeys.analytics() });
-      
+
       // Invalidate public blog queries too
       queryClient.invalidateQueries({ queryKey: healthBlogKeys.all });
     },
-    
+
     onError: (error) => {
       console.error('Failed to create post:', error);
     },
@@ -319,22 +319,22 @@ export const useUpdatePost = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdatePostData }) => 
+    mutationFn: ({ id, data }: { id: string; data: UpdatePostData }) =>
       healthBlogAdminService.updatePost(id, data),
-    
+
     onSuccess: (response, { id }) => {
       // Update the specific post in cache
       queryClient.setQueryData(
         adminBlogKeys.post(id),
         { success: true, data: response.data, message: response.message }
       );
-      
+
       // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: adminBlogKeys.posts({}) });
       queryClient.invalidateQueries({ queryKey: adminBlogKeys.analytics() });
       queryClient.invalidateQueries({ queryKey: healthBlogKeys.all });
     },
-    
+
     onError: (error) => {
       console.error('Failed to update post:', error);
     },
@@ -349,17 +349,17 @@ export const useDeletePost = () => {
 
   return useMutation({
     mutationFn: (id: string) => healthBlogAdminService.deletePost(id),
-    
+
     onSuccess: (_, id) => {
       // Remove the post from cache
       queryClient.removeQueries({ queryKey: adminBlogKeys.post(id) });
-      
+
       // Invalidate lists
       queryClient.invalidateQueries({ queryKey: adminBlogKeys.posts({}) });
       queryClient.invalidateQueries({ queryKey: adminBlogKeys.analytics() });
       queryClient.invalidateQueries({ queryKey: healthBlogKeys.all });
     },
-    
+
     onError: (error) => {
       console.error('Failed to delete post:', error);
     },
@@ -375,20 +375,20 @@ export const useUpdatePostStatus = () => {
   return useMutation({
     mutationFn: ({ postId, status }: { postId: string; status: 'draft' | 'published' | 'archived' }) =>
       healthBlogAdminService.updatePostStatus(postId, status),
-    
+
     onSuccess: (response, { postId }) => {
       // Update the specific post in cache
       queryClient.setQueryData(
         adminBlogKeys.post(postId),
         { success: true, data: response.data, message: response.message }
       );
-      
+
       // Invalidate related queries
       queryClient.invalidateQueries({ queryKey: adminBlogKeys.posts({}) });
       queryClient.invalidateQueries({ queryKey: adminBlogKeys.analytics() });
       queryClient.invalidateQueries({ queryKey: healthBlogKeys.all });
     },
-    
+
     onError: (error) => {
       console.error('Failed to update post status:', error);
     },
@@ -401,7 +401,7 @@ export const useUpdatePostStatus = () => {
 export const useUploadImage = () => {
   return useMutation({
     mutationFn: (formData: FormData) => healthBlogAdminService.uploadImage(formData),
-    
+
     onError: (error) => {
       console.error('Failed to upload image:', error);
     },
@@ -415,20 +415,20 @@ export const useBulkUpdatePosts = () => {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ 
-      postIds, 
-      updates 
-    }: { 
-      postIds: string[]; 
+    mutationFn: ({
+      postIds,
+      updates
+    }: {
+      postIds: string[];
       updates: Partial<Pick<AdminBlogPost, 'status' | 'category' | 'isFeatured'>>
     }) => healthBlogAdminService.bulkUpdatePosts(postIds, updates),
-    
+
     onSuccess: () => {
       // Invalidate all admin queries
       queryClient.invalidateQueries({ queryKey: adminBlogKeys.all });
       queryClient.invalidateQueries({ queryKey: healthBlogKeys.all });
     },
-    
+
     onError: (error) => {
       console.error('Failed to bulk update posts:', error);
     },
