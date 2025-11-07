@@ -7,6 +7,7 @@ import {
   rescheduleAppointment,
   cancelAppointment,
   confirmAppointment,
+  getDashboardData,
 } from '../controllers/patientPortalController';
 import { patientPortalAuth } from '../middlewares/patientPortalAuth';
 import { generalRateLimiters, createRateLimiter } from '../middlewares/rateLimiting';
@@ -81,6 +82,18 @@ router.get(
 // ===============================
 // AUTHENTICATED ENDPOINTS
 // ===============================
+
+/**
+ * GET /api/patient-portal/dashboard
+ * Get comprehensive dashboard data (stats, appointments, medications, messages, vitals)
+ * Requires authentication
+ */
+router.get(
+  '/dashboard',
+  patientPortalAuth,
+  generalRateLimiters.api,
+  getDashboardData
+);
 
 /**
  * POST /api/patient-portal/appointments

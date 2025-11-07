@@ -432,6 +432,17 @@ app.use('/api/production-validation', productionValidationRoutes);
 // Continuous monitoring routes (admin only)
 app.use('/api/continuous-monitoring', continuousMonitoringRoutes);
 
+// ========================================================================
+// PATIENT PORTAL ROUTES - MUST BE BEFORE OTHER /api ROUTES
+// These routes use patientPortalAuth middleware (NOT regular auth middleware)
+// ========================================================================
+import patientPortalRoutes from './routes/patientPortalRoutes';
+app.use('/api/patient-portal', patientPortalRoutes);
+
+// ========================================================================
+// REGULAR API ROUTES (use regular auth middleware)
+// ========================================================================
+
 // API routes
 app.use('/api/auth', authRoutes);
 app.use('/api/patient-auth', patientAuthRoutes);
@@ -556,9 +567,8 @@ import followUpRoutes from './routes/followUpRoutes';
 import scheduleRoutes from './routes/scheduleRoutes';
 import queueMonitoringRoutes from './routes/queueMonitoringRoutes';
 import alertRoutes from './routes/alertRoutes';
-import patientPortalRoutes from './routes/patientPortalRoutes';
 
-// Appointment Analytics routes - MUST come before /api/appointments to avoid /:id matching
+// Appointment Analytics routes - mounted at /api level
 app.use('/api', appointmentAnalyticsRoutes);
 
 app.use('/api/appointments', appointmentRoutes);
@@ -566,7 +576,6 @@ app.use('/api/follow-ups', followUpRoutes);
 app.use('/api/schedules', scheduleRoutes);
 app.use('/api/queue-monitoring', queueMonitoringRoutes);
 app.use('/api/alerts', alertRoutes);
-app.use('/api/patient-portal', patientPortalRoutes);
 
 // Clinical interventions health check (no auth required)
 app.get('/api/clinical-interventions/health', (req, res) => {

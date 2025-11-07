@@ -28,18 +28,25 @@ export const patientPortalAuth = async (
   next: NextFunction
 ): Promise<void> => {
   try {
-    // Extract token from Authorization header
+    // Extract token from Authorization header OR httpOnly cookie
+    let token: string | undefined;
+
     const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      token = authHeader.substring(7); // Remove 'Bearer' prefix
+    } else if (req.cookies?.patientAccessToken) {
+      // Check for httpOnly cookie
+      token = req.cookies.patientAccessToken;
+    }
+
+    if (!token) {
       res.status(401).json({
         success: false,
-        message: 'Access token is required',
-        code: 'TOKEN_MISSING',
+        message: 'Access denied. No token provided.',
+        code: 'NO_TOKEN',
       });
       return;
     }
-
-    const token = authHeader.substring(7); // Remove 'Bearer ' prefix
 
     // Verify JWT token
     let decoded: any;
@@ -180,7 +187,7 @@ export const validateWorkspaceContext = (
   next: NextFunction
 ): void => {
   const workspaceIdParam = req.params.workspaceId;
-  
+
   if (workspaceIdParam) {
     if (!mongoose.Types.ObjectId.isValid(workspaceIdParam)) {
       res.status(400).json({
@@ -192,7 +199,7 @@ export const validateWorkspaceContext = (
     }
 
     const requestedWorkspaceId = new mongoose.Types.ObjectId(workspaceIdParam);
-    
+
     if (!req.patientUser?.workplaceId.equals(requestedWorkspaceId)) {
       res.status(403).json({
         success: false,
@@ -214,7 +221,7 @@ export const patientPortalRateLimit = (maxRequests: number = 100, windowMs: numb
 
   return (req: PatientPortalRequest, res: Response, next: NextFunction): void => {
     const patientUserId = req.patientUser?._id.toString();
-    
+
     if (!patientUserId) {
       next();
       return;
@@ -255,8 +262,8 @@ export const patientPortalRateLimit = (maxRequests: number = 100, windowMs: numb
 export const logPatientActivity = (action: string) => {
   return (req: PatientPortalRequest, res: Response, next: NextFunction): void => {
     const originalSend = res.send;
-    
-    res.send = function(data: any) {
+
+    res.send = function (data: any) {
       // Log activity after response is sent
       setImmediate(() => {
         logger.info('Patient portal activity', {
