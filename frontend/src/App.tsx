@@ -595,7 +595,20 @@ function App(): JSX.Element {
                             />
                             {/* Super Admin Blog Routes */}
                             <Route path="/super-admin/blog/*" element={<PatientPortalRoutes />} />
-                            <Route path="/workspace-admin/patient-portal/*" element={<PatientPortalRoutes />} />
+
+                            {/* Workspace Admin Patient Portal Routes */}
+                            <Route
+                              path="/workspace-admin/patient-portal/*"
+                              element={
+                                <ProtectedRoute requiredRole={['pharmacy_outlet', 'Pharmacist', 'Owner']}>
+                                  <AppLayout>
+                                    <LazyWrapper fallback={PageSkeleton}>
+                                      <PatientPortalRoutes />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
+                              }
+                            />
 
                             {/* Pharmacy Module Routes */}
                             <Route
