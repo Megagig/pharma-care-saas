@@ -25,7 +25,7 @@ import Person from '@mui/icons-material/Person';
 import Lock from '@mui/icons-material/Lock';
 import LocalHospital from '@mui/icons-material/LocalHospital';
 import { useNavigate, useParams, useLocation } from 'react-router-dom';
-import { apiClient } from '../services/apiClient';
+import { usePatientAuth } from '../hooks/usePatientAuth';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -58,6 +58,7 @@ const PatientAuth: React.FC = () => {
   const navigate = useNavigate();
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const location = useLocation();
+  const patientAuth = usePatientAuth();
 
   // Get workspace info from navigation state
   const workspaceInfo = location.state?.workspaceInfo;
@@ -142,27 +143,21 @@ const PatientAuth: React.FC = () => {
     setError('');
 
     try {
-      const response = await apiClient.post('/patient-portal/auth/login', {
+      console.log('🔐 Patient login attempt:', { email: loginForm.email, workspaceId });
+
+      // Use PatientAuthContext login method which handles cookies and state management
+      await patientAuth.login({
         email: loginForm.email,
         password: loginForm.password,
-        workspaceId: workspaceId,
+        workspaceId: workspaceId || '',
       });
 
-      const data = response.data;
+      console.log('✅ Patient login successful, navigating to portal...');
 
-      if (data.success) {
-        // Tokens are automatically stored in httpOnly cookies by the backend
-        // Store minimal patient info in localStorage for UI display only
-        localStorage.setItem('patientWorkspace', workspaceId || '');
-        localStorage.setItem('patientId', data.data.patientUser.id);
-        localStorage.setItem('patientUser', JSON.stringify(data.data.patientUser));
-
-        // Redirect to patient portal
-        navigate(`/patient-portal/${workspaceId}`);
-      } else {
-        throw new Error(data.message || 'Login failed');
-      }
+      // Redirect to patient portal on success
+      navigate(`/patient-portal/${workspaceId}`);
     } catch (err: any) {
+      console.error('❌ Patient login failed:', err);
       const errorMessage = err.response?.data?.message || err.message || 'Login failed. Please check your credentials.';
       setError(errorMessage);
     } finally {
@@ -189,37 +184,32 @@ const PatientAuth: React.FC = () => {
     }
 
     try {
-      const response = await apiClient.post('/patient-portal/auth/register', {
+      // Use PatientAuthContext register method
+      const response = await patientAuth.register({
         firstName: registerForm.firstName,
         lastName: registerForm.lastName,
         email: registerForm.email,
         phone: registerForm.phone,
         dateOfBirth: registerForm.dateOfBirth,
         password: registerForm.password,
-        workspaceId: workspaceId,
+        workspaceId: workspaceId || '',
       });
 
-      const data = response.data;
+      // Show success message and redirect to login
+      setError('');
+      alert(response.message || 'Registration successful! Please log in with your credentials.'); // In production, use a proper notification system
+      setTabValue(0); // Switch to login tab
 
-      if (data.success) {
-        // Show success message and redirect to login
-        setError('');
-        alert(data.message); // In production, use a proper notification system
-        setTabValue(0); // Switch to login tab
-
-        // Clear registration form
-        setRegisterForm({
-          firstName: '',
-          lastName: '',
-          email: '',
-          phone: '',
-          dateOfBirth: '',
-          password: '',
-          confirmPassword: '',
-        });
-      } else {
-        throw new Error(data.message || 'Registration failed');
-      }
+      // Clear registration form
+      setRegisterForm({
+        firstName: '',
+        lastName: '',
+        email: '',
+        phone: '',
+        dateOfBirth: '',
+        password: '',
+        confirmPassword: '',
+      });
     } catch (err: any) {
       let errorMessage = err.response?.data?.message || err.message || 'Registration failed. Please try again.';
 

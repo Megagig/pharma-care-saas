@@ -1,4 +1,5 @@
 import React, { createContext, useState, useEffect, ReactNode } from 'react';
+import axios from 'axios';
 
 interface PatientUser {
   id: string;
@@ -28,7 +29,11 @@ interface PatientUser {
 interface PatientAuthResponse {
   success: boolean;
   message?: string;
-  user?: PatientUser;
+  data?: {
+    patientUser?: PatientUser;
+    [key: string]: any;
+  };
+  user?: PatientUser; // For backward compatibility
   token?: string;
   requiresApproval?: boolean;
 }
@@ -45,7 +50,7 @@ interface RegistrationData {
   email: string;
   phone: string;
   dateOfBirth: string;
-  gender: 'male' | 'female' | 'other';
+  gender?: 'male' | 'female' | 'other'; // Optional
   password: string;
   workspaceId: string;
 }
@@ -73,274 +78,114 @@ export const PatientAuthContext = createContext<PatientAuthContextType | undefin
   undefined
 );
 
-// Token management utilities
-const TOKEN_KEY = 'patient_auth_token';
-const USER_KEY = 'patient_user_data';
+// API base URL
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:5000/api';
 
-const getStoredToken = (): string | null => {
-  try {
-    return localStorage.getItem(TOKEN_KEY);
-  } catch {
-    return null;
-  }
-};
-
-const setStoredToken = (token: string): void => {
-  try {
-    localStorage.setItem(TOKEN_KEY, token);
-  } catch (error) {
-    console.error('Failed to store token:', error);
-  }
-};
-
-const removeStoredToken = (): void => {
-  try {
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(USER_KEY);
-  } catch (error) {
-    console.error('Failed to remove token:', error);
-  }
-};
-
-const getStoredUser = (): PatientUser | null => {
-  try {
-    const userData = localStorage.getItem(USER_KEY);
-    return userData ? JSON.parse(userData) : null;
-  } catch {
-    return null;
-  }
-};
-
-const setStoredUser = (user: PatientUser): void => {
-  try {
-    localStorage.setItem(USER_KEY, JSON.stringify(user));
-  } catch (error) {
-    console.error('Failed to store user data:', error);
-  }
-};
-
-// Mock API service - replace with actual API calls
+// Patient Auth Service using httpOnly cookies
 class PatientAuthService {
-  private static baseUrl = '/api/patient-portal/auth';
+  private static baseUrl = `${API_BASE_URL}/patient-portal/auth`;
 
   static async makeRequest<T>(
     endpoint: string,
-    options: RequestInit = {}
+    options: {
+      method?: string;
+      data?: any;
+    } = {}
   ): Promise<T> {
-    const token = getStoredToken();
-    
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
-      headers: {
-        'Content-Type': 'application/json',
-        ...(token && { Authorization: `Bearer ${token}` }),
-        ...options.headers,
-      },
-      ...options,
-    });
+    try {
+      const response = await axios({
+        url: `${this.baseUrl}${endpoint}`,
+        method: options.method || 'GET',
+        data: options.data,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        withCredentials: true, // Include httpOnly cookies
+      });
 
-    if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Network error' }));
-      throw new Error(error.message || `HTTP ${response.status}`);
+      return response.data;
+    } catch (error: any) {
+      if (error.response?.data) {
+        throw new Error(error.response.data.message || 'Request failed');
+      }
+      throw new Error(error.message || 'Network error');
     }
-
-    return response.json();
   }
 
   static async login(credentials: LoginCredentials): Promise<PatientAuthResponse> {
-    // Mock implementation - replace with actual API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    // Simulate different scenarios
-    if (credentials.email === 'suspended@example.com') {
-      return {
-        success: false,
-        message: 'Your account has been suspended. Please contact the pharmacy.',
-      };
-    }
-
-    if (credentials.email === 'pending@example.com') {
-      return {
-        success: false,
-        message: 'Your account is pending approval. Please wait for confirmation.',
-      };
-    }
-
-    if (credentials.password === 'wrongpassword') {
-      return {
-        success: false,
-        message: 'Invalid email or password.',
-      };
-    }
-
-    const mockUser: PatientUser = {
-      id: 'patient_123',
-      email: credentials.email,
-      firstName: 'John',
-      lastName: 'Doe',
-      phone: '+234-801-234-5678',
-      dateOfBirth: '1990-01-01',
-      gender: 'male',
-      workspaceId: credentials.workspaceId,
-      workspaceName: 'Test Pharmacy',
-      status: 'active',
-      emailVerified: true,
-      profileComplete: true,
-      lastLoginAt: new Date(),
-      preferences: {
-        notifications: {
-          email: true,
-          sms: true,
-          whatsapp: false,
-        },
-        language: 'en',
-        timezone: 'Africa/Lagos',
-      },
-    };
-
-    return {
-      success: true,
-      user: mockUser,
-      token: 'mock_jwt_token_' + Date.now(),
-      message: 'Login successful',
-    };
+    return this.makeRequest<PatientAuthResponse>('/login', {
+      method: 'POST',
+      data: credentials,
+    });
   }
 
   static async register(userData: RegistrationData): Promise<PatientAuthResponse> {
-    // Mock implementation - replace with actual API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // Simulate email already exists
-    if (userData.email === 'existing@example.com') {
-      return {
-        success: false,
-        message: 'An account with this email already exists.',
-      };
-    }
-
-    // Simulate different approval scenarios
-    const requiresApproval = Math.random() > 0.5;
-
-    return {
-      success: true,
-      message: requiresApproval 
-        ? 'Registration successful! Your account is pending approval.'
-        : 'Registration successful! Please check your email to verify your account.',
-      requiresApproval,
-    };
+    return this.makeRequest<PatientAuthResponse>('/register', {
+      method: 'POST',
+      data: userData,
+    });
   }
 
-  static async getCurrentUser(): Promise<{ user: PatientUser }> {
-    // Mock implementation - replace with actual API call
-    await new Promise(resolve => setTimeout(resolve, 500));
-    
-    const storedUser = getStoredUser();
-    if (!storedUser) {
-      throw new Error('No authenticated user');
-    }
-
-    return { user: storedUser };
+  static async getCurrentUser(): Promise<{ success: boolean; data: { patientUser: PatientUser } }> {
+    return this.makeRequest<{ success: boolean; data: { patientUser: PatientUser } }>('/me');
   }
 
-  static async refreshToken(): Promise<{ token: string }> {
-    // Mock implementation - replace with actual API call
-    await new Promise(resolve => setTimeout(resolve, 300));
-    
-    return {
-      token: 'refreshed_mock_jwt_token_' + Date.now(),
-    };
+  static async refreshToken(): Promise<{ success: boolean }> {
+    return this.makeRequest<{ success: boolean }>('/refresh-token', {
+      method: 'POST',
+    });
   }
 
   static async logout(): Promise<void> {
-    // Mock implementation - replace with actual API call
-    await new Promise(resolve => setTimeout(resolve, 200));
+    await this.makeRequest('/logout', {
+      method: 'POST',
+    });
   }
 
   static async verifyEmail(token: string): Promise<PatientAuthResponse> {
-    // Mock implementation - replace with actual API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    if (token === 'invalid_token') {
-      return {
-        success: false,
-        message: 'Invalid or expired verification token.',
-      };
-    }
-
-    return {
-      success: true,
-      message: 'Email verified successfully! You can now log in.',
-    };
+    return this.makeRequest<PatientAuthResponse>('/verify-email', {
+      method: 'POST',
+      data: { token },
+    });
   }
 
   static async forgotPassword(email: string, workspaceId: string): Promise<PatientAuthResponse> {
-    // Mock implementation - replace with actual API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    return {
-      success: true,
-      message: 'Password reset instructions have been sent to your email.',
-    };
+    return this.makeRequest<PatientAuthResponse>('/forgot-password', {
+      method: 'POST',
+      data: { email, workspaceId },
+    });
   }
 
   static async resetPassword(token: string, password: string): Promise<PatientAuthResponse> {
-    // Mock implementation - replace with actual API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    
-    if (token === 'invalid_token') {
-      return {
-        success: false,
-        message: 'Invalid or expired reset token.',
-      };
-    }
-
-    return {
-      success: true,
-      message: 'Password reset successfully! You can now log in with your new password.',
-    };
+    return this.makeRequest<PatientAuthResponse>('/reset-password', {
+      method: 'POST',
+      data: { token, password },
+    });
   }
 
   static async updateProfile(profileData: Partial<PatientUser>): Promise<PatientAuthResponse> {
-    // Mock implementation - replace with actual API call
-    await new Promise(resolve => setTimeout(resolve, 800));
-    
-    const storedUser = getStoredUser();
-    if (!storedUser) {
-      throw new Error('No authenticated user');
-    }
-
-    const updatedUser = { ...storedUser, ...profileData };
-
-    return {
-      success: true,
-      user: updatedUser,
-      message: 'Profile updated successfully!',
-    };
+    return this.makeRequest<PatientAuthResponse>('/profile', {
+      method: 'PUT',
+      data: profileData,
+    });
   }
 }
 
 export const PatientAuthProvider: React.FC<PatientAuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<PatientUser | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [loading, setLoading] = useState(true);
 
-  const isAuthenticated = !!user && user.status === 'active';
-
-  // Initialize auth on mount
+  // Check authentication status on mount
   useEffect(() => {
-    const initAuth = async (): Promise<void> => {
+    const initAuth = async () => {
       try {
-        const token = getStoredToken();
-        if (!token) {
-          setLoading(false);
-          return;
+        // Try to get current user using httpOnly cookies
+        const response = await PatientAuthService.getCurrentUser();
+        if (response.success && response.data?.patientUser) {
+          setUser(response.data.patientUser);
         }
-
-        const userData = await PatientAuthService.getCurrentUser();
-        setUser(userData.user);
-        setStoredUser(userData.user);
       } catch (error) {
-        console.error('Auth initialization failed:', error);
-        // Clear invalid stored data
-        removeStoredToken();
+        console.log('No authenticated patient user');
         setUser(null);
       } finally {
         setLoading(false);
@@ -356,8 +201,8 @@ export const PatientAuthProvider: React.FC<PatientAuthProviderProps> = ({ childr
 
     const refreshInterval = setInterval(async () => {
       try {
-        const response = await PatientAuthService.refreshToken();
-        setStoredToken(response.token);
+        await PatientAuthService.refreshToken();
+        console.log('Patient token refreshed successfully');
       } catch (error) {
         console.error('Token refresh failed:', error);
         // If refresh fails, logout user
@@ -370,20 +215,23 @@ export const PatientAuthProvider: React.FC<PatientAuthProviderProps> = ({ childr
 
   const login = async (credentials: LoginCredentials): Promise<PatientAuthResponse> => {
     try {
+      console.log('🔐 PatientAuthContext: Calling login service...');
       const response = await PatientAuthService.login(credentials);
-      
-      if (response.success && response.user && response.token) {
-        setUser(response.user);
-        setStoredToken(response.token);
-        setStoredUser(response.user);
+      console.log('📥 PatientAuthContext: Login response:', response);
+
+      if (response.success && response.data?.patientUser) {
+        console.log('✅ PatientAuthContext: Setting user state:', response.data.patientUser);
+        setUser(response.data.patientUser);
+        return response;
       }
-      
-      return response;
+
+      // If response is not successful, throw error
+      console.error('❌ PatientAuthContext: Login response not successful');
+      throw new Error(response.message || 'Login failed');
     } catch (error: any) {
-      return {
-        success: false,
-        message: error.message || 'Login failed. Please try again.',
-      };
+      console.error('❌ PatientAuthContext: Login error:', error);
+      // Re-throw the error so it can be caught by the calling code
+      throw error;
     }
   };
 
@@ -405,7 +253,6 @@ export const PatientAuthProvider: React.FC<PatientAuthProviderProps> = ({ childr
       console.error('Logout failed:', error);
     } finally {
       setUser(null);
-      removeStoredToken();
     }
   };
 
@@ -445,12 +292,11 @@ export const PatientAuthProvider: React.FC<PatientAuthProviderProps> = ({ childr
   const updateProfile = async (profileData: Partial<PatientUser>): Promise<PatientAuthResponse> => {
     try {
       const response = await PatientAuthService.updateProfile(profileData);
-      
+
       if (response.success && response.user) {
         setUser(response.user);
-        setStoredUser(response.user);
       }
-      
+
       return response;
     } catch (error: any) {
       return {
@@ -462,8 +308,7 @@ export const PatientAuthProvider: React.FC<PatientAuthProviderProps> = ({ childr
 
   const refreshToken = async (): Promise<boolean> => {
     try {
-      const response = await PatientAuthService.refreshToken();
-      setStoredToken(response.token);
+      await PatientAuthService.refreshToken();
       return true;
     } catch (error) {
       console.error('Token refresh failed:', error);
@@ -473,20 +318,21 @@ export const PatientAuthProvider: React.FC<PatientAuthProviderProps> = ({ childr
 
   const checkAuthStatus = async (): Promise<void> => {
     try {
-      const userData = await PatientAuthService.getCurrentUser();
-      setUser(userData.user);
-      setStoredUser(userData.user);
+      const response = await PatientAuthService.getCurrentUser();
+      if (response.success && response.data?.patientUser) {
+        setUser(response.data.patientUser);
+      } else {
+        setUser(null);
+      }
     } catch (error) {
-      console.error('Auth status check failed:', error);
       setUser(null);
-      removeStoredToken();
     }
   };
 
-  const value = {
+  const value: PatientAuthContextType = {
     user,
     loading,
-    isAuthenticated,
+    isAuthenticated: !!user,
     login,
     register,
     logout,
@@ -504,5 +350,3 @@ export const PatientAuthProvider: React.FC<PatientAuthProviderProps> = ({ childr
     </PatientAuthContext.Provider>
   );
 };
-
-export default PatientAuthProvider;

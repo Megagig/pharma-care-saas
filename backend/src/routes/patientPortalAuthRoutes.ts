@@ -339,7 +339,7 @@ router.post(
             phone: patientUser.phone,
             status: patientUser.status,
             emailVerified: patientUser.emailVerified,
-            workspaceId: patientUser.workplaceId,
+            workspaceId: (patientUser.workplaceId as any)?._id?.toString() || patientUser.workplaceId.toString(),
             workspaceName: (patientUser.workplaceId as any)?.name || 'Healthcare Workspace',
           },
         },
@@ -354,6 +354,265 @@ router.post(
     }
   }
 );
+
+/**
+ * @route POST /api/patient-portal/auth/refresh-token
+ * @desc Refresh patient access token using refresh token
+ * @access Public (requires refresh token cookie)
+ */
+router.post('/refresh-token', async (req, res) => {
+  try {
+    const refreshToken = req.cookies.patientRefreshToken;
+
+    if (!refreshToken) {
+      return res.status(401).json({
+        success: false,
+        message: 'Refresh token not provided',
+      });
+    }
+
+    // Verify refresh token
+    let decoded: any;
+    try {
+      decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET!);
+    } catch (error) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid or expired refresh token',
+      });
+    }
+
+    // Find patient user and verify refresh token exists
+    const patientUser = await PatientUser.findById(decoded.patientUserId);
+
+    if (!patientUser) {
+      return res.status(401).json({
+        success: false,
+        message: 'Patient user not found',
+      });
+    }
+
+    // Check if refresh token exists in user's tokens
+    const tokenExists = patientUser.refreshTokens.some(
+      (t: any) => t.token === refreshToken && new Date(t.expiresAt) > new Date()
+    );
+
+    if (!tokenExists) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid refresh token',
+      });
+    }
+
+    // Check account status
+    if (patientUser.status === 'suspended' || !patientUser.isActive) {
+      return res.status(403).json({
+        success: false,
+        message: 'Account is not active',
+      });
+    }
+
+    // Generate new access token
+    const newAccessToken = jwt.sign(
+      {
+        patientUserId: patientUser._id,
+        workspaceId: patientUser.workplaceId,
+        email: patientUser.email,
+        type: 'patient',
+      },
+      process.env.JWT_SECRET!,
+      { expiresIn: '7d' }
+    );
+
+    // Set new access token cookie
+    res.cookie('patientAccessToken', newAccessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    res.json({
+      success: true,
+      message: 'Token refreshed successfully',
+    });
+  } catch (error) {
+    console.error('Patient token refresh error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Token refresh failed',
+      error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined,
+    });
+  }
+});
+
+/**
+ * @route POST /api/patient-portal/auth/refresh-token
+ * @desc Refresh patient access token using refresh token
+ * @access Public (requires refresh token cookie)
+ */
+router.post('/refresh-token', async (req, res) => {
+  try {
+    const refreshToken = req.cookies.patientRefreshToken;
+
+    if (!refreshToken) {
+      return res.status(401).json({
+        success: false,
+        message: 'Refresh token not provided',
+      });
+    }
+
+    // Verify refresh token
+    let decoded: any;
+    try {
+      decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET!);
+    } catch (error) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid or expired refresh token',
+      });
+    }
+
+    // Find patient user and verify refresh token exists
+    const patientUser = await PatientUser.findById(decoded.patientUserId);
+
+    if (!patientUser) {
+      return res.status(401).json({
+        success: false,
+        message: 'Patient user not found',
+      });
+    }
+
+    // Check if refresh token exists in user's tokens
+    const tokenExists = patientUser.refreshTokens.some(
+      (t: any) => t.token === refreshToken && new Date(t.expiresAt) > new Date()
+    );
+
+    if (!tokenExists) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid refresh token',
+      });
+    }
+
+    // Check account status
+    if (patientUser.status === 'suspended' || !patientUser.isActive) {
+      return res.status(403).json({
+        success: false,
+        message: 'Account is not active',
+      });
+    }
+
+    // Generate new access token
+    const newAccessToken = jwt.sign(
+      {
+        patientUserId: patientUser._id,
+        workspaceId: patientUser.workplaceId,
+        email: patientUser.email,
+        type: 'patient',
+      },
+      process.env.JWT_SECRET!,
+      { expiresIn: '7d' }
+    );
+
+    // Set new access token cookie
+    res.cookie('patientAccessToken', newAccessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    res.json({
+      success: true,
+      message: 'Token refreshed successfully',
+    });
+  } catch (error) {
+    console.error('Patient token refresh error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Token refresh failed',
+      error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined,
+    });
+  }
+});
+
+/**
+ * @route GET /api/patient-portal/auth/me
+ * @desc Get current authenticated patient user
+ * @access Private (requires patient access token)
+ */
+router.get('/me', async (req, res) => {
+  try {
+    const accessToken = req.cookies.patientAccessToken;
+
+    if (!accessToken) {
+      return res.status(401).json({
+        success: false,
+        message: 'Not authenticated',
+      });
+    }
+
+    // Verify access token
+    let decoded: any;
+    try {
+      decoded = jwt.verify(accessToken, process.env.JWT_SECRET!);
+    } catch (error) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid or expired access token',
+      });
+    }
+
+    // Find patient user
+    const patientUser = await PatientUser.findById(decoded.patientUserId)
+      .populate('workplaceId', 'name type')
+      .select('-passwordHash -refreshTokens');
+
+    if (!patientUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'Patient user not found',
+      });
+    }
+
+    // Check account status
+    if (patientUser.status === 'suspended' || !patientUser.isActive) {
+      return res.status(403).json({
+        success: false,
+        message: 'Account is not active',
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        patientUser: {
+          id: patientUser._id,
+          firstName: patientUser.firstName,
+          lastName: patientUser.lastName,
+          email: patientUser.email,
+          phone: patientUser.phone,
+          dateOfBirth: patientUser.dateOfBirth,
+          status: patientUser.status,
+          emailVerified: patientUser.emailVerified,
+          phoneVerified: patientUser.phoneVerified,
+          workspaceId: (patientUser.workplaceId as any)?._id?.toString() || patientUser.workplaceId.toString(),
+          workspaceName: (patientUser.workplaceId as any)?.name || 'Healthcare Workspace',
+          lastLoginAt: patientUser.lastLoginAt,
+        },
+      },
+      message: 'Patient user retrieved successfully',
+    });
+  } catch (error) {
+    console.error('Get patient user error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get patient user',
+      error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined,
+    });
+  }
+});
 
 /**
  * @route PATCH /api/patient-portal/auth/approve/:patientUserId
@@ -422,7 +681,7 @@ router.patch(
         // Get workspace info for email
         const workspace = await Workplace.findById(patientUser.workplaceId);
         const workspaceName = workspace?.name || 'Healthcare Workspace';
-        
+
         await sendEmail({
           to: patientUser.email,
           subject: `Account ${approved ? 'Approved' : 'Update'} - ${workspaceName}`,
@@ -470,7 +729,7 @@ router.patch(
  * @access Private (Workspace Owner)
  */
 router.get(
-  '/patients/pending',
+  '/pending',
   auth, // Require authentication
   async (req, res) => {
     try {
@@ -526,7 +785,7 @@ router.post('/logout', async (req, res) => {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
     });
-    
+
     res.clearCookie('patientRefreshToken', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',

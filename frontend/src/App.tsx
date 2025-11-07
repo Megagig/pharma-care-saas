@@ -239,42 +239,6 @@ function App(): JSX.Element {
                             <Route path="/contact" element={<Contact />} />
                             <Route path="/pricing" element={<Pricing />} />
                             <Route path="/login" element={<Login />} />
-                            <Route path="/patient-access" element={
-                              <LazyWrapper fallback={PageSkeleton}>
-                                <LazyPublicPatientPortal />
-                              </LazyWrapper>
-                            } />
-                            <Route path="/patient-portal/search" element={
-                              <LazyWrapper fallback={PageSkeleton}>
-                                <LazyWorkspaceSearchPage />
-                              </LazyWrapper>
-                            } />
-                            <Route path="/patient-portal/workspace/:workspaceId" element={
-                              <LazyWrapper fallback={PageSkeleton}>
-                                <LazyPatientWorkspaceDetailPage />
-                              </LazyWrapper>
-                            } />
-                            {/* Patient Authentication with Workspace Context */}
-                            <Route path="/patient-auth/:workspaceId/register" element={
-                              <LazyWrapper fallback={PageSkeleton}>
-                                <LazyPatientAuth />
-                              </LazyWrapper>
-                            } />
-                            <Route path="/patient-auth/:workspaceId/login" element={
-                              <LazyWrapper fallback={PageSkeleton}>
-                                <LazyPatientAuth />
-                              </LazyWrapper>
-                            } />
-                            <Route path="/patient-auth/:workspaceId" element={
-                              <LazyWrapper fallback={PageSkeleton}>
-                                <LazyPatientAuth />
-                              </LazyWrapper>
-                            } />
-                            <Route path="/patient-portal/login" element={
-                              <LazyWrapper fallback={PageSkeleton}>
-                                <LazyWorkspaceSearchPage />
-                              </LazyWrapper>
-                            } />
                             <Route
                               path="/register"
                               element={<MultiStepRegister />}
@@ -291,6 +255,51 @@ function App(): JSX.Element {
                               path="/reset-password"
                               element={<ResetPassword />}
                             />
+
+                            {/* Patient Portal Routes - Must be before protected workspace routes */}
+                            {/* Each patient route explicitly defined to avoid route conflicts */}
+
+                            {/* Patient Access Landing Page */}
+                            <Route
+                              path="/patient-access"
+                              element={
+                                <LazyWrapper fallback={PageSkeleton}>
+                                  <LazyPublicPatientPortal />
+                                </LazyWrapper>
+                              }
+                            />
+
+                            {/* Patient Authentication Routes */}
+                            <Route
+                              path="/patient-auth/:workspaceId"
+                              element={
+                                <LazyWrapper fallback={PageSkeleton}>
+                                  <LazyPatientAuth />
+                                </LazyWrapper>
+                              }
+                            />
+                            <Route
+                              path="/patient-auth/:workspaceId/login"
+                              element={
+                                <LazyWrapper fallback={PageSkeleton}>
+                                  <LazyPatientAuth />
+                                </LazyWrapper>
+                              }
+                            />
+                            <Route
+                              path="/patient-auth/:workspaceId/register"
+                              element={
+                                <LazyWrapper fallback={PageSkeleton}>
+                                  <LazyPatientAuth />
+                                </LazyWrapper>
+                              }
+                            />
+
+                            {/* Patient Portal Dashboard and Sub-routes */}
+                            <Route path="/patient-portal/*" element={<PatientPortalRoutes />} />
+
+                            {/* Blog Routes */}
+                            <Route path="/blog/*" element={<PatientPortalRoutes />} />
 
                             {/* Blog Routes - Now handled by PatientPortalRoutes */}
 
@@ -584,9 +593,7 @@ function App(): JSX.Element {
                                 </ProtectedRoute>
                               }
                             />
-                            {/* Patient Portal Routes - Comprehensive routing system */}
-                            <Route path="/patient-*" element={<PatientPortalRoutes />} />
-                            <Route path="/blog/*" element={<PatientPortalRoutes />} />
+                            {/* Super Admin Blog Routes */}
                             <Route path="/super-admin/blog/*" element={<PatientPortalRoutes />} />
                             <Route path="/workspace-admin/patient-portal/*" element={<PatientPortalRoutes />} />
 

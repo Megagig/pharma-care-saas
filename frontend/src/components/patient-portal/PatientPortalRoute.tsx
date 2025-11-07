@@ -21,8 +21,18 @@ const PatientPortalRoute: React.FC<PatientPortalRouteProps> = ({
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const { user, loading, isAuthenticated } = usePatientAuth();
 
+  console.log('🛡️ PatientPortalRoute check:', {
+    workspaceId,
+    user: user?.email,
+    loading,
+    isAuthenticated,
+    requiresAuth,
+    userWorkspaceId: user?.workspaceId,
+  });
+
   // Show loading spinner while checking authentication
   if (loading) {
+    console.log('⏳ PatientPortalRoute: Still loading...');
     return (
       <Box
         sx={{
@@ -44,31 +54,41 @@ const PatientPortalRoute: React.FC<PatientPortalRouteProps> = ({
 
   // Redirect to authentication if required and not authenticated
   if (requiresAuth && !isAuthenticated) {
+    console.log('🚫 PatientPortalRoute: Not authenticated, redirecting to auth page');
     return <Navigate to={`/patient-auth/${workspaceId}`} replace />;
   }
 
   // Validate workspace access for authenticated users
-  if (requiresAuth && isAuthenticated && user && workspaceId && user.workspaceId !== workspaceId) {
-    return (
-      <Box
-        sx={{
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center',
-          justifyContent: 'center',
-          minHeight: '100vh',
-          gap: 2,
-          p: 3,
-        }}
-      >
-        <Typography variant="h5" color="error" gutterBottom>
-          Access Denied
-        </Typography>
-        <Typography variant="body1" color="text.secondary" align="center">
-          You don't have access to this workspace. Please contact your pharmacy for assistance.
-        </Typography>
-      </Box>
-    );
+  if (requiresAuth && isAuthenticated && user && workspaceId) {
+    console.log('🔍 Workspace validation:', {
+      userWorkspaceId: user.workspaceId,
+      urlWorkspaceId: workspaceId,
+      match: user.workspaceId === workspaceId,
+      user: user
+    });
+
+    if (user.workspaceId !== workspaceId) {
+      return (
+        <Box
+          sx={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            minHeight: '100vh',
+            gap: 2,
+            p: 3,
+          }}
+        >
+          <Typography variant="h5" color="error" gutterBottom>
+            Access Denied
+          </Typography>
+          <Typography variant="body1" color="text.secondary" align="center">
+            You don't have access to this workspace. Please contact your pharmacy for assistance.
+          </Typography>
+        </Box>
+      );
+    }
   }
 
   // Check account status for authenticated users

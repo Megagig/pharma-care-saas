@@ -1,5 +1,5 @@
 import React, { lazy } from 'react';
-import { Routes, Route, Navigate } from 'react-router-dom';
+import { Routes, Route, useLocation } from 'react-router-dom';
 import PatientPortalRoute from '../components/patient-portal/PatientPortalRoute';
 import { LazyWrapper } from '../components/LazyWrapper';
 import { PageSkeleton } from '../components/skeletons/LoadingSkeletons';
@@ -26,207 +26,129 @@ const LazyPatientPortalAdmin = lazy(() => import('../pages/workspace-admin/Patie
 
 /**
  * Patient Portal Routes Configuration
- * Handles all patient portal related routing including public, authenticated, and admin routes
+ * Handles patient portal dashboard and blog routes only
+ * 
+ * Note: These routes use relative paths because they're nested under:
+ * - /patient-portal/* → matches path="/:workspaceId", path="/:workspaceId/profile", etc.
+ * - /blog/* → matches path="/", path="/:slug"
  */
 const PatientPortalRoutes: React.FC = () => {
+  const location = useLocation();
+  const isBlogRoute = location.pathname.startsWith('/blog');
+
   return (
     <Routes>
-      {/* Public Routes - No authentication required */}
+      {/* Blog Routes - Only for /blog/* parent */}
+      {isBlogRoute ? (
+        <>
+          <Route
+            path="/"
+            element={
+              <LazyWrapper fallback={PageSkeleton}>
+                <LazyBlogPage />
+              </LazyWrapper>
+            }
+          />
+          <Route
+            path="/:slug"
+            element={
+              <LazyWrapper fallback={PageSkeleton}>
+                <LazyBlogPostDetails />
+              </LazyWrapper>
+            }
+          />
+        </>
+      ) : (
+        <>
+          {/* Protected Patient Portal Routes - For /patient-portal/* parent */}
 
-      {/* Public Landing Page */}
-      <Route
-        path="/patient-access"
-        element={
-          <LazyWrapper fallback={PageSkeleton}>
-            <LazyPublicPatientPortal />
-          </LazyWrapper>
-        }
-      />
+          {/* Dashboard - Default route for authenticated patients */}
+          <Route
+            path="/:workspaceId"
+            element={
+              <PatientPortalRoute requiresAuth={true}>
+                <LazyWrapper fallback={PageSkeleton}>
+                  <LazyPatientDashboard />
+                </LazyWrapper>
+              </PatientPortalRoute>
+            }
+          />
 
-      {/* Blog Routes - Public - relative paths when mounted at /blog/* */}
-      <Route
-        path="/blog"
-        element={
-          <LazyWrapper fallback={PageSkeleton}>
-            <LazyBlogPage />
-          </LazyWrapper>
-        }
-      />
-      <Route
-        path="/blog/:slug"
-        element={
-          <LazyWrapper fallback={PageSkeleton}>
-            <LazyBlogPostDetails />
-          </LazyWrapper>
-        }
-      />
-      {/* Also support when called from /blog/* wildcard */}
-      <Route
-        path="/"
-        element={
-          <LazyWrapper fallback={PageSkeleton}>
-            <LazyBlogPage />
-          </LazyWrapper>
-        }
-      />
-      <Route
-        path="/:slug"
-        element={
-          <LazyWrapper fallback={PageSkeleton}>
-            <LazyBlogPostDetails />
-          </LazyWrapper>
-        }
-      />
+          {/* Patient Profile Management */}
+          <Route
+            path="/:workspaceId/profile"
+            element={
+              <PatientPortalRoute requiresAuth={true}>
+                <LazyWrapper fallback={PageSkeleton}>
+                  <LazyPatientProfile />
+                </LazyWrapper>
+              </PatientPortalRoute>
+            }
+          />
 
-      {/* Patient Authentication */}
-      <Route
-        path="/patient-auth/:workspaceId"
-        element={
-          <LazyWrapper fallback={PageSkeleton}>
-            <LazyPatientAuth />
-          </LazyWrapper>
-        }
-      />
-      <Route
-        path="/patient-auth/:workspaceId/login"
-        element={
-          <LazyWrapper fallback={PageSkeleton}>
-            <LazyPatientAuth />
-          </LazyWrapper>
-        }
-      />
-      <Route
-        path="/patient-auth/:workspaceId/register"
-        element={
-          <LazyWrapper fallback={PageSkeleton}>
-            <LazyPatientAuth />
-          </LazyWrapper>
-        }
-      />
+          {/* Medication Management */}
+          <Route
+            path="/:workspaceId/medications"
+            element={
+              <PatientPortalRoute requiresAuth={true}>
+                <LazyWrapper fallback={PageSkeleton}>
+                  <LazyPatientMedications />
+                </LazyWrapper>
+              </PatientPortalRoute>
+            }
+          />
 
-      {/* Protected Patient Portal Routes */}
+          {/* Health Records & Vitals */}
+          <Route
+            path="/:workspaceId/health-records"
+            element={
+              <PatientPortalRoute requiresAuth={true}>
+                <LazyWrapper fallback={PageSkeleton}>
+                  <LazyPatientHealthRecords />
+                </LazyWrapper>
+              </PatientPortalRoute>
+            }
+          />
 
-      {/* Dashboard - Default route for authenticated patients */}
-      <Route
-        path="/patient-portal/:workspaceId"
-        element={
-          <PatientPortalRoute requiresAuth={true}>
-            <LazyWrapper fallback={PageSkeleton}>
-              <LazyPatientDashboard />
-            </LazyWrapper>
-          </PatientPortalRoute>
-        }
-      />
+          {/* Secure Messaging */}
+          <Route
+            path="/:workspaceId/messages"
+            element={
+              <PatientPortalRoute requiresAuth={true}>
+                <LazyWrapper fallback={PageSkeleton}>
+                  <LazyPatientMessages />
+                </LazyWrapper>
+              </PatientPortalRoute>
+            }
+          />
 
-      {/* Patient Profile Management */}
-      <Route
-        path="/patient-portal/:workspaceId/profile"
-        element={
-          <PatientPortalRoute requiresAuth={true}>
-            <LazyWrapper fallback={PageSkeleton}>
-              <LazyPatientProfile />
-            </LazyWrapper>
-          </PatientPortalRoute>
-        }
-      />
+          {/* Appointment Management */}
+          <Route
+            path="/:workspaceId/appointments"
+            element={
+              <PatientPortalRoute requiresAuth={true}>
+                <LazyWrapper fallback={PageSkeleton}>
+                  <LazyPatientAppointments />
+                </LazyWrapper>
+              </PatientPortalRoute>
+            }
+          />
 
-      {/* Medication Management */}
-      <Route
-        path="/patient-portal/:workspaceId/medications"
-        element={
-          <PatientPortalRoute requiresAuth={true}>
-            <LazyWrapper fallback={PageSkeleton}>
-              <LazyPatientMedications />
-            </LazyWrapper>
-          </PatientPortalRoute>
-        }
-      />
+          {/* Billing & Payments */}
+          <Route
+            path="/:workspaceId/billing"
+            element={
+              <PatientPortalRoute requiresAuth={true}>
+                <LazyWrapper fallback={PageSkeleton}>
+                  <LazyPatientBilling />
+                </LazyWrapper>
+              </PatientPortalRoute>
+            }
+          />
+        </>
+      )}
 
-      {/* Health Records & Vitals */}
-      <Route
-        path="/patient-portal/:workspaceId/health-records"
-        element={
-          <PatientPortalRoute requiresAuth={true}>
-            <LazyWrapper fallback={PageSkeleton}>
-              <LazyPatientHealthRecords />
-            </LazyWrapper>
-          </PatientPortalRoute>
-        }
-      />
-
-      {/* Secure Messaging */}
-      <Route
-        path="/patient-portal/:workspaceId/messages"
-        element={
-          <PatientPortalRoute requiresAuth={true}>
-            <LazyWrapper fallback={PageSkeleton}>
-              <LazyPatientMessages />
-            </LazyWrapper>
-          </PatientPortalRoute>
-        }
-      />
-
-      {/* Appointment Management */}
-      <Route
-        path="/patient-portal/:workspaceId/appointments"
-        element={
-          <PatientPortalRoute requiresAuth={true}>
-            <LazyWrapper fallback={PageSkeleton}>
-              <LazyPatientAppointments />
-            </LazyWrapper>
-          </PatientPortalRoute>
-        }
-      />
-
-      {/* Billing & Payments */}
-      <Route
-        path="/patient-portal/:workspaceId/billing"
-        element={
-          <PatientPortalRoute requiresAuth={true}>
-            <LazyWrapper fallback={PageSkeleton}>
-              <LazyPatientBilling />
-            </LazyWrapper>
-          </PatientPortalRoute>
-        }
-      />
-
-      {/* Educational Resources */}
-      <Route
-        path="/patient-portal/:workspaceId/education"
-        element={
-          <PatientPortalRoute requiresAuth={true}>
-            <LazyWrapper fallback={PageSkeleton}>
-              <LazyBlogPage />
-            </LazyWrapper>
-          </PatientPortalRoute>
-        }
-      />
-
-      {/* Settings & Preferences */}
-      <Route
-        path="/patient-portal/:workspaceId/settings"
-        element={
-          <PatientPortalRoute requiresAuth={true}>
-            <LazyWrapper fallback={PageSkeleton}>
-              <LazyPatientProfile />
-            </LazyWrapper>
-          </PatientPortalRoute>
-        }
-      />
-
-      {/* Notifications */}
-      <Route
-        path="/patient-portal/:workspaceId/notifications"
-        element={
-          <PatientPortalRoute requiresAuth={true}>
-            <LazyWrapper fallback={PageSkeleton}>
-              <LazyPatientDashboard />
-            </LazyWrapper>
-          </PatientPortalRoute>
-        }
-      />
-
-      {/* Admin Routes - Super Admin Blog Management */}
+      {/* Admin Routes for Blog Management */}
       <Route
         path="/super-admin/blog"
         element={
@@ -244,15 +166,13 @@ const PatientPortalRoutes: React.FC = () => {
         }
       />
       <Route
-        path="/super-admin/blog/:postId/edit"
+        path="/super-admin/blog/edit/:postId"
         element={
           <LazyWrapper fallback={PageSkeleton}>
             <LazyBlogPostEditor />
           </LazyWrapper>
         }
       />
-
-      {/* Workspace Admin Routes - Patient Portal Management */}
       <Route
         path="/workspace-admin/patient-portal"
         element={
@@ -260,18 +180,6 @@ const PatientPortalRoutes: React.FC = () => {
             <LazyPatientPortalAdmin />
           </LazyWrapper>
         }
-      />
-
-      {/* Redirect legacy routes */}
-      <Route
-        path="/patient-portal-public"
-        element={<Navigate to="/patient-access" replace />}
-      />
-
-      {/* Catch-all redirect for patient portal routes without workspace */}
-      <Route
-        path="/patient-portal"
-        element={<Navigate to="/patient-access" replace />}
       />
     </Routes>
   );
