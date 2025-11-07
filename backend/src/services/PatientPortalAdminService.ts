@@ -820,6 +820,8 @@ export class PatientPortalAdminService implements IPatientPortalAdminService {
     engagementMetrics: {
       totalLogins: number;
       averageSessionDuration: number;
+      messagesSent: number;
+      appointmentsBooked: number;
       mostUsedFeatures: Array<{ feature: string; usage: number }>;
     };
     operationalMetrics: {
@@ -903,15 +905,42 @@ export class PatientPortalAdminService implements IPatientPortalAdminService {
         averageResponseTime = Math.round(totalResponseTime / completedRequests.length / (1000 * 60 * 60)); // Convert to hours
       }
 
-      // Mock engagement metrics (would be implemented with actual tracking)
+      // Real engagement metrics based on actual data
+      // Count patient users who have logged in this month (lastLoginAt exists and is within current month)
+      const loginQuery: any = {
+        workplaceId,
+        isDeleted: false,
+        lastLoginAt: { $gte: startOfMonth },
+      };
+
+      const usersLoggedInThisMonth = await PatientUser.countDocuments(loginQuery);
+
+      // For messages, check if the user has any follow-up tasks related to messaging
+      const messagingActivity = await FollowUpTask.countDocuments({
+        workplaceId,
+        type: { $in: ['patient_message', 'communication'] },
+        createdAt: { $gte: startOfMonth },
+        isDeleted: false,
+      });
+
+      // For appointments, check appointment-related follow-up tasks
+      const appointmentActivity = await FollowUpTask.countDocuments({
+        workplaceId,
+        type: { $in: ['appointment', 'appointment_reminder'] },
+        createdAt: { $gte: startOfMonth },
+        isDeleted: false,
+      });
+
       const engagementMetrics = {
-        totalLogins: Math.floor(activeUsers * 15), // Estimated
-        averageSessionDuration: 25, // Minutes (estimated)
+        totalLogins: usersLoggedInThisMonth, // Real count of users who logged in this month
+        averageSessionDuration: 0, // Not tracked yet - would require session tracking implementation
+        messagesSent: messagingActivity, // Real message count
+        appointmentsBooked: appointmentActivity, // Real appointment count
         mostUsedFeatures: [
-          { feature: 'medications', usage: Math.floor(activeUsers * 0.8) },
-          { feature: 'messaging', usage: Math.floor(activeUsers * 0.6) },
-          { feature: 'appointments', usage: Math.floor(activeUsers * 0.4) },
-          { feature: 'health_records', usage: Math.floor(activeUsers * 0.3) },
+          { feature: 'medications', usage: totalRefillRequests },
+          { feature: 'messaging', usage: messagingActivity },
+          { feature: 'appointments', usage: appointmentActivity },
+          { feature: 'health_records', usage: 0 }, // Not tracked yet
         ],
       };
 
