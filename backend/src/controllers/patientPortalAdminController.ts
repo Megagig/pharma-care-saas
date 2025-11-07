@@ -27,7 +27,7 @@ export class PatientPortalAdminController {
   ): Promise<void> {
     try {
       const workplaceId = req.user!.workplaceId;
-      
+
       // Extract query parameters
       const {
         status,
@@ -260,7 +260,7 @@ export class PatientPortalAdminController {
   ): Promise<void> {
     try {
       const workplaceId = req.user!.workplaceId;
-      
+
       // Extract query parameters
       const {
         status,
@@ -563,10 +563,10 @@ export class PatientPortalAdminController {
   ): Promise<void> {
     try {
       const workplaceId = req.user!.workplaceId;
-      
+
       // Extract date range parameters
       const { startDate, endDate } = req.query;
-      
+
       let dateRange: { startDate: Date; endDate: Date } | undefined;
       if (startDate && endDate) {
         dateRange = {
@@ -620,10 +620,10 @@ export class PatientPortalAdminController {
   ): Promise<void> {
     try {
       const workplaceId = req.user!.workplaceId;
-      
+
       // Extract date range parameters
       const { startDate, endDate } = req.query;
-      
+
       let dateRange: { startDate: Date; endDate: Date } | undefined;
       if (startDate && endDate) {
         dateRange = {
@@ -691,7 +691,7 @@ export class PatientPortalAdminController {
 
       // Extract date range parameters
       const { startDate, endDate } = req.query;
-      
+
       let dateRange: { startDate: Date; endDate: Date } | undefined;
       if (startDate && endDate) {
         dateRange = {
@@ -933,10 +933,10 @@ export class PatientPortalAdminController {
   ): Promise<void> {
     try {
       const workplaceId = req.user!.workplaceId;
-      
+
       // Extract date range parameters
       const { startDate, endDate } = req.query;
-      
+
       let dateRange: { startDate: Date; endDate: Date } | undefined;
       if (startDate && endDate) {
         dateRange = {
@@ -990,10 +990,10 @@ export class PatientPortalAdminController {
   ): Promise<void> {
     try {
       const workplaceId = req.user!.workplaceId;
-      
+
       // Extract date range parameters
       const { startDate, endDate } = req.query;
-      
+
       let dateRange: { startDate: Date; endDate: Date } | undefined;
       if (startDate && endDate) {
         dateRange = {
@@ -1028,6 +1028,40 @@ export class PatientPortalAdminController {
       });
     } catch (error: any) {
       logger.error('Error getting communication metrics', {
+        error: error.message,
+        workplaceId: req.user?.workplaceId,
+        userId: req.user?._id,
+      });
+      next(error);
+    }
+  }
+
+  /**
+   * Get list of pharmacists for refill request assignment
+   * GET /api/workspace-admin/patient-portal/pharmacists
+   */
+  async getPharmacists(
+    req: WorkspaceAdminRequest,
+    res: Response,
+    next: NextFunction
+  ): Promise<void> {
+    try {
+      const workplaceId = req.user!.workplaceId;
+
+      const result = await patientPortalAdminService.getPharmacists(workplaceId);
+
+      logger.info('Retrieved pharmacists list', {
+        workplaceId,
+        userId: req.user!._id,
+        count: result.length,
+      });
+
+      res.status(200).json({
+        success: true,
+        data: result,
+      });
+    } catch (error: any) {
+      logger.error('Error getting pharmacists list', {
         error: error.message,
         workplaceId: req.user?.workplaceId,
         userId: req.user?._id,

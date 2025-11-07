@@ -1201,6 +1201,39 @@ export class PatientPortalAdminService implements IPatientPortalAdminService {
       throw error;
     }
   }
+
+  /**
+   * Get list of pharmacists for refill request assignment
+   */
+  async getPharmacists(
+    workplaceId: mongoose.Types.ObjectId
+  ): Promise<Array<{ id: string; firstName: string; lastName: string; email: string }>> {
+    try {
+      // Get all users with pharmacist role in the workspace
+      const pharmacists = await User.find({
+        workplaceId,
+        role: { $in: ['Pharmacist', 'pharmacist', 'pharmacy_outlet', 'Owner'] },
+        isDeleted: false,
+        isActive: true,
+      })
+        .select('_id firstName lastName email')
+        .sort({ firstName: 1, lastName: 1 })
+        .lean();
+
+      return pharmacists.map(p => ({
+        id: p._id.toString(),
+        firstName: p.firstName,
+        lastName: p.lastName,
+        email: p.email,
+      }));
+    } catch (error: any) {
+      logger.error('Error getting pharmacists list', {
+        error: error.message,
+        workplaceId,
+      });
+      throw error;
+    }
+  }
 }
 
 export default new PatientPortalAdminService();

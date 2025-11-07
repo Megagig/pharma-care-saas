@@ -186,6 +186,17 @@ router.post(
 );
 
 /**
+ * Pharmacist Management Routes
+ */
+
+// Get list of pharmacists for refill request assignment
+router.get(
+  '/pharmacists',
+  auditWorkspaceAdminAction('get_pharmacists_list'),
+  patientPortalAdminController.getPharmacists
+);
+
+/**
  * Bulk Operations Routes (with additional rate limiting)
  */
 

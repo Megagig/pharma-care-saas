@@ -91,6 +91,7 @@ import superAdminAuditRoutes from './routes/superAdminAuditRoutes';
 import patientNotificationPreferencesRoutes from './routes/patientNotificationPreferencesRoutes';
 import healthBlogRoutes from './routes/healthBlog.routes';
 import healthBlogAdminRoutes from './routes/healthBlogAdmin.routes';
+import patientPortalAdminRoutes from './routes/patientPortalAdmin.routes';
 import SystemIntegrationService from './services/systemIntegrationService';
 
 const app: Application = express();
@@ -608,6 +609,9 @@ app.use('/api/location-data', locationDataRoutes);
 
 // Workspace Team Management routes (Workspace owners only)
 app.use('/api/workspace/team', workspaceTeamRoutes);
+
+// Workspace Admin - Patient Portal Management routes (Workspace admins only)
+app.use('/api/workspace-admin/patient-portal', patientPortalAdminRoutes);
 
 // Legacy API compatibility routes
 app.use('/api/legacy', legacyApiRoutes);
