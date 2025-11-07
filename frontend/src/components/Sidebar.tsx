@@ -197,7 +197,7 @@ const Sidebar = () => {
     },
     {
       name: 'Patient Portal',
-      path: '/patient-access',
+      path: '/workspace-admin/patient-portal',
       icon: EventAvailableIcon,
       show: hasFeature('patient_engagement'),
     },

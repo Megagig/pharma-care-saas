@@ -26,20 +26,32 @@ const LazyPatientPortalAdmin = lazy(() => import('../pages/workspace-admin/Patie
 
 /**
  * Patient Portal Routes Configuration
- * Handles patient portal dashboard and blog routes only
+ * Handles patient portal dashboard, blog, and workspace admin routes
  * 
  * Note: These routes use relative paths because they're nested under:
+ * - /workspace-admin/patient-portal/* → matches path="/" for admin dashboard
  * - /patient-portal/* → matches path="/:workspaceId", path="/:workspaceId/profile", etc.
  * - /blog/* → matches path="/", path="/:slug"
+ * - /super-admin/blog/* → matches absolute paths for blog management
  */
 const PatientPortalRoutes: React.FC = () => {
   const location = useLocation();
   const isBlogRoute = location.pathname.startsWith('/blog');
+  const isWorkspaceAdminRoute = location.pathname.startsWith('/workspace-admin/patient-portal');
 
   return (
     <Routes>
-      {/* Blog Routes - Only for /blog/* parent */}
-      {isBlogRoute ? (
+      {/* Workspace Admin Patient Portal Routes - Must check first */}
+      {isWorkspaceAdminRoute ? (
+        <Route
+          path="/"
+          element={
+            <LazyWrapper fallback={PageSkeleton}>
+              <LazyPatientPortalAdmin />
+            </LazyWrapper>
+          }
+        />
+      ) : isBlogRoute ? (
         <>
           <Route
             path="/"
@@ -170,14 +182,6 @@ const PatientPortalRoutes: React.FC = () => {
         element={
           <LazyWrapper fallback={PageSkeleton}>
             <LazyBlogPostEditor />
-          </LazyWrapper>
-        }
-      />
-      <Route
-        path="/workspace-admin/patient-portal"
-        element={
-          <LazyWrapper fallback={PageSkeleton}>
-            <LazyPatientPortalAdmin />
           </LazyWrapper>
         }
       />
