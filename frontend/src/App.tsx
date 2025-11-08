@@ -596,11 +596,26 @@ function App(): JSX.Element {
                             {/* Super Admin Blog Routes */}
                             <Route path="/super-admin/blog/*" element={<PatientPortalRoutes />} />
 
-                            {/* Workspace Admin Patient Portal Routes */}
+                            {/* Super Admin Patient Portal Overview - Shows all workspaces */}
+                            <Route
+                              path="/workspace-admin/patient-portal"
+                              element={
+                                <ProtectedRoute requiredRole={['super_admin', 'pharmacy_outlet', 'Pharmacist', 'Owner']}>
+                                  <AppLayout>
+                                    <LazyWrapper fallback={PageSkeleton}>
+                                      {/* Conditional rendering based on role */}
+                                      <PatientPortalRoutes />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
+                              }
+                            />
+
+                            {/* Workspace Admin Patient Portal Routes (nested routes) */}
                             <Route
                               path="/workspace-admin/patient-portal/*"
                               element={
-                                <ProtectedRoute requiredRole={['pharmacy_outlet', 'Pharmacist', 'Owner']}>
+                                <ProtectedRoute requiredRole={['super_admin', 'pharmacy_outlet', 'Pharmacist', 'Owner']}>
                                   <AppLayout>
                                     <LazyWrapper fallback={PageSkeleton}>
                                       <PatientPortalRoutes />

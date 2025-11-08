@@ -3,6 +3,7 @@ import { Routes, Route, useLocation } from 'react-router-dom';
 import PatientPortalRoute from '../components/patient-portal/PatientPortalRoute';
 import { LazyWrapper } from '../components/LazyWrapper';
 import { PageSkeleton } from '../components/skeletons/LoadingSkeletons';
+import { useAuth } from '../context/AuthContext';
 
 // Lazy load patient portal pages
 const LazyPatientDashboard = lazy(() => import('../pages/patient-portal/PatientDashboard'));
@@ -24,33 +25,65 @@ const LazyBlogManagement = lazy(() => import('../pages/super-admin/BlogManagemen
 const LazyBlogPostEditor = lazy(() => import('../pages/super-admin/BlogPostEditor'));
 const LazyPatientPortalAdmin = lazy(() => import('../pages/workspace-admin/PatientPortalAdmin'));
 
+// Lazy load super admin overview
+const LazyPatientPortalOverview = lazy(() => import('../pages/super-admin/PatientPortalOverview'));
+
 /**
  * Patient Portal Routes Configuration
  * Handles patient portal dashboard, blog, and workspace admin routes
  * 
  * Note: These routes use relative paths because they're nested under:
- * - /workspace-admin/patient-portal/* → matches path="/" for admin dashboard
+ * - /workspace-admin/patient-portal/* → matches path="/" for admin dashboard (or overview for super admin)
  * - /patient-portal/* → matches path="/:workspaceId", path="/:workspaceId/profile", etc.
  * - /blog/* → matches path="/", path="/:slug"
  * - /super-admin/blog/* → matches absolute paths for blog management
  */
 const PatientPortalRoutes: React.FC = () => {
   const location = useLocation();
+  const { user } = useAuth();
   const isBlogRoute = location.pathname.startsWith('/blog');
   const isWorkspaceAdminRoute = location.pathname.startsWith('/workspace-admin/patient-portal');
+  const isSuperAdmin = user?.role === 'super_admin';
 
   return (
     <Routes>
       {/* Workspace Admin Patient Portal Routes - Must check first */}
       {isWorkspaceAdminRoute ? (
-        <Route
-          path="/"
-          element={
-            <LazyWrapper fallback={PageSkeleton}>
-              <LazyPatientPortalAdmin />
-            </LazyWrapper>
-          }
-        />
+        <>
+          {/* Super Admin sees overview of all workspaces */}
+          {isSuperAdmin ? (
+            <Route
+              path="/"
+              element={
+                <LazyWrapper fallback={PageSkeleton}>
+                  <LazyPatientPortalOverview />
+                </LazyWrapper>
+              }
+            />
+          ) : (
+            /* Workspace admins see their workspace dashboard */
+            <Route
+              path="/"
+              element={
+                <LazyWrapper fallback={PageSkeleton}>
+                  <LazyPatientPortalAdmin />
+                </LazyWrapper>
+              }
+            />
+          )}
+          
+          {/* Super Admin drill-down into specific workspace */}
+          {isSuperAdmin && (
+            <Route
+              path="/:workspaceId"
+              element={
+                <LazyWrapper fallback={PageSkeleton}>
+                  <LazyPatientPortalAdmin />
+                </LazyWrapper>
+              }
+            />
+          )}
+        </>
       ) : isBlogRoute ? (
         <>
           <Route

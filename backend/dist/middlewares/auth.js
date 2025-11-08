@@ -85,19 +85,7 @@ const auth = async (req, res, next) => {
             });
             return;
         }
-        if (process.env.NODE_ENV !== 'production') {
-            console.log('Auth middleware - checking token:', {
-                hasAccessToken: !!req.cookies.accessToken,
-                hasRefreshToken: !!req.cookies.refreshToken,
-                hasToken: !!req.cookies.token,
-                hasAuthHeader: !!req.header('Authorization'),
-                tokenExists: !!token,
-                url: req.url,
-                method: req.method,
-            });
-        }
         if (!token) {
-            console.log('Auth middleware - No token provided');
             res.status(401).json({
                 message: 'Access denied. No token provided.',
                 code: 'NO_TOKEN',

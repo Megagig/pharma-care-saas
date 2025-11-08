@@ -179,9 +179,10 @@ export interface IPatient extends Document {
     getLatestVitals(): any;
     verifyVitals(vitalsId: string, verifiedBy: mongoose.Types.ObjectId): boolean;
 }
-declare const Patient: mongoose.Model<IPatient, {}, {}, {}, mongoose.Document<unknown, {}, IPatient> & IPatient & Required<{
-    _id: mongoose.Types.ObjectId;
-}>, any>;
+interface IPatientModel extends mongoose.Model<IPatient> {
+    generateNextMRN(workplaceId: mongoose.Types.ObjectId, workplaceCode: string): Promise<string>;
+}
+declare const Patient: IPatientModel;
 export { Patient };
 export default Patient;
 //# sourceMappingURL=Patient.d.ts.map

@@ -137,8 +137,9 @@ const PatientPortalAdmin: React.FC = () => {
     error: statsError,
   } = usePatientPortalAdmin().usePortalStats();
 
-  // Access control - only workspace admins can access
-  if (!hasRole(['pharmacy_outlet', 'Pharmacist', 'Owner'])) {
+  // Access control - workspace admins OR super admin can access
+  // Super admins can view all workspace patient portals for oversight
+  if (!hasRole(['pharmacy_outlet', 'Pharmacist', 'Owner', 'super_admin'])) {
     return (
       <Container maxWidth="lg" sx={{ mt: 4, mb: 8 }}>
         <Alert severity="error" sx={{ mt: 4 }}>

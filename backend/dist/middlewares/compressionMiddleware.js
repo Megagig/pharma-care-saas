@@ -69,7 +69,8 @@ const responseSizeMonitoringMiddleware = () => {
         const originalJson = res.json;
         res.send = function (data) {
             const responseTime = Date.now() - startTime;
-            const responseSize = Buffer.byteLength(data);
+            const dataString = typeof data === 'string' ? data : JSON.stringify(data);
+            const responseSize = Buffer.byteLength(dataString);
             const originalSize = res.getHeader('X-Original-Size');
             if (responseSize > 100 * 1024) {
                 logger_1.default.warn('Large API response detected', {

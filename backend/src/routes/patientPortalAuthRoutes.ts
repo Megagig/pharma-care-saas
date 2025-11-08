@@ -670,7 +670,7 @@ router.patch(
       if (approved) {
         patientUser.status = 'active';
         patientUser.isActive = true;
-        
+
         // Automatically create or link Patient record when approved
         try {
           const { patient, isNewRecord } = await PatientSyncService.createOrLinkPatientRecord(patientUserId);
@@ -871,7 +871,7 @@ router.get('/debug-sync', async (req, res) => {
 
     const syncStatus = patientUsers.map(user => {
       const linkedPatient = user.patientId ? patients.find(p => p._id.toString() === user.patientId.toString()) : null;
-      
+
       return {
         patientUserId: user._id,
         name: `${user.firstName} ${user.lastName}`,

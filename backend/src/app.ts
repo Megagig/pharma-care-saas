@@ -92,6 +92,7 @@ import patientNotificationPreferencesRoutes from './routes/patientNotificationPr
 import healthBlogRoutes from './routes/healthBlog.routes';
 import healthBlogAdminRoutes from './routes/healthBlogAdmin.routes';
 import patientPortalAdminRoutes from './routes/patientPortalAdmin.routes';
+import superAdminPatientPortalRoutes from './routes/superAdminPatientPortal.routes';
 import SystemIntegrationService from './services/systemIntegrationService';
 
 const app: Application = express();
@@ -459,6 +460,9 @@ app.use('/api/super-admin/audit-trail', superAdminAuditRoutes);
 
 // Super Admin Blog Management routes (Super Admin only)
 app.use('/api/super-admin/blog', healthBlogAdminRoutes);
+
+// Super Admin Patient Portal Management routes (Super Admin only)
+app.use('/api/super-admin/patient-portal', superAdminPatientPortalRoutes);
 
 // Patient Management routes
 app.use('/api/patients', patientRoutes);
