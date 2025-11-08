@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 import {
   Calendar,
   Pill,
@@ -27,6 +28,8 @@ interface VitalReading {
 }
 
 export const PatientDashboard: React.FC = () => {
+  const navigate = useNavigate();
+  const { workspaceId } = useParams<{ workspaceId: string }>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showOnboarding, setShowOnboarding] = useState(false);
@@ -100,6 +103,43 @@ export const PatientDashboard: React.FC = () => {
     if (score >= 90) return 'success';
     if (score >= 80) return 'warning';
     return 'error';
+  };
+
+  // Navigation functions
+  const navigateToAppointments = () => {
+    navigate(`/patient-portal/${workspaceId}/appointments`);
+  };
+
+  const navigateToMedications = () => {
+    navigate(`/patient-portal/${workspaceId}/medications`);
+  };
+
+  const navigateToMessages = () => {
+    navigate(`/patient-portal/${workspaceId}/messages`);
+  };
+
+  const navigateToHealthRecords = () => {
+    navigate(`/patient-portal/${workspaceId}/health-records`);
+  };
+
+  const handleBookAppointment = () => {
+    navigateToAppointments();
+  };
+
+  const handleRequestRefill = () => {
+    navigateToMedications();
+  };
+
+  const handleMessagePharmacist = () => {
+    navigateToMessages();
+  };
+
+  const handleViewHealthRecords = () => {
+    navigateToHealthRecords();
+  };
+
+  const handleLogVitals = () => {
+    navigateToHealthRecords();
   };
 
   // Loading state
@@ -230,7 +270,7 @@ export const PatientDashboard: React.FC = () => {
                 <Typography variant="h6" className="text-lg font-semibold text-gray-900 dark:text-white">
                   Upcoming Appointments
                 </Typography>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={navigateToAppointments}>
                   View All
                 </Button>
               </Box>
@@ -262,7 +302,7 @@ export const PatientDashboard: React.FC = () => {
                         >
                           {appointment.status === 'confirmed' ? 'Confirmed' : 'Pending'}
                         </Badge>
-                        <Button variant="outline" size="sm">
+                        <Button variant="outline" size="sm" onClick={navigateToAppointments}>
                           Reschedule
                         </Button>
                       </Box>
@@ -273,7 +313,7 @@ export const PatientDashboard: React.FC = () => {
                     <Typography variant="body1" className="text-gray-500 dark:text-gray-400">
                       No upcoming appointments
                     </Typography>
-                    <Button variant="primary" size="sm" className="mt-4">
+                    <Button variant="primary" size="sm" className="mt-4" onClick={handleBookAppointment}>
                       Book an Appointment
                     </Button>
                   </Box>
@@ -287,7 +327,7 @@ export const PatientDashboard: React.FC = () => {
                 <Typography variant="h6" className="text-lg font-semibold text-gray-900 dark:text-white">
                   Current Medications
                 </Typography>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={navigateToMedications}>
                   View All
                 </Button>
               </Box>
@@ -352,14 +392,18 @@ export const PatientDashboard: React.FC = () => {
                 <Typography variant="h6" className="text-lg font-semibold text-gray-900 dark:text-white">
                   Recent Health Records
                 </Typography>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={navigateToHealthRecords}>
                   View All
                 </Button>
               </Box>
 
               <Box className="space-y-3">
                 {recentHealthRecords.map((record) => (
-                  <Box key={record.id} className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg cursor-pointer">
+                  <Box 
+                    key={record.id} 
+                    className="flex items-center justify-between p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg cursor-pointer"
+                    onClick={navigateToHealthRecords}
+                  >
                     <Box className="flex items-center space-x-3">
                       <FileText className="h-5 w-5 text-gray-400" />
                       <Box>
@@ -391,19 +435,19 @@ export const PatientDashboard: React.FC = () => {
               </Typography>
 
               <Box className="space-y-3">
-                <Button variant="primary" className="w-full justify-start">
+                <Button variant="primary" className="w-full justify-start" onClick={handleBookAppointment}>
                   <Calendar className="h-4 w-4 mr-2" />
                   Book Appointment
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button variant="outline" className="w-full justify-start" onClick={handleRequestRefill}>
                   <Pill className="h-4 w-4 mr-2" />
                   Request Refill
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button variant="outline" className="w-full justify-start" onClick={handleMessagePharmacist}>
                   <MessageCircle className="h-4 w-4 mr-2" />
                   Message Pharmacist
                 </Button>
-                <Button variant="outline" className="w-full justify-start">
+                <Button variant="outline" className="w-full justify-start" onClick={handleViewHealthRecords}>
                   <FileText className="h-4 w-4 mr-2" />
                   View Health Records
                 </Button>
@@ -416,7 +460,7 @@ export const PatientDashboard: React.FC = () => {
                 <Typography variant="h6" className="text-lg font-semibold text-gray-900 dark:text-white">
                   Recent Messages
                 </Typography>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={navigateToMessages}>
                   View All
                 </Button>
               </Box>
@@ -424,7 +468,11 @@ export const PatientDashboard: React.FC = () => {
               <Box className="space-y-3">
                 {recentMessages.length > 0 ? (
                   recentMessages.slice(0, 3).map((message) => (
-                    <Box key={message.id} className="p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg cursor-pointer">
+                    <Box 
+                      key={message.id} 
+                      className="p-3 hover:bg-gray-50 dark:hover:bg-gray-800 rounded-lg cursor-pointer"
+                      onClick={navigateToMessages}
+                    >
                       <Box className="flex items-start justify-between">
                         <Box className="flex-1 min-w-0">
                           <Typography variant="subtitle2" className={`font-medium ${!message.isRead ? 'text-gray-900 dark:text-white' : 'text-gray-600 dark:text-gray-400'}`}>
@@ -459,7 +507,7 @@ export const PatientDashboard: React.FC = () => {
                 <Typography variant="h6" className="text-lg font-semibold text-gray-900 dark:text-white">
                   Recent Vitals
                 </Typography>
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" onClick={handleLogVitals}>
                   Log Vitals
                 </Button>
               </Box>
@@ -494,7 +542,7 @@ export const PatientDashboard: React.FC = () => {
                     <Typography variant="body1" className="text-gray-500 dark:text-gray-400">
                       No vitals recorded yet
                     </Typography>
-                    <Button variant="primary" size="sm" className="mt-4">
+                    <Button variant="primary" size="sm" className="mt-4" onClick={handleLogVitals}>
                       Log Your First Vital
                     </Button>
                   </Box>
