@@ -3,10 +3,12 @@ import { body, validationResult } from 'express-validator';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import PatientUser from '../models/PatientUser';
+import Patient from '../models/Patient';
 import { Workplace } from '../models/Workplace';
 import { generalRateLimiters } from '../middlewares/rateLimiting';
 import { sendEmail } from '../utils/email';
 import { auth } from '../middlewares/auth';
+import { PatientSyncService } from '../services/patientSyncService';
 
 const router = express.Router();
 
@@ -668,6 +670,16 @@ router.patch(
       if (approved) {
         patientUser.status = 'active';
         patientUser.isActive = true;
+        
+        // Automatically create or link Patient record when approved
+        try {
+          const { patient, isNewRecord } = await PatientSyncService.createOrLinkPatientRecord(patientUserId);
+          console.log(`${isNewRecord ? 'Created new' : 'Linked existing'} Patient record ${patient._id} for approved PatientUser ${patientUserId}`);
+        } catch (syncError) {
+          console.error('Error creating/linking Patient record during approval:', syncError);
+          // Don't fail the approval process if Patient record creation fails
+          // The sync can be retried later
+        }
       } else {
         patientUser.status = 'inactive';
         patientUser.isActive = false;
@@ -801,6 +813,95 @@ router.post('/logout', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Logout failed',
+      error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined,
+    });
+  }
+});
+
+/**
+ * @route POST /api/patient-portal/auth/sync-patient-record/:patientUserId
+ * @desc Manually trigger Patient record creation/sync for testing
+ * @access Private (Admin only - for testing)
+ */
+router.post('/sync-patient-record/:patientUserId', async (req, res) => {
+  try {
+    const { patientUserId } = req.params;
+
+    const result = await PatientSyncService.createOrLinkPatientRecord(patientUserId);
+
+    res.json({
+      success: true,
+      message: `${result.isNewRecord ? 'Created new' : 'Linked existing'} Patient record successfully`,
+      data: {
+        patientId: result.patient._id,
+        mrn: result.patient.mrn,
+        isNewRecord: result.isNewRecord,
+      },
+    });
+  } catch (error) {
+    console.error('Manual patient sync error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to sync patient record',
+      error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined,
+    });
+  }
+});
+
+/**
+ * @route GET /api/patient-portal/auth/debug-sync
+ * @desc Debug endpoint to check sync status
+ * @access Private (Admin only - for testing)
+ */
+router.get('/debug-sync', async (req, res) => {
+  try {
+    const { workspaceId } = req.query;
+
+    // Build query filter
+    const filter = workspaceId ? { workplaceId: workspaceId as string } : {};
+
+    // Get PatientUsers for the workspace
+    const patientUsers = await PatientUser.find(filter)
+      .populate('workplaceId', 'name')
+      .select('_id firstName lastName email status isActive patientId workplaceId');
+
+    // Get Patients for the workspace
+    const patients = await Patient.find(filter)
+      .select('_id firstName lastName email mrn workplaceId createdBy');
+
+    const syncStatus = patientUsers.map(user => {
+      const linkedPatient = user.patientId ? patients.find(p => p._id.toString() === user.patientId.toString()) : null;
+      
+      return {
+        patientUserId: user._id,
+        name: `${user.firstName} ${user.lastName}`,
+        email: user.email,
+        status: user.status,
+        isActive: user.isActive,
+        workspaceName: (user.workplaceId as any)?.name,
+        hasLinkedPatient: !!user.patientId,
+        linkedPatientId: user.patientId,
+        linkedPatientExists: !!linkedPatient,
+        linkedPatientMRN: linkedPatient?.mrn,
+        needsSync: user.status === 'active' && user.isActive && !user.patientId,
+      };
+    });
+
+    res.json({
+      success: true,
+      data: {
+        totalPatientUsers: patientUsers.length,
+        totalPatients: patients.length,
+        activePatientUsers: patientUsers.filter(u => u.status === 'active' && u.isActive).length,
+        unlinkedActiveUsers: patientUsers.filter(u => u.status === 'active' && u.isActive && !u.patientId).length,
+        syncStatus,
+      },
+    });
+  } catch (error) {
+    console.error('Debug sync error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get sync status',
       error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined,
     });
   }

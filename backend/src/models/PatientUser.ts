@@ -363,6 +363,30 @@ patientUserSchema.methods.resetLoginAttempts = async function (): Promise<void> 
   });
 };
 
+// Post-save middleware to create/sync Patient record
+patientUserSchema.post('save', async function (doc) {
+  // Check if PatientUser just became active (approved)
+  if (doc.status === 'active' && doc.isActive) {
+    try {
+      // Import PatientSyncService dynamically to avoid circular dependencies
+      const { PatientSyncService } = await import('../services/patientSyncService');
+      
+      // If no linked Patient record exists, create one
+      if (!doc.patientId) {
+        console.log(`Creating Patient record for newly approved PatientUser: ${doc._id}`);
+        const { patient, isNewRecord } = await PatientSyncService.createOrLinkPatientRecord(doc._id.toString());
+        console.log(`${isNewRecord ? 'Created new' : 'Linked existing'} Patient record ${patient._id} for PatientUser ${doc._id}`);
+      } else {
+        // If linked Patient record exists, sync the changes
+        await PatientSyncService.syncPatientUserToPatient(doc);
+      }
+    } catch (error) {
+      console.error('Error creating/syncing PatientUser to Patient record:', error);
+      // Don't throw error to avoid breaking PatientUser operations
+    }
+  }
+});
+
 // Apply plugins
 patientUserSchema.plugin(tenancyGuardPlugin);
 addAuditFields(patientUserSchema);

@@ -489,7 +489,7 @@ export const requireFeature = (featureKey: string) => {
       // Check tier access
       const hasTierAccess = featureFlag.allowedTiers.includes(subscription.tier);
       console.log(`🔧 Tier access check: user tier=${subscription.tier}, allowed=${JSON.stringify(featureFlag.allowedTiers)}, hasAccess=${hasTierAccess}`);
-      
+
       if (!hasTierAccess) {
         console.log(`🔧 Tier access check failed: user tier=${subscription.tier}, allowed=${featureFlag.allowedTiers}`);
         res.status(403).json({

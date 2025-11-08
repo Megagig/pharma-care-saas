@@ -280,8 +280,9 @@ export class PatientPortalAdminService implements IPatientPortalAdminService {
         throw new Error(`Cannot approve user with status: ${patientUser.status}`);
       }
 
-      // Update status
+      // Update status and activate account
       patientUser.status = 'active';
+      patientUser.isActive = true;
       patientUser.updatedBy = approvedBy;
       await patientUser.save();
 
@@ -346,8 +347,9 @@ export class PatientPortalAdminService implements IPatientPortalAdminService {
         throw new Error('User is already suspended');
       }
 
-      // Update status
+      // Update status and deactivate account
       patientUser.status = 'suspended';
+      patientUser.isActive = false;
       patientUser.updatedBy = suspendedBy;
       await patientUser.save();
 
@@ -412,8 +414,9 @@ export class PatientPortalAdminService implements IPatientPortalAdminService {
         throw new Error(`Cannot reactivate user with status: ${patientUser.status}`);
       }
 
-      // Update status
+      // Update status and reactivate account
       patientUser.status = 'active';
+      patientUser.isActive = true;
       patientUser.updatedBy = reactivatedBy;
       await patientUser.save();
 

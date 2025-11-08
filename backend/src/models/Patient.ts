@@ -1207,7 +1207,12 @@ patientSchema.statics.generateNextMRN = async function (
   return generateMRN(workplaceCode, sequence);
 };
 
-const Patient = mongoose.model<IPatient>('Patient', patientSchema);
+// Interface for static methods
+interface IPatientModel extends mongoose.Model<IPatient> {
+  generateNextMRN(workplaceId: mongoose.Types.ObjectId, workplaceCode: string): Promise<string>;
+}
+
+const Patient = mongoose.model<IPatient, IPatientModel>('Patient', patientSchema);
 
 export { Patient };
 export default Patient;

@@ -112,7 +112,8 @@ class PatientAuthService {
         dateOfBirth: data.dateOfBirth,
         language: data.language || 'en',
         timezone: data.timezone || 'Africa/Lagos',
-        status: 'pending', // Requires email verification
+        status: 'pending', // Requires admin approval
+        isActive: true, // Account is active, just pending approval
         createdBy: new mongoose.Types.ObjectId(), // System created
       });
 
@@ -197,7 +198,7 @@ class PatientAuthService {
 
       // Generate auth tokens
       const tokens = await this.generateTokens(
-        patientUser, 
+        patientUser,
         credentials.workplaceId,
         credentials.deviceInfo,
         credentials.ipAddress
@@ -316,11 +317,11 @@ class PatientAuthService {
       patientUser.passwordHash = data.newPassword; // Will be hashed by pre-save middleware
       patientUser.resetToken = undefined;
       patientUser.resetTokenExpires = undefined;
-      
+
       // Reset login attempts if any
       patientUser.loginAttempts = 0;
       patientUser.lockUntil = undefined;
-      
+
       await patientUser.save();
 
       logger.info('Patient user password reset successfully', {

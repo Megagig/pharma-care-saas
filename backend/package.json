@@ -26,6 +26,7 @@
     "migrate:workspace-subscriptions": "ts-node src/scripts/migrateToWorkspaceSubscriptions.ts",
     "migrate:enhanced": "ts-node src/scripts/enhancedMigration.ts",
     "migrate:cli": "ts-node src/scripts/migrationCLI.ts",
+    "migrate:fix-patient-isactive": "ts-node scripts/fix-patient-isactive.ts",
     "validate:migration-integrity": "ts-node src/scripts/validateMigrationIntegrity.ts",
     "test:smoke": "jest --testPathPattern=smoke --verbose",
     "test:e2e:critical": "jest --testPathPattern=e2e/critical --verbose",

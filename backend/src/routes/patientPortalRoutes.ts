@@ -21,6 +21,7 @@ import {
   availableSlotsQuerySchema,
   myAppointmentsQuerySchema,
 } from '../validators/patientPortalValidators';
+import patientPortalProfileRoutes from './patientPortalProfileRoutes';
 
 const router = express.Router();
 
@@ -163,5 +164,15 @@ router.post(
   validateRequest(confirmAppointmentSchema, 'body'),
   confirmAppointment
 );
+
+// ===============================
+// PROFILE MANAGEMENT ENDPOINTS
+// ===============================
+
+/**
+ * Mount patient profile management routes
+ * All routes under /api/patient-portal/profile/*
+ */
+router.use('/profile', patientPortalProfileRoutes);
 
 export default router;
