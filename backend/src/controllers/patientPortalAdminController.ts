@@ -15,6 +15,15 @@ interface WorkspaceAdminRequest extends Request {
   workplaceId?: mongoose.Types.ObjectId;
 }
 
+/**
+ * Helper function to get the correct workplaceId
+ * Prioritizes req.workplaceId (set by middleware for super admin override)
+ * Falls back to req.user!.workplaceId (logged-in user's workspace)
+ */
+function getWorkplaceId(req: WorkspaceAdminRequest): mongoose.Types.ObjectId {
+  return req.workplaceId || req.user!.workplaceId;
+}
+
 export class PatientPortalAdminController {
   /**
    * Get patient portal users with filtering and pagination
@@ -26,7 +35,7 @@ export class PatientPortalAdminController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const workplaceId = req.user!.workplaceId;
+      const workplaceId = getWorkplaceId(req);
 
       // Extract query parameters
       const {
@@ -89,7 +98,7 @@ export class PatientPortalAdminController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const workplaceId = req.user!.workplaceId;
+      const workplaceId = getWorkplaceId(req);
       const { patientUserId } = req.params;
 
       // Validate patient user ID
@@ -139,7 +148,7 @@ export class PatientPortalAdminController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const workplaceId = req.user!.workplaceId;
+      const workplaceId = getWorkplaceId(req);
       const { patientUserId } = req.params;
       const { reason } = req.body;
 
@@ -209,7 +218,7 @@ export class PatientPortalAdminController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const workplaceId = req.user!.workplaceId;
+      const workplaceId = getWorkplaceId(req);
       const { patientUserId } = req.params;
 
       // Validate patient user ID
@@ -259,7 +268,7 @@ export class PatientPortalAdminController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const workplaceId = req.user!.workplaceId;
+      const workplaceId = getWorkplaceId(req);
 
       // Extract query parameters
       const {
@@ -330,7 +339,7 @@ export class PatientPortalAdminController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const workplaceId = req.user!.workplaceId;
+      const workplaceId = getWorkplaceId(req);
       const { requestId } = req.params;
       const { pharmacistId, approvedQuantity, pharmacistNotes } = req.body;
 
@@ -420,7 +429,7 @@ export class PatientPortalAdminController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const workplaceId = req.user!.workplaceId;
+      const workplaceId = getWorkplaceId(req);
       const { requestId } = req.params;
       const { pharmacistId, denialReason } = req.body;
 
@@ -500,7 +509,7 @@ export class PatientPortalAdminController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const workplaceId = req.user!.workplaceId;
+      const workplaceId = getWorkplaceId(req);
       const { requestId } = req.params;
       const { pharmacistId } = req.body;
 
@@ -562,7 +571,7 @@ export class PatientPortalAdminController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const workplaceId = req.user!.workplaceId;
+      const workplaceId = getWorkplaceId(req);
 
       // Extract date range parameters
       const { startDate, endDate } = req.query;
@@ -619,7 +628,7 @@ export class PatientPortalAdminController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const workplaceId = req.user!.workplaceId;
+      const workplaceId = getWorkplaceId(req);
 
       // Extract date range parameters
       const { startDate, endDate } = req.query;
@@ -677,7 +686,7 @@ export class PatientPortalAdminController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const workplaceId = req.user!.workplaceId;
+      const workplaceId = getWorkplaceId(req);
       const { patientUserId } = req.params;
 
       // Validate patient user ID
@@ -747,7 +756,7 @@ export class PatientPortalAdminController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const workplaceId = req.user!.workplaceId;
+      const workplaceId = getWorkplaceId(req);
 
       const result = await patientPortalAdminService.getPortalSettings(workplaceId);
 
@@ -780,7 +789,7 @@ export class PatientPortalAdminController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const workplaceId = req.user!.workplaceId;
+      const workplaceId = getWorkplaceId(req);
       const settingsUpdate = req.body;
 
       // Basic validation for settings structure
@@ -895,7 +904,7 @@ export class PatientPortalAdminController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const workplaceId = req.user!.workplaceId;
+      const workplaceId = getWorkplaceId(req);
 
       const result = await patientPortalAdminService.resetPortalSettings(
         workplaceId,
@@ -932,7 +941,7 @@ export class PatientPortalAdminController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const workplaceId = req.user!.workplaceId;
+      const workplaceId = getWorkplaceId(req);
 
       // Extract date range parameters
       const { startDate, endDate } = req.query;
@@ -989,7 +998,7 @@ export class PatientPortalAdminController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const workplaceId = req.user!.workplaceId;
+      const workplaceId = getWorkplaceId(req);
 
       // Extract date range parameters
       const { startDate, endDate } = req.query;
@@ -1046,7 +1055,7 @@ export class PatientPortalAdminController {
     next: NextFunction
   ): Promise<void> {
     try {
-      const workplaceId = req.user!.workplaceId;
+      const workplaceId = getWorkplaceId(req);
 
       const result = await patientPortalAdminService.getPharmacists(workplaceId);
 

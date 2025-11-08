@@ -133,7 +133,11 @@ const MetricCard: React.FC<MetricCardProps> = ({
   );
 };
 
-const PatientPortalAnalytics: React.FC = () => {
+interface PatientPortalAnalyticsProps {
+  workspaceId?: string; // Optional workspace ID for super admin override
+}
+
+const PatientPortalAnalytics: React.FC<PatientPortalAnalyticsProps> = ({ workspaceId }) => {
   const [activeTab, setActiveTab] = useState(0);
   const [timeRange, setTimeRange] = useState('30d');
 
@@ -142,7 +146,7 @@ const PatientPortalAnalytics: React.FC = () => {
     data: analytics,
     isLoading,
     error,
-  } = usePatientPortalAdmin().usePortalAnalytics({ timeRange });
+  } = usePatientPortalAdmin(workspaceId).usePortalAnalytics({ timeRange });
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);

@@ -63,8 +63,11 @@ export const workspaceAdminAuth = async (
       return;
     }
 
-    // Check if user has a workplace
-    if (!req.user.workplaceId) {
+    // Check if user has a workplace OR is super admin with workspace override
+    // Super admins can specify workspaceId via query parameter to access any workspace
+    const superAdminWorkspaceOverride = req.user.role === 'super_admin' && req.query.workspaceId;
+    
+    if (!req.user.workplaceId && !superAdminWorkspaceOverride) {
       logger.warn('Workspace admin auth failed - no workplace', {
         userId: req.user._id,
         userRole: req.user.role,
@@ -81,12 +84,23 @@ export const workspaceAdminAuth = async (
     }
 
     // Set workplace context for the request
-    req.workplaceId = req.user.workplaceId;
+    // Super admins can override with query parameter
+    if (req.user.role === 'super_admin' && req.query.workspaceId) {
+      req.workplaceId = new mongoose.Types.ObjectId(req.query.workspaceId as string);
+      logger.info('Super admin accessing workspace with override', {
+        userId: req.user._id,
+        targetWorkspaceId: req.workplaceId,
+        path: req.path,
+        method: req.method,
+      });
+    } else {
+      req.workplaceId = req.user.workplaceId;
+    }
 
     logger.info('Workspace admin auth successful', {
       userId: req.user._id,
       userRole: req.user.role,
-      workplaceId: req.user.workplaceId,
+      workplaceId: req.workplaceId,
       path: req.path,
       method: req.method,
     });

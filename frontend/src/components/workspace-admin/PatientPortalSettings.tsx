@@ -85,9 +85,10 @@ interface PortalSettings {
 
 interface PatientPortalSettingsProps {
   onShowSnackbar: (message: string, severity: 'success' | 'error' | 'warning' | 'info') => void;
+  workspaceId?: string; // Optional workspace ID for super admin override
 }
 
-const PatientPortalSettings: React.FC<PatientPortalSettingsProps> = ({ onShowSnackbar }) => {
+const PatientPortalSettings: React.FC<PatientPortalSettingsProps> = ({ onShowSnackbar, workspaceId }) => {
   const [settings, setSettings] = useState<PortalSettings | null>(null);
   const [hasChanges, setHasChanges] = useState(false);
   const [businessHoursDialog, setBusinessHoursDialog] = useState(false);
@@ -97,11 +98,11 @@ const PatientPortalSettings: React.FC<PatientPortalSettingsProps> = ({ onShowSna
     data: currentSettings,
     isLoading,
     error,
-  } = usePatientPortalAdmin().usePortalSettings();
+  } = usePatientPortalAdmin(workspaceId).usePortalSettings();
 
   // Mutation hooks
-  const { mutate: updateSettings, isPending: isUpdating } = usePatientPortalAdmin().useUpdatePortalSettings();
-  const { mutate: resetSettings, isPending: isResetting } = usePatientPortalAdmin().useResetPortalSettings();
+  const { mutate: updateSettings, isPending: isUpdating } = usePatientPortalAdmin(workspaceId).useUpdatePortalSettings();
+  const { mutate: resetSettings, isPending: isResetting } = usePatientPortalAdmin(workspaceId).useResetPortalSettings();
 
   // Initialize settings when data loads
   React.useEffect(() => {

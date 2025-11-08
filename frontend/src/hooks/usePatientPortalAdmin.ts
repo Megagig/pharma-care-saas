@@ -12,14 +12,20 @@ class PatientPortalAdminService {
 
   static async makeRequest<T>(
     endpoint: string,
-    options: { method?: string; data?: any; params?: any } = {}
+    options: { method?: string; data?: any; params?: any; workspaceId?: string } = {}
   ): Promise<T> {
     try {
+      // Add workspaceId to params if provided (for super admin override)
+      const params = { ...options.params };
+      if (options.workspaceId) {
+        params.workspaceId = options.workspaceId;
+      }
+
       const response = await apiClient({
         url: `${PatientPortalAdminService.baseUrl}${endpoint}`,
         method: options.method || 'GET',
         data: options.data,
-        params: options.params,
+        params,
       });
 
       return response.data.data || response.data;
@@ -30,9 +36,10 @@ class PatientPortalAdminService {
   }
 
   // Portal statistics - Map backend response to frontend expected structure
-  static async getPortalStats() {
+  static async getPortalStats(workspaceId?: string) {
     try {
-      const analytics = await PatientPortalAdminService.makeRequest<any>('/analytics');
+      console.log('getPortalStats called with workspaceId:', workspaceId);
+      const analytics = await PatientPortalAdminService.makeRequest<any>('/analytics', { workspaceId });
 
       // Map backend response to frontend expected structure
       return {
@@ -52,7 +59,7 @@ class PatientPortalAdminService {
   }
 
   // Patient users
-  static async getPatientUsers(params: any) {
+  static async getPatientUsers(params: any, workspaceId?: string) {
     try {
       const queryParams = new URLSearchParams();
       if (params.status) queryParams.append('status', params.status);
@@ -62,7 +69,7 @@ class PatientPortalAdminService {
       if (params.dateFrom) queryParams.append('dateFrom', params.dateFrom);
       if (params.dateTo) queryParams.append('dateTo', params.dateTo);
 
-      const response = await PatientPortalAdminService.makeRequest<any>(`/users?${queryParams.toString()}`);
+      const response = await PatientPortalAdminService.makeRequest<any>(`/users?${queryParams.toString()}`, { workspaceId });
 
       return {
         users: response.users || [],
@@ -86,7 +93,7 @@ class PatientPortalAdminService {
   }
 
   // Refill requests
-  static async getRefillRequests(params: any) {
+  static async getRefillRequests(params: any, workspaceId?: string) {
     try {
       const queryParams = new URLSearchParams();
       if (params.status) queryParams.append('status', params.status);
@@ -96,7 +103,7 @@ class PatientPortalAdminService {
       if (params.dateFrom) queryParams.append('dateFrom', params.dateFrom);
       if (params.dateTo) queryParams.append('dateTo', params.dateTo);
 
-      const response = await PatientPortalAdminService.makeRequest<any>(`/refill-requests?${queryParams.toString()}`);
+      const response = await PatientPortalAdminService.makeRequest<any>(`/refill-requests?${queryParams.toString()}`, { workspaceId });
 
       return {
         requests: response.requests || [],
@@ -121,7 +128,7 @@ class PatientPortalAdminService {
   }
 
   // Analytics - Map backend comprehensive analytics to frontend structure
-  static async getPortalAnalytics(params: any) {
+  static async getPortalAnalytics(params: any, workspaceId?: string) {
     try {
       const queryParams = new URLSearchParams();
       if (params.startDate) queryParams.append('startDate', params.startDate);
@@ -129,8 +136,8 @@ class PatientPortalAdminService {
       if (params.period) queryParams.append('period', params.period);
 
       const [analytics, featureUsage] = await Promise.all([
-        PatientPortalAdminService.makeRequest<any>(`/analytics?${queryParams.toString()}`),
-        PatientPortalAdminService.makeRequest<any>(`/analytics/feature-usage?${queryParams.toString()}`).catch(() => ({})),
+        PatientPortalAdminService.makeRequest<any>(`/analytics?${queryParams.toString()}`, { workspaceId }),
+        PatientPortalAdminService.makeRequest<any>(`/analytics/feature-usage?${queryParams.toString()}`, { workspaceId }).catch(() => ({})),
       ]);
 
       // Generate mock chart data based on the period (temporary until backend provides this)
@@ -187,9 +194,9 @@ class PatientPortalAdminService {
   }
 
   // Portal settings - Map backend to frontend structure
-  static async getPortalSettings() {
+  static async getPortalSettings(workspaceId?: string) {
     try {
-      const settings = await PatientPortalAdminService.makeRequest<any>('/settings');
+      const settings = await PatientPortalAdminService.makeRequest<any>('/settings', { workspaceId });
 
       // Map backend PatientPortalSettings model to frontend expected structure
       return {
@@ -253,9 +260,9 @@ class PatientPortalAdminService {
   }
 
   // Pharmacists list
-  static async getPharmacists() {
+  static async getPharmacists(workspaceId?: string) {
     try {
-      const response = await PatientPortalAdminService.makeRequest<any>('/pharmacists');
+      const response = await PatientPortalAdminService.makeRequest<any>('/pharmacists', { workspaceId });
       return response || [];
     } catch (error) {
       console.error('Error fetching pharmacists:', error);
@@ -381,50 +388,51 @@ class PatientPortalAdminService {
 }/**
  *
  Custom hook for patient portal administration
+ * @param workspaceId - Optional workspace ID for super admin to access specific workspace data
  */
-export const usePatientPortalAdmin = () => {
+export const usePatientPortalAdmin = (workspaceId?: string) => {
   const queryClient = useQueryClient();
 
   return {
     // Portal statistics
     usePortalStats: () => useQuery({
-      queryKey: ['patient-portal-stats'],
-      queryFn: PatientPortalAdminService.getPortalStats,
+      queryKey: ['patient-portal-stats', workspaceId],
+      queryFn: () => PatientPortalAdminService.getPortalStats(workspaceId),
       staleTime: 5 * 60 * 1000, // 5 minutes
     }),
 
     // Patient users
     usePatientUsers: (params: any) => useQuery({
-      queryKey: ['patient-users', params],
-      queryFn: () => PatientPortalAdminService.getPatientUsers(params),
+      queryKey: ['patient-users', params, workspaceId],
+      queryFn: () => PatientPortalAdminService.getPatientUsers(params, workspaceId),
       staleTime: 2 * 60 * 1000, // 2 minutes
     }),
 
     // Refill requests
     useRefillRequests: (params: any) => useQuery({
-      queryKey: ['refill-requests', params],
-      queryFn: () => PatientPortalAdminService.getRefillRequests(params),
+      queryKey: ['refill-requests', params, workspaceId],
+      queryFn: () => PatientPortalAdminService.getRefillRequests(params, workspaceId),
       staleTime: 2 * 60 * 1000, // 2 minutes
     }),
 
     // Analytics
     usePortalAnalytics: (params: any) => useQuery({
-      queryKey: ['portal-analytics', params],
-      queryFn: () => PatientPortalAdminService.getPortalAnalytics(params),
+      queryKey: ['portal-analytics', params, workspaceId],
+      queryFn: () => PatientPortalAdminService.getPortalAnalytics(params, workspaceId),
       staleTime: 10 * 60 * 1000, // 10 minutes
     }),
 
     // Portal settings
     usePortalSettings: () => useQuery({
-      queryKey: ['portal-settings'],
-      queryFn: PatientPortalAdminService.getPortalSettings,
+      queryKey: ['portal-settings', workspaceId],
+      queryFn: () => PatientPortalAdminService.getPortalSettings(workspaceId),
       staleTime: 5 * 60 * 1000, // 5 minutes
     }),
 
     // Pharmacists
     usePharmacists: () => useQuery({
-      queryKey: ['pharmacists'],
-      queryFn: PatientPortalAdminService.getPharmacists,
+      queryKey: ['pharmacists', workspaceId],
+      queryFn: () => PatientPortalAdminService.getPharmacists(workspaceId),
       staleTime: 10 * 60 * 1000, // 10 minutes
     }),
 

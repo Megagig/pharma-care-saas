@@ -5,6 +5,7 @@
  */
 
 import React, { useState } from 'react';
+import { useParams } from 'react-router-dom';
 import {
   Box,
   Container,
@@ -29,6 +30,7 @@ import AnalyticsIcon from '@mui/icons-material/Analytics';
 import SettingsIcon from '@mui/icons-material/Settings';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import { useRBAC } from '../../hooks/useRBAC';
+import { useAuth } from '../../context/AuthContext';
 import { usePatientPortalAdmin } from '../../hooks/usePatientPortalAdmin';
 import PatientUserManagement from '../../components/workspace-admin/PatientUserManagement';
 import RefillRequestManagement from '../../components/workspace-admin/RefillRequestManagement';
@@ -123,6 +125,8 @@ const PatientPortalAdmin: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { hasRole } = useRBAC();
+  const { user, loading: authLoading } = useAuth(); // Get loading state too
+  const { workspaceId } = useParams<{ workspaceId?: string }>();
   const [activeTab, setActiveTab] = useState(0);
   const [snackbar, setSnackbar] = useState<{
     open: boolean;
@@ -130,12 +134,28 @@ const PatientPortalAdmin: React.FC = () => {
     severity: 'success' | 'error' | 'warning' | 'info';
   }>({ open: false, message: '', severity: 'success' });
 
+  // For super admins viewing a specific workspace, use the workspace ID from URL
+  // For regular workspace admins, use their own workspace (no override needed)
+  const isSuperAdminWithOverride = user?.role === 'super_admin' && workspaceId;
+  const targetWorkspaceId = isSuperAdminWithOverride ? workspaceId : undefined;
+
   // Fetch patient portal statistics
   const {
     data: stats,
     isLoading: statsLoading,
     error: statsError,
-  } = usePatientPortalAdmin().usePortalStats();
+  } = usePatientPortalAdmin(targetWorkspaceId).usePortalStats();
+
+  // Show loading state while auth is loading
+  if (authLoading) {
+    return (
+      <Container maxWidth="lg" sx={{ mt: 4, mb: 8 }}>
+        <Box display="flex" justifyContent="center" alignItems="center" minHeight="60vh">
+          <CircularProgress size={48} />
+        </Box>
+      </Container>
+    );
+  }
 
   // Access control - workspace admins OR super admin can access
   // Super admins can view all workspace patient portals for oversight
@@ -345,19 +365,19 @@ const PatientPortalAdmin: React.FC = () => {
 
       {/* Tab Content */}
       <TabPanel value={activeTab} index={0}>
-        <PatientUserManagement onShowSnackbar={showSnackbar} />
+        <PatientUserManagement onShowSnackbar={showSnackbar} workspaceId={targetWorkspaceId} />
       </TabPanel>
 
       <TabPanel value={activeTab} index={1}>
-        <RefillRequestManagement onShowSnackbar={showSnackbar} />
+        <RefillRequestManagement onShowSnackbar={showSnackbar} workspaceId={targetWorkspaceId} />
       </TabPanel>
 
       <TabPanel value={activeTab} index={2}>
-        <PatientPortalAnalytics />
+        <PatientPortalAnalytics workspaceId={targetWorkspaceId} />
       </TabPanel>
 
       <TabPanel value={activeTab} index={3}>
-        <PatientPortalSettings onShowSnackbar={showSnackbar} />
+        <PatientPortalSettings onShowSnackbar={showSnackbar} workspaceId={targetWorkspaceId} />
       </TabPanel>
 
       {/* Success/Error Snackbar */}

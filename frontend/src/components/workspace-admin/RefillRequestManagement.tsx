@@ -84,6 +84,7 @@ interface RefillRequest {
 
 interface RefillRequestManagementProps {
   onShowSnackbar: (message: string, severity: 'success' | 'error' | 'warning' | 'info') => void;
+  workspaceId?: string; // Optional workspace ID for super admin override
 }
 
 type SortField = 'requestedAt' | 'urgency' | 'status' | 'patientName' | 'medicationName';
@@ -172,7 +173,7 @@ const TableRowSkeleton: React.FC = () => (
   </TableRow>
 );
 
-const RefillRequestManagement: React.FC<RefillRequestManagementProps> = ({ onShowSnackbar }) => {
+const RefillRequestManagement: React.FC<RefillRequestManagementProps> = ({ onShowSnackbar, workspaceId }) => {
   const [activeTab, setActiveTab] = useState(0);
   const [sortField, setSortField] = useState<SortField>('requestedAt');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
@@ -207,19 +208,19 @@ const RefillRequestManagement: React.FC<RefillRequestManagementProps> = ({ onSho
     data,
     isLoading,
     error,
-  } = usePatientPortalAdmin().useRefillRequests({
+  } = usePatientPortalAdmin(workspaceId).useRefillRequests({
     status: getStatusFilter(),
     page: pagination.page,
     limit: pagination.limit,
   });
 
   // Fetch pharmacists for assignment
-  const { data: pharmacists } = usePatientPortalAdmin().usePharmacists();
+  const { data: pharmacists } = usePatientPortalAdmin(workspaceId).usePharmacists();
 
   // Mutation hooks
-  const { mutate: approveRequest, isPending: isApproving } = usePatientPortalAdmin().useApproveRefillRequest();
-  const { mutate: denyRequest, isPending: isDenying } = usePatientPortalAdmin().useDenyRefillRequest();
-  const { mutate: assignRequest, isPending: isAssigning } = usePatientPortalAdmin().useAssignRefillRequest();
+  const { mutate: approveRequest, isPending: isApproving } = usePatientPortalAdmin(workspaceId).useApproveRefillRequest();
+  const { mutate: denyRequest, isPending: isDenying } = usePatientPortalAdmin(workspaceId).useDenyRefillRequest();
+  const { mutate: assignRequest, isPending: isAssigning } = usePatientPortalAdmin(workspaceId).useAssignRefillRequest();
 
   /**
    * Handle sort column click

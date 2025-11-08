@@ -73,6 +73,7 @@ interface PatientUser {
 
 interface PatientUserManagementProps {
   onShowSnackbar: (message: string, severity: 'success' | 'error' | 'warning' | 'info') => void;
+  workspaceId?: string; // Optional workspace ID for super admin override
 }
 
 type SortField = 'firstName' | 'lastName' | 'email' | 'status' | 'registeredAt' | 'lastLoginAt';
@@ -145,7 +146,7 @@ const TableRowSkeleton: React.FC = () => (
   </TableRow>
 );
 
-const PatientUserManagement: React.FC<PatientUserManagementProps> = ({ onShowSnackbar }) => {
+const PatientUserManagement: React.FC<PatientUserManagementProps> = ({ onShowSnackbar, workspaceId }) => {
   const [activeTab, setActiveTab] = useState(0);
   const [sortField, setSortField] = useState<SortField>('registeredAt');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
@@ -177,17 +178,17 @@ const PatientUserManagement: React.FC<PatientUserManagementProps> = ({ onShowSna
     data,
     isLoading,
     error,
-  } = usePatientPortalAdmin().usePatientUsers({
+  } = usePatientPortalAdmin(workspaceId).usePatientUsers({
     status: getStatusFilter(),
     page: pagination.page,
     limit: pagination.limit,
   });
 
   // Mutation hooks
-  const { mutate: approveUser, isPending: isApproving } = usePatientPortalAdmin().useApproveUser();
-  const { mutate: suspendUser, isPending: isSuspending } = usePatientPortalAdmin().useSuspendUser();
-  const { mutate: activateUser, isPending: isActivating } = usePatientPortalAdmin().useActivateUser();
-  const { mutate: removeUser, isPending: isRemoving } = usePatientPortalAdmin().useRemoveUser();
+  const { mutate: approveUser, isPending: isApproving } = usePatientPortalAdmin(workspaceId).useApproveUser();
+  const { mutate: suspendUser, isPending: isSuspending } = usePatientPortalAdmin(workspaceId).useSuspendUser();
+  const { mutate: activateUser, isPending: isActivating } = usePatientPortalAdmin(workspaceId).useActivateUser();
+  const { mutate: removeUser, isPending: isRemoving } = usePatientPortalAdmin(workspaceId).useRemoveUser();
 
   /**
    * Handle sort column click
