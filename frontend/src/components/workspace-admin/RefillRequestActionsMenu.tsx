@@ -31,8 +31,23 @@ interface RefillRequest {
     strength: string;
     form: string;
   };
-  status: 'pending' | 'approved' | 'denied' | 'completed';
+  requestedQuantity: number;
+  currentRefillsRemaining: number;
+  patientNotes?: string;
   urgency: 'routine' | 'urgent';
+  status: 'pending' | 'approved' | 'denied' | 'completed';
+  requestedAt: Date;
+  processedAt?: Date;
+  processedBy?: {
+    id: string;
+    name: string;
+  };
+  denialReason?: string;
+  estimatedPickupDate?: Date;
+  assignedTo?: {
+    id: string;
+    name: string;
+  };
 }
 
 interface RefillRequestActionsMenuProps {

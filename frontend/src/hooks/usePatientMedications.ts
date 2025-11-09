@@ -310,27 +310,7 @@ class PatientMedicationService {
     };
   }
 
-  // Map backend refill request to frontend format (used for fetching existing refill requests)
-  private static mapRefillRequestToFrontend(backendRequest: BackendRefillRequest): RefillRequest {
-    // Safely access nested metadata with fallbacks
-    const refillRequest = backendRequest.metadata?.refillRequest || {};
-    
-    return {
-      _id: backendRequest._id,
-      medicationId: refillRequest.medicationId || backendRequest.relatedRecords?.medicationId || '',
-      medicationName: refillRequest.medicationName || 'Unknown Medication',
-      status: backendRequest.status === 'overdue' ? 'denied' : (backendRequest.status || 'pending'),
-      requestedDate: refillRequest.requestedAt || backendRequest.createdAt,
-      completedDate: backendRequest.completedAt,
-      estimatedCompletionDate: backendRequest.dueDate,
-      notes: refillRequest.patientNotes || '',
-      quantity: refillRequest.requestedQuantity || 30,
-      refillsRemaining: refillRequest.currentRefillsRemaining || 0,
-      urgency: refillRequest.urgency || 'routine',
-      createdAt: backendRequest.createdAt,
-      updatedAt: backendRequest.updatedAt
-    };
-  }
+
 
   static async getMedicationData(patientId: string): Promise<PatientMedicationResponse> {
     try {
