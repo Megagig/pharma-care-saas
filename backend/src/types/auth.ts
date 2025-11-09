@@ -3,6 +3,7 @@ import { IUser } from '../models/User';
 import { IWorkplace } from '../models/Workplace';
 import { ISubscription } from '../models/Subscription';
 import { ISubscriptionPlan } from '../models/SubscriptionPlan';
+import { IPricingPlan } from '../models/PricingPlan';
 import { Types } from 'mongoose';
 
 // Define system roles
@@ -48,7 +49,7 @@ export interface PermissionMatrix {
 export interface WorkspaceContext {
   workspace: IWorkplace | null;
   subscription: ISubscription | null;
-  plan: ISubscriptionPlan | null;
+  plan: ISubscriptionPlan | IPricingPlan | null; // Support both plan model types
   permissions: string[];
   limits: PlanLimits;
   isTrialExpired: boolean;

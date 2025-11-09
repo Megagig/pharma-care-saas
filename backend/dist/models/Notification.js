@@ -102,6 +102,25 @@ const notificationDataSchema = new mongoose_1.Schema({
         type: mongoose_1.Schema.Types.ObjectId,
         index: true,
     },
+    diagnosticCaseId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'DiagnosticCase',
+        index: true,
+    },
+    labResultId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'DiagnosticCase',
+        index: true,
+    },
+    visitId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'Visit',
+        index: true,
+    },
+    vitalsId: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        index: true,
+    },
     medicationName: {
         type: String,
     },
@@ -125,6 +144,15 @@ const notificationDataSchema = new mongoose_1.Schema({
             },
             message: 'Invalid action URL format',
         },
+    },
+    testName: {
+        type: String,
+    },
+    resultStatus: {
+        type: String,
+    },
+    patientName: {
+        type: String,
     },
     metadata: {
         type: mongoose_1.Schema.Types.Mixed,
@@ -193,7 +221,8 @@ const notificationSchema = new mongoose_1.Schema({
             'appointment_cancelled', 'followup_task_assigned', 'followup_task_overdue',
             'medication_refill_due', 'adherence_check_reminder',
             'account_approved', 'account_suspended', 'account_reactivated',
-            'refill_approved', 'refill_denied', 'refill_assigned'
+            'refill_approved', 'refill_denied', 'refill_assigned',
+            'lab_result_available', 'lab_result_interpretation', 'vitals_verified', 'visit_summary_available'
         ],
         required: true,
         index: true,

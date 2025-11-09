@@ -14,6 +14,7 @@ import {
     getDiagnosticAnalytics,
     getAllDiagnosticCases,
     getDiagnosticReferrals,
+    validatePatientAccess,
 } from '../controllers/diagnosticController';
 
 // Import middleware
@@ -57,6 +58,17 @@ router.use(authWithWorkspace);
 // ===============================
 // DIAGNOSTIC REQUEST ROUTES
 // ===============================
+
+/**
+ * POST /api/diagnostics/patient/validate
+ * Validate patient access before creating diagnostic case
+ */
+router.post(
+    '/patient/validate',
+    requirePharmacistRole,
+    requireDiagnosticRead,
+    validatePatientAccess
+);
 
 /**
  * POST /api/diagnostics

@@ -312,6 +312,11 @@ const patientSchema = new mongoose_1.Schema({
                 required: [true, 'Recorded date is required'],
                 default: Date.now,
             },
+            appointmentId: {
+                type: mongoose_1.default.Schema.Types.ObjectId,
+                ref: 'Appointment',
+                required: false,
+            },
             bloodPressure: {
                 systolic: {
                     type: Number,
@@ -805,6 +810,26 @@ patientSchema.methods.verifyVitals = function (vitalsId, verifiedBy) {
         return true;
     }
     return false;
+};
+patientSchema.methods.unverifyVitals = function (vitalsId) {
+    const vitals = this.patientLoggedVitals.find(vitals => vitals._id?.toString() === vitalsId);
+    if (vitals) {
+        vitals.isVerified = false;
+        vitals.verifiedBy = undefined;
+        return true;
+    }
+    return false;
+};
+patientSchema.methods.getUnverifiedVitals = function () {
+    return this.patientLoggedVitals
+        .filter(vitals => !vitals.isVerified)
+        .sort((a, b) => b.recordedDate.getTime() - a.recordedDate.getTime());
+};
+patientSchema.methods.getVerifiedVitals = function (limit = 20) {
+    return this.patientLoggedVitals
+        .filter(vitals => vitals.isVerified)
+        .sort((a, b) => b.recordedDate.getTime() - a.recordedDate.getTime())
+        .slice(0, limit);
 };
 patientSchema.pre('save', function () {
     if (!this.dob && !this.age) {

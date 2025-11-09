@@ -68,6 +68,7 @@ export interface IPatient extends Document {
     patientLoggedVitals: Array<{
         _id?: mongoose.Types.ObjectId;
         recordedDate: Date;
+        appointmentId?: mongoose.Types.ObjectId;
         bloodPressure?: {
             systolic: number;
             diastolic: number;
@@ -178,6 +179,9 @@ export interface IPatient extends Document {
     getVitalsHistory(limit?: number): any[];
     getLatestVitals(): any;
     verifyVitals(vitalsId: string, verifiedBy: mongoose.Types.ObjectId): boolean;
+    unverifyVitals(vitalsId: string): boolean;
+    getUnverifiedVitals(): any[];
+    getVerifiedVitals(limit?: number): any[];
 }
 interface IPatientModel extends mongoose.Model<IPatient> {
     generateNextMRN(workplaceId: mongoose.Types.ObjectId, workplaceCode: string): Promise<string>;

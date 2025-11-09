@@ -43,6 +43,9 @@ export const LazyPublicPatientPortal = lazy(() => import('../pages/public/Patien
 export const LazyWorkspaceSearchPage = lazy(() => import('../pages/public/WorkspaceSearchPage'));
 export const LazyPatientWorkspaceDetailPage = lazy(() => import('../pages/public/PatientWorkspaceDetailPage'));
 
+// Pharmacist Portal - Health Records
+export const LazyPharmacistLabInterpretations = lazy(() => import('../pages/pharmacist-portal/PharmacistLabInterpretations'));
+
 // Admin components
 export const LazyAdminDashboard = lazy(() => import('../components/admin/AdminDashboard'));
 export const LazyFeatureManagement = lazy(() => import('../pages/FeatureManagement'));

@@ -4,6 +4,7 @@ export interface IDiagnosticCase extends Document {
     patientId: mongoose.Types.ObjectId;
     pharmacistId: mongoose.Types.ObjectId;
     workplaceId: mongoose.Types.ObjectId;
+    appointmentId?: mongoose.Types.ObjectId;
     symptoms: {
         subjective: string[];
         objective: string[];
@@ -84,6 +85,18 @@ export interface IDiagnosticCase extends Document {
         reviewedAt?: Date;
         reviewedBy?: mongoose.Types.ObjectId;
     };
+    patientInterpretation?: {
+        summary: string;
+        keyFindings: string[];
+        whatThisMeans: string;
+        recommendations: string[];
+        whenToSeekCare: string;
+        visibleToPatient: boolean;
+        interpretedBy: mongoose.Types.ObjectId;
+        interpretedAt: Date;
+        lastModifiedAt?: Date;
+        lastModifiedBy?: mongoose.Types.ObjectId;
+    };
     followUp?: {
         scheduledDate: Date;
         reason: string;
@@ -131,6 +144,26 @@ export interface IDiagnosticCase extends Document {
     completedAt?: Date;
     createdAt: Date;
     updatedAt: Date;
+    addPatientInterpretation(interpretationData: {
+        summary: string;
+        keyFindings: string[];
+        whatThisMeans: string;
+        recommendations: string[];
+        whenToSeekCare: string;
+        visibleToPatient?: boolean;
+    }, interpretedBy: mongoose.Types.ObjectId): void;
+    updatePatientInterpretation(updates: Partial<{
+        summary: string;
+        keyFindings: string[];
+        whatThisMeans: string;
+        recommendations: string[];
+        whenToSeekCare: string;
+        visibleToPatient: boolean;
+    }>, modifiedBy: mongoose.Types.ObjectId): void;
+    makeVisibleToPatient(modifiedBy: mongoose.Types.ObjectId): void;
+    hideFromPatient(modifiedBy: mongoose.Types.ObjectId): void;
+    hasPatientInterpretation(): boolean;
+    isVisibleToPatient(): boolean;
 }
 declare const _default: mongoose.Model<IDiagnosticCase, {}, {}, {}, mongoose.Document<unknown, {}, IDiagnosticCase> & IDiagnosticCase & {
     _id: mongoose.Types.ObjectId;

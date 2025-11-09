@@ -59,6 +59,12 @@ const diagnosticCaseSchema = new mongoose_1.Schema({
         required: true,
         index: true,
     },
+    appointmentId: {
+        type: mongoose_1.default.Schema.Types.ObjectId,
+        ref: 'Appointment',
+        required: false,
+        index: true,
+    },
     symptoms: {
         subjective: [String],
         objective: [String],
@@ -198,6 +204,60 @@ const diagnosticCaseSchema = new mongoose_1.Schema({
             ref: 'User',
         },
     },
+    patientInterpretation: {
+        summary: {
+            type: String,
+            trim: true,
+            maxlength: [500, 'Summary cannot exceed 500 characters'],
+        },
+        keyFindings: {
+            type: [String],
+            validate: {
+                validator: function (findings) {
+                    return findings.length <= 10;
+                },
+                message: 'Maximum 10 key findings allowed'
+            }
+        },
+        whatThisMeans: {
+            type: String,
+            trim: true,
+            maxlength: [1000, 'Explanation cannot exceed 1000 characters'],
+        },
+        recommendations: {
+            type: [String],
+            validate: {
+                validator: function (recs) {
+                    return recs.length <= 15;
+                },
+                message: 'Maximum 15 recommendations allowed'
+            }
+        },
+        whenToSeekCare: {
+            type: String,
+            trim: true,
+            maxlength: [500, 'When to seek care guidance cannot exceed 500 characters'],
+        },
+        visibleToPatient: {
+            type: Boolean,
+            default: false,
+            index: true,
+        },
+        interpretedBy: {
+            type: mongoose_1.default.Schema.Types.ObjectId,
+            ref: 'User',
+        },
+        interpretedAt: {
+            type: Date,
+        },
+        lastModifiedAt: {
+            type: Date,
+        },
+        lastModifiedBy: {
+            type: mongoose_1.default.Schema.Types.ObjectId,
+            ref: 'User',
+        },
+    },
     patientConsent: {
         provided: {
             type: Boolean,
@@ -299,5 +359,51 @@ diagnosticCaseSchema.index({ workplaceId: 1, createdAt: -1 });
 diagnosticCaseSchema.index({ status: 1, createdAt: -1 });
 diagnosticCaseSchema.index({ 'aiAnalysis.redFlags.severity': 1 });
 diagnosticCaseSchema.index({ completedAt: -1 });
+diagnosticCaseSchema.index({ 'patientInterpretation.visibleToPatient': 1 });
+diagnosticCaseSchema.index({ 'patientInterpretation.interpretedBy': 1, 'patientInterpretation.interpretedAt': -1 });
+diagnosticCaseSchema.index({ workplaceId: 1, 'patientInterpretation.visibleToPatient': 1, createdAt: -1 });
+diagnosticCaseSchema.methods.addPatientInterpretation = function (interpretationData, interpretedBy) {
+    this.patientInterpretation = {
+        ...interpretationData,
+        visibleToPatient: interpretationData.visibleToPatient || false,
+        interpretedBy,
+        interpretedAt: new Date(),
+        lastModifiedAt: new Date(),
+        lastModifiedBy: interpretedBy,
+    };
+};
+diagnosticCaseSchema.methods.updatePatientInterpretation = function (updates, modifiedBy) {
+    if (!this.patientInterpretation) {
+        throw new Error('Patient interpretation does not exist. Use addPatientInterpretation first.');
+    }
+    this.patientInterpretation = {
+        ...this.patientInterpretation,
+        ...updates,
+        lastModifiedAt: new Date(),
+        lastModifiedBy: modifiedBy,
+    };
+};
+diagnosticCaseSchema.methods.makeVisibleToPatient = function (modifiedBy) {
+    if (!this.patientInterpretation) {
+        throw new Error('Cannot make visible: No patient interpretation exists');
+    }
+    this.patientInterpretation.visibleToPatient = true;
+    this.patientInterpretation.lastModifiedAt = new Date();
+    this.patientInterpretation.lastModifiedBy = modifiedBy;
+};
+diagnosticCaseSchema.methods.hideFromPatient = function (modifiedBy) {
+    if (!this.patientInterpretation) {
+        throw new Error('Cannot hide: No patient interpretation exists');
+    }
+    this.patientInterpretation.visibleToPatient = false;
+    this.patientInterpretation.lastModifiedAt = new Date();
+    this.patientInterpretation.lastModifiedBy = modifiedBy;
+};
+diagnosticCaseSchema.methods.hasPatientInterpretation = function () {
+    return !!(this.patientInterpretation && this.patientInterpretation.summary);
+};
+diagnosticCaseSchema.methods.isVisibleToPatient = function () {
+    return !!(this.patientInterpretation && this.patientInterpretation.visibleToPatient);
+};
 exports.default = mongoose_1.default.model('DiagnosticCase', diagnosticCaseSchema);
 //# sourceMappingURL=DiagnosticCase.js.map

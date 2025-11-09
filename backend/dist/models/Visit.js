@@ -161,6 +161,38 @@ const visitSchema = new mongoose_1.Schema({
             message: 'Maximum 10 attachments allowed per visit',
         },
     },
+    patientSummary: {
+        summary: {
+            type: String,
+            trim: true,
+            maxlength: [1000, 'Summary cannot exceed 1000 characters'],
+        },
+        keyPoints: [
+            {
+                type: String,
+                trim: true,
+                maxlength: [300, 'Key point cannot exceed 300 characters'],
+            },
+        ],
+        nextSteps: [
+            {
+                type: String,
+                trim: true,
+                maxlength: [300, 'Next step cannot exceed 300 characters'],
+            },
+        ],
+        visibleToPatient: {
+            type: Boolean,
+            default: false,
+        },
+        summarizedBy: {
+            type: mongoose_1.Schema.Types.ObjectId,
+            ref: 'User',
+        },
+        summarizedAt: {
+            type: Date,
+        },
+    },
 }, {
     timestamps: true,
     toJSON: { virtuals: true },
@@ -369,6 +401,58 @@ visitSchema.methods.getSummary = function () {
         parts.push(`A: ${summary}${this.soap.assessment.length > 100 ? '...' : ''}`);
     }
     return parts.join(' | ') || 'No summary available';
+};
+visitSchema.methods.addPatientSummary = async function (summaryData, userId) {
+    if (summaryData.keyPoints && summaryData.keyPoints.length > 10) {
+        throw new Error('Maximum 10 key points allowed');
+    }
+    if (summaryData.nextSteps && summaryData.nextSteps.length > 10) {
+        throw new Error('Maximum 10 next steps allowed');
+    }
+    this.patientSummary = {
+        summary: summaryData.summary,
+        keyPoints: summaryData.keyPoints || [],
+        nextSteps: summaryData.nextSteps || [],
+        visibleToPatient: false,
+        summarizedBy: userId,
+        summarizedAt: new Date(),
+    };
+    await this.save();
+};
+visitSchema.methods.updatePatientSummary = async function (summaryData) {
+    if (!this.patientSummary) {
+        throw new Error('No patient summary exists to update');
+    }
+    if (summaryData.keyPoints && summaryData.keyPoints.length > 10) {
+        throw new Error('Maximum 10 key points allowed');
+    }
+    if (summaryData.nextSteps && summaryData.nextSteps.length > 10) {
+        throw new Error('Maximum 10 next steps allowed');
+    }
+    this.patientSummary.summary = summaryData.summary || this.patientSummary.summary;
+    this.patientSummary.keyPoints = summaryData.keyPoints || this.patientSummary.keyPoints;
+    this.patientSummary.nextSteps = summaryData.nextSteps || this.patientSummary.nextSteps;
+    await this.save();
+};
+visitSchema.methods.makeVisibleToPatient = async function () {
+    if (!this.patientSummary) {
+        throw new Error('No patient summary exists');
+    }
+    this.patientSummary.visibleToPatient = true;
+    await this.save();
+};
+visitSchema.methods.hideFromPatient = async function () {
+    if (!this.patientSummary) {
+        throw new Error('No patient summary exists');
+    }
+    this.patientSummary.visibleToPatient = false;
+    await this.save();
+};
+visitSchema.methods.hasPatientSummary = function () {
+    return !!(this.patientSummary && this.patientSummary.summary);
+};
+visitSchema.methods.isVisibleToPatient = function () {
+    return !!(this.patientSummary && this.patientSummary.visibleToPatient);
 };
 exports.default = mongoose_1.default.model('Visit', visitSchema);
 //# sourceMappingURL=Visit.js.map

@@ -11,6 +11,7 @@ import { AuthRequest } from '../middlewares/auth';
 import logger from '../utils/logger';
 import { createAuditLog } from '../utils/responseHelpers';
 import { cleanAIAnalysis, validateAIAnalysis, generateAnalysisSummary } from '../utils/aiAnalysisHelpers';
+import healthRecordsNotificationService from '../services/healthRecordsNotificationService';
 // Note: Drug interaction service integration will be added later
 
 /**
@@ -54,6 +55,7 @@ export const generateDiagnosticAnalysis = async (
       currentMedications,
       vitalSigns,
       patientConsent,
+      appointmentId, // Optional: Link to appointment if created during consultation
     } = req.body;
 
     // Verify workplaceId exists
@@ -76,7 +78,7 @@ export const generateDiagnosticAnalysis = async (
 
     // Check if user is super admin
     const isSuperAdmin = req.user!.role === 'super_admin';
-    
+
     // Check if patient exists at all (for debugging)
     const patientExists = await Patient.findById(patientId);
     logger.info('Patient existence check for diagnostic analysis', {
@@ -96,7 +98,7 @@ export const generateDiagnosticAnalysis = async (
         _id: patientId,
         isDeleted: false,
       });
-      
+
       if (patient && patient.workplaceId.toString() !== workplaceId.toString()) {
         logger.info('Super admin cross-workplace patient access', {
           patientId,
@@ -214,6 +216,7 @@ export const generateDiagnosticAnalysis = async (
       patientId,
       pharmacistId: userId,
       workplaceId,
+      appointmentId: appointmentId || undefined, // Link to appointment if provided
       symptoms,
       labResults,
       currentMedications,
@@ -244,6 +247,29 @@ export const generateDiagnosticAnalysis = async (
     });
 
     await diagnosticCase.save();
+
+    // Send notification to patient if lab results are present
+    if (labResults && labResults.length > 0) {
+      const patient = await Patient.findById(patientId);
+      const patientUserId = (patient as any)?.userId;
+      if (patientUserId) {
+        const testName = labResults.map(r => r.testName).join(', ') || 'Lab Tests';
+        await healthRecordsNotificationService.notifyLabResultAvailable(
+          new mongoose.Types.ObjectId(patientUserId.toString()),
+          new mongoose.Types.ObjectId(workplaceId.toString()),
+          new mongoose.Types.ObjectId(diagnosticCase._id.toString()),
+          testName
+        ).catch(error => {
+          logger.error('Failed to send lab result notification:', error);
+          // Don't fail the request if notification fails
+        });
+        logger.info('Lab result notification sent', {
+          patientUserId,
+          diagnosticCaseId: diagnosticCase._id,
+          testName,
+        });
+      }
+    }
 
     // Create diagnostic history entry for persistent storage
     const diagnosticHistory = new DiagnosticHistory({
@@ -2624,7 +2650,7 @@ export const validatePatientAccess = async (
         _id: patientId,
         isDeleted: false,
       });
-      
+
       if (patient && patient.workplaceId.toString() !== workplaceId.toString()) {
         logger.info('Super admin cross-workplace patient access', {
           patientId,

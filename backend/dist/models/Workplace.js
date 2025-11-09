@@ -189,6 +189,36 @@ const workplaceSchema = new mongoose_1.Schema({
                 type: String,
             }],
     },
+    healthRecordsFeatures: {
+        labResults: {
+            type: Boolean,
+            default: true,
+        },
+        vitalsTracking: {
+            type: Boolean,
+            default: true,
+        },
+        visitHistory: {
+            type: Boolean,
+            default: true,
+        },
+        downloadRecords: {
+            type: Boolean,
+            default: true,
+        },
+        labInterpretations: {
+            type: Boolean,
+            default: true,
+        },
+        vitalsVerification: {
+            type: Boolean,
+            default: true,
+        },
+        visitSummaries: {
+            type: Boolean,
+            default: true,
+        },
+    },
     currentSubscriptionId: {
         type: mongoose_1.default.Schema.Types.ObjectId,
         ref: 'Subscription',

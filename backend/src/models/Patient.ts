@@ -93,6 +93,7 @@ export interface IPatient extends Document {
   patientLoggedVitals: Array<{
     _id?: mongoose.Types.ObjectId;
     recordedDate: Date;
+    appointmentId?: mongoose.Types.ObjectId; // Link to appointment if logged during consultation
     bloodPressure?: { systolic: number; diastolic: number };
     heartRate?: number;
     temperature?: number;
@@ -196,7 +197,7 @@ export interface IPatient extends Document {
   updateInterventionFlags(): Promise<void>;
   getDiagnosticHistoryCount(): Promise<number>;
   getLatestDiagnosticHistory(): Promise<any>;
-  
+
   // New methods for patient portal fields
   addAllergy(allergyData: any, recordedBy?: mongoose.Types.ObjectId): void;
   removeAllergy(allergyId: string): boolean;
@@ -213,6 +214,9 @@ export interface IPatient extends Document {
   getVitalsHistory(limit?: number): any[];
   getLatestVitals(): any;
   verifyVitals(vitalsId: string, verifiedBy: mongoose.Types.ObjectId): boolean;
+  unverifyVitals(vitalsId: string): boolean;
+  getUnverifiedVitals(): any[];
+  getVerifiedVitals(limit?: number): any[];
 }
 
 const patientSchema = new Schema(
@@ -497,6 +501,11 @@ const patientSchema = new Schema(
           type: Date,
           required: [true, 'Recorded date is required'],
           default: Date.now,
+        },
+        appointmentId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Appointment',
+          required: false,
         },
         bloodPressure: {
           systolic: {
@@ -839,7 +848,7 @@ patientSchema.virtual('lastAppointmentDate').get(async function (this: IPatient)
     })
       .sort({ scheduledDate: -1 })
       .select('scheduledDate');
-    
+
     return lastAppointment?.scheduledDate;
   } catch (error) {
     return undefined;
@@ -1019,9 +1028,9 @@ patientSchema.methods.addEmergencyContact = function (
       contact.isPrimary = false;
     });
   }
-  
+
   this.enhancedEmergencyContacts.push(contactData);
-  
+
   // Sort by priority
   this.enhancedEmergencyContacts.sort((a, b) => a.priority - b.priority);
 };
@@ -1054,14 +1063,14 @@ patientSchema.methods.updateEmergencyContact = function (
         }
       });
     }
-    
+
     Object.assign(contact, updates);
-    
+
     // Re-sort by priority if priority changed
     if (updates.priority !== undefined) {
       this.enhancedEmergencyContacts.sort((a, b) => a.priority - b.priority);
     }
-    
+
     return true;
   }
   return false;
@@ -1101,7 +1110,7 @@ patientSchema.methods.logVitals = function (
     isVerified: false,
   };
   this.patientLoggedVitals.push(vitals);
-  
+
   // Keep only last 100 vitals entries to prevent unlimited growth
   if (this.patientLoggedVitals.length > 100) {
     this.patientLoggedVitals = this.patientLoggedVitals
@@ -1121,7 +1130,7 @@ patientSchema.methods.getVitalsHistory = function (
 
 patientSchema.methods.getLatestVitals = function (this: IPatient): any {
   if (this.patientLoggedVitals.length === 0) return null;
-  
+
   return this.patientLoggedVitals
     .sort((a, b) => b.recordedDate.getTime() - a.recordedDate.getTime())[0];
 };
@@ -1142,6 +1151,39 @@ patientSchema.methods.verifyVitals = function (
   return false;
 };
 
+patientSchema.methods.unverifyVitals = function (
+  this: IPatient,
+  vitalsId: string
+): boolean {
+  const vitals = this.patientLoggedVitals.find(
+    vitals => vitals._id?.toString() === vitalsId
+  );
+  if (vitals) {
+    vitals.isVerified = false;
+    vitals.verifiedBy = undefined;
+    return true;
+  }
+  return false;
+};
+
+patientSchema.methods.getUnverifiedVitals = function (
+  this: IPatient
+): any[] {
+  return this.patientLoggedVitals
+    .filter(vitals => !vitals.isVerified)
+    .sort((a, b) => b.recordedDate.getTime() - a.recordedDate.getTime());
+};
+
+patientSchema.methods.getVerifiedVitals = function (
+  this: IPatient,
+  limit: number = 20
+): any[] {
+  return this.patientLoggedVitals
+    .filter(vitals => vitals.isVerified)
+    .sort((a, b) => b.recordedDate.getTime() - a.recordedDate.getTime())
+    .slice(0, limit);
+};
+
 // Pre-save middleware to validate and set computed fields
 patientSchema.pre('save', function (this: IPatient) {
   // Ensure either dob or age is provided
@@ -1153,27 +1195,27 @@ patientSchema.pre('save', function (this: IPatient) {
   if (this.dob) {
     this.age = this.getAge();
   }
-  
+
   // Validate emergency contacts - ensure only one primary contact
   const primaryContacts = this.enhancedEmergencyContacts.filter(contact => contact.isPrimary);
   if (primaryContacts.length > 1) {
     throw new Error('Only one emergency contact can be set as primary');
   }
-  
+
   // Validate emergency contact priorities are unique
   const priorities = this.enhancedEmergencyContacts.map(contact => contact.priority);
   const uniquePriorities = new Set(priorities);
   if (priorities.length !== uniquePriorities.size) {
     throw new Error('Emergency contact priorities must be unique');
   }
-  
+
   // Validate chronic conditions - ensure diagnosed dates are not in future
   for (const condition of this.chronicConditions) {
     if (condition.diagnosedDate > new Date()) {
       throw new Error('Chronic condition diagnosed date cannot be in the future');
     }
   }
-  
+
   // Validate vitals data ranges
   for (const vitals of this.patientLoggedVitals) {
     if (vitals.bloodPressure) {

@@ -51,7 +51,7 @@ import { toast } from 'react-hot-toast';
 // Use the stable version of patient store
 import { usePatientStore } from '../../../stores';
 
-// Test 2: Add back form validation
+// Form validation schema - updated to match new form structure
 const caseIntakeSchema = z.object({
   patientId: z.string().min(1, 'Patient selection is required'),
   symptoms: z.object({
@@ -70,15 +70,7 @@ const caseIntakeSchema = z.object({
       respiratoryRate: z.number().optional(),
     })
     .optional(),
-  currentMedications: z
-    .array(
-      z.object({
-        name: z.string(),
-        dosage: z.string(),
-        frequency: z.string(),
-      })
-    )
-    .optional(),
+  currentMedications: z.any().optional(), // Accept any format (string or object array)
   allergies: z.string().optional(),
   medicalHistory: z.string().min(1, 'Medical history is required'),
   labResults: z.array(z.string()).optional(),
@@ -235,7 +227,25 @@ const CaseIntakePage: React.FC = () => {
     const fieldsToValidate = getFieldsForStep(activeStep);
     const isValid = await trigger(fieldsToValidate);
 
-    if (isValid && activeStep < STEPS.length - 1) {
+    if (!isValid) {
+      // Show error message indicating which fields need to be filled
+      const stepErrors = fieldsToValidate
+        .filter(field => errors[field])
+        .map(field => {
+          if (field === 'patientId') return 'Patient selection';
+          if (field === 'symptoms') return 'Subjective symptoms';
+          if (field === 'medicalHistory') return 'Medical history';
+          if (field === 'consent') return 'Consent agreement';
+          return field;
+        });
+
+      if (stepErrors.length > 0) {
+        toast.error(`Please fill required fields: ${stepErrors.join(', ')}`);
+      }
+      return;
+    }
+
+    if (activeStep < STEPS.length - 1) {
       setActiveStep(activeStep + 1);
     }
   };
@@ -255,6 +265,8 @@ const CaseIntakePage: React.FC = () => {
   const onSubmit = async (data: CaseIntakeFormData) => {
     try {
       setSubmitting(true);
+      console.log('=== FORM SUBMISSION STARTED ===');
+      console.log('Form data:', data);
 
       // First validate patient access
       console.log('Validating patient access for:', data.patientId);
@@ -276,8 +288,23 @@ const CaseIntakePage: React.FC = () => {
         }
       );
 
-      // Debug: Log the form data
-      console.log('Form data received:', data);
+      // Transform medications to proper format
+      let transformedMedications: any[] = [];
+      if (data.currentMedications) {
+        if (Array.isArray(data.currentMedications)) {
+          transformedMedications = data.currentMedications.map((med: any) => {
+            if (typeof med === 'string') {
+              const parts = med.split('-').map(p => p.trim());
+              return {
+                name: parts[0] || med,
+                dosage: parts[1] || '',
+                frequency: parts[2] || ''
+              };
+            }
+            return med;
+          });
+        }
+      }
 
       // Transform form data to match API expectations
       const caseData = {
@@ -316,8 +343,10 @@ const CaseIntakePage: React.FC = () => {
             ? Number(data.vitals.bloodGlucose)
             : undefined,
         },
-        currentMedications: data.currentMedications || [],
+        currentMedications: transformedMedications,
         labResults: data.labResults || [],
+        medicalHistory: data.medicalHistory || '',
+        allergies: data.allergies ? data.allergies.split('\n').filter(a => a.trim()) : [],
         patientConsent: {
           provided: true,
           method: 'electronic',
@@ -330,6 +359,7 @@ const CaseIntakePage: React.FC = () => {
       // Validate required fields before submission
       if (!caseData.patientId) {
         toast.error('Patient selection is required');
+        setSubmitting(false);
         return;
       }
 
@@ -338,15 +368,20 @@ const CaseIntakePage: React.FC = () => {
         caseData.symptoms.subjective.length === 0
       ) {
         toast.error('At least one subjective symptom is required');
+        setSubmitting(false);
         return;
       }
 
       // Submit case for AI analysis
+      console.log('Submitting to AI service...');
       const diagnosticCase = await aiDiagnosticService.submitCase(caseData);
 
       // Dismiss loading toast and show success message
       toast.dismiss('ai-analysis-loading');
       toast.success('AI analysis completed successfully!');
+
+      console.log('=== SUBMISSION SUCCESSFUL ===');
+      console.log('Diagnostic case:', diagnosticCase);
 
       // Navigate to results page with the completed analysis
       navigate(`/pharmacy/diagnostics/case/${diagnosticCase.id}/results`);
@@ -622,9 +657,22 @@ const CaseIntakePage: React.FC = () => {
                 >
                   <PersonIcon />
                 </Avatar>
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Choose Patient
-                </Typography>
+                <Box sx={{ flex: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                      Choose Patient
+                    </Typography>
+                    <Chip
+                      label="REQUIRED"
+                      size="small"
+                      color="error"
+                      sx={{ fontWeight: 700, fontSize: '0.7rem' }}
+                    />
+                  </Box>
+                  <Typography variant="caption" color="text.secondary">
+                    Select the patient for this diagnostic case
+                  </Typography>
+                </Box>
               </Box>
 
               <Controller
@@ -786,10 +834,18 @@ const CaseIntakePage: React.FC = () => {
                     >
                       <AssignmentIcon />
                     </Avatar>
-                    <Box>
-                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                        Subjective Symptoms
-                      </Typography>
+                    <Box sx={{ flex: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                          Subjective Symptoms
+                        </Typography>
+                        <Chip
+                          label="REQUIRED"
+                          size="small"
+                          color="error"
+                          sx={{ fontWeight: 700, fontSize: '0.7rem' }}
+                        />
+                      </Box>
                       <Typography variant="body2" color="text.secondary">
                         Patient's reported symptoms and complaints
                       </Typography>
@@ -913,10 +969,19 @@ Examples:
                     >
                       <LocalHospitalIcon />
                     </Avatar>
-                    <Box>
-                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                        Symptom Characteristics
-                      </Typography>
+                    <Box sx={{ flex: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                          Symptom Characteristics
+                        </Typography>
+                        <Chip
+                          label="OPTIONAL"
+                          size="small"
+                          color="default"
+                          variant="outlined"
+                          sx={{ fontSize: '0.7rem' }}
+                        />
+                      </Box>
                       <Typography variant="body2" color="text.secondary">
                         Duration, severity, and onset details
                       </Typography>
@@ -1076,36 +1141,47 @@ Examples:
         return (
           <Box>
             <Grid container spacing={4}>
-              {/* Medical History */}
+              {/* Section 1: Medical History */}
               <Grid item xs={12}>
                 <Paper
                   elevation={0}
                   sx={{
-                    p: 3,
+                    p: 4,
                     borderRadius: 3,
-                    border: '1px solid',
-                    borderColor: errors.medicalHistory ? 'error.main' : 'divider',
+                    border: '2px solid',
+                    borderColor: errors.medicalHistory ? 'error.main' : 'primary.main',
                     bgcolor: 'background.paper',
+                    transition: 'all 0.3s',
+                    '&:hover': {
+                      boxShadow: 4,
+                    }
                   }}
                 >
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                     <Avatar
                       sx={{
-                        bgcolor: 'primary.50',
-                        color: 'primary.main',
-                        width: 40,
-                        height: 40,
+                        bgcolor: 'primary.main',
+                        width: 48,
+                        height: 48,
                         mr: 2,
                       }}
                     >
                       <MedicalInformationIcon />
                     </Avatar>
-                    <Box>
-                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                        Medical History
-                      </Typography>
+                    <Box sx={{ flex: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                          1. Medical History
+                        </Typography>
+                        <Chip
+                          label="REQUIRED"
+                          size="small"
+                          color="error"
+                          sx={{ fontWeight: 700, fontSize: '0.7rem' }}
+                        />
+                      </Box>
                       <Typography variant="body2" color="text.secondary">
-                        Comprehensive patient medical background
+                        Patient's medical background and history
                       </Typography>
                     </Box>
                   </Box>
@@ -1118,21 +1194,14 @@ Examples:
                         {...field}
                         fullWidth
                         multiline
-                        rows={6}
-                        placeholder="Document patient's medical history in detail...
-
-Examples:
-• Past medical conditions and diagnoses
-• Previous surgeries and procedures
-• Family medical history
-• Current medications and treatments
-• Previous hospitalizations
-• Chronic conditions"
+                        rows={5}
+                        placeholder="Document patient's medical history...&#10;&#10;Examples:&#10;• Past medical conditions (hypertension, diabetes, etc.)&#10;• Previous surgeries and procedures&#10;• Family medical history&#10;• Previous hospitalizations&#10;• Chronic conditions"
                         error={!!errors.medicalHistory}
-                        helperText={errors.medicalHistory?.message}
+                        helperText={errors.medicalHistory?.message || "Enter relevant medical background information"}
                         sx={{
                           '& .MuiOutlinedInput-root': {
                             borderRadius: 2,
+                            bgcolor: 'grey.50'
                           }
                         }}
                       />
@@ -1141,37 +1210,124 @@ Examples:
                 </Paper>
               </Grid>
 
-              {/* Allergies */}
+              {/* Section 2: Current Medications */}
               <Grid item xs={12}>
                 <Paper
                   elevation={0}
                   sx={{
-                    p: 3,
+                    p: 4,
                     borderRadius: 3,
-                    border: '1px solid',
-                    borderColor: 'divider',
+                    border: '2px solid',
+                    borderColor: 'success.main',
                     bgcolor: 'background.paper',
+                    transition: 'all 0.3s',
+                    '&:hover': {
+                      boxShadow: 4,
+                    }
                   }}
                 >
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                     <Avatar
                       sx={{
-                        bgcolor: 'warning.50',
-                        color: 'warning.main',
-                        width: 40,
-                        height: 40,
+                        bgcolor: 'success.main',
+                        width: 48,
+                        height: 48,
+                        mr: 2,
+                      }}
+                    >
+                      💊
+                    </Avatar>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 700, color: 'success.main' }}>
+                        2. Current Medications
+                        <Chip label="Optional" size="small" color="success" variant="outlined" sx={{ ml: 1 }} />
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        List all medications the patient is currently taking
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  <Alert severity="info" icon="💡" sx={{ mb: 2 }}>
+                    Enter one medication per line. Include name, dosage, and frequency.
+                  </Alert>
+
+                  <Controller
+                    name="currentMedications"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        value={Array.isArray(field.value) ? field.value.map((med: any) =>
+                          typeof med === 'string' ? med : `${med.name} - ${med.dosage} - ${med.frequency}`
+                        ).join('\n') : ''}
+                        onChange={(e) => {
+                          const lines = e.target.value.split('\n').filter(line => line.trim());
+                          // Convert to array of medication objects or strings
+                          const medications = lines.map(line => {
+                            const parts = line.split('-').map(p => p.trim());
+                            if (parts.length >= 3) {
+                              return {
+                                name: parts[0],
+                                dosage: parts[1],
+                                frequency: parts[2]
+                              };
+                            }
+                            return line; // Keep as string if format doesn't match
+                          });
+                          field.onChange(medications);
+                        }}
+                        fullWidth
+                        multiline
+                        rows={4}
+                        placeholder="Enter current medications (one per line)...&#10;&#10;Format: Medication Name - Dosage - Frequency&#10;&#10;Examples:&#10;• Metformin - 500mg - Twice daily&#10;• Lisinopril - 10mg - Once daily&#10;• Atorvastatin - 20mg - At bedtime&#10;• Aspirin - 81mg - Once daily"
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: 2,
+                            bgcolor: 'grey.50',
+                            fontFamily: 'monospace'
+                          }
+                        }}
+                      />
+                    )}
+                  />
+                </Paper>
+              </Grid>
+
+              {/* Section 3: Allergies & Adverse Reactions */}
+              <Grid item xs={12}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 4,
+                    borderRadius: 3,
+                    border: '2px solid',
+                    borderColor: 'warning.main',
+                    bgcolor: 'background.paper',
+                    transition: 'all 0.3s',
+                    '&:hover': {
+                      boxShadow: 4,
+                    }
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                    <Avatar
+                      sx={{
+                        bgcolor: 'warning.main',
+                        width: 48,
+                        height: 48,
                         mr: 2,
                       }}
                     >
                       <LocalHospitalIcon />
                     </Avatar>
                     <Box>
-                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                        Allergies & Adverse Reactions
-                        <Chip label="Optional" size="small" sx={{ ml: 1 }} />
+                      <Typography variant="h6" sx={{ fontWeight: 700, color: 'warning.main' }}>
+                        3. Allergies & Adverse Reactions
+                        <Chip label="Optional" size="small" color="warning" variant="outlined" sx={{ ml: 1 }} />
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Known allergies and adverse drug reactions
+                        Document known allergies and previous adverse reactions
                       </Typography>
                     </Box>
                   </Box>
@@ -1185,17 +1341,11 @@ Examples:
                         fullWidth
                         multiline
                         rows={3}
-                        placeholder="List any known allergies and adverse reactions...
-
-Examples:
-• Drug allergies (penicillin, sulfa, etc.)
-• Food allergies
-• Environmental allergies
-• Previous adverse drug reactions
-• Severity of reactions"
+                        placeholder="List any known allergies...&#10;&#10;Examples:&#10;• Penicillin - Rash and hives&#10;• Sulfa drugs - Severe reaction&#10;• Peanuts - Anaphylaxis&#10;• Latex - Contact dermatitis"
                         sx={{
                           '& .MuiOutlinedInput-root': {
                             borderRadius: 2,
+                            bgcolor: 'grey.50'
                           }
                         }}
                       />
@@ -1204,42 +1354,121 @@ Examples:
                 </Paper>
               </Grid>
 
-              {/* Vital Signs */}
+              {/* Section 4: Laboratory Results */}
               <Grid item xs={12}>
                 <Paper
                   elevation={0}
                   sx={{
-                    p: 3,
+                    p: 4,
                     borderRadius: 3,
-                    border: '1px solid',
-                    borderColor: 'divider',
+                    border: '2px solid',
+                    borderColor: 'info.main',
                     bgcolor: 'background.paper',
+                    transition: 'all 0.3s',
+                    '&:hover': {
+                      boxShadow: 4,
+                    }
                   }}
                 >
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                     <Avatar
                       sx={{
-                        bgcolor: 'secondary.50',
-                        color: 'secondary.main',
-                        width: 40,
-                        height: 40,
+                        bgcolor: 'info.main',
+                        width: 48,
+                        height: 48,
+                        mr: 2,
+                      }}
+                    >
+                      🔬
+                    </Avatar>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 700, color: 'info.main' }}>
+                        4. Laboratory Results
+                        <Chip label="Optional" size="small" color="info" variant="outlined" sx={{ ml: 1 }} />
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Recent lab test results and clinical findings
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  <Alert severity="info" icon="📋" sx={{ mb: 2 }}>
+                    Format: Test Name: Value (Reference Range) - Status
+                  </Alert>
+
+                  <Controller
+                    name="labResults"
+                    control={control}
+                    render={({ field }) => (
+                      <TextField
+                        {...field}
+                        value={field.value?.join('\n') || ''}
+                        onChange={(e) => {
+                          const lines = e.target.value.split('\n').filter(line => line.trim());
+                          field.onChange(lines);
+                        }}
+                        fullWidth
+                        multiline
+                        rows={5}
+                        placeholder="Enter lab results (one per line)...&#10;&#10;Examples:&#10;• WBC: 7.2 (4.5-11.0 × 10³/µL) - Normal&#10;• Hemoglobin: 14.5 g/dL (13.5-17.5) - Normal&#10;• Glucose: 105 mg/dL (70-100) - Elevated&#10;• Cholesterol: 195 mg/dL (<200) - Normal&#10;• Creatinine: 1.0 mg/dL (0.7-1.3) - Normal"
+                        sx={{
+                          '& .MuiOutlinedInput-root': {
+                            borderRadius: 2,
+                            bgcolor: 'grey.50',
+                            fontFamily: 'monospace',
+                            fontSize: '0.9rem'
+                          }
+                        }}
+                      />
+                    )}
+                  />
+                </Paper>
+              </Grid>
+
+              {/* Section 5: Vital Signs */}
+              <Grid item xs={12}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 4,
+                    borderRadius: 3,
+                    border: '2px solid',
+                    borderColor: 'secondary.main',
+                    bgcolor: 'background.paper',
+                    transition: 'all 0.3s',
+                    '&:hover': {
+                      boxShadow: 4,
+                    }
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                    <Avatar
+                      sx={{
+                        bgcolor: 'secondary.main',
+                        width: 48,
+                        height: 48,
                         mr: 2,
                       }}
                     >
                       <MonitorHeartIcon />
                     </Avatar>
-                    <Box>
-                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                        Vital Signs
-                        <Chip label="Optional" size="small" sx={{ ml: 1 }} />
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 700, color: 'secondary.main' }}>
+                        5. Vital Signs
+                        <Chip label="Optional" size="small" color="secondary" variant="outlined" sx={{ ml: 1 }} />
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Current vital signs and measurements
+                        Current physiological measurements
                       </Typography>
                     </Box>
                   </Box>
 
+                  <Alert severity="info" icon="📊" sx={{ mb: 3 }}>
+                    <strong>Reference Ranges:</strong> BP: 90-140/60-90 mmHg | HR: 60-100 bpm | Temp: 36.1-37.2°C | RR: 12-20/min | Glucose: 70-100 mg/dL
+                  </Alert>
+
                   <Grid container spacing={3}>
+                    {/* Blood Pressure */}
                     <Grid item xs={12} sm={6} md={4}>
                       <Controller
                         name="vitals.bloodPressure"
@@ -1249,17 +1478,26 @@ Examples:
                             {...field}
                             fullWidth
                             label="Blood Pressure"
-                            placeholder="e.g., 120/80 mmHg"
+                            placeholder="120/80"
                             InputProps={{
                               startAdornment: (
-                                <Box sx={{ mr: 1, color: 'text.secondary' }}>
+                                <Box sx={{ mr: 1, fontSize: '1.5rem' }}>
                                   🩸
                                 </Box>
+                              ),
+                              endAdornment: (
+                                <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                                  mmHg
+                                </Typography>
                               ),
                             }}
                             sx={{
                               '& .MuiOutlinedInput-root': {
                                 borderRadius: 2,
+                                bgcolor: 'grey.50',
+                                '&:hover': {
+                                  bgcolor: 'white',
+                                }
                               }
                             }}
                           />
@@ -1267,6 +1505,7 @@ Examples:
                       />
                     </Grid>
 
+                    {/* Heart Rate */}
                     <Grid item xs={12} sm={6} md={4}>
                       <Controller
                         name="vitals.heartRate"
@@ -1277,7 +1516,7 @@ Examples:
                             fullWidth
                             type="number"
                             label="Heart Rate"
-                            placeholder="e.g., 72"
+                            placeholder="72"
                             value={field.value || ''}
                             onChange={(e) =>
                               field.onChange(
@@ -1286,12 +1525,12 @@ Examples:
                             }
                             InputProps={{
                               startAdornment: (
-                                <Box sx={{ mr: 1, color: 'text.secondary' }}>
+                                <Box sx={{ mr: 1, fontSize: '1.5rem' }}>
                                   💓
                                 </Box>
                               ),
                               endAdornment: (
-                                <Typography variant="caption" color="text.secondary">
+                                <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
                                   bpm
                                 </Typography>
                               ),
@@ -1299,6 +1538,10 @@ Examples:
                             sx={{
                               '& .MuiOutlinedInput-root': {
                                 borderRadius: 2,
+                                bgcolor: 'grey.50',
+                                '&:hover': {
+                                  bgcolor: 'white',
+                                }
                               }
                             }}
                           />
@@ -1306,6 +1549,7 @@ Examples:
                       />
                     </Grid>
 
+                    {/* Temperature */}
                     <Grid item xs={12} sm={6} md={4}>
                       <Controller
                         name="vitals.temperature"
@@ -1316,7 +1560,7 @@ Examples:
                             fullWidth
                             type="number"
                             label="Temperature"
-                            placeholder="e.g., 36.5"
+                            placeholder="36.5"
                             value={field.value || ''}
                             onChange={(e) =>
                               field.onChange(
@@ -1325,12 +1569,12 @@ Examples:
                             }
                             InputProps={{
                               startAdornment: (
-                                <Box sx={{ mr: 1, color: 'text.secondary' }}>
+                                <Box sx={{ mr: 1, fontSize: '1.5rem' }}>
                                   🌡️
                                 </Box>
                               ),
                               endAdornment: (
-                                <Typography variant="caption" color="text.secondary">
+                                <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
                                   °C
                                 </Typography>
                               ),
@@ -1338,6 +1582,10 @@ Examples:
                             sx={{
                               '& .MuiOutlinedInput-root': {
                                 borderRadius: 2,
+                                bgcolor: 'grey.50',
+                                '&:hover': {
+                                  bgcolor: 'white',
+                                }
                               }
                             }}
                           />
@@ -1345,6 +1593,7 @@ Examples:
                       />
                     </Grid>
 
+                    {/* Respiratory Rate */}
                     <Grid item xs={12} sm={6} md={4}>
                       <Controller
                         name="vitals.respiratoryRate"
@@ -1355,7 +1604,7 @@ Examples:
                             fullWidth
                             type="number"
                             label="Respiratory Rate"
-                            placeholder="e.g., 16"
+                            placeholder="16"
                             value={field.value || ''}
                             onChange={(e) =>
                               field.onChange(
@@ -1364,12 +1613,12 @@ Examples:
                             }
                             InputProps={{
                               startAdornment: (
-                                <Box sx={{ mr: 1, color: 'text.secondary' }}>
+                                <Box sx={{ mr: 1, fontSize: '1.5rem' }}>
                                   🫁
                                 </Box>
                               ),
                               endAdornment: (
-                                <Typography variant="caption" color="text.secondary">
+                                <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
                                   /min
                                 </Typography>
                               ),
@@ -1377,6 +1626,10 @@ Examples:
                             sx={{
                               '& .MuiOutlinedInput-root': {
                                 borderRadius: 2,
+                                bgcolor: 'grey.50',
+                                '&:hover': {
+                                  bgcolor: 'white',
+                                }
                               }
                             }}
                           />
@@ -1384,6 +1637,7 @@ Examples:
                       />
                     </Grid>
 
+                    {/* Blood Glucose */}
                     <Grid item xs={12} sm={6} md={4}>
                       <Controller
                         name="vitals.bloodGlucose"
@@ -1394,7 +1648,7 @@ Examples:
                             fullWidth
                             type="number"
                             label="Blood Glucose"
-                            placeholder="e.g., 95"
+                            placeholder="95"
                             value={field.value || ''}
                             onChange={(e) =>
                               field.onChange(
@@ -1403,12 +1657,12 @@ Examples:
                             }
                             InputProps={{
                               startAdornment: (
-                                <Box sx={{ mr: 1, color: 'text.secondary' }}>
-                                  🩸
+                                <Box sx={{ mr: 1, fontSize: '1.5rem' }}>
+                                  💉
                                 </Box>
                               ),
                               endAdornment: (
-                                <Typography variant="caption" color="text.secondary">
+                                <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
                                   mg/dL
                                 </Typography>
                               ),
@@ -1416,6 +1670,10 @@ Examples:
                             sx={{
                               '& .MuiOutlinedInput-root': {
                                 borderRadius: 2,
+                                bgcolor: 'grey.50',
+                                '&:hover': {
+                                  bgcolor: 'white',
+                                }
                               }
                             }}
                           />
@@ -1698,12 +1956,20 @@ Examples:
                     >
                       <VerifiedUserIcon />
                     </Avatar>
-                    <Box>
-                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                        AI Analysis Consent
-                      </Typography>
+                    <Box sx={{ flex: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                          AI Analysis Consent
+                        </Typography>
+                        <Chip
+                          label="REQUIRED"
+                          size="small"
+                          color="error"
+                          sx={{ fontWeight: 700, fontSize: '0.7rem' }}
+                        />
+                      </Box>
                       <Typography variant="body2" color="text.secondary">
-                        Required for AI-powered diagnostic analysis
+                        Must be checked before submitting
                       </Typography>
                     </Box>
                   </Box>
@@ -2093,11 +2359,33 @@ Examples:
                               >
                                 🤖 AI analysis may take up to 5 minutes to complete
                               </Typography>
+
+                              {/* Show validation errors if any */}
+                              {Object.keys(errors).length > 0 && (
+                                <Alert severity="error" sx={{ mb: 2, textAlign: 'left' }}>
+                                  <Typography variant="body2" fontWeight={600} gutterBottom>
+                                    Please fix the following errors:
+                                  </Typography>
+                                  <ul style={{ margin: 0, paddingLeft: 20 }}>
+                                    {errors.patientId && <li>{errors.patientId.message}</li>}
+                                    {errors.symptoms?.subjective && <li>{errors.symptoms.subjective.message}</li>}
+                                    {errors.medicalHistory && <li>{errors.medicalHistory.message}</li>}
+                                    {errors.consent && <li>{errors.consent.message}</li>}
+                                  </ul>
+                                </Alert>
+                              )}
+
                               <Button
                                 type="submit"
                                 variant="contained"
-                                disabled={!watch('consent') || submitting}
+                                disabled={!watch('consent') || submitting || Object.keys(errors).length > 0}
                                 size="large"
+                                onClick={() => {
+                                  console.log('Submit button clicked');
+                                  console.log('Form errors:', errors);
+                                  console.log('Consent value:', watch('consent'));
+                                  console.log('Submitting:', submitting);
+                                }}
                                 sx={{
                                   borderRadius: 3,
                                   px: 4,
@@ -2107,6 +2395,10 @@ Examples:
                                   background: 'linear-gradient(45deg, #667eea, #764ba2)',
                                   '&:hover': {
                                     background: 'linear-gradient(45deg, #5a6fd8, #6a4190)',
+                                  },
+                                  '&:disabled': {
+                                    background: 'grey.300',
+                                    color: 'grey.600',
                                   }
                                 }}
                                 startIcon={submitting ? <ScienceIcon /> : <CheckCircleIcon />}

@@ -239,6 +239,14 @@ export interface Visit extends AuditFields {
   date: string;
   soap: SOAPNotes;
   attachments?: VisitAttachment[];
+  patientSummary?: {
+    summary: string;
+    keyPoints: string[];
+    nextSteps: string[];
+    visibleToPatient: boolean;
+    summarizedBy?: ObjectId;
+    summarizedAt?: string;
+  };
 }
 
 // API Response Interfaces

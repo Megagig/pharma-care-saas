@@ -3,6 +3,7 @@ import { AuthRequest, WorkspaceContext, PlanLimits } from '../types/auth';
 import Workplace, { IWorkplace } from '../models/Workplace';
 import Subscription, { ISubscription } from '../models/Subscription';
 import SubscriptionPlan, { ISubscriptionPlan } from '../models/SubscriptionPlan';
+import PricingPlan, { IPricingPlan } from '../models/PricingPlan';
 import logger from '../utils/logger';
 
 // In-memory cache for workspace context
@@ -149,7 +150,7 @@ export const loadWorkspaceContext = async (
 async function loadUserWorkspaceContext(userId: any): Promise<WorkspaceContext> {
     let workspace: IWorkplace | null = null;
     let subscription: ISubscription | null = null;
-    let plan: ISubscriptionPlan | null = null;
+    let plan: ISubscriptionPlan | IPricingPlan | null = null;
 
     try {
         // Import User model to get workplaceId
@@ -184,9 +185,11 @@ async function loadUserWorkspaceContext(userId: any): Promise<WorkspaceContext> 
             }).populate('planId');
 
             // Get plan from subscription or workspace
+            // Note: subscription.planId references PricingPlan model
             if (subscription && subscription.planId) {
-                plan = subscription.planId as unknown as ISubscriptionPlan;
+                plan = subscription.planId as unknown as IPricingPlan;
             } else if (workspace.currentPlanId) {
+                // Fallback: workspace.currentPlanId might reference SubscriptionPlan
                 plan = await SubscriptionPlan.findById(workspace.currentPlanId);
             }
         }
@@ -195,29 +198,58 @@ async function loadUserWorkspaceContext(userId: any): Promise<WorkspaceContext> 
         const isTrialExpired = checkTrialExpired(workspace, subscription);
         const isSubscriptionActive = checkSubscriptionActive(subscription);
 
-        // Build limits from plan (adapting to existing SubscriptionPlan structure)
-        const limits: PlanLimits = plan ? {
-            patients: plan.features?.patientLimit || null,
-            users: plan.features?.teamSize || null,
-            locations: plan.features?.multiLocationDashboard ? null : 1, // Unlimited if multi-location enabled
-            storage: null, // Not defined in current model
-            apiCalls: plan.features?.apiAccess ? null : 0, // Unlimited if API access enabled
-        } : {
-            patients: null,
-            users: null,
-            locations: null,
-            storage: null,
-            apiCalls: null,
-        };
+        // Build limits based on plan type
+        const limits: PlanLimits = plan ?
+            ('features' in plan && typeof plan.features === 'object' && !Array.isArray(plan.features)) ? {
+                // SubscriptionPlan has features as object with boolean properties
+                patients: (plan as ISubscriptionPlan).features?.patientLimit || null,
+                users: (plan as ISubscriptionPlan).features?.teamSize || null,
+                locations: (plan as ISubscriptionPlan).features?.multiLocationDashboard ? null : 1,
+                storage: null,
+                apiCalls: (plan as ISubscriptionPlan).features?.apiAccess ? null : 0,
+            } : {
+                // PricingPlan has features as string array - use defaults
+                patients: null,
+                users: null,
+                locations: null,
+                storage: null,
+                apiCalls: null,
+            }
+            : {
+                patients: null,
+                users: null,
+                locations: null,
+                storage: null,
+                apiCalls: null,
+            };
 
-        // Build permissions array from plan features (will be enhanced by permission service)
+        // Build permissions array from plan features
         const permissions: string[] = [];
         if (plan?.features) {
-            // Convert boolean features to permission strings
-            Object.entries(plan.features).forEach(([key, value]) => {
-                if (value === true) {
-                    permissions.push(key);
-                }
+            if (Array.isArray(plan.features)) {
+                // PricingPlan: features is string[] - use directly
+                permissions.push(...plan.features);
+            } else if (typeof plan.features === 'object') {
+                // SubscriptionPlan: features is object with booleans - convert to strings
+                Object.entries(plan.features).forEach(([key, value]) => {
+                    if (value === true) {
+                        permissions.push(key);
+                    }
+                });
+            }
+        }
+
+        // Debug logging for development
+        if (process.env.NODE_ENV === 'development') {
+            logger.info('Workspace context loaded:', {
+                userId,
+                workspaceId: workspace?._id,
+                subscriptionTier: subscription?.tier,
+                planId: plan?._id,
+                planType: plan ? (Array.isArray(plan.features) ? 'PricingPlan' : 'SubscriptionPlan') : 'none',
+                permissionsCount: permissions.length,
+                hasAiDiagnostics: permissions.includes('ai_diagnostics'),
+                firstFivePermissions: permissions.slice(0, 5),
             });
         }
 

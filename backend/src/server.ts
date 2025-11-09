@@ -22,6 +22,7 @@ import { closeRedis } from './config/redis'; // CRITICAL: Use shared connection
 import './models/Medication';
 import './models/Conversation';
 import './models/Message';
+import './models/PricingPlan';  // ← CRITICAL: Register PricingPlan model for subscription populate
 
 const PORT: number = parseInt(process.env.PORT || '5000', 10);
 

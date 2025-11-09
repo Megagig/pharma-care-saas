@@ -13,6 +13,7 @@ const openRouterService_1 = __importDefault(require("../services/openRouterServi
 const logger_1 = __importDefault(require("../utils/logger"));
 const responseHelpers_1 = require("../utils/responseHelpers");
 const aiAnalysisHelpers_1 = require("../utils/aiAnalysisHelpers");
+const healthRecordsNotificationService_1 = __importDefault(require("../services/healthRecordsNotificationService"));
 const generateDiagnosticAnalysis = async (req, res) => {
     try {
         logger_1.default.info('Diagnostic analysis request received:', {
@@ -36,7 +37,7 @@ const generateDiagnosticAnalysis = async (req, res) => {
             });
             return;
         }
-        const { patientId, symptoms, labResults, currentMedications, vitalSigns, patientConsent, } = req.body;
+        const { patientId, symptoms, labResults, currentMedications, vitalSigns, patientConsent, appointmentId, } = req.body;
         if (!workplaceId) {
             res.status(400).json({
                 success: false,
@@ -164,6 +165,7 @@ const generateDiagnosticAnalysis = async (req, res) => {
             patientId,
             pharmacistId: userId,
             workplaceId,
+            appointmentId: appointmentId || undefined,
             symptoms,
             labResults,
             currentMedications,
@@ -193,6 +195,21 @@ const generateDiagnosticAnalysis = async (req, res) => {
             status: 'pending_review',
         });
         await diagnosticCase.save();
+        if (labResults && labResults.length > 0) {
+            const patient = await Patient_1.default.findById(patientId);
+            const patientUserId = patient?.userId;
+            if (patientUserId) {
+                const testName = labResults.map(r => r.testName).join(', ') || 'Lab Tests';
+                await healthRecordsNotificationService_1.default.notifyLabResultAvailable(new mongoose_1.default.Types.ObjectId(patientUserId.toString()), new mongoose_1.default.Types.ObjectId(workplaceId.toString()), new mongoose_1.default.Types.ObjectId(diagnosticCase._id.toString()), testName).catch(error => {
+                    logger_1.default.error('Failed to send lab result notification:', error);
+                });
+                logger_1.default.info('Lab result notification sent', {
+                    patientUserId,
+                    diagnosticCaseId: diagnosticCase._id,
+                    testName,
+                });
+            }
+        }
         const diagnosticHistory = new DiagnosticHistory_1.default({
             patientId,
             caseId: diagnosticCase.caseId,

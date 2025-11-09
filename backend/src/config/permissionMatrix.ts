@@ -212,6 +212,71 @@ export const PERMISSION_MATRIX: PermissionMatrix = {
     },
 
     // ========================================
+    // AI DIAGNOSTICS & THERAPEUTICS
+    // ========================================
+    'diagnostic:read': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['ai_diagnostics'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'diagnostic:create': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['ai_diagnostics'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'diagnostic:process': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['ai_diagnostics'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'diagnostic:review': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['ai_diagnostics'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'diagnostic:approve': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['ai_diagnostics'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: false,
+    },
+    'diagnostic:intervention': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['ai_diagnostics', 'clinicalInterventions'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: false,
+    },
+    'diagnostic:cancel': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['ai_diagnostics'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'diagnostic:retry': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['ai_diagnostics'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'diagnostic:analytics': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['ai_diagnostics', 'advancedReports'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+
+    // ========================================
     // APPOINTMENT MANAGEMENT
     // ========================================
     'appointment.create': {
@@ -882,6 +947,7 @@ export const TIER_FEATURES: Record<SubscriptionTier, string[]> = {
         'apiAccess',
         'auditLogs',
         'integrations',
+        'ai_diagnostics',
         'clinicalInterventions',
     ],
     pharmily: [
@@ -899,6 +965,7 @@ export const TIER_FEATURES: Record<SubscriptionTier, string[]> = {
         'adrReporting',
         'scheduledReports',
         'dataBackup',
+        'ai_diagnostics',
         'clinicalInterventions',
     ],
     network: [
@@ -920,6 +987,7 @@ export const TIER_FEATURES: Record<SubscriptionTier, string[]> = {
         'multiLocationDashboard',
         'teamManagement',
         'multiUserSupport',
+        'ai_diagnostics',
         'clinicalInterventions',
     ],
     enterprise: [
@@ -944,6 +1012,7 @@ export const TIER_FEATURES: Record<SubscriptionTier, string[]> = {
         'customIntegrations',
         'prioritySupport',
         'dedicatedManager',
+        'ai_diagnostics',
         'clinicalInterventions',
     ],
 };

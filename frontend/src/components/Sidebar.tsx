@@ -42,6 +42,7 @@ import MenuBook from '@mui/icons-material/MenuBook';
 import Psychology from '@mui/icons-material/Psychology';
 import Analytics from '@mui/icons-material/Analytics';
 import SupervisorAccount from '@mui/icons-material/SupervisorAccount';
+import Biotech from '@mui/icons-material/Biotech';
 
 // Use imported icons with aliases
 const AdminIcon = AdminPanelSettings;
@@ -55,6 +56,7 @@ const MenuBookIcon = MenuBook;
 const PsychologyIcon = Psychology;
 const AnalyticsIcon = Analytics;
 const SupervisorAccountIcon = SupervisorAccount;
+const BiotechIcon = Biotech;
 import { useSidebarControls } from '../stores/sidebarHooks';
 import { useRBAC } from '../hooks/useRBAC';
 import { useAuth } from '../hooks/useAuth';
@@ -154,6 +156,13 @@ const Sidebar = () => {
       path: '/pharmacy/diagnostics',
       icon: ScienceIcon,
       show: true,
+    },
+    {
+      name: 'Lab Interpretations',
+      path: '/pharmacy/lab-interpretations',
+      icon: BiotechIcon,
+      show: hasRole('pharmacist') || hasRole('pharmacy_team') || hasRole('pharmacy_outlet') || hasRole('owner') || hasRole('super_admin'),
+      badge: null,
     },
     {
       name: 'Communication Hub',

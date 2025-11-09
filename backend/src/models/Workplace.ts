@@ -57,6 +57,17 @@ export interface IWorkplace extends Document {
     services?: string[];
   };
 
+  // Patient Health Records Feature Flags
+  healthRecordsFeatures?: {
+    labResults: boolean; // View lab results with pharmacist interpretations
+    vitalsTracking: boolean; // Log and view vital signs history
+    visitHistory: boolean; // Access visit summaries and SOAP notes
+    downloadRecords: boolean; // Download medical records as PDF
+    labInterpretations: boolean; // Show patient-friendly lab interpretations
+    vitalsVerification: boolean; // Show verification status on vitals
+    visitSummaries: boolean; // Show pharmacist summaries for visits
+  };
+
   // New subscription fields
   currentSubscriptionId?: mongoose.Types.ObjectId;
   subscriptionId?: mongoose.Types.ObjectId; // Alias for currentSubscriptionId for backward compatibility
@@ -235,6 +246,38 @@ const workplaceSchema = new Schema(
       services: [{
         type: String,
       }],
+    },
+
+    // Patient Health Records Feature Flags
+    healthRecordsFeatures: {
+      labResults: {
+        type: Boolean,
+        default: true,
+      },
+      vitalsTracking: {
+        type: Boolean,
+        default: true,
+      },
+      visitHistory: {
+        type: Boolean,
+        default: true,
+      },
+      downloadRecords: {
+        type: Boolean,
+        default: true,
+      },
+      labInterpretations: {
+        type: Boolean,
+        default: true,
+      },
+      vitalsVerification: {
+        type: Boolean,
+        default: true,
+      },
+      visitSummaries: {
+        type: Boolean,
+        default: true,
+      },
     },
 
     // New subscription fields

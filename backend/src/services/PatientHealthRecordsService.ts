@@ -67,12 +67,15 @@ export class PatientHealthRecordsService {
         patientId: new mongoose.Types.ObjectId(patientId),
         workplaceId: new mongoose.Types.ObjectId(workplaceId),
         labResults: { $exists: true, $ne: [] },
-        status: { $in: ['completed', 'follow_up'] }
+        status: { $in: ['completed', 'follow_up'] },
+        // Only show lab results that have patient interpretation and are marked visible
+        'patientInterpretation.visibleToPatient': true,
       };
 
       const [results, total] = await Promise.all([
         DiagnosticCase.find(query)
           .populate('pharmacistId', 'firstName lastName')
+          .populate('patientInterpretation.interpretedBy', 'firstName lastName professionalTitle')
           .sort({ createdAt: -1 })
           .limit(limit)
           .skip(skip)

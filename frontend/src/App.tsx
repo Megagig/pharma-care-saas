@@ -83,6 +83,7 @@ import {
   LazyPublicPatientPortal,
   LazyWorkspaceSearchPage,
   LazyPatientWorkspaceDetailPage,
+  LazyPharmacistLabInterpretations,
   LazyBlogPage,
   LazyBlogPostDetails,
   LazyBlogManagement,
@@ -818,6 +819,24 @@ function App(): JSX.Element {
                                 </ProtectedRoute>
                               }
                             />
+
+                            {/* Health Records - Lab Interpretations */}
+                            <Route
+                              path="/pharmacy/lab-interpretations"
+                              element={
+                                <ProtectedRoute
+                                  requiredRole={['pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'owner', 'super_admin']}
+                                  requiresActiveSubscription
+                                >
+                                  <AppLayout>
+                                    <LazyWrapper fallback={PageSkeleton}>
+                                      <LazyPharmacistLabInterpretations />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
+                              }
+                            />
+
                             <Route
                               path="/pharmacy/communication"
                               element={

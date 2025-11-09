@@ -44,6 +44,15 @@ export interface IWorkplace extends Document {
         operatingHours?: string;
         services?: string[];
     };
+    healthRecordsFeatures?: {
+        labResults: boolean;
+        vitalsTracking: boolean;
+        visitHistory: boolean;
+        downloadRecords: boolean;
+        labInterpretations: boolean;
+        vitalsVerification: boolean;
+        visitSummaries: boolean;
+    };
     currentSubscriptionId?: mongoose.Types.ObjectId;
     subscriptionId?: mongoose.Types.ObjectId;
     currentPlanId?: mongoose.Types.ObjectId;

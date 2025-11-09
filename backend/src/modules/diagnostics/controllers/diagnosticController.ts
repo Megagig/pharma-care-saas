@@ -1111,3 +1111,74 @@ export const getDiagnosticReferrals = asyncHandler(
         }
     }
 );
+
+/**
+ * POST /api/diagnostics/patient/validate
+ * Validate patient access before submitting diagnostic case
+ */
+export const validatePatientAccess = asyncHandler(
+    async (req: AuthRequest, res: Response) => {
+        const context = getRequestContext(req);
+        const { patientId } = req.body;
+
+        if (!patientId) {
+            return sendError(res, 'BAD_REQUEST', 'Patient ID is required', 400);
+        }
+
+        try {
+            // Import Patient model
+            const Patient = require('../../../models/Patient').default;
+
+            // Super admin can access patients from ANY workplace (cross-workplace access)
+            let patientQuery: any = { _id: patientId };
+
+            // Regular users must be in the same workplace
+            if (req.user?.role !== 'super_admin') {
+                patientQuery.workplaceId = context.workplaceId;
+            }
+
+            // Check if patient exists and (for non-super-admins) belongs to the same workplace
+            const patient = await Patient.findOne(patientQuery)
+                .select('firstName lastName mrn workplaceId')
+                .populate('workplaceId', 'name');
+
+            if (!patient) {
+                return sendError(
+                    res,
+                    'NOT_FOUND',
+                    'Patient not found or you do not have access to this patient',
+                    404
+                );
+            }
+
+            // Log super admin cross-workplace access for audit
+            if (req.user?.role === 'super_admin' && patient.workplaceId?.toString() !== context.workplaceId) {
+                logger.info('Super admin cross-workplace patient access', {
+                    superAdminId: context.userId,
+                    superAdminWorkplace: context.workplaceId,
+                    patientId: patient._id,
+                    patientWorkplace: patient.workplaceId,
+                });
+            }
+
+            sendSuccess(
+                res,
+                {
+                    hasAccess: true,
+                    patientName: `${patient.firstName} ${patient.lastName}`,
+                    mrn: patient.mrn,
+                    workplaceName: (patient.workplaceId as any)?.name || 'Unknown',
+                },
+                'Patient access validated successfully'
+            );
+        } catch (error) {
+            logger.error('Failed to validate patient access:', error);
+            sendError(
+                res,
+                'SERVER_ERROR',
+                `Failed to validate patient access: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                500
+            );
+        }
+    }
+);

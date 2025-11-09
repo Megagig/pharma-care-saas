@@ -26,11 +26,27 @@ export interface IVisit extends Document {
   date: Date;
   soap: ISOAPNotes;
   attachments?: IAttachment[];
+  patientSummary?: {
+    summary: string;
+    keyPoints: string[];
+    nextSteps: string[];
+    visibleToPatient: boolean;
+    summarizedBy?: mongoose.Types.ObjectId;
+    summarizedAt?: Date;
+  };
   createdBy: mongoose.Types.ObjectId;
   updatedBy?: mongoose.Types.ObjectId;
   isDeleted: boolean;
   createdAt: Date;
   updatedAt: Date;
+
+  // Methods
+  addPatientSummary(summaryData: any, userId: mongoose.Types.ObjectId): Promise<void>;
+  updatePatientSummary(summaryData: any): Promise<void>;
+  makeVisibleToPatient(): Promise<void>;
+  hideFromPatient(): Promise<void>;
+  hasPatientSummary(): boolean;
+  isVisibleToPatient(): boolean;
 }
 
 const attachmentSchema = new Schema(
@@ -172,6 +188,38 @@ const visitSchema = new Schema(
           return attachments.length <= 10;
         },
         message: 'Maximum 10 attachments allowed per visit',
+      },
+    },
+    patientSummary: {
+      summary: {
+        type: String,
+        trim: true,
+        maxlength: [1000, 'Summary cannot exceed 1000 characters'],
+      },
+      keyPoints: [
+        {
+          type: String,
+          trim: true,
+          maxlength: [300, 'Key point cannot exceed 300 characters'],
+        },
+      ],
+      nextSteps: [
+        {
+          type: String,
+          trim: true,
+          maxlength: [300, 'Next step cannot exceed 300 characters'],
+        },
+      ],
+      visibleToPatient: {
+        type: Boolean,
+        default: false,
+      },
+      summarizedBy: {
+        type: Schema.Types.ObjectId,
+        ref: 'User',
+      },
+      summarizedAt: {
+        type: Date,
       },
     },
   },
@@ -482,6 +530,79 @@ visitSchema.methods.getSummary = function (this: IVisit): string {
   }
 
   return parts.join(' | ') || 'No summary available';
+};
+
+// Patient Summary Methods
+visitSchema.methods.addPatientSummary = async function (
+  this: IVisit,
+  summaryData: any,
+  userId: mongoose.Types.ObjectId
+): Promise<void> {
+  if (summaryData.keyPoints && summaryData.keyPoints.length > 10) {
+    throw new Error('Maximum 10 key points allowed');
+  }
+  if (summaryData.nextSteps && summaryData.nextSteps.length > 10) {
+    throw new Error('Maximum 10 next steps allowed');
+  }
+
+  this.patientSummary = {
+    summary: summaryData.summary,
+    keyPoints: summaryData.keyPoints || [],
+    nextSteps: summaryData.nextSteps || [],
+    visibleToPatient: false,
+    summarizedBy: userId,
+    summarizedAt: new Date(),
+  };
+
+  await this.save();
+};
+
+visitSchema.methods.updatePatientSummary = async function (
+  this: IVisit,
+  summaryData: any
+): Promise<void> {
+  if (!this.patientSummary) {
+    throw new Error('No patient summary exists to update');
+  }
+
+  if (summaryData.keyPoints && summaryData.keyPoints.length > 10) {
+    throw new Error('Maximum 10 key points allowed');
+  }
+  if (summaryData.nextSteps && summaryData.nextSteps.length > 10) {
+    throw new Error('Maximum 10 next steps allowed');
+  }
+
+  this.patientSummary.summary = summaryData.summary || this.patientSummary.summary;
+  this.patientSummary.keyPoints = summaryData.keyPoints || this.patientSummary.keyPoints;
+  this.patientSummary.nextSteps = summaryData.nextSteps || this.patientSummary.nextSteps;
+
+  await this.save();
+};
+
+visitSchema.methods.makeVisibleToPatient = async function (this: IVisit): Promise<void> {
+  if (!this.patientSummary) {
+    throw new Error('No patient summary exists');
+  }
+
+  this.patientSummary.visibleToPatient = true;
+  await this.save();
+};
+
+visitSchema.methods.hideFromPatient = async function (this: IVisit): Promise<void> {
+  if (!this.patientSummary) {
+    throw new Error('No patient summary exists');
+  }
+
+  this.patientSummary.visibleToPatient = false;
+  await this.save();
+};
+
+visitSchema.methods.hasPatientSummary = function (this: IVisit): boolean {
+  return !!(this.patientSummary && this.patientSummary.summary);
+};
+
+visitSchema.methods.isVisibleToPatient = function (this: IVisit): boolean {
+  return !!(this.patientSummary && this.patientSummary.visibleToPatient);
 };
 
 export default mongoose.model<IVisit>('Visit', visitSchema);

@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
-import { 
-  Box, 
-  Container, 
-  Typography, 
-  Tabs, 
-  Tab, 
-  Paper, 
+import {
+  Box,
+  Container,
+  Typography,
+  Tabs,
+  Tab,
+  Paper,
   Alert,
   CircularProgress,
   Button,
@@ -17,7 +17,7 @@ import {
   IconButton,
   Tooltip
 } from '@mui/material';
-import { 
+import {
   Refresh as RefreshIcon,
   Download as DownloadIcon,
   Add as AddIcon,
@@ -66,7 +66,7 @@ function a11yProps(index: number) {
 const PatientHealthRecords: React.FC = () => {
   const { user } = usePatientAuth();
   const [tabValue, setTabValue] = useState(0);
-  
+
   const {
     labResults,
     visitHistory,
@@ -127,7 +127,7 @@ const PatientHealthRecords: React.FC = () => {
           <Typography variant="h4" component="h1" gutterBottom>
             My Health Records
           </Typography>
-          
+
           <Typography variant="body1" color="text.secondary">
             Access your lab results, visit history, track vitals, and download medical records.
           </Typography>
@@ -143,7 +143,7 @@ const PatientHealthRecords: React.FC = () => {
           >
             {loading ? 'Loading...' : 'Refresh'}
           </Button>
-          
+
           <Button
             variant="contained"
             startIcon={downloadLoading ? <CircularProgress size={16} /> : <DownloadIcon />}
@@ -164,24 +164,24 @@ const PatientHealthRecords: React.FC = () => {
 
       <Paper sx={{ width: '100%' }}>
         <Box sx={{ borderBottom: 1, borderColor: 'divider' }}>
-          <Tabs 
-            value={tabValue} 
-            onChange={handleTabChange} 
+          <Tabs
+            value={tabValue}
+            onChange={handleTabChange}
             aria-label="health records tabs"
             variant="scrollable"
             scrollButtons="auto"
           >
-            <Tab 
-              label={`Lab Results (${labResults?.length || 0})`} 
-              {...a11yProps(0)} 
+            <Tab
+              label={`Lab Results (${labResults?.length || 0})`}
+              {...a11yProps(0)}
             />
-            <Tab 
-              label="Vitals Tracking" 
-              {...a11yProps(1)} 
+            <Tab
+              label="Vitals Tracking"
+              {...a11yProps(1)}
             />
-            <Tab 
-              label={`Visit History (${visitHistory?.length || 0})`} 
-              {...a11yProps(2)} 
+            <Tab
+              label={`Visit History (${visitHistory?.length || 0})`}
+              {...a11yProps(2)}
             />
           </Tabs>
         </Box>
@@ -193,7 +193,7 @@ const PatientHealthRecords: React.FC = () => {
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
             Your laboratory test results with reference ranges and pharmacist interpretations.
           </Typography>
-          
+
           {loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
               <CircularProgress />
@@ -203,10 +203,10 @@ const PatientHealthRecords: React.FC = () => {
               {labResults
                 .sort((a, b) => new Date(b.testDate).getTime() - new Date(a.testDate).getTime())
                 .map((result) => (
-                <Grid item xs={12} key={result._id}>
-                  <LabResultCard result={result} />
-                </Grid>
-              ))}
+                  <Grid item xs={12} key={result._id}>
+                    <LabResultCard result={result} />
+                  </Grid>
+                ))}
             </Grid>
           ) : (
             <Alert severity="info">
@@ -222,7 +222,7 @@ const PatientHealthRecords: React.FC = () => {
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
             Log your vital signs and view trends over time with graphical representations.
           </Typography>
-          
+
           <Grid container spacing={3}>
             {/* Vitals Logging Form */}
             <Grid item xs={12} md={4}>
@@ -278,80 +278,98 @@ const PatientHealthRecords: React.FC = () => {
                         .sort((a, b) => new Date(b.recordedDate).getTime() - new Date(a.recordedDate).getTime())
                         .slice(0, 10) // Show last 10 entries
                         .map((vital, index) => (
-                        <Card key={index} variant="outlined">
-                          <CardContent sx={{ py: 2 }}>
-                            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
-                              <Typography variant="subtitle2" color="text.secondary">
-                                {new Date(vital.recordedDate).toLocaleDateString('en-US', {
-                                  year: 'numeric',
-                                  month: 'short',
-                                  day: 'numeric',
-                                  hour: '2-digit',
-                                  minute: '2-digit'
-                                })}
-                              </Typography>
-                              <Chip 
-                                label="Patient Logged" 
-                                size="small" 
-                                color="primary" 
-                                variant="outlined" 
-                              />
-                            </Box>
-                            
-                            <Grid container spacing={2}>
-                              {vital.bloodPressure && (
-                                <Grid item xs={6} sm={3}>
-                                  <Typography variant="body2" color="text.secondary">
-                                    Blood Pressure
-                                  </Typography>
-                                  <Typography variant="body1" fontWeight="medium">
-                                    {vital.bloodPressure.systolic}/{vital.bloodPressure.diastolic} mmHg
-                                  </Typography>
-                                </Grid>
+                          <Card key={index} variant="outlined">
+                            <CardContent sx={{ py: 2 }}>
+                              <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
+                                <Typography variant="subtitle2" color="text.secondary">
+                                  {new Date(vital.recordedDate).toLocaleDateString('en-US', {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric',
+                                    hour: '2-digit',
+                                    minute: '2-digit'
+                                  })}
+                                </Typography>
+                                <Box sx={{ display: 'flex', gap: 1 }}>
+                                  <Chip
+                                    label="Patient Logged"
+                                    size="small"
+                                    color="primary"
+                                    variant="outlined"
+                                  />
+                                  {vital.isVerified ? (
+                                    <Chip
+                                      icon={<ViewIcon fontSize="small" />}
+                                      label="Verified by Pharmacist"
+                                      size="small"
+                                      color="success"
+                                      sx={{ fontWeight: 600 }}
+                                    />
+                                  ) : (
+                                    <Chip
+                                      label="Pending Verification"
+                                      size="small"
+                                      color="warning"
+                                      variant="outlined"
+                                    />
+                                  )}
+                                </Box>
+                              </Box>
+
+                              <Grid container spacing={2}>
+                                {vital.bloodPressure && (
+                                  <Grid item xs={6} sm={3}>
+                                    <Typography variant="body2" color="text.secondary">
+                                      Blood Pressure
+                                    </Typography>
+                                    <Typography variant="body1" fontWeight="medium">
+                                      {vital.bloodPressure.systolic}/{vital.bloodPressure.diastolic} mmHg
+                                    </Typography>
+                                  </Grid>
+                                )}
+
+                                {vital.heartRate && (
+                                  <Grid item xs={6} sm={3}>
+                                    <Typography variant="body2" color="text.secondary">
+                                      Heart Rate
+                                    </Typography>
+                                    <Typography variant="body1" fontWeight="medium">
+                                      {vital.heartRate} bpm
+                                    </Typography>
+                                  </Grid>
+                                )}
+
+                                {vital.weight && (
+                                  <Grid item xs={6} sm={3}>
+                                    <Typography variant="body2" color="text.secondary">
+                                      Weight
+                                    </Typography>
+                                    <Typography variant="body1" fontWeight="medium">
+                                      {vital.weight} kg
+                                    </Typography>
+                                  </Grid>
+                                )}
+
+                                {vital.glucose && (
+                                  <Grid item xs={6} sm={3}>
+                                    <Typography variant="body2" color="text.secondary">
+                                      Glucose
+                                    </Typography>
+                                    <Typography variant="body1" fontWeight="medium">
+                                      {vital.glucose} mg/dL
+                                    </Typography>
+                                  </Grid>
+                                )}
+                              </Grid>
+
+                              {vital.notes && (
+                                <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontStyle: 'italic' }}>
+                                  Note: {vital.notes}
+                                </Typography>
                               )}
-                              
-                              {vital.heartRate && (
-                                <Grid item xs={6} sm={3}>
-                                  <Typography variant="body2" color="text.secondary">
-                                    Heart Rate
-                                  </Typography>
-                                  <Typography variant="body1" fontWeight="medium">
-                                    {vital.heartRate} bpm
-                                  </Typography>
-                                </Grid>
-                              )}
-                              
-                              {vital.weight && (
-                                <Grid item xs={6} sm={3}>
-                                  <Typography variant="body2" color="text.secondary">
-                                    Weight
-                                  </Typography>
-                                  <Typography variant="body1" fontWeight="medium">
-                                    {vital.weight} kg
-                                  </Typography>
-                                </Grid>
-                              )}
-                              
-                              {vital.glucose && (
-                                <Grid item xs={6} sm={3}>
-                                  <Typography variant="body2" color="text.secondary">
-                                    Glucose
-                                  </Typography>
-                                  <Typography variant="body1" fontWeight="medium">
-                                    {vital.glucose} mg/dL
-                                  </Typography>
-                                </Grid>
-                              )}
-                            </Grid>
-                            
-                            {vital.notes && (
-                              <Typography variant="body2" color="text.secondary" sx={{ mt: 1, fontStyle: 'italic' }}>
-                                Note: {vital.notes}
-                              </Typography>
-                            )}
-                          </CardContent>
-                        </Card>
-                      ))}
+                            </CardContent>
+                          </Card>
+                        ))}
                     </Box>
                   ) : (
                     <Alert severity="info">
@@ -371,7 +389,7 @@ const PatientHealthRecords: React.FC = () => {
           <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
             Your past consultations with notes, recommendations, and follow-up plans.
           </Typography>
-          
+
           {loading ? (
             <Box sx={{ display: 'flex', justifyContent: 'center', py: 4 }}>
               <CircularProgress />
@@ -381,89 +399,161 @@ const PatientHealthRecords: React.FC = () => {
               {visitHistory
                 .sort((a, b) => new Date(b.visitDate).getTime() - new Date(a.visitDate).getTime())
                 .map((visit) => (
-                <Card key={visit._id} variant="outlined">
-                  <CardContent>
-                    <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                      <Box>
-                        <Typography variant="h6" gutterBottom>
-                          {visit.visitType || 'Consultation'}
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                          {new Date(visit.visitDate).toLocaleDateString('en-US', {
-                            year: 'numeric',
-                            month: 'long',
-                            day: 'numeric',
-                            hour: '2-digit',
-                            minute: '2-digit'
-                          })}
-                        </Typography>
-                      </Box>
-                      
-                      <Box sx={{ display: 'flex', gap: 1 }}>
-                        <Chip 
-                          label={visit.status || 'Completed'} 
-                          color={visit.status === 'completed' ? 'success' : 'default'}
-                          size="small"
-                        />
-                        {visit.followUpRequired && (
-                          <Chip 
-                            label="Follow-up Required" 
-                            color="warning" 
+                  <Card key={visit._id} variant="outlined">
+                    <CardContent>
+                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                        <Box>
+                          <Typography variant="h6" gutterBottom>
+                            {visit.visitType || 'Consultation'}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {new Date(visit.visitDate).toLocaleDateString('en-US', {
+                              year: 'numeric',
+                              month: 'long',
+                              day: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
+                          </Typography>
+                        </Box>
+
+                        <Box sx={{ display: 'flex', gap: 1 }}>
+                          <Chip
+                            label={visit.status || 'Completed'}
+                            color={visit.status === 'completed' ? 'success' : 'default'}
                             size="small"
                           />
-                        )}
+                          {visit.followUpRequired && (
+                            <Chip
+                              label="Follow-up Required"
+                              color="warning"
+                              size="small"
+                            />
+                          )}
+                        </Box>
                       </Box>
-                    </Box>
 
-                    {visit.chiefComplaint && (
-                      <Box sx={{ mb: 2 }}>
-                        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                          Chief Complaint
-                        </Typography>
-                        <Typography variant="body2">
-                          {visit.chiefComplaint}
-                        </Typography>
-                      </Box>
-                    )}
+                      {/* Patient Summary Section - Prominent Display */}
+                      {visit.patientSummary && visit.patientSummary.visibleToPatient && (
+                        <Box
+                          sx={{
+                            mb: 3,
+                            p: 2,
+                            bgcolor: 'primary.50',
+                            borderRadius: 2,
+                            borderLeft: 4,
+                            borderColor: 'primary.main',
+                          }}
+                        >
+                          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+                            <Chip
+                              label="✨ Pharmacist Summary"
+                              color="primary"
+                              size="small"
+                              sx={{ fontWeight: 600 }}
+                            />
+                          </Box>
 
-                    {visit.assessment && (
-                      <Box sx={{ mb: 2 }}>
-                        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                          Assessment
-                        </Typography>
-                        <Typography variant="body2">
-                          {visit.assessment}
-                        </Typography>
-                      </Box>
-                    )}
+                          <Typography variant="body1" sx={{ mb: 2, lineHeight: 1.7 }}>
+                            {visit.patientSummary.summary}
+                          </Typography>
 
-                    {visit.recommendations && (
-                      <Box sx={{ mb: 2 }}>
-                        <Typography variant="subtitle2" color="text.secondary" gutterBottom>
-                          Recommendations
-                        </Typography>
-                        <Typography variant="body2">
-                          {visit.recommendations}
-                        </Typography>
-                      </Box>
-                    )}
+                          {visit.patientSummary.keyPoints && visit.patientSummary.keyPoints.length > 0 && (
+                            <Box sx={{ mb: 2 }}>
+                              <Typography variant="subtitle2" color="primary" gutterBottom sx={{ fontWeight: 600 }}>
+                                Key Points:
+                              </Typography>
+                              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>
+                                {visit.patientSummary.keyPoints.map((point: string, idx: number) => (
+                                  <Chip
+                                    key={idx}
+                                    label={point}
+                                    variant="outlined"
+                                    color="primary"
+                                    size="small"
+                                    sx={{
+                                      height: 'auto',
+                                      py: 0.5,
+                                      '& .MuiChip-label': {
+                                        whiteSpace: 'normal',
+                                        textAlign: 'left',
+                                      },
+                                    }}
+                                  />
+                                ))}
+                              </Box>
+                            </Box>
+                          )}
 
-                    {visit.pharmacistName && (
-                      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2, pt: 2, borderTop: 1, borderColor: 'divider' }}>
-                        <Typography variant="body2" color="text.secondary">
-                          Consulted with: <strong>{visit.pharmacistName}</strong>
-                        </Typography>
-                        
-                        <Tooltip title="View detailed consultation notes">
-                          <IconButton size="small" color="primary">
-                            <ViewIcon />
-                          </IconButton>
-                        </Tooltip>
-                      </Box>
-                    )}
-                  </CardContent>
-                </Card>
-              ))}
+                          {visit.patientSummary.nextSteps && visit.patientSummary.nextSteps.length > 0 && (
+                            <Box>
+                              <Typography variant="subtitle2" color="primary" gutterBottom sx={{ fontWeight: 600 }}>
+                                What's Next:
+                              </Typography>
+                              <Box sx={{ pl: 2 }}>
+                                {visit.patientSummary.nextSteps.map((step: string, idx: number) => (
+                                  <Box key={idx} sx={{ display: 'flex', gap: 1, mb: 0.5 }}>
+                                    <Typography variant="body2" color="primary" sx={{ fontWeight: 600 }}>
+                                      {idx + 1}.
+                                    </Typography>
+                                    <Typography variant="body2">{step}</Typography>
+                                  </Box>
+                                ))}
+                              </Box>
+                            </Box>
+                          )}
+                        </Box>
+                      )}
+
+                      {visit.chiefComplaint && (
+                        <Box sx={{ mb: 2 }}>
+                          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                            Chief Complaint
+                          </Typography>
+                          <Typography variant="body2">
+                            {visit.chiefComplaint}
+                          </Typography>
+                        </Box>
+                      )}
+
+                      {visit.assessment && (
+                        <Box sx={{ mb: 2 }}>
+                          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                            Assessment
+                          </Typography>
+                          <Typography variant="body2">
+                            {visit.assessment}
+                          </Typography>
+                        </Box>
+                      )}
+
+                      {visit.recommendations && (
+                        <Box sx={{ mb: 2 }}>
+                          <Typography variant="subtitle2" color="text.secondary" gutterBottom>
+                            Recommendations
+                          </Typography>
+                          <Typography variant="body2">
+                            {visit.recommendations}
+                          </Typography>
+                        </Box>
+                      )}
+
+                      {visit.pharmacistName && (
+                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mt: 2, pt: 2, borderTop: 1, borderColor: 'divider' }}>
+                          <Typography variant="body2" color="text.secondary">
+                            Consulted with: <strong>{visit.pharmacistName}</strong>
+                          </Typography>
+
+                          <Tooltip title="View detailed consultation notes">
+                            <IconButton size="small" color="primary">
+                              <ViewIcon />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
+                      )}
+                    </CardContent>
+                  </Card>
+                ))}
             </Box>
           ) : (
             <Alert severity="info">

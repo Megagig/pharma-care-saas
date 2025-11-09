@@ -93,6 +93,13 @@ import healthBlogRoutes from './routes/healthBlog.routes';
 import healthBlogAdminRoutes from './routes/healthBlogAdmin.routes';
 import patientPortalAdminRoutes from './routes/patientPortalAdmin.routes';
 import superAdminPatientPortalRoutes from './routes/superAdminPatientPortal.routes';
+import pharmacistLabInterpretationRoutes from './routes/pharmacistLabInterpretation.routes';
+import pharmacistVitalsRoutes from './routes/pharmacistVitals.routes';
+import pharmacistVisitSummaryRoutes from './routes/pharmacistVisitSummary.routes';
+import workplaceHealthRecordsRoutes from './routes/workplaceHealthRecords.routes';
+import patientNotificationRoutes from './routes/patientNotification.routes';
+import appointmentHealthRecordsRoutes from './routes/appointmentHealthRecords.routes';
+import superAdminHealthRecordsRoutes from './routes/superAdminHealthRecords.routes';
 import SystemIntegrationService from './services/systemIntegrationService';
 
 const app: Application = express();
@@ -323,6 +330,36 @@ app.get('/api/debug/user-info', auth, async (req: any, res: Response) => {
   }
 });
 
+// Clear workspace cache endpoint (development only)
+app.post('/api/debug/clear-cache', auth, async (req: any, res: Response) => {
+  try {
+    if (process.env.NODE_ENV !== 'development') {
+      res.status(403).json({ message: 'Only available in development mode' });
+      return;
+    }
+
+    const { clearWorkspaceCache } = await import('./middlewares/workspaceContext');
+    const userId = req.user._id.toString();
+
+    // Clear the user's workspace cache
+    clearWorkspaceCache(userId);
+
+    res.json({
+      success: true,
+      message: 'Workspace cache cleared for your user',
+      userId,
+      action: 'Please make another request to reload fresh context',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
 // System integration health endpoint
 app.get('/api/health/integration', async (req: Request, res: Response) => {
   try {
@@ -464,6 +501,9 @@ app.use('/api/super-admin/blog', healthBlogAdminRoutes);
 // Super Admin Patient Portal Management routes (Super Admin only)
 app.use('/api/super-admin/patient-portal', superAdminPatientPortalRoutes);
 
+// Super Admin Health Records Management routes (Super Admin only)
+app.use('/api/super-admin/health-records', superAdminHealthRecordsRoutes);
+
 // Patient Management routes
 app.use('/api/patients', patientRoutes);
 app.use('/api/patients', allergyRoutes);
@@ -496,6 +536,20 @@ app.use('/api/manual-lab', manualLabRoutes);
 
 // AI Diagnostic routes
 app.use('/api/diagnostics', diagnosticRoutes);
+
+// Pharmacist Lab Interpretation routes
+app.use('/api/pharmacist/lab-results', pharmacistLabInterpretationRoutes);
+app.use('/api/pharmacist/vitals', pharmacistVitalsRoutes);
+app.use('/api/pharmacist/visit-summaries', pharmacistVisitSummaryRoutes);
+
+// Workplace Health Records Features routes
+app.use('/api/workplace/health-records-features', workplaceHealthRecordsRoutes);
+
+// Patient Portal Notification routes
+app.use('/api/patient-portal/notifications', patientNotificationRoutes);
+
+// Appointment Health Records routes
+app.use('/api/appointments', appointmentHealthRecordsRoutes);
 
 // Communication Hub routes (old - will be deprecated)
 app.use('/api/communication', communicationRoutes);
