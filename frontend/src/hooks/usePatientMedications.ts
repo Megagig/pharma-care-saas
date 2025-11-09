@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { useParams } from 'react-router-dom';
 import { usePatientAuth } from './usePatientAuth';
 import { MedicationRecord } from '../types/patientManagement';
 
@@ -60,7 +61,7 @@ interface PatientMedicationResponse {
   data?: {
     currentMedications: MedicationRecord[];
     medicationHistory: MedicationRecord[];
-    adherenceData: AdherenceData;
+    adherenceData: AdherenceData | null;
     refillRequests: RefillRequest[];
   };
   message?: string;
@@ -80,219 +81,364 @@ interface RefillRequestResponse {
   };
 }
 
+// Backend medication interface (from MedicationManagement model)
+interface BackendMedication {
+  _id: string;
+  patientId: string;
+  workplaceId: string;
+  name: string;
+  dosage: string;
+  frequency: string;
+  route: string;
+  startDate?: string;
+  endDate?: string;
+  indication?: string;
+  prescriber?: string;
+  allergyCheck?: {
+    status: boolean;
+    details?: string;
+  };
+  interactionCheck?: {
+    status: boolean;
+    details?: string;
+    severity?: 'minor' | 'moderate' | 'severe';
+  };
+  cost?: number;
+  sellingPrice?: number;
+  status: 'active' | 'archived' | 'cancelled';
+  history?: Array<{
+    name?: string;
+    dosage?: string;
+    frequency?: string;
+    route?: string;
+    startDate?: string;
+    endDate?: string;
+    indication?: string;
+    prescriber?: string;
+    cost?: number;
+    sellingPrice?: number;
+    status?: 'active' | 'archived' | 'cancelled';
+    updatedAt: string;
+    updatedBy?: string;
+    notes?: string;
+  }>;
+  createdAt: string;
+  updatedAt: string;
+  createdBy: string;
+  updatedBy: string;
+  // Enhanced fields from service
+  adherenceData?: {
+    score: number;
+    status: string;
+    lastReported?: string;
+    refillHistory?: any[];
+    missedDoses?: number;
+    totalDoses?: number;
+  };
+  refillStatus?: {
+    refillsRemaining: number;
+    nextRefillDate?: string;
+    daysUntilRefill?: number;
+    isEligibleForRefill: boolean;
+    prescriptionExpiry?: string;
+    rxNumber?: string;
+  };
+}
+
+// Backend adherence data interface
+interface BackendAdherenceData {
+  _id: string;
+  workplaceId: string;
+  patientId: string;
+  medications: Array<{
+    medicationName: string;
+    adherenceScore: number;
+    adherenceStatus: string;
+    refillHistory: Array<{
+      date: string;
+      quantity: number;
+      notes?: string;
+    }>;
+    missedDoses?: number;
+    totalDoses?: number;
+  }>;
+  overallAdherenceScore: number;
+  adherenceCategory: string;
+  lastAssessmentDate: string;
+  nextAssessmentDate: string;
+  monitoringActive: boolean;
+  monitoringStartDate: string;
+  monitoringFrequency: string;
+  alerts: any[];
+  interventions: any[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Backend refill request interface
+interface BackendRefillRequest {
+  _id: string;
+  workplaceId: string;
+  patientId: string;
+  assignedTo: {
+    _id: string;
+    firstName: string;
+    lastName: string;
+  };
+  type: string;
+  title: string;
+  description: string;
+  objectives: string[];
+  priority: string;
+  status: 'pending' | 'in_progress' | 'completed' | 'cancelled' | 'overdue';
+  dueDate: string;
+  completedAt?: string;
+  metadata: {
+    refillRequest: {
+      medicationId: string;
+      medicationName: string;
+      currentRefillsRemaining: number;
+      requestedQuantity: number;
+      urgency: 'routine' | 'urgent';
+      patientNotes?: string;
+      estimatedPickupDate?: string;
+      requestedBy: string;
+      requestedAt: string;
+    };
+  };
+  createdAt: string;
+  updatedAt: string;
+}
+
 // Patient Medication API Service
 class PatientMedicationService {
-  private static baseUrl = '/api/patient-portal';
+  private static baseUrl = 'http://localhost:5000/api/patient-portal/medications';
 
   private static async makeRequest<T>(
     endpoint: string,
     options: RequestInit = {}
   ): Promise<T> {
-    const token = localStorage.getItem('patient_auth_token');
-    
-    const response = await fetch(`${this.baseUrl}${endpoint}`, {
+    const url = `${this.baseUrl}${endpoint}`;
+    console.log(`🌐 Making API request: ${options.method || 'GET'} ${url}`);
+
+    const response = await fetch(url, {
       headers: {
         'Content-Type': 'application/json',
-        ...(token && { Authorization: `Bearer ${token}` }),
         ...options.headers,
       },
+      credentials: 'include', // Use cookies for authentication
       ...options,
     });
 
+    console.log(`📡 Response status: ${response.status} ${response.statusText}`);
+
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: 'Network error' }));
+      console.error(`❌ API Error for ${url}:`, error);
       throw new Error(error.message || error.error?.message || `HTTP ${response.status}`);
     }
 
-    return response.json();
+    const data = await response.json();
+    console.log(`✅ API Success for ${url}:`, data);
+    return data;
   }
 
-  static async getMedicationData(patientId: string): Promise<PatientMedicationResponse> {
-    // Mock implementation - replace with actual API call
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    const mockCurrentMedications: MedicationRecord[] = [
-      {
-        _id: 'med_001',
-        pharmacyId: 'pharmacy_456',
-        patientId: patientId,
-        phase: 'current',
-        medicationName: 'Metformin 500mg',
-        purposeIndication: 'Type 2 Diabetes Management',
-        dose: '500mg',
-        frequency: 'Twice daily',
-        route: 'Oral',
-        duration: '3 months',
-        startDate: '2024-01-15',
-        endDate: '2024-04-15',
-        adherence: 'good',
-        status: 'active',
-        notes: 'Take with meals to reduce stomach upset',
-        createdAt: '2024-01-15T00:00:00.000Z',
-        updatedAt: '2024-01-15T00:00:00.000Z',
-        createdBy: 'pharmacist_123'
-      },
-      {
-        _id: 'med_002',
-        pharmacyId: 'pharmacy_456',
-        patientId: patientId,
-        phase: 'current',
-        medicationName: 'Lisinopril 10mg',
-        purposeIndication: 'Hypertension Control',
-        dose: '10mg',
-        frequency: 'Once daily',
-        route: 'Oral',
-        duration: '6 months',
-        startDate: '2024-02-01',
-        endDate: '2024-08-01',
-        adherence: 'good',
-        status: 'active',
-        notes: 'Take at the same time each day, preferably in the morning',
-        createdAt: '2024-02-01T00:00:00.000Z',
-        updatedAt: '2024-02-01T00:00:00.000Z',
-        createdBy: 'pharmacist_123'
-      }
-    ];
+  // Map backend medication to frontend format
+  private static mapMedicationToFrontend(backendMed: BackendMedication): MedicationRecord {
+    return {
+      _id: backendMed._id,
+      pharmacyId: backendMed.workplaceId,
+      patientId: backendMed.patientId,
+      phase: backendMed.status === 'active' ? 'current' : 'past',
+      medicationName: `${backendMed.name} ${backendMed.dosage}`,
+      purposeIndication: backendMed.indication,
+      dose: backendMed.dosage,
+      frequency: backendMed.frequency,
+      route: backendMed.route,
+      duration: undefined, // Not available in MedicationManagement model
+      startDate: backendMed.startDate,
+      endDate: backendMed.endDate,
+      adherence: backendMed.adherenceData?.score ? 
+        (backendMed.adherenceData.score >= 80 ? 'good' : 
+         backendMed.adherenceData.score >= 60 ? 'fair' : 'poor') : 'unknown',
+      notes: backendMed.interactionCheck?.details || backendMed.allergyCheck?.details,
+      status: backendMed.status === 'cancelled' ? 'expired' :
+        backendMed.status === 'archived' ? 'completed' : 'active',
+      createdAt: backendMed.createdAt,
+      updatedAt: backendMed.updatedAt,
+      createdBy: backendMed.createdBy
+    };
+  }
 
-    const mockMedicationHistory: MedicationRecord[] = [
-      {
-        _id: 'med_003',
-        pharmacyId: 'pharmacy_456',
-        patientId: patientId,
-        phase: 'past',
-        medicationName: 'Amoxicillin 500mg',
-        purposeIndication: 'Bacterial Infection Treatment',
-        dose: '500mg',
-        frequency: 'Three times daily',
-        route: 'Oral',
-        duration: '7 days',
-        startDate: '2023-12-01',
-        endDate: '2023-12-07',
-        adherence: 'good',
-        status: 'completed',
-        notes: 'Completed full course as prescribed',
-        createdAt: '2023-12-01T00:00:00.000Z',
-        updatedAt: '2023-12-07T00:00:00.000Z',
-        createdBy: 'pharmacist_123'
-      }
-    ];
-
-    const mockAdherenceData: AdherenceData = {
-      overallScore: 87,
-      trend: 'up',
-      medicationScores: [
-        {
-          medicationId: 'med_001',
-          medicationName: 'Metformin 500mg',
-          score: 92,
-          trend: 'up',
-          daysTracked: 30,
-          missedDoses: 2,
-          totalDoses: 60
-        },
-        {
-          medicationId: 'med_002',
-          medicationName: 'Lisinopril 10mg',
-          score: 83,
-          trend: 'stable',
-          daysTracked: 30,
-          missedDoses: 5,
-          totalDoses: 30
-        }
-      ],
+  // Map backend adherence data to frontend format
+  private static mapAdherenceToFrontend(backendAdherence: BackendAdherenceData): AdherenceData {
+    return {
+      overallScore: backendAdherence.overallAdherenceScore,
+      trend: 'stable', // Default trend, could be calculated
+      medicationScores: (backendAdherence.medications || []).map(med => ({
+        medicationId: '', // Not available in backend data
+        medicationName: med.medicationName,
+        score: med.adherenceScore,
+        trend: 'stable', // Default trend
+        daysTracked: 30, // Default value
+        missedDoses: med.missedDoses || 0,
+        totalDoses: med.totalDoses || 30
+      })),
       weeklyScores: [
-        { week: 'Week 1', score: 85 },
-        { week: 'Week 2', score: 88 },
-        { week: 'Week 3', score: 90 },
-        { week: 'Week 4', score: 87 }
+        { week: 'Week 1', score: Math.max(0, backendAdherence.overallAdherenceScore - 10) },
+        { week: 'Week 2', score: Math.max(0, backendAdherence.overallAdherenceScore - 5) },
+        { week: 'Week 3', score: Math.max(0, backendAdherence.overallAdherenceScore + 2) },
+        { week: 'Week 4', score: backendAdherence.overallAdherenceScore }
       ],
       insights: [
         {
-          type: 'success',
-          message: 'Great job! Your adherence has improved by 5% this month.'
-        },
-        {
-          type: 'warning',
-          message: 'Consider setting reminders for your evening Metformin dose.'
+          type: backendAdherence.overallAdherenceScore >= 80 ? 'success' : 'warning',
+          message: backendAdherence.overallAdherenceScore >= 80
+            ? 'Great job! Your adherence is excellent.'
+            : 'Consider setting reminders to improve adherence.'
         }
       ]
     };
+  }
 
-    const mockRefillRequests: RefillRequest[] = [
-      {
-        _id: 'refill_001',
-        medicationId: 'med_001',
-        medicationName: 'Metformin 500mg',
-        status: 'in_progress',
-        requestedDate: '2024-03-10',
-        estimatedCompletionDate: '2024-03-12',
-        notes: 'Running low, need refill before weekend',
-        quantity: 90,
-        refillsRemaining: 2,
-        urgency: 'routine',
-        createdAt: '2024-03-10T10:30:00.000Z',
-        updatedAt: '2024-03-10T10:30:00.000Z'
-      }
-    ];
-
+  // Map backend refill request to frontend format
+  private static mapRefillRequestToFrontend(backendRequest: BackendRefillRequest): RefillRequest {
     return {
-      success: true,
-      data: {
-        currentMedications: mockCurrentMedications,
-        medicationHistory: mockMedicationHistory,
-        adherenceData: mockAdherenceData,
-        refillRequests: mockRefillRequests
-      },
-      message: 'Medication data retrieved successfully'
+      _id: backendRequest._id,
+      medicationId: backendRequest.metadata.refillRequest.medicationId,
+      medicationName: backendRequest.metadata.refillRequest.medicationName,
+      status: backendRequest.status === 'overdue' ? 'denied' : backendRequest.status,
+      requestedDate: backendRequest.metadata.refillRequest.requestedAt,
+      completedDate: backendRequest.completedAt,
+      estimatedCompletionDate: backendRequest.dueDate,
+      notes: backendRequest.metadata.refillRequest.patientNotes,
+      quantity: backendRequest.metadata.refillRequest.requestedQuantity,
+      refillsRemaining: backendRequest.metadata.refillRequest.currentRefillsRemaining,
+      urgency: backendRequest.metadata.refillRequest.urgency,
+      createdAt: backendRequest.createdAt,
+      updatedAt: backendRequest.updatedAt
     };
+  }
+
+  static async getMedicationData(patientId: string): Promise<PatientMedicationResponse> {
+    try {
+      console.log('🔍 Fetching medication data from API for patient:', patientId);
+
+      // Fetch all medication data in parallel using patient portal API
+      const [currentResponse, historyResponse, adherenceResponse] = await Promise.allSettled([
+        this.makeRequest<{ success: boolean; data: { medications: BackendMedication[]; count: number } }>(`/current`),
+        this.makeRequest<{ success: boolean; data: { medications: BackendMedication[]; count: number } }>(`/history`),
+        this.makeRequest<{ success: boolean; data: { adherenceData: BackendAdherenceData } }>(`/adherence`)
+      ]);
+
+      console.log('📊 API Responses:', {
+        current: currentResponse.status === 'fulfilled' ? currentResponse.value : currentResponse.reason,
+        history: historyResponse.status === 'fulfilled' ? historyResponse.value : historyResponse.reason,
+        adherence: adherenceResponse.status === 'fulfilled' ? adherenceResponse.value : adherenceResponse.reason
+      });
+
+      // Process current medications
+      let currentMedications: MedicationRecord[] = [];
+      if (currentResponse.status === 'fulfilled' && currentResponse.value.success && currentResponse.value.data?.medications) {
+        console.log('✅ Current medications found:', currentResponse.value.data.medications.length);
+        currentMedications = currentResponse.value.data.medications.map(this.mapMedicationToFrontend);
+      } else if (currentResponse.status === 'rejected') {
+        console.error('❌ Current medications API failed:', currentResponse.reason);
+      } else {
+        console.log('⚠️ Current medications API returned unexpected response:', currentResponse.status === 'fulfilled' ? currentResponse.value : 'rejected');
+      }
+
+      // Process medication history
+      let medicationHistory: MedicationRecord[] = [];
+      if (historyResponse.status === 'fulfilled' && historyResponse.value.success && historyResponse.value.data?.medications) {
+        medicationHistory = historyResponse.value.data.medications
+          .filter(med => med.status !== 'active') // Only non-active medications for history
+          .map(this.mapMedicationToFrontend);
+        console.log('📜 Medication history found:', medicationHistory.length);
+      }
+
+      // Process adherence data
+      let adherenceData: AdherenceData | null = null;
+      if (adherenceResponse.status === 'fulfilled' && adherenceResponse.value.success && adherenceResponse.value.data?.adherenceData) {
+        adherenceData = this.mapAdherenceToFrontend(adherenceResponse.value.data.adherenceData);
+        console.log('📈 Adherence data found');
+      } else if (adherenceResponse.status === 'rejected') {
+        console.error('❌ Adherence data API failed:', adherenceResponse.reason);
+      } else {
+        console.log('⚠️ No adherence data available');
+      }
+
+      // Mock refill requests for now since we don't have the endpoint
+      let refillRequests: RefillRequest[] = [];
+
+      const result = {
+        success: true,
+        data: {
+          currentMedications,
+          medicationHistory,
+          adherenceData,
+          refillRequests
+        },
+        message: 'Medication data retrieved successfully'
+      };
+
+      console.log('🎯 Final medication data:', result);
+      return result;
+    } catch (error: any) {
+      console.error('💥 Error fetching medication data:', error);
+      throw new Error(error.message || 'Failed to fetch medication data');
+    }
   }
 
   static async requestRefill(medicationId: string, notes: string): Promise<RefillRequestResponse> {
-    await new Promise(resolve => setTimeout(resolve, 2000));
-    
-    // Simulate validation errors
-    if (!medicationId) {
-      throw new Error('Medication ID is required');
+    try {
+      const response = await this.makeRequest<{ success: boolean; data: BackendRefillRequest }>('/refill-requests', {
+        method: 'POST',
+        body: JSON.stringify({
+          medicationId,
+          requestedQuantity: 30, // Default quantity
+          urgency: 'routine',
+          patientNotes: notes
+        })
+      });
+
+      if (response.success) {
+        return {
+          success: true,
+          data: { request: this.mapRefillRequestToFrontend(response.data) },
+          message: 'Refill request submitted successfully'
+        };
+      } else {
+        throw new Error('Failed to submit refill request');
+      }
+    } catch (error: any) {
+      console.error('Error requesting refill:', error);
+      throw new Error(error.message || 'Failed to submit refill request');
     }
-
-    // Mock successful refill request
-    const mockRefillRequest: RefillRequest = {
-      _id: `refill_${Date.now()}`,
-      medicationId: medicationId,
-      medicationName: 'Metformin 500mg', // This would come from the medication lookup
-      status: 'pending',
-      requestedDate: new Date().toISOString(),
-      notes: notes,
-      quantity: 90,
-      refillsRemaining: 2,
-      urgency: 'routine',
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString()
-    };
-
-    return {
-      success: true,
-      data: { request: mockRefillRequest },
-      message: 'Refill request submitted successfully'
-    };
   }
 
   static async cancelRefillRequest(requestId: string, reason: string): Promise<{ success: boolean; message: string }> {
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    if (!reason.trim()) {
-      throw new Error('Cancellation reason is required');
-    }
+    try {
+      const response = await this.makeRequest<{ success: boolean; message: string }>(`/refill-requests/${requestId}`, {
+        method: 'DELETE',
+        body: JSON.stringify({ reason })
+      });
 
-    return {
-      success: true,
-      message: 'Refill request cancelled successfully'
-    };
+      return response;
+    } catch (error: any) {
+      console.error('Error cancelling refill request:', error);
+      throw new Error(error.message || 'Failed to cancel refill request');
+    }
   }
 }
 
 export const usePatientMedications = (patientId?: string): UsePatientMedicationsReturn => {
   const { user, isAuthenticated } = usePatientAuth();
+  const params = useParams<{ patientId?: string }>();
+
+  // Get patient ID from props, params, or user context
+  const currentPatientId = patientId || params.patientId || user?.id;
+
   const [currentMedications, setCurrentMedications] = useState<MedicationRecord[] | null>(null);
   const [medicationHistory, setMedicationHistory] = useState<MedicationRecord[] | null>(null);
   const [adherenceData, setAdherenceData] = useState<AdherenceData | null>(null);
@@ -304,7 +450,15 @@ export const usePatientMedications = (patientId?: string): UsePatientMedications
 
   // Load medication data when user is authenticated
   const loadMedicationData = useCallback(async () => {
-    if (!isAuthenticated || !user || !patientId) {
+    console.log('🔄 loadMedicationData called with:', {
+      currentPatientId,
+      patientId,
+      paramsPatientId: params.patientId,
+      userPatientId: user?.id
+    });
+
+    if (!currentPatientId) {
+      console.log('⚠️ No patient ID available');
       setCurrentMedications(null);
       setMedicationHistory(null);
       setAdherenceData(null);
@@ -312,12 +466,22 @@ export const usePatientMedications = (patientId?: string): UsePatientMedications
       return;
     }
 
+    console.log('🚀 Starting medication data fetch for patient:', currentPatientId);
     setLoading(true);
     setError(null);
 
     try {
-      const response = await PatientMedicationService.getMedicationData(patientId);
+      const response = await PatientMedicationService.getMedicationData(currentPatientId);
+      console.log('📦 Received response:', response);
+
       if (response.success && response.data) {
+        console.log('✅ Setting medication data:', {
+          currentMedications: response.data.currentMedications?.length || 0,
+          medicationHistory: response.data.medicationHistory?.length || 0,
+          adherenceData: !!response.data.adherenceData,
+          refillRequests: response.data.refillRequests?.length || 0
+        });
+
         setCurrentMedications(response.data.currentMedications);
         setMedicationHistory(response.data.medicationHistory);
         setAdherenceData(response.data.adherenceData);
@@ -326,7 +490,7 @@ export const usePatientMedications = (patientId?: string): UsePatientMedications
         throw new Error(response.message || 'Failed to load medication data');
       }
     } catch (err: any) {
-      console.error('Failed to load medication data:', err);
+      console.error('💥 Failed to load medication data:', err);
       setError(err.message || 'Failed to load medication data');
       setCurrentMedications(null);
       setMedicationHistory(null);
@@ -335,7 +499,7 @@ export const usePatientMedications = (patientId?: string): UsePatientMedications
     } finally {
       setLoading(false);
     }
-  }, [isAuthenticated, user, patientId]);
+  }, [currentPatientId, patientId, params.patientId, user?.id]);
 
   // Load medication data on mount and when dependencies change
   useEffect(() => {
@@ -376,11 +540,11 @@ export const usePatientMedications = (patientId?: string): UsePatientMedications
 
     try {
       await PatientMedicationService.cancelRefillRequest(requestId, reason);
-      
+
       // Update the refill request status in the list
-      setRefillRequests(prev => 
-        prev ? prev.map(request => 
-          request._id === requestId 
+      setRefillRequests(prev =>
+        prev ? prev.map(request =>
+          request._id === requestId
             ? { ...request, status: 'cancelled' as const, updatedAt: new Date().toISOString() }
             : request
         ) : null

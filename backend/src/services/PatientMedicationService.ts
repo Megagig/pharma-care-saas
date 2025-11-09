@@ -1,11 +1,12 @@
 import mongoose from 'mongoose';
 import Medication, { IMedication } from '../models/Medication';
+import MedicationManagement, { IMedicationManagement } from '../models/MedicationManagement';
 import AdherenceTracking, { IAdherenceTracking } from '../modules/diagnostics/models/AdherenceTracking';
 import FollowUpTask, { IFollowUpTask } from '../models/FollowUpTask';
 import Patient, { IPatient } from '../models/Patient';
 import notificationService from './notificationService';
 
-export interface IMedicationWithAdherence extends IMedication {
+export interface IMedicationWithAdherence extends IMedicationManagement {
   adherenceData?: {
     score: number;
     status: string;
@@ -61,13 +62,14 @@ export class PatientMedicationService {
         throw new Error('Patient not found or access denied');
       }
 
-      // Get active medications
-      const medications = await Medication.find({
-        patient: new mongoose.Types.ObjectId(patientId),
+      // Get active medications from MedicationManagement collection
+      const medications = await MedicationManagement.find({
+        patientId: new mongoose.Types.ObjectId(patientId),
+        workplaceId: new mongoose.Types.ObjectId(workplaceId),
         status: 'active'
       })
-      .populate('pharmacist', 'firstName lastName')
-      .sort({ createdAt: -1 });
+        .populate('createdBy', 'firstName lastName')
+        .sort({ createdAt: -1 });
 
       // Get adherence data for these medications
       const adherenceTracking = await AdherenceTracking.findOne({
@@ -79,13 +81,13 @@ export class PatientMedicationService {
       // Enhance medications with adherence and refill data
       const enhancedMedications: IMedicationWithAdherence[] = medications.map(medication => {
         const medicationObj = medication.toObject() as IMedicationWithAdherence;
-        
+
         // Add adherence data
         if (adherenceTracking) {
           const adherenceData = adherenceTracking.medications.find(
-            med => med.medicationName.toLowerCase() === medication.drugName.toLowerCase()
+            med => med.medicationName.toLowerCase() === medication.name.toLowerCase()
           );
-          
+
           if (adherenceData) {
             medicationObj.adherenceData = {
               score: adherenceData.adherenceScore,
@@ -95,29 +97,22 @@ export class PatientMedicationService {
           }
         }
 
-        // Add refill status
-        const refillsRemaining = medication.prescription?.refillsRemaining || 0;
-        const lastRefillDate = medication.adherence?.lastReported;
+        // Add refill status - MedicationManagement doesn't have prescription object
+        const refillsRemaining = 0; // Will need to be calculated or added to model
+        const lastRefillDate = medication.updatedAt;
         let nextRefillDate: Date | undefined;
         let daysUntilRefill: number | undefined;
 
-        if (lastRefillDate && medication.instructions?.duration) {
-          // Estimate next refill date based on duration
-          const durationMatch = medication.instructions.duration.match(/(\d+)\s*(day|week|month)/i);
-          if (durationMatch) {
-            const [, amount, unit] = durationMatch;
-            const days = unit.toLowerCase().startsWith('week') 
-              ? parseInt(amount) * 7 
-              : unit.toLowerCase().startsWith('month')
-              ? parseInt(amount) * 30
-              : parseInt(amount);
-            
-            nextRefillDate = new Date(lastRefillDate);
-            nextRefillDate.setDate(nextRefillDate.getDate() + days);
-            
-            const today = new Date();
-            daysUntilRefill = Math.ceil((nextRefillDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-          }
+        if (lastRefillDate) {
+          // Estimate next refill date based on default 30-day supply
+          // MedicationManagement doesn't have duration field, so we'll use a default
+          const days = 30; // Default 30-day supply
+
+          nextRefillDate = new Date(lastRefillDate);
+          nextRefillDate.setDate(nextRefillDate.getDate() + days);
+
+          const today = new Date();
+          daysUntilRefill = Math.ceil((nextRefillDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
         }
 
         medicationObj.refillStatus = {
@@ -144,7 +139,7 @@ export class PatientMedicationService {
     patientId: string,
     workplaceId: string,
     limit: number = 50
-  ): Promise<IMedication[]> {
+  ): Promise<IMedicationManagement[]> {
     try {
       // Validate patient exists and belongs to workplace
       const patient = await Patient.findOne({
@@ -156,13 +151,14 @@ export class PatientMedicationService {
         throw new Error('Patient not found or access denied');
       }
 
-      // Get medication history (all statuses)
-      const medications = await Medication.find({
-        patient: new mongoose.Types.ObjectId(patientId)
+      // Get medication history from MedicationManagement (all statuses)
+      const medications = await MedicationManagement.find({
+        patientId: new mongoose.Types.ObjectId(patientId),
+        workplaceId: new mongoose.Types.ObjectId(workplaceId)
       })
-      .populate('pharmacist', 'firstName lastName')
-      .sort({ createdAt: -1 })
-      .limit(limit);
+        .populate('createdBy', 'firstName lastName')
+        .sort({ createdAt: -1 })
+        .limit(limit);
 
       return medications;
     } catch (error) {
@@ -190,12 +186,13 @@ export class PatientMedicationService {
         throw new Error('Patient not found or access denied');
       }
 
-      // Get medication details
-      const medication = await Medication.findOne({
+      // Get medication details from MedicationManagement
+      const medication = await MedicationManagement.findOne({
         _id: medicationId,
-        patient: new mongoose.Types.ObjectId(patientId)
+        patientId: new mongoose.Types.ObjectId(patientId),
+        workplaceId: new mongoose.Types.ObjectId(workplaceId)
       })
-      .populate('pharmacist', 'firstName lastName email phone');
+        .populate('createdBy', 'firstName lastName email phone');
 
       if (!medication) {
         throw new Error('Medication not found or access denied');
@@ -211,9 +208,9 @@ export class PatientMedicationService {
 
       if (adherenceTracking) {
         const adherenceData = adherenceTracking.medications.find(
-          med => med.medicationName.toLowerCase() === medication.drugName.toLowerCase()
+          med => med.medicationName.toLowerCase() === medication.name.toLowerCase()
         );
-        
+
         if (adherenceData) {
           medicationObj.adherenceData = {
             score: adherenceData.adherenceScore,
@@ -226,13 +223,13 @@ export class PatientMedicationService {
         }
       }
 
-      // Add comprehensive refill status
-      const refillsRemaining = medication.prescription?.refillsRemaining || 0;
+      // Add comprehensive refill status - MedicationManagement doesn't have prescription object
+      const refillsRemaining = 0; // Default since MedicationManagement doesn't track refills
       medicationObj.refillStatus = {
         refillsRemaining,
-        isEligibleForRefill: refillsRemaining > 0,
-        prescriptionExpiry: medication.prescription?.dateExpires,
-        rxNumber: medication.prescription?.rxNumber
+        isEligibleForRefill: false, // Default to false since we don't have refill data
+        prescriptionExpiry: medication.endDate,
+        rxNumber: undefined // Not available in MedicationManagement
       };
 
       return medicationObj;
@@ -292,10 +289,11 @@ export class PatientMedicationService {
         throw new Error('Patient not found or access denied');
       }
 
-      // Get medication to find its name
-      const medication = await Medication.findOne({
+      // Get medication from MedicationManagement to find its name
+      const medication = await MedicationManagement.findOne({
         _id: medicationId,
-        patient: new mongoose.Types.ObjectId(patientId)
+        patientId: new mongoose.Types.ObjectId(patientId),
+        workplaceId: new mongoose.Types.ObjectId(workplaceId)
       });
 
       if (!medication) {
@@ -328,18 +326,14 @@ export class PatientMedicationService {
       }
 
       // Update or add medication adherence
-      adherenceTracking.updateMedicationAdherence(medication.drugName, {
+      adherenceTracking.updateMedicationAdherence(medication.name, {
         adherenceScore: Math.max(0, Math.min(100, score)) // Ensure score is between 0-100
       });
 
       await adherenceTracking.save();
 
-      // Update the medication's adherence field as well
-      medication.adherence = {
-        lastReported: new Date(),
-        score: score
-      };
-      await medication.save();
+      // MedicationManagement doesn't have adherence field like Medication model
+      // The adherence data is stored in AdherenceTracking collection
 
     } catch (error) {
       console.error('Error updating adherence score:', error);
@@ -367,10 +361,11 @@ export class PatientMedicationService {
         throw new Error('Patient not found or access denied');
       }
 
-      // Get medication details
-      const medication = await Medication.findOne({
+      // Get medication details from MedicationManagement
+      const medication = await MedicationManagement.findOne({
         _id: refillData.medicationId,
-        patient: new mongoose.Types.ObjectId(patientId),
+        patientId: new mongoose.Types.ObjectId(patientId),
+        workplaceId: new mongoose.Types.ObjectId(workplaceId),
         status: 'active'
       });
 
@@ -378,11 +373,9 @@ export class PatientMedicationService {
         throw new Error('Medication not found or not active');
       }
 
-      // Check if refills are available
-      const refillsRemaining = medication.prescription?.refillsRemaining || 0;
-      if (refillsRemaining <= 0) {
-        throw new Error('No refills remaining. Please contact your doctor for a new prescription.');
-      }
+      // Check if refills are available - MedicationManagement doesn't track refills
+      // For now, we'll allow refill requests and let the pharmacist decide
+      const refillsRemaining = 1; // Default to allow refill requests
 
       // Check if there's already a pending refill request for this medication
       const existingRequest = await FollowUpTask.findOne({
@@ -400,10 +393,10 @@ export class PatientMedicationService {
       const refillRequestTask = await FollowUpTask.create({
         workplaceId: new mongoose.Types.ObjectId(workplaceId),
         patientId: new mongoose.Types.ObjectId(patientId),
-        assignedTo: medication.pharmacist,
+        assignedTo: medication.createdBy, // Use createdBy as the pharmacist
         type: 'medication_refill_request',
-        title: `Refill Request: ${medication.drugName}`,
-        description: `Patient has requested a refill for ${medication.drugName}. ${refillData.requestedQuantity} units requested.`,
+        title: `Refill Request: ${medication.name}`,
+        description: `Patient has requested a refill for ${medication.name}. ${refillData.requestedQuantity} units requested.`,
         objectives: [
           'Review refill eligibility',
           'Verify remaining refills',
@@ -428,7 +421,7 @@ export class PatientMedicationService {
         metadata: {
           refillRequest: {
             medicationId: new mongoose.Types.ObjectId(refillData.medicationId),
-            medicationName: medication.drugName,
+            medicationName: medication.name,
             currentRefillsRemaining: refillsRemaining,
             requestedQuantity: refillData.requestedQuantity,
             urgency: refillData.urgency,
@@ -444,13 +437,13 @@ export class PatientMedicationService {
       // Send notification to pharmacist
       try {
         await notificationService.createNotification({
-          userId: new mongoose.Types.ObjectId(medication.pharmacist.toString()),
+          userId: new mongoose.Types.ObjectId(medication.createdBy.toString()),
           type: 'system_notification',
           title: 'New Refill Request',
-          content: `${patient.firstName} ${patient.lastName} has requested a refill for ${medication.drugName}`,
+          content: `${patient.firstName} ${patient.lastName} has requested a refill for ${medication.name}`,
           data: {
             patientId: new mongoose.Types.ObjectId(patientId),
-            medicationName: medication.drugName,
+            medicationName: medication.name,
             metadata: {
               taskId: refillRequestTask._id.toString(),
               medicationId: refillData.medicationId,
@@ -497,10 +490,10 @@ export class PatientMedicationService {
         patientId: new mongoose.Types.ObjectId(patientId),
         workplaceId: new mongoose.Types.ObjectId(workplaceId)
       })
-      .populate('assignedTo', 'firstName lastName')
-      .populate('metadata.refillRequest.medicationId', 'drugName strength dosageForm')
-      .sort({ createdAt: -1 })
-      .limit(limit);
+        .populate('assignedTo', 'firstName lastName')
+        .populate('metadata.refillRequest.medicationId', 'name dosage frequency')
+        .sort({ createdAt: -1 })
+        .limit(limit);
 
       return refillRequests;
     } catch (error) {
@@ -579,10 +572,11 @@ export class PatientMedicationService {
         throw new Error('Patient not found or access denied');
       }
 
-      // Get medication details
-      const medication = await Medication.findOne({
+      // Get medication details from MedicationManagement
+      const medication = await MedicationManagement.findOne({
         _id: medicationId,
-        patient: new mongoose.Types.ObjectId(patientId)
+        patientId: new mongoose.Types.ObjectId(patientId),
+        workplaceId: new mongoose.Types.ObjectId(workplaceId)
       });
 
       if (!medication) {
@@ -598,10 +592,10 @@ export class PatientMedicationService {
               userId: new mongoose.Types.ObjectId(patientId),
               type: 'system_notification',
               title: 'Medication Reminder Set',
-              content: `Reminder set for ${medication.drugName} at ${time}`,
+              content: `Reminder set for ${medication.name} at ${time}`,
               data: {
-                medicationName: medication.drugName,
-                dosage: medication.instructions?.dosage,
+                medicationName: medication.name,
+                dosage: medication.dosage,
                 metadata: {
                   medicationId: medicationId,
                   reminderTime: time
@@ -640,22 +634,23 @@ export class PatientMedicationService {
         throw new Error('Patient not found or access denied');
       }
 
-      // Get active medications
-      const medications = await Medication.find({
-        patient: new mongoose.Types.ObjectId(patientId),
+      // Get active medications from MedicationManagement
+      const medications = await MedicationManagement.find({
+        patientId: new mongoose.Types.ObjectId(patientId),
+        workplaceId: new mongoose.Types.ObjectId(workplaceId),
         status: 'active'
       });
 
       // For now, return mock reminder data since we don't have a full reminder system
       const reminders: IMedicationReminder[] = [];
-      
+
       for (const medication of medications) {
         // Mock reminder data - in a real implementation, this would come from a reminders collection
         reminders.push({
           medicationId: medication._id.toString(),
-          medicationName: medication.drugName,
+          medicationName: medication.name,
           reminderTimes: [], // Would be populated from stored reminder settings
-          frequency: medication.instructions?.frequency || 'daily',
+          frequency: medication.frequency || 'daily',
           isActive: false // Would be based on actual reminder settings
         });
       }
@@ -691,9 +686,10 @@ export class PatientMedicationService {
         throw new Error('Patient not found or access denied');
       }
 
-      const medication = await Medication.findOne({
+      const medication = await MedicationManagement.findOne({
         _id: medicationId,
-        patient: new mongoose.Types.ObjectId(patientId)
+        patientId: new mongoose.Types.ObjectId(patientId),
+        workplaceId: new mongoose.Types.ObjectId(workplaceId)
       });
 
       if (!medication) {
@@ -704,15 +700,8 @@ export class PatientMedicationService {
         };
       }
 
-      const refillsRemaining = medication.prescription?.refillsRemaining || 0;
-      
-      if (refillsRemaining <= 0) {
-        return {
-          isEligible: false,
-          reason: 'No refills remaining',
-          refillsRemaining: 0
-        };
-      }
+      // MedicationManagement doesn't track refills, so we'll allow refill requests
+      const refillsRemaining = 1; // Default to allow refill requests
 
       if (medication.status !== 'active') {
         return {
@@ -722,11 +711,11 @@ export class PatientMedicationService {
         };
       }
 
-      // Check if prescription has expired
-      if (medication.prescription?.dateExpires && medication.prescription.dateExpires < new Date()) {
+      // Check if medication has expired (using endDate from MedicationManagement)
+      if (medication.endDate && medication.endDate < new Date()) {
         return {
           isEligible: false,
-          reason: 'Prescription has expired',
+          reason: 'Medication has expired',
           refillsRemaining
         };
       }

@@ -22,6 +22,10 @@ import {
   myAppointmentsQuerySchema,
 } from '../validators/patientPortalValidators';
 import patientPortalProfileRoutes from './patientPortalProfileRoutes';
+import patientMedicationRoutes from './patientMedication.routes';
+import patientHealthRecordsRoutes from './patientHealthRecords.routes';
+import patientMessagingRoutes from './patientMessaging.routes';
+import patientBillingRoutes from './patientBilling.routes';
 
 const router = express.Router();
 
@@ -174,5 +178,45 @@ router.post(
  * All routes under /api/patient-portal/profile/*
  */
 router.use('/profile', patientPortalProfileRoutes);
+
+// ===============================
+// MEDICATION MANAGEMENT ENDPOINTS
+// ===============================
+
+/**
+ * Mount patient medication management routes
+ * All routes under /api/patient-portal/medications/*
+ */
+router.use('/medications', patientPortalAuth, patientMedicationRoutes);
+
+// ===============================
+// HEALTH RECORDS ENDPOINTS
+// ===============================
+
+/**
+ * Mount patient health records routes
+ * All routes under /api/patient-portal/health-records/*
+ */
+router.use('/health-records', patientPortalAuth, patientHealthRecordsRoutes);
+
+// ===============================
+// MESSAGING ENDPOINTS
+// ===============================
+
+/**
+ * Mount patient messaging routes
+ * All routes under /api/patient-portal/messages/*
+ */
+router.use('/messages', patientPortalAuth, patientMessagingRoutes);
+
+// ===============================
+// BILLING ENDPOINTS
+// ===============================
+
+/**
+ * Mount patient billing routes
+ * All routes under /api/patient-portal/billing/*
+ */
+router.use('/billing', patientPortalAuth, patientBillingRoutes);
 
 export default router;

@@ -15,7 +15,7 @@ import { Card } from '../../components/common/Card';
 import { Button } from '../../components/common/Button';
 import { Badge } from '../../components/common/Badge';
 import { Alert } from '../../components/common/Alert';
-import { Box, Typography, Grid, LinearProgress, CircularProgress } from '@mui/material';
+import { Box, Typography, LinearProgress, CircularProgress } from '@mui/material';
 import PatientOnboarding from '../../components/patient-portal/PatientOnboarding';
 import { patientPortalService, DashboardData } from '../../services/patientPortalService';
 
@@ -186,8 +186,8 @@ export const PatientDashboard: React.FC = () => {
         </Box>
 
         {/* Quick Stats */}
-        <Grid container spacing={3} className="mb-8">
-          <Grid item xs={12} sm={6} md={3}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 4 }}>
+          <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' } }}>
             <Card className="p-6">
               <Box className="flex items-center">
                 <Box className="flex-shrink-0">
@@ -203,9 +203,9 @@ export const PatientDashboard: React.FC = () => {
                 </Box>
               </Box>
             </Card>
-          </Grid>
+          </Box>
 
-          <Grid item xs={12} sm={6} md={3}>
+          <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' } }}>
             <Card className="p-6">
               <Box className="flex items-center">
                 <Box className="flex-shrink-0">
@@ -221,9 +221,9 @@ export const PatientDashboard: React.FC = () => {
                 </Box>
               </Box>
             </Card>
-          </Grid>
+          </Box>
 
-          <Grid item xs={12} sm={6} md={3}>
+          <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' } }}>
             <Card className="p-6">
               <Box className="flex items-center">
                 <Box className="flex-shrink-0">
@@ -239,9 +239,9 @@ export const PatientDashboard: React.FC = () => {
                 </Box>
               </Box>
             </Card>
-          </Grid>
+          </Box>
 
-          <Grid item xs={12} sm={6} md={3}>
+          <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' } }}>
             <Card className="p-6">
               <Box className="flex items-center">
                 <Box className="flex-shrink-0">
@@ -257,13 +257,13 @@ export const PatientDashboard: React.FC = () => {
                 </Box>
               </Box>
             </Card>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
 
         {/* Main Content Grid */}
-        <Grid container spacing={6}>
+        <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
           {/* Left Column */}
-          <Grid item xs={12} lg={8}>
+          <Box sx={{ flex: { xs: '1 1 100%', lg: '1 1 calc(66.67% - 24px)' } }}>
             {/* Upcoming Appointments */}
             <Card className="p-6 mb-6">
               <Box className="flex items-center justify-between mb-4">
@@ -424,10 +424,10 @@ export const PatientDashboard: React.FC = () => {
                 ))}
               </Box>
             </Card>
-          </Grid>
+          </Box>
 
           {/* Right Column */}
-          <Grid item xs={12} lg={4}>
+          <Box sx={{ flex: { xs: '1 1 100%', lg: '1 1 calc(33.33% - 24px)' } }}>
             {/* Quick Actions */}
             <Card className="p-6 mb-6">
               <Typography variant="h6" className="text-lg font-semibold text-gray-900 dark:text-white mb-4">
@@ -549,8 +549,8 @@ export const PatientDashboard: React.FC = () => {
                 )}
               </Box>
             </Card>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
       </Box>
 
       {/* Patient Onboarding Modal */}

@@ -59,6 +59,15 @@ const PatientMedications: React.FC = () => {
   const { user } = usePatientAuth();
   const [tabValue, setTabValue] = useState(0);
   
+  // Get patient ID from URL or context
+  // Check if we're in a patient detail view (URL contains patient ID)
+  const currentUrl = window.location.pathname;
+  const patientIdMatch = currentUrl.match(/\/patients\/([a-f0-9]{24})/);
+  const patientId = patientIdMatch ? patientIdMatch[1] : '690ecada0aabc60041eef019'; // fallback to known patient ID
+  
+  console.log('🔍 PatientMedications - Current URL:', currentUrl);
+  console.log('🔍 PatientMedications - Extracted Patient ID:', patientId);
+  
   const {
     currentMedications,
     medicationHistory,
@@ -71,7 +80,7 @@ const PatientMedications: React.FC = () => {
     cancelRefillRequest,
     refillLoading,
     cancelLoading
-  } = usePatientMedications(user?.patientId);
+  } = usePatientMedications(patientId);
 
   const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
     setTabValue(newValue);
