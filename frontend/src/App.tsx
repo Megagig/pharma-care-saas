@@ -600,7 +600,7 @@ function App(): JSX.Element {
                             <Route
                               path="/workspace-admin/patient-portal"
                               element={
-                                <ProtectedRoute requiredRole={['super_admin', 'pharmacy_outlet', 'Pharmacist', 'Owner']}>
+                                <ProtectedRoute requiredRole={['super_admin', 'pharmacy_outlet', 'pharmacist', 'owner', 'pharmacy_team']}>
                                   <AppLayout>
                                     <LazyWrapper fallback={PageSkeleton}>
                                       {/* Conditional rendering based on role */}
@@ -615,7 +615,7 @@ function App(): JSX.Element {
                             <Route
                               path="/workspace-admin/patient-portal/*"
                               element={
-                                <ProtectedRoute requiredRole={['super_admin', 'pharmacy_outlet', 'Pharmacist', 'Owner']}>
+                                <ProtectedRoute requiredRole={['super_admin', 'pharmacy_outlet', 'pharmacist', 'owner', 'pharmacy_team']}>
                                   <AppLayout>
                                     <LazyWrapper fallback={PageSkeleton}>
                                       <PatientPortalRoutes />

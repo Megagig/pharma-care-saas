@@ -193,18 +193,21 @@ interface BackendRefillRequest {
   status: 'pending' | 'in_progress' | 'completed' | 'cancelled' | 'overdue';
   dueDate: string;
   completedAt?: string;
-  metadata: {
-    refillRequest: {
-      medicationId: string;
-      medicationName: string;
-      currentRefillsRemaining: number;
-      requestedQuantity: number;
-      urgency: 'routine' | 'urgent';
+  metadata?: {
+    refillRequest?: {
+      medicationId?: string;
+      medicationName?: string;
+      currentRefillsRemaining?: number;
+      requestedQuantity?: number;
+      urgency?: 'routine' | 'urgent';
       patientNotes?: string;
       estimatedPickupDate?: string;
-      requestedBy: string;
-      requestedAt: string;
+      requestedBy?: string;
+      requestedAt?: string;
     };
+  };
+  relatedRecords?: {
+    medicationId?: string;
   };
   createdAt: string;
   updatedAt: string;
@@ -272,28 +275,34 @@ class PatientMedicationService {
 
   // Map backend adherence data to frontend format
   private static mapAdherenceToFrontend(backendAdherence: BackendAdherenceData): AdherenceData {
+    // Ensure we have a valid overall score, default to 0 if undefined/null/NaN
+    const overallScore = typeof backendAdherence.overallAdherenceScore === 'number' && 
+                        !isNaN(backendAdherence.overallAdherenceScore) 
+                        ? backendAdherence.overallAdherenceScore 
+                        : 0;
+
     return {
-      overallScore: backendAdherence.overallAdherenceScore,
+      overallScore,
       trend: 'stable', // Default trend, could be calculated
       medicationScores: (backendAdherence.medications || []).map(med => ({
         medicationId: '', // Not available in backend data
         medicationName: med.medicationName,
-        score: med.adherenceScore,
+        score: typeof med.adherenceScore === 'number' && !isNaN(med.adherenceScore) ? med.adherenceScore : 0,
         trend: 'stable', // Default trend
         daysTracked: 30, // Default value
         missedDoses: med.missedDoses || 0,
         totalDoses: med.totalDoses || 30
       })),
       weeklyScores: [
-        { week: 'Week 1', score: Math.max(0, backendAdherence.overallAdherenceScore - 10) },
-        { week: 'Week 2', score: Math.max(0, backendAdherence.overallAdherenceScore - 5) },
-        { week: 'Week 3', score: Math.max(0, backendAdherence.overallAdherenceScore + 2) },
-        { week: 'Week 4', score: backendAdherence.overallAdherenceScore }
+        { week: 'Week 1', score: Math.max(0, Math.min(100, overallScore - 10)) },
+        { week: 'Week 2', score: Math.max(0, Math.min(100, overallScore - 5)) },
+        { week: 'Week 3', score: Math.max(0, Math.min(100, overallScore + 2)) },
+        { week: 'Week 4', score: Math.max(0, Math.min(100, overallScore)) }
       ],
       insights: [
         {
-          type: backendAdherence.overallAdherenceScore >= 80 ? 'success' : 'warning',
-          message: backendAdherence.overallAdherenceScore >= 80
+          type: overallScore >= 80 ? 'success' : 'warning',
+          message: overallScore >= 80
             ? 'Great job! Your adherence is excellent.'
             : 'Consider setting reminders to improve adherence.'
         }
@@ -301,20 +310,23 @@ class PatientMedicationService {
     };
   }
 
-  // Map backend refill request to frontend format
+  // Map backend refill request to frontend format (used for fetching existing refill requests)
   private static mapRefillRequestToFrontend(backendRequest: BackendRefillRequest): RefillRequest {
+    // Safely access nested metadata with fallbacks
+    const refillRequest = backendRequest.metadata?.refillRequest || {};
+    
     return {
       _id: backendRequest._id,
-      medicationId: backendRequest.metadata.refillRequest.medicationId,
-      medicationName: backendRequest.metadata.refillRequest.medicationName,
-      status: backendRequest.status === 'overdue' ? 'denied' : backendRequest.status,
-      requestedDate: backendRequest.metadata.refillRequest.requestedAt,
+      medicationId: refillRequest.medicationId || backendRequest.relatedRecords?.medicationId || '',
+      medicationName: refillRequest.medicationName || 'Unknown Medication',
+      status: backendRequest.status === 'overdue' ? 'denied' : (backendRequest.status || 'pending'),
+      requestedDate: refillRequest.requestedAt || backendRequest.createdAt,
       completedDate: backendRequest.completedAt,
       estimatedCompletionDate: backendRequest.dueDate,
-      notes: backendRequest.metadata.refillRequest.patientNotes,
-      quantity: backendRequest.metadata.refillRequest.requestedQuantity,
-      refillsRemaining: backendRequest.metadata.refillRequest.currentRefillsRemaining,
-      urgency: backendRequest.metadata.refillRequest.urgency,
+      notes: refillRequest.patientNotes || '',
+      quantity: refillRequest.requestedQuantity || 30,
+      refillsRemaining: refillRequest.currentRefillsRemaining || 0,
+      urgency: refillRequest.urgency || 'routine',
       createdAt: backendRequest.createdAt,
       updatedAt: backendRequest.updatedAt
     };
@@ -392,7 +404,21 @@ class PatientMedicationService {
 
   static async requestRefill(medicationId: string, notes: string): Promise<RefillRequestResponse> {
     try {
-      const response = await this.makeRequest<{ success: boolean; data: BackendRefillRequest }>('/refill-requests', {
+      const response = await this.makeRequest<{ 
+        success: boolean; 
+        data: { 
+          refillRequest: {
+            id: string;
+            status: string;
+            priority: string;
+            dueDate: string;
+            medicationName: string;
+            requestedQuantity: number;
+            urgency: string;
+            createdAt: string;
+          }
+        } 
+      }>('/refill-requests', {
         method: 'POST',
         body: JSON.stringify({
           medicationId,
@@ -402,10 +428,29 @@ class PatientMedicationService {
         })
       });
 
-      if (response.success) {
+      console.log('🔍 Refill request response:', response);
+
+      if (response.success && response.data?.refillRequest) {
+        // Map the simplified response to our RefillRequest format
+        const refillRequest: RefillRequest = {
+          _id: response.data.refillRequest.id,
+          medicationId: medicationId,
+          medicationName: response.data.refillRequest.medicationName,
+          status: response.data.refillRequest.status as any,
+          requestedDate: response.data.refillRequest.createdAt,
+          completedDate: undefined,
+          estimatedCompletionDate: response.data.refillRequest.dueDate,
+          notes: notes,
+          quantity: response.data.refillRequest.requestedQuantity,
+          refillsRemaining: 0,
+          urgency: response.data.refillRequest.urgency as any,
+          createdAt: response.data.refillRequest.createdAt,
+          updatedAt: response.data.refillRequest.createdAt
+        };
+
         return {
           success: true,
-          data: { request: this.mapRefillRequestToFrontend(response.data) },
+          data: { request: refillRequest },
           message: 'Refill request submitted successfully'
         };
       } else {
