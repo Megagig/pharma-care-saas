@@ -4,6 +4,7 @@ import { validationResult } from 'express-validator';
 import mongoose from 'mongoose';
 import { AuthRequest, isExtendedUser } from '../types/auth';
 import EnhancedFeatureFlagService from '../services/enhancedFeatureFlagService';
+import PricingPlanSyncService from '../services/PricingPlanSyncService';
 
 // Available subscription tiers
 const AVAILABLE_TIERS = ['free_trial', 'basic', 'pro', 'pharmily', 'network', 'enterprise'] as const;
@@ -241,19 +242,32 @@ export const updateFeatureFlag = async (req: Request, res: Response) => {
     // Save updated feature flag
     await featureFlag.save();
 
+    // CRITICAL: Sync all pricing plans with updated feature flags
+    let pricingPlanSyncResult = null;
+    try {
+      pricingPlanSyncResult = await PricingPlanSyncService.syncAllPlansWithFeatureFlags();
+      console.log(`✅ Synced pricing plans: ${pricingPlanSyncResult.updated} updated, ${pricingPlanSyncResult.failed} failed`);
+    } catch (syncError) {
+      console.error('Error syncing pricing plans:', syncError);
+    }
+
     // Sync all active subscriptions with the updated feature flags
     // This ensures all subscriptions get the new features immediately
     try {
       const { syncAllSubscriptionFeatures } = await import('../utils/subscriptionFeatures');
       const syncResult = await syncAllSubscriptionFeatures();
-      
+
       console.log(`✅ Synced subscription features: ${syncResult.updated} updated, ${syncResult.failed} failed`);
-      
+
       return res.status(200).json({
         success: true,
         message: 'Feature flag updated successfully',
         data: featureFlag,
-        syncResult: {
+        pricingPlanSync: pricingPlanSyncResult ? {
+          plansUpdated: pricingPlanSyncResult.updated,
+          plansFailed: pricingPlanSyncResult.failed,
+        } : null,
+        subscriptionSync: {
           subscriptionsUpdated: syncResult.updated,
           subscriptionsFailed: syncResult.failed,
           totalSubscriptions: syncResult.total,
@@ -261,12 +275,16 @@ export const updateFeatureFlag = async (req: Request, res: Response) => {
       });
     } catch (syncError) {
       console.error('Error syncing subscription features:', syncError);
-      
+
       // Still return success for the feature flag update
       return res.status(200).json({
         success: true,
         message: 'Feature flag updated successfully, but subscription sync failed',
         data: featureFlag,
+        pricingPlanSync: pricingPlanSyncResult ? {
+          plansUpdated: pricingPlanSyncResult.updated,
+          plansFailed: pricingPlanSyncResult.failed,
+        } : null,
         warning: 'Subscriptions were not automatically updated. Run sync manually.',
       });
     }
@@ -371,18 +389,31 @@ export const toggleFeatureFlagStatus = async (req: Request, res: Response) => {
     // Save updated feature flag
     await featureFlag.save();
 
+    // CRITICAL: Sync all pricing plans with updated feature flags
+    let pricingPlanSyncResult = null;
+    try {
+      pricingPlanSyncResult = await PricingPlanSyncService.syncAllPlansWithFeatureFlags();
+      console.log(`✅ Synced pricing plans after toggle: ${pricingPlanSyncResult.updated} updated`);
+    } catch (syncError) {
+      console.error('Error syncing pricing plans:', syncError);
+    }
+
     // Sync all active subscriptions with the updated feature flags
     try {
       const { syncAllSubscriptionFeatures } = await import('../utils/subscriptionFeatures');
       const syncResult = await syncAllSubscriptionFeatures();
-      
+
       console.log(`✅ Synced subscription features after toggle: ${syncResult.updated} updated`);
-      
+
       return res.status(200).json({
         success: true,
         message: `Feature flag ${featureFlag.isActive ? 'enabled' : 'disabled'} successfully`,
         data: featureFlag,
-        syncResult: {
+        pricingPlanSync: pricingPlanSyncResult ? {
+          plansUpdated: pricingPlanSyncResult.updated,
+          plansFailed: pricingPlanSyncResult.failed,
+        } : null,
+        subscriptionSync: {
           subscriptionsUpdated: syncResult.updated,
           subscriptionsFailed: syncResult.failed,
           totalSubscriptions: syncResult.total,
@@ -390,11 +421,15 @@ export const toggleFeatureFlagStatus = async (req: Request, res: Response) => {
       });
     } catch (syncError) {
       console.error('Error syncing subscription features:', syncError);
-      
+
       return res.status(200).json({
         success: true,
         message: `Feature flag ${featureFlag.isActive ? 'enabled' : 'disabled'} successfully`,
         data: featureFlag,
+        pricingPlanSync: pricingPlanSyncResult ? {
+          plansUpdated: pricingPlanSyncResult.updated,
+          plansFailed: pricingPlanSyncResult.failed,
+        } : null,
         warning: 'Subscriptions were not automatically updated.',
       });
     }
@@ -517,12 +552,21 @@ export const updateTierFeatures = async (req: Request, res: Response) => {
       );
     }
 
+    // CRITICAL: Sync PricingPlan documents with the updated feature flags
+    let pricingPlanSyncResult = null;
+    try {
+      pricingPlanSyncResult = await PricingPlanSyncService.syncTierFeatures(tier);
+      console.log(`✅ Synced pricing plans for tier ${tier}: ${pricingPlanSyncResult.updated} updated`);
+    } catch (syncError) {
+      console.error('Error syncing pricing plans:', syncError);
+    }
+
     // Sync all active subscriptions with the updated feature flags
-    let syncResult = null;
+    let subscriptionSyncResult = null;
     try {
       const { syncAllSubscriptionFeatures } = await import('../utils/subscriptionFeatures');
-      syncResult = await syncAllSubscriptionFeatures();
-      console.log(`✅ Synced subscription features after bulk tier update: ${syncResult.updated} updated`);
+      subscriptionSyncResult = await syncAllSubscriptionFeatures();
+      console.log(`✅ Synced subscription features after bulk tier update: ${subscriptionSyncResult.updated} updated`);
     } catch (syncError) {
       console.error('Error syncing subscription features:', syncError);
     }
@@ -536,10 +580,14 @@ export const updateTierFeatures = async (req: Request, res: Response) => {
         matchedCount: result.matchedCount,
         modifiedCount: result.modifiedCount,
       },
-      syncResult: syncResult ? {
-        subscriptionsUpdated: syncResult.updated,
-        subscriptionsFailed: syncResult.failed,
-        totalSubscriptions: syncResult.total,
+      pricingPlanSync: pricingPlanSyncResult ? {
+        plansUpdated: pricingPlanSyncResult.updated,
+        plansFailed: pricingPlanSyncResult.failed,
+      } : null,
+      subscriptionSync: subscriptionSyncResult ? {
+        subscriptionsUpdated: subscriptionSyncResult.updated,
+        subscriptionsFailed: subscriptionSyncResult.failed,
+        totalSubscriptions: subscriptionSyncResult.total,
       } : null,
     });
   } catch (error) {
@@ -620,12 +668,12 @@ export const updateTargetingRules = async (req: AuthRequest, res: Response) => {
 export const syncSubscriptionFeatures = async (req: Request, res: Response) => {
   try {
     console.log('🔄 Starting manual subscription features sync...');
-    
+
     const { syncAllSubscriptionFeatures } = await import('../utils/subscriptionFeatures');
     const syncResult = await syncAllSubscriptionFeatures();
-    
+
     console.log(`✅ Manual sync completed: ${syncResult.updated} updated, ${syncResult.failed} failed`);
-    
+
     return res.status(200).json({
       success: true,
       message: 'Subscription features synced successfully',

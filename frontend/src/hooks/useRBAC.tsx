@@ -139,10 +139,27 @@ export const useRBAC = (): UseRBACReturn => {
       return true;
     }
 
-    // For now, return true for all features as workspace subscription will handle access control
-    // The actual feature access is controlled by the backend requireFeature middleware
-    // which checks workspace subscription and feature flags
-    return true;
+    // Check user's subscription features
+    // If user has an active subscription, check if the feature is enabled
+    if (user?.subscription?.status === 'active' || user?.subscription?.status === 'trial') {
+      // For subscription-based features, we trust the backend's permission system
+      // The backend checks workspace subscription + feature flags + tier access
+      // So if the user has an active subscription, allow frontend access
+      // The backend will handle the actual permission enforcement
+      return true;
+    }
+
+    // If no active subscription, deny access to premium features
+    // But allow access to basic/free features
+    const freeFeatures = [
+      'dashboard_overview',
+      'patient_management',
+      'clinical_notes',
+      'medication_management_basic',
+      'settings_config',
+    ];
+
+    return freeFeatures.includes(feature);
   };
 
   const requiresLicense = (): boolean => {

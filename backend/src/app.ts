@@ -40,6 +40,7 @@ import subAnalyticsRoutes from './routes/subscriptionManagement';
 import workspaceSubscriptionRoutes from './routes/subscriptionManagementRoutes';
 import webhookRoutes from './routes/webhookRoutes';
 import featureFlagRoutes from './routes/featureFlagRoutes';
+import pricingPlanRoutes from './routes/pricingPlanRoutes';
 import healthRoutes from './routes/healthRoutes';
 import mtrRoutes from './routes/mtrRoutes';
 import mtrNotificationRoutes from './routes/mtrNotificationRoutes';
@@ -706,6 +707,7 @@ app.use('/api/subscription-management', subAnalyticsRoutes); // Using correct su
 app.use('/api/subscription', subscriptionManagementRoutes); // Old routes at /api/subscription
 app.use('/api/workspace-subscription', workspaceSubscriptionRoutes); // New workspace subscription routes
 app.use('/api/feature-flags', featureFlagRoutes);
+app.use('/api/admin/pricing-plans', pricingPlanRoutes); // Pricing plan management
 
 // Webhooks - no rate limiting and body parsing is raw for signature verification
 app.use(

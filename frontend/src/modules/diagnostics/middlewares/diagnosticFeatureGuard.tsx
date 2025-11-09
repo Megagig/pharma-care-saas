@@ -23,18 +23,38 @@ export const DiagnosticFeatureGuard: React.FC<DiagnosticFeatureGuardProps> = ({
   feature = 'ai_diagnostics',
   fallback,
 }) => {
-  const { hasFeature, hasRole } = useRBAC();
+  const { hasFeature, hasRole, isSuperAdmin } = useRBAC();
   const subscriptionStatus = useSubscriptionStatus();
 
-  // Check if user has required role (pharmacist or above)
+  // Super admins bypass all checks
+  if (isSuperAdmin) {
+    console.log('✅ Super admin bypass - granting diagnostic access');
+    return <>{children}</>;
+  }
+
+  // Check if user has required role (pharmacist, owner, pharmacy_outlet, or above)
   const hasRequiredRole =
-    hasRole('pharmacist') || hasRole('admin') || hasRole('super_admin');
+    hasRole('pharmacist') ||
+    hasRole('admin') ||
+    hasRole('super_admin') ||
+    hasRole('owner') ||
+    hasRole('pharmacy_outlet') ||
+    hasRole('pharmacy_team');
 
   // Check if user has active subscription
   const hasActiveSubscription = subscriptionStatus?.isActive;
 
   // Check if feature is enabled
   const hasRequiredFeature = hasFeature(feature);
+
+  // Debug logging
+  console.log('🔍 DiagnosticFeatureGuard Check:', {
+    hasRequiredRole,
+    hasActiveSubscription,
+    hasRequiredFeature,
+    subscriptionStatus,
+    feature,
+  });
 
   // If all checks pass, render children
   if (hasRequiredRole && hasActiveSubscription && hasRequiredFeature) {

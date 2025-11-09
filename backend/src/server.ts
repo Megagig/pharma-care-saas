@@ -23,6 +23,7 @@ import './models/Medication';
 import './models/Conversation';
 import './models/Message';
 import './models/PricingPlan';  // ← CRITICAL: Register PricingPlan model for subscription populate
+import StartupValidationService from './services/StartupValidationService';
 
 const PORT: number = parseInt(process.env.PORT || '5000', 10);
 
@@ -35,6 +36,14 @@ async function initializeServer() {
     // Connect to MongoDB first
     await connectDB();
     console.log('✅ Database connected successfully');
+
+    // Run startup validations (sync pricing plans, validate subscriptions)
+    try {
+      await StartupValidationService.runStartupValidations();
+    } catch (error) {
+      console.error('⚠️ Startup validation failed:', error);
+      // Continue anyway - admin can fix via UI
+    }
 
     // Seed sample workspaces if none exist
     try {

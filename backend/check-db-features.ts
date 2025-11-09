@@ -20,7 +20,7 @@ const PricingPlan = mongoose.model('PricingPlan');
         console.log('✅ Connected to MongoDB\n');
 
         // Find the Pro subscription
-        const sub: any = await Subscription.findOne({ 
+        const sub: any = await Subscription.findOne({
             status: 'active',
             tier: 'pro'
         }).populate('planId').lean();
@@ -34,7 +34,7 @@ const PricingPlan = mongoose.model('PricingPlan');
         console.log('\n📦 Plan Features:');
         console.log('  Type:', Array.isArray(sub?.planId?.features) ? 'Array' : typeof sub?.planId?.features);
         console.log('  Count:', Array.isArray(sub?.planId?.features) ? sub.planId.features.length : 'N/A');
-        
+
         if (Array.isArray(sub?.planId?.features)) {
             console.log('  Has ai_diagnostics:', sub.planId.features.includes('ai_diagnostics'));
             console.log('  First 10 features:', sub.planId.features.slice(0, 10));

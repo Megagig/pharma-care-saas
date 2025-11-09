@@ -32,6 +32,7 @@ import TuneIcon from '@mui/icons-material/Tune';
 import toast from 'react-hot-toast';
 import featureFlagService, { FeatureFlag } from '../services/featureFlagService';
 import AdvancedTargeting from '../components/AdvancedTargeting';
+import PricingPlanManagement from './PricingPlanManagement';
 
 // Constants - All 6 tiers for both monthly & yearly plans
 const AVAILABLE_TIERS = ['free_trial', 'basic', 'pro', 'pharmily', 'network', 'enterprise'];
@@ -77,11 +78,11 @@ const TierFeatureMatrix: React.FC<TierFeatureMatrixProps> = ({ features, onUpdat
     try {
       const action = hasAccess ? 'add' : 'remove';
       await featureFlagService.updateTierFeatures(tier, [featureKey], action);
-      
+
       toast.success(
         `Feature ${hasAccess ? 'enabled' : 'disabled'} for ${tier} tier`
       );
-      
+
       // Refresh the feature list
       onUpdate();
     } catch (error) {
@@ -116,11 +117,11 @@ const TierFeatureMatrix: React.FC<TierFeatureMatrixProps> = ({ features, onUpdat
         </Typography>
 
         {/* Mobile scroll hint */}
-        <Alert 
-          severity="info" 
-          sx={{ 
-            mb: 2, 
-            display: { xs: 'flex', md: 'none' } 
+        <Alert
+          severity="info"
+          sx={{
+            mb: 2,
+            display: { xs: 'flex', md: 'none' }
           }}
         >
           Scroll horizontally to view all tiers
@@ -134,8 +135,8 @@ const TierFeatureMatrix: React.FC<TierFeatureMatrixProps> = ({ features, onUpdat
         )}
 
         {/* Horizontal scroll wrapper for mobile */}
-        <Box 
-          sx={{ 
+        <Box
+          sx={{
             overflowX: 'auto',
             WebkitOverflowScrolling: 'touch', // Smooth scrolling on iOS
             '&::-webkit-scrollbar': {
@@ -178,11 +179,11 @@ const TierFeatureMatrix: React.FC<TierFeatureMatrixProps> = ({ features, onUpdat
                   Feature
                 </Box>
                 {AVAILABLE_TIERS.map((tier) => (
-                  <Box 
-                    component="th" 
-                    key={tier} 
-                    sx={{ 
-                      textAlign: 'center', 
+                  <Box
+                    component="th"
+                    key={tier}
+                    sx={{
+                      textAlign: 'center',
                       minWidth: { xs: '100px', sm: '120px' },
                       whiteSpace: 'nowrap'
                     }}
@@ -196,17 +197,17 @@ const TierFeatureMatrix: React.FC<TierFeatureMatrixProps> = ({ features, onUpdat
               {features.map((feature) => (
                 <tr key={feature._id}>
                   <td>
-                    <Typography 
-                      variant="body2" 
+                    <Typography
+                      variant="body2"
                       fontWeight="medium"
                       sx={{ fontSize: { xs: '0.875rem', sm: '1rem' } }}
                     >
                       {feature.name}
                     </Typography>
-                    <Typography 
-                      variant="caption" 
-                      color="text.secondary" 
-                      sx={{ 
+                    <Typography
+                      variant="caption"
+                      color="text.secondary"
+                      sx={{
                         fontFamily: 'monospace',
                         fontSize: { xs: '0.75rem', sm: '0.875rem' },
                         display: 'block',
@@ -442,10 +443,10 @@ const FeatureManagement: React.FC = () => {
   return (
     <Container maxWidth="xl" sx={{ mt: 4, mb: 8 }}>
       {/* Page Header */}
-      <Box 
-        display="flex" 
-        justifyContent="space-between" 
-        alignItems="center" 
+      <Box
+        display="flex"
+        justifyContent="space-between"
+        alignItems="center"
         mb={3}
         flexDirection={{ xs: 'column', sm: 'row' }}
         gap={{ xs: 2, sm: 0 }}
@@ -459,7 +460,7 @@ const FeatureManagement: React.FC = () => {
           startIcon={<AddIcon />}
           onClick={() => setShowCreateForm(true)}
           disabled={submitting}
-          sx={{ 
+          sx={{
             minWidth: { sm: '150px' },
             width: { xs: '100%', sm: 'auto' }
           }}
@@ -473,12 +474,17 @@ const FeatureManagement: React.FC = () => {
         <Tabs value={activeTab} onChange={handleTabChange} aria-label="feature management tabs">
           <Tab label="Features" id="feature-tab-0" aria-controls="feature-tabpanel-0" />
           <Tab label="Tier Management" id="feature-tab-1" aria-controls="feature-tabpanel-1" />
-          <Tab 
-            label="Advanced Targeting" 
-            id="feature-tab-2" 
+          <Tab
+            label="Advanced Targeting"
+            id="feature-tab-2"
             aria-controls="feature-tabpanel-2"
             icon={<TuneIcon />}
             iconPosition="start"
+          />
+          <Tab
+            label="Pricing Plans"
+            id="feature-tab-3"
+            aria-controls="feature-tabpanel-3"
           />
         </Tabs>
       </Box>
@@ -539,13 +545,13 @@ const FeatureManagement: React.FC = () => {
                 {/* Allowed Tiers */}
                 <Grid size={12}>
                   <FormLabel component="legend">Allowed Tiers</FormLabel>
-                  <FormGroup 
-                    sx={{ 
+                  <FormGroup
+                    sx={{
                       display: 'grid',
-                      gridTemplateColumns: { 
-                        xs: '1fr', 
-                        sm: 'repeat(2, 1fr)', 
-                        md: 'repeat(3, 1fr)' 
+                      gridTemplateColumns: {
+                        xs: '1fr',
+                        sm: 'repeat(2, 1fr)',
+                        md: 'repeat(3, 1fr)'
                       },
                       gap: 1
                     }}
@@ -568,13 +574,13 @@ const FeatureManagement: React.FC = () => {
                 {/* Allowed Roles */}
                 <Grid size={12}>
                   <FormLabel component="legend">Allowed Roles</FormLabel>
-                  <FormGroup 
-                    sx={{ 
+                  <FormGroup
+                    sx={{
                       display: 'grid',
-                      gridTemplateColumns: { 
-                        xs: '1fr', 
-                        sm: 'repeat(2, 1fr)', 
-                        md: 'repeat(3, 1fr)' 
+                      gridTemplateColumns: {
+                        xs: '1fr',
+                        sm: 'repeat(2, 1fr)',
+                        md: 'repeat(3, 1fr)'
                       },
                       gap: 1
                     }}
@@ -609,16 +615,16 @@ const FeatureManagement: React.FC = () => {
               </Grid>
             </Box>
           </DialogContent>
-          <DialogActions 
-            sx={{ 
+          <DialogActions
+            sx={{
               flexDirection: { xs: 'column', sm: 'row' },
               gap: { xs: 1, sm: 0 },
               px: { xs: 2, sm: 3 },
               pb: { xs: 2, sm: 2 }
             }}
           >
-            <Button 
-              onClick={resetForm} 
+            <Button
+              onClick={resetForm}
               disabled={submitting}
               sx={{ width: { xs: '100%', sm: 'auto' } }}
             >
@@ -706,9 +712,9 @@ const FeatureManagement: React.FC = () => {
                     </Box>
 
                     {/* Actions */}
-                    <Box 
-                      display="flex" 
-                      justifyContent="flex-end" 
+                    <Box
+                      display="flex"
+                      justifyContent="flex-end"
                       gap={1}
                       sx={{ mt: 1 }}
                     >
@@ -718,7 +724,7 @@ const FeatureManagement: React.FC = () => {
                         onClick={() => startEdit(feature)}
                         aria-label="Edit"
                         disabled={submitting}
-                        sx={{ 
+                        sx={{
                           minWidth: { xs: '40px', sm: 'auto' },
                           minHeight: { xs: '40px', sm: 'auto' }
                         }}
@@ -731,7 +737,7 @@ const FeatureManagement: React.FC = () => {
                         onClick={() => handleDelete(feature)}
                         aria-label="Delete"
                         disabled={submitting}
-                        sx={{ 
+                        sx={{
                           minWidth: { xs: '40px', sm: 'auto' },
                           minHeight: { xs: '40px', sm: 'auto' }
                         }}
@@ -755,6 +761,11 @@ const FeatureManagement: React.FC = () => {
       {/* Advanced Targeting Tab */}
       <TabPanel value={activeTab} index={2}>
         <AdvancedTargeting features={features} onUpdate={fetchFeatures} />
+      </TabPanel>
+
+      {/* Pricing Plans Tab */}
+      <TabPanel value={activeTab} index={3}>
+        <PricingPlanManagement />
       </TabPanel>
     </Container>
   );
