@@ -138,7 +138,9 @@ const formatDate = (date: Date | string | undefined): string => {
  * Get initials from name for avatar
  */
 const getInitials = (firstName: string, lastName: string): string => {
-  return `${firstName.charAt(0)}${lastName.charAt(0)}`.toUpperCase();
+  const first = firstName?.charAt(0) || '?';
+  const last = lastName?.charAt(0) || '?';
+  return `${first}${last}`.toUpperCase();
 };
 
 /**
@@ -369,11 +371,11 @@ const RefillRequestManagement: React.FC<RefillRequestManagementProps> = ({ onSho
 
       // Handle special fields
       if (sortField === 'patientName') {
-        aValue = `${a.patient.firstName} ${a.patient.lastName}`.toLowerCase();
-        bValue = `${b.patient.firstName} ${b.patient.lastName}`.toLowerCase();
+        aValue = `${a.patient?.firstName || ''} ${a.patient?.lastName || ''}`.toLowerCase();
+        bValue = `${b.patient?.firstName || ''} ${b.patient?.lastName || ''}`.toLowerCase();
       } else if (sortField === 'medicationName') {
-        aValue = a.medication.name.toLowerCase();
-        bValue = b.medication.name.toLowerCase();
+        aValue = (a.medication?.name || '').toLowerCase();
+        bValue = (b.medication?.name || '').toLowerCase();
       } else if (sortField === 'requestedAt') {
         aValue = new Date(aValue).getTime();
         bValue = new Date(bValue).getTime();
@@ -541,14 +543,14 @@ const RefillRequestManagement: React.FC<RefillRequestManagementProps> = ({ onSho
                           fontSize: '0.875rem',
                         }}
                       >
-                        {getInitials(request.patient.firstName, request.patient.lastName)}
+                        {getInitials(request.patient?.firstName || '', request.patient?.lastName || '')}
                       </Avatar>
                       <Box>
                         <Typography variant="body2" fontWeight={500}>
-                          {request.patient.firstName} {request.patient.lastName}
+                          {request.patient?.firstName || 'Unknown'} {request.patient?.lastName || 'Patient'}
                         </Typography>
                         <Typography variant="caption" color="text.secondary">
-                          {request.patient.email}
+                          {request.patient?.email || 'N/A'}
                         </Typography>
                       </Box>
                     </Box>
@@ -558,13 +560,13 @@ const RefillRequestManagement: React.FC<RefillRequestManagementProps> = ({ onSho
                   <TableCell>
                     <Box>
                       <Typography variant="body2" fontWeight={500}>
-                        {request.medication.name}
+                        {request.medication?.name || 'Unknown Medication'}
                       </Typography>
                       <Typography variant="caption" color="text.secondary">
-                        {request.medication.strength} {request.medication.form}
+                        {request.medication?.strength || 'N/A'} {request.medication?.form || ''}
                       </Typography>
                       <Typography variant="caption" color="text.secondary" display="block">
-                        Qty: {request.requestedQuantity} | Refills: {request.currentRefillsRemaining}
+                        Qty: {request.requestedQuantity || 0} | Refills: {request.currentRefillsRemaining || 0}
                       </Typography>
                     </Box>
                   </TableCell>
@@ -572,18 +574,18 @@ const RefillRequestManagement: React.FC<RefillRequestManagementProps> = ({ onSho
                   {/* Urgency */}
                   <TableCell>
                     <Chip
-                      label={request.urgency}
-                      color={getUrgencyColor(request.urgency)}
+                      label={request.urgency || 'routine'}
+                      color={getUrgencyColor(request.urgency || 'routine')}
                       size="small"
-                      variant={request.urgency === 'urgent' ? 'filled' : 'outlined'}
+                      variant={(request.urgency || 'routine') === 'urgent' ? 'filled' : 'outlined'}
                     />
                   </TableCell>
 
                   {/* Status */}
                   <TableCell>
                     <Chip
-                      label={request.status}
-                      color={getStatusColor(request.status)}
+                      label={request.status || 'pending'}
+                      color={getStatusColor(request.status || 'pending')}
                       size="small"
                     />
                   </TableCell>

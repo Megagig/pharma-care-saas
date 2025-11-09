@@ -105,14 +105,60 @@ class PatientPortalAdminService {
 
       const response = await PatientPortalAdminService.makeRequest<any>(`/refill-requests?${queryParams.toString()}`, { workspaceId });
 
+      // Transform backend FollowUpTask data to frontend RefillRequest structure
+      const transformedRequests = (response.requests || []).map((task: any) => {
+        // Handle case where patient data might not be populated
+        const patientData = task.patientId || {};
+        const medicationData = task.metadata?.refillRequest?.medicationId || {};
+        const refillData = task.metadata?.refillRequest || {};
+        const assignedToData = task.assignedTo || {};
+
+        return {
+          id: task._id,
+          patient: {
+            id: patientData._id || patientData.id || '',
+            firstName: patientData.firstName || 'Unknown',
+            lastName: patientData.lastName || 'Patient',
+            email: patientData.email || 'N/A',
+          },
+          medication: {
+            id: medicationData._id || medicationData.id || '',
+            name: refillData.medicationName || medicationData.name || 'Unknown Medication',
+            strength: medicationData.strength || 'N/A',
+            form: medicationData.dosageForm || medicationData.form || 'N/A',
+          },
+          requestedQuantity: refillData.requestedQuantity || 0,
+          currentRefillsRemaining: refillData.currentRefillsRemaining || 0,
+          patientNotes: refillData.patientNotes || '',
+          urgency: refillData.urgency || 'routine',
+          status: task.status || 'pending',
+          requestedAt: refillData.requestedAt || task.createdAt,
+          processedAt: task.completedAt || null,
+          processedBy: task.completedBy ? {
+            id: task.completedBy._id || task.completedBy,
+            name: task.completedBy.firstName && task.completedBy.lastName 
+              ? `${task.completedBy.firstName} ${task.completedBy.lastName}`
+              : 'Unknown'
+          } : null,
+          denialReason: refillData.denialReason || null,
+          estimatedPickupDate: refillData.estimatedPickupDate || null,
+          assignedTo: assignedToData._id ? {
+            id: assignedToData._id,
+            name: assignedToData.firstName && assignedToData.lastName 
+              ? `${assignedToData.firstName} ${assignedToData.lastName}`
+              : 'Unknown'
+          } : null,
+        };
+      });
+
       return {
-        requests: response.requests || [],
+        requests: transformedRequests,
         counts: {
           total: response.total || 0,
-          pending: response.requests?.filter((r: any) => r.status === 'pending').length || 0,
-          approved: response.requests?.filter((r: any) => r.status === 'approved').length || 0,
-          denied: response.requests?.filter((r: any) => r.status === 'denied').length || 0,
-          completed: response.requests?.filter((r: any) => r.status === 'completed').length || 0,
+          pending: transformedRequests.filter((r: any) => r.status === 'pending').length,
+          approved: transformedRequests.filter((r: any) => r.status === 'approved').length,
+          denied: transformedRequests.filter((r: any) => r.status === 'denied').length,
+          completed: transformedRequests.filter((r: any) => r.status === 'completed').length,
         },
         pagination: {
           total: response.total || 0,
