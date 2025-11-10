@@ -472,6 +472,13 @@ followUpTaskSchema.index({ type: 1, 'metadata.refillRequest.medicationId': 1 });
 followUpTaskSchema.index({ type: 1, 'metadata.refillRequest.requestedBy': 1 });
 followUpTaskSchema.index({ type: 1, 'metadata.refillRequest.requestedAt': -1 });
 
+// Indexes for related records (critical for engagement integration performance)
+followUpTaskSchema.index({ 'relatedRecords.diagnosticCaseId': 1 });
+followUpTaskSchema.index({ 'relatedRecords.clinicalInterventionId': 1 });
+followUpTaskSchema.index({ 'relatedRecords.mtrSessionId': 1 });
+followUpTaskSchema.index({ 'relatedRecords.appointmentId': 1 });
+followUpTaskSchema.index({ 'relatedRecords.medicationId': 1 });
+
 // Virtual for patient details
 followUpTaskSchema.virtual('patient', {
   ref: 'Patient',

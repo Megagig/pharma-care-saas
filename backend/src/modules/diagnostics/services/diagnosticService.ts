@@ -711,7 +711,8 @@ export class DiagnosticService {
             })
                 .populate('patientId', 'firstName lastName dateOfBirth gender')
                 .populate('pharmacistId', 'firstName lastName')
-                .lean();
+                .lean()
+                .maxTimeMS(10000); // Add 10 second timeout to prevent hanging queries
 
             return request as IDiagnosticRequest | null;
         } catch (error) {
@@ -729,7 +730,9 @@ export class DiagnosticService {
                 requestId: new Types.ObjectId(requestId),
                 workplaceId: new Types.ObjectId(workplaceId),
                 isDeleted: false,
-            }).lean();
+            })
+                .lean()
+                .maxTimeMS(10000); // Add 10 second timeout to prevent hanging queries
 
             return result as IDiagnosticResult | null;
         } catch (error) {

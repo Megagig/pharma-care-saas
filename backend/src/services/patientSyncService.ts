@@ -14,6 +14,19 @@ export class PatientSyncService {
         throw new Error('PatientUser not found');
       }
 
+      // If already linked, return existing patient
+      if (patientUser.patientId) {
+        const existingPatient = await Patient.findById(patientUser.patientId);
+        if (existingPatient && !existingPatient.isDeleted) {
+          logger.info(`PatientUser ${patientUserId} already linked to Patient ${patientUser.patientId}`);
+          return { patient: existingPatient, isNewRecord: false };
+        } else {
+          // Linked patient was deleted or doesn't exist, clear the link
+          patientUser.patientId = undefined;
+          await patientUser.save();
+        }
+      }
+
       // Check if a Patient record already exists with the same email or phone
       let existingPatient = null;
       
@@ -31,6 +44,16 @@ export class PatientSyncService {
         existingPatient = await Patient.findOne({
           workplaceId: patientUser.workplaceId,
           phone: patientUser.phone,
+          isDeleted: false,
+        });
+      }
+
+      // If not found by email/phone, try by name combination (fuzzy match)
+      if (!existingPatient) {
+        existingPatient = await Patient.findOne({
+          workplaceId: patientUser.workplaceId,
+          firstName: { $regex: new RegExp(`^${patientUser.firstName}$`, 'i') },
+          lastName: { $regex: new RegExp(`^${patientUser.lastName}$`, 'i') },
           isDeleted: false,
         });
       }
@@ -57,7 +80,11 @@ export class PatientSyncService {
         return { patient: newPatient, isNewRecord: true };
       }
     } catch (error) {
-      logger.error('Error creating or linking patient record:', error);
+      logger.error('Error creating or linking patient record:', {
+        error: error.message,
+        patientUserId,
+        stack: error.stack
+      });
       throw error;
     }
   }
@@ -305,6 +332,196 @@ export class PatientSyncService {
       return patient;
     } catch (error) {
       logger.error('Error getting patient record for user:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Manually link a PatientUser to an existing Patient record
+   * Used by admins when automatic linking fails
+   */
+  static async manuallyLinkPatientRecord(
+    patientUserId: string, 
+    patientId: string,
+    linkedBy: string
+  ): Promise<{ patient: any; previouslyLinked: boolean }> {
+    try {
+      const patientUser = await PatientUser.findById(patientUserId);
+      if (!patientUser) {
+        throw new Error('PatientUser not found');
+      }
+
+      const patient = await Patient.findById(patientId);
+      if (!patient || patient.isDeleted) {
+        throw new Error('Patient record not found or deleted');
+      }
+
+      // Verify they belong to the same workplace
+      if (!patientUser.workplaceId.equals(patient.workplaceId)) {
+        throw new Error('PatientUser and Patient must belong to the same workplace');
+      }
+
+      const previouslyLinked = !!patientUser.patientId;
+
+      // Update the link
+      patientUser.patientId = patient._id;
+      await patientUser.save();
+
+      // Sync PatientUser data to Patient record
+      await this.syncPatientUserToPatient(patientUser, patient);
+
+      logger.info(`Manually linked Patient record ${patientId} to PatientUser ${patientUserId}`, {
+        linkedBy,
+        previouslyLinked,
+        workplaceId: patientUser.workplaceId
+      });
+
+      return { patient, previouslyLinked };
+    } catch (error) {
+      logger.error('Error manually linking patient record:', {
+        error: error.message,
+        patientUserId,
+        patientId,
+        linkedBy,
+        stack: error.stack
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Find potential Patient matches for a PatientUser
+   * Used by admins to identify possible linking candidates
+   */
+  static async findPotentialPatientMatches(patientUserId: string): Promise<any[]> {
+    try {
+      const patientUser = await PatientUser.findById(patientUserId);
+      if (!patientUser) {
+        throw new Error('PatientUser not found');
+      }
+
+      const potentialMatches = [];
+
+      // Find by email
+      if (patientUser.email) {
+        const emailMatches = await Patient.find({
+          workplaceId: patientUser.workplaceId,
+          email: patientUser.email,
+          isDeleted: false,
+        }).select('_id firstName lastName email phone mrn createdAt').lean();
+        
+        potentialMatches.push(...emailMatches.map(match => ({
+          ...match,
+          matchType: 'email',
+          confidence: 'high'
+        })));
+      }
+
+      // Find by phone
+      if (patientUser.phone) {
+        const phoneMatches = await Patient.find({
+          workplaceId: patientUser.workplaceId,
+          phone: patientUser.phone,
+          isDeleted: false,
+        }).select('_id firstName lastName email phone mrn createdAt').lean();
+        
+        potentialMatches.push(...phoneMatches.map(match => ({
+          ...match,
+          matchType: 'phone',
+          confidence: 'high'
+        })));
+      }
+
+      // Find by name (fuzzy match)
+      const nameMatches = await Patient.find({
+        workplaceId: patientUser.workplaceId,
+        firstName: { $regex: new RegExp(`^${patientUser.firstName}$`, 'i') },
+        lastName: { $regex: new RegExp(`^${patientUser.lastName}$`, 'i') },
+        isDeleted: false,
+      }).select('_id firstName lastName email phone mrn createdAt').lean();
+      
+      potentialMatches.push(...nameMatches.map(match => ({
+        ...match,
+        matchType: 'name',
+        confidence: 'medium'
+      })));
+
+      // Remove duplicates and sort by confidence
+      const uniqueMatches = potentialMatches.filter((match, index, self) => 
+        index === self.findIndex(m => m._id.toString() === match._id.toString())
+      );
+
+      return uniqueMatches.sort((a, b) => {
+        const confidenceOrder = { high: 3, medium: 2, low: 1 };
+        return confidenceOrder[b.confidence] - confidenceOrder[a.confidence];
+      });
+    } catch (error) {
+      logger.error('Error finding potential patient matches:', {
+        error: error.message,
+        patientUserId,
+        stack: error.stack
+      });
+      throw error;
+    }
+  }
+
+  /**
+   * Retry automatic linking for PatientUsers without linked Patient records
+   * Used for batch processing of unlinked accounts
+   */
+  static async retryAutomaticLinking(workplaceId: string): Promise<{
+    processed: number;
+    linked: number;
+    created: number;
+    failed: string[];
+  }> {
+    try {
+      const unlinkedPatientUsers = await PatientUser.find({
+        workplaceId,
+        status: 'active',
+        patientId: { $exists: false },
+        isDeleted: false,
+      });
+
+      const results = {
+        processed: unlinkedPatientUsers.length,
+        linked: 0,
+        created: 0,
+        failed: [] as string[]
+      };
+
+      for (const patientUser of unlinkedPatientUsers) {
+        try {
+          const { patient, isNewRecord } = await this.createOrLinkPatientRecord(patientUser._id.toString());
+          
+          if (isNewRecord) {
+            results.created++;
+          } else {
+            results.linked++;
+          }
+          
+          logger.info(`Retry linking successful for PatientUser ${patientUser._id}`, {
+            patientId: patient._id,
+            isNewRecord
+          });
+        } catch (error) {
+          results.failed.push(patientUser._id.toString());
+          logger.error(`Retry linking failed for PatientUser ${patientUser._id}:`, error.message);
+        }
+      }
+
+      logger.info('Batch retry linking completed:', {
+        workplaceId,
+        ...results
+      });
+
+      return results;
+    } catch (error) {
+      logger.error('Error in batch retry linking:', {
+        error: error.message,
+        workplaceId,
+        stack: error.stack
+      });
       throw error;
     }
   }

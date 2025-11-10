@@ -109,7 +109,124 @@ class AIdiagnosticService {
     }
 
     /**
-     * Transform backend analysis structure to frontend format
+     * Transform DiagnosticResult structure to frontend analysis format
+     */
+    private transformDiagnosticResultToAnalysis(diagnosticResult: any) {
+        console.log('🔧 Transforming DiagnosticResult:', diagnosticResult);
+        
+        if (!diagnosticResult) {
+            return this.getDefaultAnalysisStructure();
+        }
+
+        // Extract primary diagnosis from the diagnoses array
+        const primaryDiagnosis = diagnosticResult.diagnoses?.[0];
+        const differentialDiagnoses = diagnosticResult.diagnoses?.slice(1) || [];
+
+        return {
+            primaryDiagnosis: {
+                condition: primaryDiagnosis?.condition || 'Unknown',
+                confidence: primaryDiagnosis?.probability || 0,
+                reasoning: primaryDiagnosis?.reasoning || 'No reasoning provided'
+            },
+            differentialDiagnoses: differentialDiagnoses.map((dx: any) => ({
+                condition: dx.condition || 'Unknown',
+                confidence: dx.probability || 0,
+                reasoning: dx.reasoning || 'No reasoning provided'
+            })),
+            recommendedTests: (diagnosticResult.suggestedTests || []).map((test: any) => ({
+                test: test.testName || 'Unknown test',
+                priority: this.mapPriority(test.priority),
+                reasoning: test.reasoning || 'No reasoning provided'
+            })),
+            treatmentSuggestions: (diagnosticResult.medicationSuggestions || []).map((med: any) => ({
+                treatment: `${med.drugName} ${med.dosage} ${med.frequency}` || 'Unknown treatment',
+                type: 'medication' as const,
+                priority: 'medium' as const,
+                reasoning: med.reasoning || 'No reasoning provided'
+            })),
+            riskFactors: (diagnosticResult.redFlags || []).map((flag: any) => ({
+                factor: flag.flag || 'Unknown risk factor',
+                severity: flag.severity || 'medium',
+                description: flag.clinicalRationale || 'No description provided'
+            })),
+            followUpRecommendations: this.extractFollowUpRecommendations(diagnosticResult)
+        };
+    }
+
+    /**
+     * Helper method to map priority levels
+     */
+    private mapPriority(priority: string): 'high' | 'medium' | 'low' {
+        switch (priority?.toLowerCase()) {
+            case 'urgent':
+                return 'high';
+            case 'routine':
+                return 'medium';
+            case 'optional':
+                return 'low';
+            default:
+                return 'medium';
+        }
+    }
+
+    /**
+     * Extract follow-up recommendations from diagnostic result
+     */
+    private extractFollowUpRecommendations(diagnosticResult: any): Array<{ recommendation: string; priority: string; timeframe?: string }> {
+        const recommendations = [];
+
+        // Add referral recommendation if present
+        if (diagnosticResult.referralRecommendation?.recommended) {
+            recommendations.push({
+                recommendation: `Refer to ${diagnosticResult.referralRecommendation.specialty}: ${diagnosticResult.referralRecommendation.reason}`,
+                priority: diagnosticResult.referralRecommendation.urgency || 'routine',
+                timeframe: diagnosticResult.referralRecommendation.urgency
+            });
+        }
+
+        // Add follow-up requirements
+        if (diagnosticResult.followUpRequired) {
+            recommendations.push({
+                recommendation: 'Schedule follow-up appointment to monitor progress',
+                priority: 'routine',
+                timeframe: '1-2 weeks'
+            });
+        }
+
+        // Add monitoring recommendations from red flags
+        diagnosticResult.redFlags?.forEach((flag: any) => {
+            if (flag.action) {
+                recommendations.push({
+                    recommendation: flag.action,
+                    priority: flag.severity || 'medium',
+                    timeframe: flag.timeframe
+                });
+            }
+        });
+
+        return recommendations;
+    }
+
+    /**
+     * Get default analysis structure when no data is available
+     */
+    private getDefaultAnalysisStructure() {
+        return {
+            primaryDiagnosis: {
+                condition: 'Unknown',
+                confidence: 0,
+                reasoning: 'No reasoning provided'
+            },
+            differentialDiagnoses: [],
+            recommendedTests: [],
+            treatmentSuggestions: [],
+            riskFactors: [],
+            followUpRecommendations: []
+        };
+    }
+
+    /**
+     * Transform backend analysis structure to frontend format (legacy method)
      */
     private transformAnalysisStructure(backendAnalysis: unknown) {
         if (!backendAnalysis || typeof backendAnalysis !== 'object') {
@@ -381,6 +498,9 @@ class AIdiagnosticService {
     async getAnalysis(caseId: string): Promise<AIAnalysisResult> {
         try {
             const caseData = await this.getCase(caseId);
+            console.log('🔧 Case data for analysis:', caseData);
+            console.log('🔧 AI Analysis present:', !!caseData.aiAnalysis);
+            
             if (caseData.aiAnalysis) {
                 return caseData.aiAnalysis;
             }
@@ -399,19 +519,23 @@ class AIdiagnosticService {
             const response = await apiClient.get(`/diagnostics/${caseId}`, {
                 timeout: 30000 // 30 seconds timeout for getting case data
             });
-            const diagnosticCase = response.data.data;
+            const responseData = response.data.data;
 
-            console.log('🔧 Backend diagnosticCase:', diagnosticCase);
-            console.log('🔧 diagnosticCase._id:', diagnosticCase._id);
-            console.log('🔧 diagnosticCase.id:', diagnosticCase.id);
+            console.log('🔧 Backend responseData:', responseData);
+            console.log('🔧 responseData.request:', responseData.request);
+            console.log('🔧 responseData.result:', responseData.result);
+
+            // Extract the request and result from the backend response
+            const diagnosticRequest = responseData.request;
+            const diagnosticResult = responseData.result;
 
             // Extract ID - try both _id and id
-            const extractedId = diagnosticCase._id || diagnosticCase.id || caseId;
+            const extractedId = diagnosticRequest._id || diagnosticRequest.id || caseId;
 
             // Extract patientId
-            const extractedPatientId = diagnosticCase.patientId && typeof diagnosticCase.patientId === 'object'
-                ? diagnosticCase.patientId._id || diagnosticCase.patientId.id
-                : diagnosticCase.patientId;
+            const extractedPatientId = diagnosticRequest.patientId && typeof diagnosticRequest.patientId === 'object'
+                ? diagnosticRequest.patientId._id || diagnosticRequest.patientId.id
+                : diagnosticRequest.patientId;
 
             // Transform backend response to frontend format
             return {
@@ -419,28 +543,28 @@ class AIdiagnosticService {
                 patientId: extractedPatientId || 'unknown',
                 caseData: {
                     patientId: extractedPatientId || 'unknown',
-                    symptoms: diagnosticCase.symptoms || { subjective: [], objective: [], duration: '', severity: 'mild' as const, onset: 'acute' as const },
-                    vitals: diagnosticCase.vitalSigns || {},
-                    currentMedications: diagnosticCase.currentMedications || [],
-                    allergies: [], // Not stored in this format
-                    medicalHistory: [], // Not stored in this format
-                    labResults: diagnosticCase.labResults || []
+                    symptoms: diagnosticRequest.inputSnapshot?.symptoms || { subjective: [], objective: [], duration: '', severity: 'mild' as const, onset: 'acute' as const },
+                    vitalSigns: diagnosticRequest.inputSnapshot?.vitals || {},
+                    currentMedications: diagnosticRequest.inputSnapshot?.currentMedications || [],
+                    allergies: diagnosticRequest.inputSnapshot?.allergies || [],
+                    medicalHistory: diagnosticRequest.inputSnapshot?.medicalHistory || [],
+                    labResults: diagnosticRequest.inputSnapshot?.labResultIds || []
                 },
-                aiAnalysis: diagnosticCase.aiAnalysis ? {
+                aiAnalysis: diagnosticResult ? {
                     id: extractedId,
                     caseId: extractedId,
-                    analysis: this.transformAnalysisStructure(diagnosticCase.aiAnalysis),
-                    confidence: this.getConfidenceScore(diagnosticCase.aiAnalysis),
-                    processingTime: diagnosticCase.aiRequestData?.processingTime || 0,
-                    createdAt: diagnosticCase.createdAt,
+                    analysis: this.transformDiagnosticResultToAnalysis(diagnosticResult),
+                    confidence: diagnosticResult.confidenceScore || 0,
+                    processingTime: responseData.processingTime || 0,
+                    createdAt: diagnosticResult.createdAt || diagnosticRequest.createdAt,
                     status: 'completed' as const
                 } : undefined,
-                status: diagnosticCase.status === 'pending' ? 'analyzing' as const :
-                    diagnosticCase.status === 'processing' ? 'analyzing' as const :
-                        diagnosticCase.status === 'completed' ? 'completed' as const :
-                            diagnosticCase.status === 'failed' ? 'failed' as const : 'analyzing' as const,
-                createdAt: diagnosticCase.createdAt,
-                updatedAt: diagnosticCase.updatedAt
+                status: diagnosticRequest.status === 'pending' ? 'analyzing' as const :
+                    diagnosticRequest.status === 'processing' ? 'analyzing' as const :
+                        diagnosticRequest.status === 'completed' ? 'completed' as const :
+                            diagnosticRequest.status === 'failed' ? 'failed' as const : 'analyzing' as const,
+                createdAt: diagnosticRequest.createdAt,
+                updatedAt: diagnosticRequest.updatedAt
             };
         } catch (error: unknown) {
             console.error('Failed to get diagnostic case:', error);
@@ -553,14 +677,17 @@ class AIdiagnosticService {
                     throw new Error('AI analysis failed');
                 }
 
-                // Wait 2 seconds before next attempt
-                await new Promise(resolve => setTimeout(resolve, 2000));
+                // Progressive delay: start with 2s, increase to 5s after 10 attempts
+                const delay = attempts < 10 ? 2000 : 5000;
+                await new Promise(resolve => setTimeout(resolve, delay));
                 attempts++;
             } catch (error) {
                 if (attempts === maxAttempts - 1) {
                     throw error;
                 }
-                await new Promise(resolve => setTimeout(resolve, 2000));
+                // Longer delay on error to reduce server load
+                const delay = attempts < 10 ? 3000 : 8000;
+                await new Promise(resolve => setTimeout(resolve, delay));
                 attempts++;
             }
         }
