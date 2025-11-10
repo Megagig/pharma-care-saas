@@ -444,7 +444,56 @@ export const getDiagnosticDashboard = asyncHandler(
                     .lean(),
             ]);
 
+            // Calculate average confidence score
+            const avgConfidenceResult = await DiagnosticResult.aggregate([
+                {
+                    $lookup: {
+                        from: 'diagnosticrequests',
+                        localField: 'requestId',
+                        foreignField: '_id',
+                        as: 'request'
+                    }
+                },
+                {
+                    $match: {
+                        'request.workplaceId': new Types.ObjectId(context.workplaceId),
+                        'request.isDeleted': false,
+                        confidenceScore: { $exists: true, $ne: null }
+                    }
+                },
+                {
+                    $group: {
+                        _id: null,
+                        avgConfidence: { $avg: '$confidenceScore' }
+                    }
+                }
+            ]);
+
+            const averageConfidence = avgConfidenceResult.length > 0 
+                ? Math.round(avgConfidenceResult[0].avgConfidence * 100) 
+                : 0;
+
+            // Count referrals generated
+            const referralsGenerated = await DiagnosticResult.countDocuments({
+                workplaceId: new Types.ObjectId(context.workplaceId),
+                'referralRecommendation.recommended': true,
+                isDeleted: false,
+            });
+
+            // Format recent requests to include caseId
+            const formattedRecentRequests = recentRequests.map((request: any) => ({
+                ...request,
+                caseId: request._id.toString(), // Add caseId field using _id
+            }));
+
             const dashboardData = {
+                summary: {
+                    totalCases: totalRequests,
+                    completedCases: completedRequests,
+                    pendingFollowUps: pendingRequests + processingRequests,
+                    averageConfidence,
+                    referralsGenerated,
+                },
                 statistics: {
                     total: totalRequests,
                     pending: pendingRequests,
@@ -453,11 +502,11 @@ export const getDiagnosticDashboard = asyncHandler(
                     failed: failedRequests,
                     pendingReviews,
                 },
-                recentRequests,
+                recentRequests: formattedRecentRequests,
                 alerts: {
                     hasFailedRequests: failedRequests > 0,
                     hasPendingReviews: pendingReviews > 0,
-                    hasStuckProcessing: processingRequests > 0, // Could add time-based logic here
+                    hasStuckProcessing: processingRequests > 0,
                 },
             };
 
@@ -954,7 +1003,7 @@ export const getAllDiagnosticCases = asyncHandler(
             // Format cases
             const formattedCases = cases.map((caseItem: any) => ({
                 _id: caseItem._id,
-                caseId: caseItem.caseId,
+                caseId: caseItem._id.toString(), // Use _id as caseId since there's no separate caseId field
                 patientId: caseItem.patientId,
                 pharmacistId: caseItem.pharmacistId,
                 symptoms: caseItem.inputSnapshot?.symptoms || {},

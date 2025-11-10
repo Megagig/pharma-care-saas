@@ -591,7 +591,7 @@ export const diagnosticApproveMiddleware = [
 export const diagnosticAnalyticsMiddleware = [
     requireActiveSubscription,
     requireDiagnosticAnalyticsFeature,
-    requireSeniorPharmacistRole,
+    requirePharmacistRole, // Changed from requireSeniorPharmacistRole to allow pharmacy_outlet
     requireDiagnosticAnalytics,
 ];
 
