@@ -101,12 +101,17 @@ const LicenseUpload: React.FC = () => {
           setActiveStep(3);
         } else if (data.data.status === 'pending' && data.data.hasDocument) {
           setActiveStep(2);
-        } else if (data.data.status === 'rejected' || (data.data.status === 'pending' && !data.data.hasDocument)) {
-          // If rejected or pending without document, start from beginning
+        } else if (data.data.status === 'rejected') {
+          // If rejected, start from beginning to allow re-upload
           setActiveStep(0);
+        } else if (data.data.licenseNumber && data.data.hasDocument) {
+          // Has license info and document, show under review
+          setActiveStep(2);
         } else if (data.data.licenseNumber) {
+          // Has license info but no document, go to upload step
           setActiveStep(1);
         } else {
+          // No license info, start from beginning
           setActiveStep(0);
         }
       }

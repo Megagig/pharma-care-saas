@@ -31,14 +31,21 @@ const requirePharmacistRole = (req, res, next) => {
     if (req.user.role === 'super_admin') {
         return next();
     }
-    const allowedRoles = ['pharmacist', 'senior_pharmacist', 'chief_pharmacist'];
-    const allowedWorkplaceRoles = ['pharmacist', 'senior_pharmacist', 'pharmacy_manager', 'owner'];
+    const allowedRoles = ['pharmacist', 'senior_pharmacist', 'chief_pharmacist', 'owner'];
+    const allowedWorkplaceRoles = ['pharmacist', 'senior_pharmacist', 'pharmacy_manager', 'owner', 'Owner'];
     const hasSystemRole = allowedRoles.includes(req.user.role);
     const hasWorkplaceRole = req.user.workplaceRole && allowedWorkplaceRoles.includes(req.user.workplaceRole);
     if (!hasSystemRole && !hasWorkplaceRole) {
+        logger_1.default.warn('Diagnostic access denied', {
+            userId: req.user._id,
+            userRole: req.user.role,
+            workplaceRole: req.user.workplaceRole,
+            requiredRoles: allowedRoles,
+            requiredWorkplaceRoles: allowedWorkplaceRoles,
+        });
         res.status(403).json({
             success: false,
-            message: 'Only pharmacists can perform diagnostic operations',
+            message: 'Only pharmacists and workspace owners can perform diagnostic operations',
             requiredRoles: allowedRoles,
             requiredWorkplaceRoles: allowedWorkplaceRoles,
             userRole: req.user.role,
@@ -60,14 +67,21 @@ const requireSeniorPharmacistRole = (req, res, next) => {
     if (req.user.role === 'super_admin') {
         return next();
     }
-    const allowedRoles = ['senior_pharmacist', 'chief_pharmacist'];
-    const allowedWorkplaceRoles = ['senior_pharmacist', 'pharmacy_manager', 'owner'];
+    const allowedRoles = ['senior_pharmacist', 'chief_pharmacist', 'owner', 'pharmacy_outlet'];
+    const allowedWorkplaceRoles = ['senior_pharmacist', 'pharmacy_manager', 'owner', 'Owner', 'pharmacy_outlet'];
     const hasSystemRole = allowedRoles.includes(req.user.role);
     const hasWorkplaceRole = req.user.workplaceRole && allowedWorkplaceRoles.includes(req.user.workplaceRole);
     if (!hasSystemRole && !hasWorkplaceRole) {
+        logger_1.default.warn('Senior diagnostic access denied', {
+            userId: req.user._id,
+            userRole: req.user.role,
+            workplaceRole: req.user.workplaceRole,
+            requiredRoles: allowedRoles,
+            requiredWorkplaceRoles: allowedWorkplaceRoles,
+        });
         res.status(403).json({
             success: false,
-            message: 'Only senior pharmacists can approve diagnostic results',
+            message: 'Only senior pharmacists and workspace owners can approve diagnostic results or view analytics',
             requiredRoles: allowedRoles,
             requiredWorkplaceRoles: allowedWorkplaceRoles,
             userRole: req.user.role,
@@ -362,7 +376,7 @@ exports.diagnosticApproveMiddleware = [
 exports.diagnosticAnalyticsMiddleware = [
     rbac_1.requireActiveSubscription,
     exports.requireDiagnosticAnalyticsFeature,
-    exports.requireSeniorPharmacistRole,
+    exports.requirePharmacistRole,
     exports.requireDiagnosticAnalytics,
 ];
 exports.default = {

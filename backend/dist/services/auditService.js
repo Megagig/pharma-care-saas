@@ -6,6 +6,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuditService = void 0;
 const AuditLog_1 = require("../models/AuditLog");
 const mongoose_1 = __importDefault(require("mongoose"));
+const logger_1 = __importDefault(require("../utils/logger"));
 class AuditService {
     static async createAuditLog(data, req) {
         try {
@@ -36,7 +37,7 @@ class AuditService {
             return auditLog;
         }
         catch (error) {
-            console.error('Error creating audit log:', error);
+            logger_1.default.error('Error creating audit log:', error);
             throw new Error('Failed to create audit log');
         }
     }
@@ -87,7 +88,7 @@ class AuditService {
             };
         }
         catch (error) {
-            console.error('Error fetching audit logs:', error);
+            logger_1.default.error('Error fetching audit logs:', error);
             throw new Error('Failed to fetch audit logs');
         }
     }
@@ -113,7 +114,7 @@ class AuditService {
             };
         }
         catch (error) {
-            console.error('Error calculating audit summary:', error);
+            logger_1.default.error('Error calculating audit summary:', error);
             return {
                 totalActions: 0,
                 uniqueUsers: 0,
@@ -137,7 +138,7 @@ class AuditService {
             }
         }
         catch (error) {
-            console.error('Error exporting audit logs:', error);
+            logger_1.default.error('Error exporting audit logs:', error);
             throw new Error('Failed to export audit logs');
         }
     }
@@ -214,8 +215,8 @@ class AuditService {
     }
     static getClientIP(req) {
         return (req.ip ||
-            req.connection.remoteAddress ||
-            req.socket.remoteAddress ||
+            req.connection?.remoteAddress ||
+            req.socket?.remoteAddress ||
             req.connection?.socket?.remoteAddress ||
             req.get('X-Forwarded-For') ||
             req.get('X-Real-IP') ||
@@ -228,11 +229,11 @@ class AuditService {
             const result = await AuditLog_1.AuditLog.deleteMany({
                 timestamp: { $lt: cutoffDate }
             });
-            console.log(`Cleaned up ${result.deletedCount} old audit logs`);
+            logger_1.default.info(`Cleaned up ${result.deletedCount} old audit logs`);
             return result.deletedCount;
         }
         catch (error) {
-            console.error('Error cleaning up old audit logs:', error);
+            logger_1.default.error('Error cleaning up old audit logs:', error);
             throw new Error('Failed to cleanup old audit logs');
         }
     }
@@ -275,7 +276,7 @@ class AuditService {
             };
         }
         catch (error) {
-            console.error('Error generating compliance report:', error);
+            logger_1.default.error('Error generating compliance report:', error);
             throw new Error('Failed to generate compliance report');
         }
     }
@@ -304,7 +305,9 @@ class AuditService {
             workspaceId: context.workspaceId
         };
         return AuditService.createAuditLog(auditData, {
-            ip: context.ipAddress,
+            ip: context.ipAddress || 'system',
+            connection: {},
+            socket: {},
             get: (header) => header === 'User-Agent' ? context.userAgent : undefined,
             sessionID: context.sessionId
         });

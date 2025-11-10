@@ -56,12 +56,20 @@ const redis_1 = require("./config/redis");
 require("./models/Medication");
 require("./models/Conversation");
 require("./models/Message");
+require("./models/PricingPlan");
+const StartupValidationService_1 = __importDefault(require("./services/StartupValidationService"));
 const PORT = parseInt(process.env.PORT || '5000', 10);
 let server;
 async function initializeServer() {
     try {
         await (0, db_1.default)();
         console.log('✅ Database connected successfully');
+        try {
+            await StartupValidationService_1.default.runStartupValidations();
+        }
+        catch (error) {
+            console.error('⚠️ Startup validation failed:', error);
+        }
         try {
             const seedWorkspaces = (await Promise.resolve().then(() => __importStar(require('./scripts/seedWorkspaces')))).default;
             await seedWorkspaces();

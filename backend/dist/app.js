@@ -73,6 +73,7 @@ const subscriptionManagement_1 = __importDefault(require("./routes/subscriptionM
 const subscriptionManagementRoutes_1 = __importDefault(require("./routes/subscriptionManagementRoutes"));
 const webhookRoutes_1 = __importDefault(require("./routes/webhookRoutes"));
 const featureFlagRoutes_1 = __importDefault(require("./routes/featureFlagRoutes"));
+const pricingPlanRoutes_1 = __importDefault(require("./routes/pricingPlanRoutes"));
 const healthRoutes_1 = __importDefault(require("./routes/healthRoutes"));
 const mtrRoutes_1 = __importDefault(require("./routes/mtrRoutes"));
 const mtrNotificationRoutes_1 = __importDefault(require("./routes/mtrNotificationRoutes"));
@@ -278,6 +279,31 @@ app.get('/api/debug/user-info', auth_1.auth, async (req, res) => {
     catch (error) {
         res.status(500).json({
             status: 'ERROR',
+            error: error.message,
+            timestamp: new Date().toISOString(),
+        });
+    }
+});
+app.post('/api/debug/clear-cache', auth_1.auth, async (req, res) => {
+    try {
+        if (process.env.NODE_ENV !== 'development') {
+            res.status(403).json({ message: 'Only available in development mode' });
+            return;
+        }
+        const { clearWorkspaceCache } = await Promise.resolve().then(() => __importStar(require('./middlewares/workspaceContext')));
+        const userId = req.user._id.toString();
+        clearWorkspaceCache(userId);
+        res.json({
+            success: true,
+            message: 'Workspace cache cleared for your user',
+            userId,
+            action: 'Please make another request to reload fresh context',
+            timestamp: new Date().toISOString(),
+        });
+    }
+    catch (error) {
+        res.status(500).json({
+            success: false,
             error: error.message,
             timestamp: new Date().toISOString(),
         });
@@ -502,6 +528,7 @@ app.use('/api/subscription-management', subscriptionManagement_1.default);
 app.use('/api/subscription', subscription_1.default);
 app.use('/api/workspace-subscription', subscriptionManagementRoutes_1.default);
 app.use('/api/feature-flags', featureFlagRoutes_1.default);
+app.use('/api/admin/pricing-plans', pricingPlanRoutes_1.default);
 app.use('/api/webhooks', express_1.default.raw({ type: 'application/json' }), webhookRoutes_1.default);
 app.use('/uploads', express_1.default.static(path_1.default.join(__dirname, '../uploads'), {
     maxAge: '1d',

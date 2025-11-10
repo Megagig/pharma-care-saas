@@ -3,6 +3,7 @@ import { IUser } from '../models/User';
 import { IWorkplace } from '../models/Workplace';
 import { ISubscription } from '../models/Subscription';
 import { ISubscriptionPlan } from '../models/SubscriptionPlan';
+import { IPricingPlan } from '../models/PricingPlan';
 import { Types } from 'mongoose';
 export type UserRole = 'pharmacist' | 'pharmacy_team' | 'pharmacy_outlet' | 'intern_pharmacist' | 'super_admin' | 'owner';
 export type WorkplaceRole = 'Owner' | 'Staff' | 'Pharmacist' | 'Cashier' | 'Technician' | 'Assistant' | 'pharmacy_outlet';
@@ -20,7 +21,7 @@ export interface PermissionMatrix {
 export interface WorkspaceContext {
     workspace: IWorkplace | null;
     subscription: ISubscription | null;
-    plan: ISubscriptionPlan | null;
+    plan: ISubscriptionPlan | IPricingPlan | null;
     permissions: string[];
     limits: PlanLimits;
     isTrialExpired: boolean;

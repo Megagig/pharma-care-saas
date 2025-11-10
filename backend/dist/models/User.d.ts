@@ -21,10 +21,13 @@ export interface IUser extends Document {
     licenseNumber?: string;
     licenseDocument?: {
         fileName: string;
-        filePath: string;
+        filePath?: string;
+        cloudinaryUrl?: string;
+        cloudinaryPublicId?: string;
         uploadedAt: Date;
         fileSize: number;
         mimeType: string;
+        uploadMethod: 'cloudinary' | 'local';
     };
     licenseStatus: 'not_required' | 'pending' | 'approved' | 'rejected';
     licenseVerifiedAt?: Date;

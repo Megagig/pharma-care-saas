@@ -1,73 +1,11 @@
 import { Request, Response } from 'express';
-import multer from 'multer';
-import path from 'path';
-import fs from 'fs';
 import User, { IUser } from '../models/User';
 import { emailService } from '../utils/emailService';
 import { AuthRequest } from '../types/auth';
+import { licenseUploadService, upload } from '../services/licenseUploadService';
 
-// Configure multer for license document uploads with improved validation
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    const uploadPath = path.join(process.cwd(), 'uploads', 'licenses');
-    if (!fs.existsSync(uploadPath)) {
-      fs.mkdirSync(uploadPath, { recursive: true });
-    }
-    cb(null, uploadPath);
-  },
-  filename: (req: Request, file, cb) => {
-    const authReq = req as unknown as AuthRequest;
-    if (!authReq.user) {
-      return cb(new Error('User not authenticated'), '');
-    }
-
-    // Use user ID in filename for better organization and security
-    const userId = authReq.user._id;
-    const uniqueSuffix = Date.now();
-    const extension = path.extname(file.originalname);
-    cb(null, `license-${userId}-${uniqueSuffix}${extension}`);
-  },
-});
-
-const fileFilter = (req: any, file: any, cb: any) => {
-  // Allow only specific file types with size validation
-  const allowedTypes = [
-    'image/jpeg',
-    'image/jpg',
-    'image/png',
-    'application/pdf',
-    'image/webp',
-  ];
-
-  if (allowedTypes.includes(file.mimetype)) {
-    cb(null, true);
-  } else {
-    cb(
-      new Error(
-        'Invalid file type. Only JPEG, PNG, WebP, and PDF files are allowed.'
-      ),
-      false
-    );
-  }
-};
-
-// Set upload limits for security
-const licenseUpload = multer({
-  storage,
-  fileFilter,
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB max file size
-  },
-});
-
-// Export for use in routes
-export const upload = multer({
-  storage,
-  fileFilter,
-  limits: {
-    fileSize: 5 * 1024 * 1024, // 5MB limit
-  },
-});
+// Export upload middleware from service
+export { upload };
 
 export class LicenseController {
   async uploadLicense(req: AuthRequest, res: Response): Promise<any> {
@@ -79,35 +17,31 @@ export class LicenseController {
         });
       }
 
+      // Validate file
+      const fileValidation = licenseUploadService.validateFile(req.file);
+      if (!fileValidation.isValid) {
+        return res.status(400).json({
+          success: false,
+          message: fileValidation.error,
+        });
+      }
+
       const { licenseNumber, licenseExpirationDate, pharmacySchool, yearOfGraduation } = req.body;
 
-      if (!licenseNumber) {
-        // Remove uploaded file if license number is missing
-        fs.unlinkSync(req.file.path);
-        return res.status(400).json({
-          success: false,
-          message: 'License number is required',
-        });
-      }
+      // Validate required fields
+      const validationErrors = [];
+      if (!licenseNumber) validationErrors.push('License number is required');
+      if (!licenseExpirationDate) validationErrors.push('License expiration date is required');
+      if (!pharmacySchool) validationErrors.push('Pharmacy school is required');
 
-      if (!licenseExpirationDate) {
-        fs.unlinkSync(req.file.path);
+      if (validationErrors.length > 0) {
         return res.status(400).json({
           success: false,
-          message: 'License expiration date is required',
-        });
-      }
-
-      if (!pharmacySchool) {
-        fs.unlinkSync(req.file.path);
-        return res.status(400).json({
-          success: false,
-          message: 'Pharmacy school is required',
+          message: validationErrors.join(', '),
         });
       }
 
       if (!req.user) {
-        fs.unlinkSync(req.file.path);
         return res.status(401).json({
           success: false,
           message: 'Authentication required',
@@ -116,7 +50,6 @@ export class LicenseController {
 
       const user = await User.findById(req.user._id);
       if (!user) {
-        fs.unlinkSync(req.file.path);
         return res.status(404).json({
           success: false,
           message: 'User not found',
@@ -131,23 +64,22 @@ export class LicenseController {
       });
 
       if (existingUser) {
-        fs.unlinkSync(req.file.path);
         return res.status(409).json({
           success: false,
           message: 'This license number is already registered by another user',
         });
       }
 
-      // Remove old license document if exists
-      if (user.licenseDocument && user.licenseDocument.filePath) {
-        try {
-          if (fs.existsSync(user.licenseDocument.filePath)) {
-            fs.unlinkSync(user.licenseDocument.filePath);
-          }
-        } catch (error) {
-          console.error('Error removing old license document:', error);
-        }
+      // Delete old license document from both Cloudinary and local storage if exists
+      if (user.licenseDocument) {
+        await licenseUploadService.deleteLicenseDocument(
+          user.licenseDocument.cloudinaryPublicId,
+          user.licenseDocument.filePath
+        );
       }
+
+      // Upload new document with Cloudinary-first approach and local backup
+      const uploadResult = await licenseUploadService.uploadLicenseDocument(req.file, user._id.toString());
 
       // Update user with new license information
       user.licenseNumber = licenseNumber;
@@ -156,13 +88,18 @@ export class LicenseController {
       if (yearOfGraduation) {
         user.yearOfGraduation = parseInt(yearOfGraduation);
       }
+
       user.licenseDocument = {
         fileName: req.file.originalname,
-        filePath: req.file.path,
+        cloudinaryUrl: uploadResult.cloudinaryUrl,
+        cloudinaryPublicId: uploadResult.cloudinaryPublicId,
+        filePath: uploadResult.localFilePath,
         uploadedAt: new Date(),
-        fileSize: req.file.size,
-        mimeType: req.file.mimetype,
+        fileSize: uploadResult.fileSize,
+        mimeType: uploadResult.mimeType,
+        uploadMethod: uploadResult.uploadMethod
       };
+
       user.licenseStatus = 'pending';
 
       // If user was previously rejected, reset rejection reason
@@ -190,11 +127,7 @@ export class LicenseController {
         },
       });
     } catch (error) {
-      // Clean up uploaded file on error
-      if (req.file && fs.existsSync(req.file.path)) {
-        fs.unlinkSync(req.file.path);
-      }
-
+      console.error('License upload error:', error);
       res.status(500).json({
         success: false,
         message: 'Error uploading license document',
@@ -291,24 +224,28 @@ export class LicenseController {
         });
       }
 
-      const filePath = user.licenseDocument.filePath;
-      if (!fs.existsSync(filePath)) {
-        return res.status(404).json({
-          success: false,
-          message: 'License file not found on server',
-        });
+      // If document is stored in Cloudinary, redirect to the URL
+      if (user.licenseDocument.cloudinaryUrl) {
+        return res.redirect(user.licenseDocument.cloudinaryUrl);
       }
 
-      // Set appropriate headers for file download
-      res.setHeader('Content-Type', user.licenseDocument.mimeType);
-      res.setHeader(
-        'Content-Disposition',
-        `attachment; filename="${user.licenseDocument.fileName}"`
-      );
+      // Fallback to local file if exists (for backward compatibility)
+      if (user.licenseDocument.filePath && require('fs').existsSync(user.licenseDocument.filePath)) {
+        const fs = require('fs');
+        res.setHeader('Content-Type', user.licenseDocument.mimeType);
+        res.setHeader(
+          'Content-Disposition',
+          `attachment; filename="${user.licenseDocument.fileName}"`
+        );
+        const fileStream = fs.createReadStream(user.licenseDocument.filePath);
+        fileStream.pipe(res);
+        return;
+      }
 
-      // Stream the file
-      const fileStream = fs.createReadStream(filePath);
-      fileStream.pipe(res);
+      return res.status(404).json({
+        success: false,
+        message: 'License file not found',
+      });
     } catch (error) {
       res.status(500).json({
         success: false,
@@ -344,14 +281,11 @@ export class LicenseController {
         });
       }
 
-      // Remove file from filesystem
-      try {
-        if (fs.existsSync(user.licenseDocument.filePath)) {
-          fs.unlinkSync(user.licenseDocument.filePath);
-        }
-      } catch (error) {
-        console.error('Error removing license file:', error);
-      }
+      // Delete from both Cloudinary and local storage
+      await licenseUploadService.deleteLicenseDocument(
+        user.licenseDocument.cloudinaryPublicId,
+        user.licenseDocument.filePath
+      );
 
       // Clear license information
       user.licenseDocument = undefined;

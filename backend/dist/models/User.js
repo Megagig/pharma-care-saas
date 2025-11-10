@@ -154,9 +154,16 @@ const userSchema = new mongoose_1.Schema({
     licenseDocument: {
         fileName: String,
         filePath: String,
+        cloudinaryUrl: String,
+        cloudinaryPublicId: String,
         uploadedAt: Date,
         fileSize: Number,
         mimeType: String,
+        uploadMethod: {
+            type: String,
+            enum: ['cloudinary', 'local'],
+            default: 'local'
+        }
     },
     licenseStatus: {
         type: String,
@@ -609,9 +616,10 @@ userSchema.index({ 'cachedPermissions.lastUpdated': -1 });
 userSchema.index({ 'cachedPermissions.workspaceId': 1 });
 userSchema.pre('save', function (next) {
     if (this.isNew || this.isModified('role')) {
-        if (this.role === 'pharmacist' || this.role === 'intern_pharmacist') {
-            this.licenseStatus =
-                this.licenseStatus === 'not_required' ? 'pending' : this.licenseStatus;
+        if (this.role === 'pharmacist' || this.role === 'intern_pharmacist' || this.role === 'owner') {
+            if (this.licenseStatus === 'not_required' && !this.licenseNumber && !this.licenseDocument) {
+                this.licenseStatus = 'not_required';
+            }
         }
         else {
             this.licenseStatus = 'not_required';

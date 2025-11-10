@@ -13,4 +13,5 @@ export declare const getReviewWorkflowStatus: (req: import("express").Request, r
 export declare const getDiagnosticAnalytics: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
 export declare const getAllDiagnosticCases: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
 export declare const getDiagnosticReferrals: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
+export declare const validatePatientAccess: (req: import("express").Request, res: Response, next: import("express").NextFunction) => void;
 //# sourceMappingURL=diagnosticController.d.ts.map

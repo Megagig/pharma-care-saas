@@ -45,7 +45,7 @@ class DiagnosticService {
                 isDeleted: false,
             });
             if (existingRequest) {
-                throw new Error('An active diagnostic request already exists for this patient');
+                throw new Error('ACTIVE_REQUEST_EXISTS');
             }
             const diagnosticRequest = new DiagnosticRequest_1.default({
                 patientId: new mongoose_1.Types.ObjectId(data.patientId),
@@ -66,9 +66,11 @@ class DiagnosticService {
                 workplaceId: new mongoose_1.Types.ObjectId(data.workplaceId),
                 userRole: pharmacist.role,
             }, {
-                action: 'diagnostic_request_created',
+                action: 'DIAGNOSTIC_CASE_CREATED',
                 resourceType: 'DiagnosticRequest',
                 resourceId: savedRequest._id,
+                complianceCategory: 'patient_care',
+                riskLevel: data.priority === 'urgent' ? 'high' : 'low',
                 details: {
                     patientId: data.patientId,
                     priority: data.priority,
@@ -86,6 +88,9 @@ class DiagnosticService {
         }
         catch (error) {
             logger_1.default.error('Failed to create diagnostic request:', error);
+            if (error instanceof Error && error.message === 'ACTIVE_REQUEST_EXISTS') {
+                throw error;
+            }
             throw new Error(`Failed to create diagnostic request: ${error}`);
         }
     }
@@ -161,9 +166,11 @@ class DiagnosticService {
                 userId: request.pharmacistId.toString(),
                 workspaceId: request.workplaceId.toString(),
             }, {
-                action: 'diagnostic_analysis_completed',
+                action: 'DIAGNOSTIC_ANALYSIS_REQUESTED',
                 resourceType: 'DiagnosticResult',
                 resourceId: diagnosticResult._id,
+                complianceCategory: 'patient_care',
+                riskLevel: diagnosticResult.redFlags.length > 0 ? 'high' : 'low',
                 details: {
                     requestId,
                     processingTime,
@@ -201,9 +208,11 @@ class DiagnosticService {
                     workplaceId: request.workplaceId,
                     userRole: userRole,
                 }, {
-                    action: 'diagnostic_analysis_failed',
+                    action: 'DIAGNOSTIC_ANALYSIS_REQUESTED',
                     resourceType: 'DiagnosticRequest',
                     resourceId: new mongoose_1.Types.ObjectId(requestId),
+                    complianceCategory: 'patient_care',
+                    riskLevel: 'high',
                     details: {
                         error: error instanceof Error ? error.message : 'Unknown error',
                         processingTime,
@@ -348,7 +357,11 @@ class DiagnosticService {
                     modelVersion: 'v3.1',
                     confidenceScore: aiAnalysis.analysis.confidenceScore / 100,
                     processingTime: aiAnalysis.processingTime,
-                    tokenUsage: aiAnalysis.usage,
+                    tokenUsage: {
+                        promptTokens: aiAnalysis.usage.prompt_tokens,
+                        completionTokens: aiAnalysis.usage.completion_tokens,
+                        totalTokens: aiAnalysis.usage.total_tokens,
+                    },
                     requestId: aiAnalysis.requestId,
                 },
                 rawResponse: JSON.stringify(aiAnalysis.analysis),
@@ -465,7 +478,8 @@ class DiagnosticService {
             })
                 .populate('patientId', 'firstName lastName dateOfBirth gender')
                 .populate('pharmacistId', 'firstName lastName')
-                .lean();
+                .lean()
+                .maxTimeMS(10000);
             return request;
         }
         catch (error) {
@@ -479,7 +493,9 @@ class DiagnosticService {
                 requestId: new mongoose_1.Types.ObjectId(requestId),
                 workplaceId: new mongoose_1.Types.ObjectId(workplaceId),
                 isDeleted: false,
-            }).lean();
+            })
+                .lean()
+                .maxTimeMS(10000);
             return result;
         }
         catch (error) {
@@ -560,9 +576,11 @@ class DiagnosticService {
                 userId: cancelledBy,
                 workspaceId: workplaceId,
             }, {
-                action: 'diagnostic_request_cancelled',
+                action: 'DIAGNOSTIC_CASE_DELETED',
                 resourceType: 'DiagnosticRequest',
                 resourceId: new mongoose_1.Types.ObjectId(requestId),
+                complianceCategory: 'patient_care',
+                riskLevel: 'low',
                 details: {
                     reason: reason || 'Cancelled by user',
                     originalStatus: request.status,

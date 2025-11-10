@@ -12,6 +12,7 @@ const diagnosticValidators_1 = require("../validators/diagnosticValidators");
 const router = express_1.default.Router();
 router.use(auth_1.auth);
 router.use(authWithWorkspace_1.authWithWorkspace);
+router.post('/patient/validate', diagnosticRBAC_1.requirePharmacistRole, diagnosticRBAC_1.requireDiagnosticRead, diagnosticController_1.validatePatientAccess);
 router.post('/', ...diagnosticRBAC_1.diagnosticCreateMiddleware, (0, diagnosticValidators_1.validateRequest)(diagnosticValidators_1.createDiagnosticRequestSchema, 'body'), diagnosticController_1.createDiagnosticRequest);
 router.get('/dashboard', diagnosticRBAC_1.requirePharmacistRole, diagnosticRBAC_1.requireDiagnosticRead, diagnosticController_1.getDiagnosticDashboard);
 router.get('/pending-reviews', ...diagnosticRBAC_1.diagnosticReviewMiddleware, (0, diagnosticValidators_1.validateRequest)(diagnosticValidators_1.pendingReviewsQuerySchema, 'query'), diagnosticController_1.getPendingReviews);

@@ -178,25 +178,50 @@ async function loadUserWorkspaceContext(userId) {
         }
         const isTrialExpired = checkTrialExpired(workspace, subscription);
         const isSubscriptionActive = checkSubscriptionActive(subscription);
-        const limits = plan ? {
-            patients: plan.features?.patientLimit || null,
-            users: plan.features?.teamSize || null,
-            locations: plan.features?.multiLocationDashboard ? null : 1,
-            storage: null,
-            apiCalls: plan.features?.apiAccess ? null : 0,
-        } : {
-            patients: null,
-            users: null,
-            locations: null,
-            storage: null,
-            apiCalls: null,
-        };
+        const limits = plan ?
+            ('features' in plan && typeof plan.features === 'object' && !Array.isArray(plan.features)) ? {
+                patients: plan.features?.patientLimit || null,
+                users: plan.features?.teamSize || null,
+                locations: plan.features?.multiLocationDashboard ? null : 1,
+                storage: null,
+                apiCalls: plan.features?.apiAccess ? null : 0,
+            } : {
+                patients: null,
+                users: null,
+                locations: null,
+                storage: null,
+                apiCalls: null,
+            }
+            : {
+                patients: null,
+                users: null,
+                locations: null,
+                storage: null,
+                apiCalls: null,
+            };
         const permissions = [];
         if (plan?.features) {
-            Object.entries(plan.features).forEach(([key, value]) => {
-                if (value === true) {
-                    permissions.push(key);
-                }
+            if (Array.isArray(plan.features)) {
+                permissions.push(...plan.features);
+            }
+            else if (typeof plan.features === 'object') {
+                Object.entries(plan.features).forEach(([key, value]) => {
+                    if (value === true) {
+                        permissions.push(key);
+                    }
+                });
+            }
+        }
+        if (process.env.NODE_ENV === 'development') {
+            logger_1.default.info('Workspace context loaded:', {
+                userId,
+                workspaceId: workspace?._id,
+                subscriptionTier: subscription?.tier,
+                planId: plan?._id,
+                planType: plan ? (Array.isArray(plan.features) ? 'PricingPlan' : 'SubscriptionPlan') : 'none',
+                permissionsCount: permissions.length,
+                hasAiDiagnostics: permissions.includes('ai_diagnostics'),
+                firstFivePermissions: permissions.slice(0, 5),
             });
         }
         return {

@@ -1,7 +1,7 @@
 import { Response } from 'express';
-import multer from 'multer';
 import { AuthRequest } from '../types/auth';
-export declare const upload: multer.Multer;
+import { upload } from '../services/licenseUploadService';
+export { upload };
 export declare class LicenseController {
     uploadLicense(req: AuthRequest, res: Response): Promise<any>;
     getLicenseStatus(req: AuthRequest, res: Response): Promise<any>;

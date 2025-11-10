@@ -3,7 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getDiagnosticReferrals = exports.getAllDiagnosticCases = exports.getDiagnosticAnalytics = exports.getReviewWorkflowStatus = exports.createInterventionFromResult = exports.getPendingReviews = exports.rejectDiagnosticResult = exports.approveDiagnosticResult = exports.getDiagnosticDashboard = exports.getPatientDiagnosticHistory = exports.cancelDiagnosticRequest = exports.retryDiagnosticRequest = exports.getDiagnosticRequest = exports.createDiagnosticRequest = void 0;
+exports.validatePatientAccess = exports.getDiagnosticReferrals = exports.getAllDiagnosticCases = exports.getDiagnosticAnalytics = exports.getReviewWorkflowStatus = exports.createInterventionFromResult = exports.getPendingReviews = exports.rejectDiagnosticResult = exports.approveDiagnosticResult = exports.getDiagnosticDashboard = exports.getPatientDiagnosticHistory = exports.cancelDiagnosticRequest = exports.retryDiagnosticRequest = exports.getDiagnosticRequest = exports.createDiagnosticRequest = void 0;
 const mongoose_1 = require("mongoose");
 const logger_1 = __importDefault(require("../../../utils/logger"));
 const responseHelpers_1 = require("../../../utils/responseHelpers");
@@ -11,7 +11,6 @@ const diagnosticService_1 = require("../services/diagnosticService");
 const pharmacistReviewService_1 = require("../services/pharmacistReviewService");
 const DiagnosticRequest_1 = __importDefault(require("../models/DiagnosticRequest"));
 const DiagnosticResult_1 = __importDefault(require("../models/DiagnosticResult"));
-const DiagnosticCase_1 = __importDefault(require("../../../models/DiagnosticCase"));
 const DiagnosticHistory_1 = __importDefault(require("../../../models/DiagnosticHistory"));
 const diagnosticService = new diagnosticService_1.DiagnosticService();
 const pharmacistReviewService = new pharmacistReviewService_1.PharmacistReviewService();
@@ -39,11 +38,15 @@ exports.createDiagnosticRequest = (0, responseHelpers_1.asyncHandler)(async (req
                 error: error.message,
             });
         });
-        console.log('Diagnostic request created:', (0, responseHelpers_1.createAuditLog)('CREATE_DIAGNOSTIC_REQUEST', 'DiagnosticRequest', diagnosticRequest._id.toString(), context, {
+        (0, responseHelpers_1.createAuditLog)('CREATE_DIAGNOSTIC_REQUEST', 'DiagnosticRequest', diagnosticRequest._id.toString(), context, {
             patientId,
             priority,
             symptomsCount: inputSnapshot.symptoms.subjective.length,
-        }));
+        });
+        logger_1.default.info('🚨🚨🚨 DIAGNOSTIC REQUEST CREATED SUCCESSFULLY 🚨🚨🚨');
+        logger_1.default.info(`🚨 Request ID: ${diagnosticRequest._id}`);
+        logger_1.default.info(`🚨 Request ID toString: ${diagnosticRequest._id.toString()}`);
+        logger_1.default.info(`🚨 Request status: ${diagnosticRequest.status}`);
         (0, responseHelpers_1.sendSuccess)(res, {
             request: diagnosticRequest,
             message: 'Diagnostic request created successfully. Processing will begin shortly.',
@@ -51,7 +54,11 @@ exports.createDiagnosticRequest = (0, responseHelpers_1.asyncHandler)(async (req
     }
     catch (error) {
         logger_1.default.error('Failed to create diagnostic request:', error);
-        (0, responseHelpers_1.sendError)(res, 'SERVER_ERROR', `Failed to create diagnostic request: ${error instanceof Error ? error.message : 'Unknown error'}`, 500);
+        const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+        if (errorMessage === 'ACTIVE_REQUEST_EXISTS') {
+            return (0, responseHelpers_1.sendError)(res, 'CONFLICT', 'An active diagnostic request already exists for this patient. Please wait for the current request to complete before submitting a new one.', 409);
+        }
+        (0, responseHelpers_1.sendError)(res, 'SERVER_ERROR', `Failed to create diagnostic request: ${errorMessage}`, 500);
     }
 });
 exports.getDiagnosticRequest = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
@@ -104,10 +111,10 @@ exports.retryDiagnosticRequest = (0, responseHelpers_1.asyncHandler)(async (req,
             return (0, responseHelpers_1.sendError)(res, 'BAD_REQUEST', 'Request cannot be retried (maximum attempts exceeded or invalid status)', 400);
         }
         const result = await diagnosticService.retryDiagnosticRequest(id);
-        console.log('Diagnostic request retried:', (0, responseHelpers_1.createAuditLog)('RETRY_DIAGNOSTIC_REQUEST', 'DiagnosticRequest', id, context, {
+        (0, responseHelpers_1.createAuditLog)('RETRY_DIAGNOSTIC_REQUEST', 'DiagnosticRequest', id, context, {
             retryCount: request.retryCount + 1,
             previousStatus: request.status,
-        }));
+        });
         (0, responseHelpers_1.sendSuccess)(res, {
             request: result.request,
             result: result.result,
@@ -138,9 +145,9 @@ exports.cancelDiagnosticRequest = (0, responseHelpers_1.asyncHandler)(async (req
             return (0, responseHelpers_1.sendError)(res, 'BAD_REQUEST', 'Can only cancel pending or processing requests', 400);
         }
         await diagnosticService.cancelDiagnosticRequest(id, context.workplaceId, context.userId);
-        console.log('Diagnostic request cancelled:', (0, responseHelpers_1.createAuditLog)('CANCEL_DIAGNOSTIC_REQUEST', 'DiagnosticRequest', id, context, {
+        (0, responseHelpers_1.createAuditLog)('CANCEL_DIAGNOSTIC_REQUEST', 'DiagnosticRequest', id, context, {
             previousStatus: request.status,
-        }));
+        });
         (0, responseHelpers_1.sendSuccess)(res, {}, 'Diagnostic request cancelled successfully');
     }
     catch (error) {
@@ -209,7 +216,49 @@ exports.getDiagnosticDashboard = (0, responseHelpers_1.asyncHandler)(async (req,
                 .limit(10)
                 .lean(),
         ]);
+        const avgConfidenceResult = await DiagnosticResult_1.default.aggregate([
+            {
+                $lookup: {
+                    from: 'diagnosticrequests',
+                    localField: 'requestId',
+                    foreignField: '_id',
+                    as: 'request'
+                }
+            },
+            {
+                $match: {
+                    'request.workplaceId': new mongoose_1.Types.ObjectId(context.workplaceId),
+                    'request.isDeleted': false,
+                    confidenceScore: { $exists: true, $ne: null }
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    avgConfidence: { $avg: '$confidenceScore' }
+                }
+            }
+        ]);
+        const averageConfidence = avgConfidenceResult.length > 0
+            ? Math.round(avgConfidenceResult[0].avgConfidence * 100)
+            : 0;
+        const referralsGenerated = await DiagnosticResult_1.default.countDocuments({
+            workplaceId: new mongoose_1.Types.ObjectId(context.workplaceId),
+            'referralRecommendation.recommended': true,
+            isDeleted: false,
+        });
+        const formattedRecentRequests = recentRequests.map((request) => ({
+            ...request,
+            caseId: request._id.toString(),
+        }));
         const dashboardData = {
+            summary: {
+                totalCases: totalRequests,
+                completedCases: completedRequests,
+                pendingFollowUps: pendingRequests + processingRequests,
+                averageConfidence,
+                referralsGenerated,
+            },
             statistics: {
                 total: totalRequests,
                 pending: pendingRequests,
@@ -218,7 +267,7 @@ exports.getDiagnosticDashboard = (0, responseHelpers_1.asyncHandler)(async (req,
                 failed: failedRequests,
                 pendingReviews,
             },
-            recentRequests,
+            recentRequests: formattedRecentRequests,
             alerts: {
                 hasFailedRequests: failedRequests > 0,
                 hasPendingReviews: pendingReviews > 0,
@@ -248,10 +297,10 @@ exports.approveDiagnosticResult = (0, responseHelpers_1.asyncHandler)(async (req
             reviewedBy: context.userId,
             workplaceId: context.workplaceId,
         });
-        console.log('Diagnostic result approved:', (0, responseHelpers_1.createAuditLog)('APPROVE_DIAGNOSTIC_RESULT', 'DiagnosticResult', id, context, {
+        (0, responseHelpers_1.createAuditLog)('APPROVE_DIAGNOSTIC_RESULT', 'DiagnosticResult', id, context, {
             hasModifications: !!modifications,
             confidenceScore: result.aiMetadata.confidenceScore,
-        }));
+        });
         (0, responseHelpers_1.sendSuccess)(res, {
             result,
             approved: true,
@@ -282,10 +331,10 @@ exports.rejectDiagnosticResult = (0, responseHelpers_1.asyncHandler)(async (req,
             reviewedBy: context.userId,
             workplaceId: context.workplaceId,
         });
-        console.log('Diagnostic result rejected:', (0, responseHelpers_1.createAuditLog)('REJECT_DIAGNOSTIC_RESULT', 'DiagnosticResult', id, context, {
+        (0, responseHelpers_1.createAuditLog)('REJECT_DIAGNOSTIC_RESULT', 'DiagnosticResult', id, context, {
             rejectionReason: rejectionReason.substring(0, 100),
             confidenceScore: result.aiMetadata.confidenceScore,
-        }));
+        });
         (0, responseHelpers_1.sendSuccess)(res, {
             result,
             rejected: true,
@@ -333,11 +382,11 @@ exports.createInterventionFromResult = (0, responseHelpers_1.asyncHandler)(async
     }
     try {
         const intervention = await pharmacistReviewService.createInterventionFromResult(id, interventionData, context.userId, context.workplaceId);
-        console.log('Intervention created from diagnostic result:', (0, responseHelpers_1.createAuditLog)('CREATE_INTERVENTION_FROM_DIAGNOSTIC', 'ClinicalIntervention', intervention._id.toString(), context, {
+        (0, responseHelpers_1.createAuditLog)('CREATE_INTERVENTION_FROM_DIAGNOSTIC', 'ClinicalIntervention', intervention._id.toString(), context, {
             diagnosticResultId: id,
             interventionType: interventionData.type,
             priority: interventionData.priority,
-        }));
+        });
         (0, responseHelpers_1.sendSuccess)(res, {
             intervention,
         }, 'Clinical intervention created successfully', 201);
@@ -374,33 +423,61 @@ exports.getDiagnosticAnalytics = (0, responseHelpers_1.asyncHandler)(async (req,
                 $gte: fromDate,
                 $lte: toDate,
             },
+            isDeleted: { $ne: true },
         };
+        console.log('🔍 Analytics query:', { matchStage, fromDate, toDate });
         const [totalCases, completedCases, pendingFollowUps, avgMetrics, topDiagnoses, completionTrends, referralsCount] = await Promise.all([
-            DiagnosticCase_1.default.countDocuments(matchStage),
-            DiagnosticCase_1.default.countDocuments({ ...matchStage, status: 'completed' }),
-            DiagnosticHistory_1.default.countDocuments({
-                workplaceId: new mongoose_1.Types.ObjectId(context.workplaceId),
-                'followUp.required': true,
-                'followUp.completed': false,
-            }),
-            DiagnosticCase_1.default.aggregate([
-                { $match: matchStage },
+            DiagnosticRequest_1.default.countDocuments(matchStage),
+            DiagnosticRequest_1.default.countDocuments({ ...matchStage, status: 'completed' }),
+            DiagnosticRequest_1.default.countDocuments({ ...matchStage, status: { $in: ['pending', 'processing'] } }),
+            DiagnosticResult_1.default.aggregate([
+                {
+                    $lookup: {
+                        from: 'diagnosticrequests',
+                        localField: 'requestId',
+                        foreignField: '_id',
+                        as: 'request'
+                    }
+                },
+                {
+                    $match: {
+                        'request.workplaceId': new mongoose_1.Types.ObjectId(context.workplaceId),
+                        'request.createdAt': { $gte: fromDate, $lte: toDate },
+                        'request.isDeleted': { $ne: true },
+                        confidenceScore: { $exists: true, $ne: null }
+                    }
+                },
                 {
                     $group: {
                         _id: null,
-                        avgConfidence: { $avg: '$aiAnalysis.confidenceScore' },
-                        avgProcessingTime: { $avg: '$aiAnalysis.processingTime' },
+                        avgConfidence: { $avg: '$confidenceScore' },
+                        avgProcessingTime: { $avg: '$processingDuration' },
                     },
                 },
             ]),
-            DiagnosticCase_1.default.aggregate([
-                { $match: matchStage },
-                { $unwind: '$aiAnalysis.differentialDiagnoses' },
+            DiagnosticResult_1.default.aggregate([
+                {
+                    $lookup: {
+                        from: 'diagnosticrequests',
+                        localField: 'requestId',
+                        foreignField: '_id',
+                        as: 'request'
+                    }
+                },
+                {
+                    $match: {
+                        'request.workplaceId': new mongoose_1.Types.ObjectId(context.workplaceId),
+                        'request.createdAt': { $gte: fromDate, $lte: toDate },
+                        'request.isDeleted': { $ne: true },
+                        'differentialDiagnoses': { $exists: true, $ne: [] }
+                    }
+                },
+                { $unwind: '$differentialDiagnoses' },
                 {
                     $group: {
-                        _id: '$aiAnalysis.differentialDiagnoses.condition',
+                        _id: '$differentialDiagnoses.condition',
                         count: { $sum: 1 },
-                        averageConfidence: { $avg: '$aiAnalysis.differentialDiagnoses.probability' },
+                        averageConfidence: { $avg: '$differentialDiagnoses.probability' },
                     },
                 },
                 { $sort: { count: -1 } },
@@ -414,7 +491,7 @@ exports.getDiagnosticAnalytics = (0, responseHelpers_1.asyncHandler)(async (req,
                     },
                 },
             ]),
-            DiagnosticCase_1.default.aggregate([
+            DiagnosticRequest_1.default.aggregate([
                 { $match: matchStage },
                 {
                     $group: {
@@ -434,14 +511,27 @@ exports.getDiagnosticAnalytics = (0, responseHelpers_1.asyncHandler)(async (req,
                 },
                 { $sort: { _id: 1 } },
             ]),
-            DiagnosticHistory_1.default.countDocuments({
-                workplaceId: new mongoose_1.Types.ObjectId(context.workplaceId),
-                'referral.generated': true,
-                createdAt: {
-                    $gte: fromDate,
-                    $lte: toDate,
+            DiagnosticResult_1.default.aggregate([
+                {
+                    $lookup: {
+                        from: 'diagnosticrequests',
+                        localField: 'requestId',
+                        foreignField: '_id',
+                        as: 'request'
+                    }
                 },
-            }),
+                {
+                    $match: {
+                        'request.workplaceId': new mongoose_1.Types.ObjectId(context.workplaceId),
+                        'request.createdAt': { $gte: fromDate, $lte: toDate },
+                        'request.isDeleted': { $ne: true },
+                        'referralRecommendation.recommended': true
+                    }
+                },
+                {
+                    $count: 'referralsCount'
+                }
+            ]).then(result => result.length > 0 ? result[0].referralsCount : 0),
         ]);
         const analytics = {
             summary: {
@@ -487,18 +577,18 @@ exports.getAllDiagnosticCases = (0, responseHelpers_1.asyncHandler)(async (req, 
         const sortOptions = {};
         sortOptions[sortBy] = sortOrder === 'asc' ? 1 : -1;
         const [cases, totalCases] = await Promise.all([
-            DiagnosticCase_1.default.find(query)
-                .populate('patientId', 'firstName lastName age gender')
+            DiagnosticRequest_1.default.find(query)
+                .populate('patientId', 'firstName lastName dateOfBirth gender')
                 .populate('pharmacistId', 'firstName lastName')
                 .sort(sortOptions)
                 .skip(skip)
                 .limit(parseInt(limit))
                 .lean(),
-            DiagnosticCase_1.default.countDocuments(query),
+            DiagnosticRequest_1.default.countDocuments(query),
         ]);
         const formattedCases = cases.map((caseItem) => ({
             _id: caseItem._id,
-            caseId: caseItem.caseId,
+            caseId: caseItem._id.toString(),
             patientId: caseItem.patientId,
             pharmacistId: caseItem.pharmacistId,
             symptoms: caseItem.inputSnapshot?.symptoms || {},
@@ -611,6 +701,44 @@ exports.getDiagnosticReferrals = (0, responseHelpers_1.asyncHandler)(async (req,
     catch (error) {
         logger_1.default.error('Failed to get diagnostic referrals:', error);
         (0, responseHelpers_1.sendError)(res, 'SERVER_ERROR', `Failed to get diagnostic referrals: ${error instanceof Error ? error.message : 'Unknown error'}`, 500);
+    }
+});
+exports.validatePatientAccess = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
+    const context = (0, responseHelpers_1.getRequestContext)(req);
+    const { patientId } = req.body;
+    if (!patientId) {
+        return (0, responseHelpers_1.sendError)(res, 'BAD_REQUEST', 'Patient ID is required', 400);
+    }
+    try {
+        const Patient = require('../../../models/Patient').default;
+        let patientQuery = { _id: patientId };
+        if (req.user?.role !== 'super_admin') {
+            patientQuery.workplaceId = context.workplaceId;
+        }
+        const patient = await Patient.findOne(patientQuery)
+            .select('firstName lastName mrn workplaceId')
+            .populate('workplaceId', 'name');
+        if (!patient) {
+            return (0, responseHelpers_1.sendError)(res, 'NOT_FOUND', 'Patient not found or you do not have access to this patient', 404);
+        }
+        if (req.user?.role === 'super_admin' && patient.workplaceId?.toString() !== context.workplaceId) {
+            logger_1.default.info('Super admin cross-workplace patient access', {
+                superAdminId: context.userId,
+                superAdminWorkplace: context.workplaceId,
+                patientId: patient._id,
+                patientWorkplace: patient.workplaceId,
+            });
+        }
+        (0, responseHelpers_1.sendSuccess)(res, {
+            hasAccess: true,
+            patientName: `${patient.firstName} ${patient.lastName}`,
+            mrn: patient.mrn,
+            workplaceName: patient.workplaceId?.name || 'Unknown',
+        }, 'Patient access validated successfully');
+    }
+    catch (error) {
+        logger_1.default.error('Failed to validate patient access:', error);
+        (0, responseHelpers_1.sendError)(res, 'SERVER_ERROR', `Failed to validate patient access: ${error instanceof Error ? error.message : 'Unknown error'}`, 500);
     }
 });
 //# sourceMappingURL=diagnosticController.js.map

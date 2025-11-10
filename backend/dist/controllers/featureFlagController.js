@@ -42,6 +42,7 @@ const express_validator_1 = require("express-validator");
 const mongoose_1 = __importDefault(require("mongoose"));
 const auth_1 = require("../types/auth");
 const enhancedFeatureFlagService_1 = __importDefault(require("../services/enhancedFeatureFlagService"));
+const PricingPlanSyncService_1 = __importDefault(require("../services/PricingPlanSyncService"));
 const AVAILABLE_TIERS = ['free_trial', 'basic', 'pro', 'pharmily', 'network', 'enterprise'];
 const getAllFeatureFlags = async (req, res) => {
     try {
@@ -210,6 +211,14 @@ const updateFeatureFlag = async (req, res) => {
         if (metadata)
             featureFlag.metadata = metadata;
         await featureFlag.save();
+        let pricingPlanSyncResult = null;
+        try {
+            pricingPlanSyncResult = await PricingPlanSyncService_1.default.syncAllPlansWithFeatureFlags();
+            console.log(`✅ Synced pricing plans: ${pricingPlanSyncResult.updated} updated, ${pricingPlanSyncResult.failed} failed`);
+        }
+        catch (syncError) {
+            console.error('Error syncing pricing plans:', syncError);
+        }
         try {
             const { syncAllSubscriptionFeatures } = await Promise.resolve().then(() => __importStar(require('../utils/subscriptionFeatures')));
             const syncResult = await syncAllSubscriptionFeatures();
@@ -218,7 +227,11 @@ const updateFeatureFlag = async (req, res) => {
                 success: true,
                 message: 'Feature flag updated successfully',
                 data: featureFlag,
-                syncResult: {
+                pricingPlanSync: pricingPlanSyncResult ? {
+                    plansUpdated: pricingPlanSyncResult.updated,
+                    plansFailed: pricingPlanSyncResult.failed,
+                } : null,
+                subscriptionSync: {
                     subscriptionsUpdated: syncResult.updated,
                     subscriptionsFailed: syncResult.failed,
                     totalSubscriptions: syncResult.total,
@@ -231,6 +244,10 @@ const updateFeatureFlag = async (req, res) => {
                 success: true,
                 message: 'Feature flag updated successfully, but subscription sync failed',
                 data: featureFlag,
+                pricingPlanSync: pricingPlanSyncResult ? {
+                    plansUpdated: pricingPlanSyncResult.updated,
+                    plansFailed: pricingPlanSyncResult.failed,
+                } : null,
                 warning: 'Subscriptions were not automatically updated. Run sync manually.',
             });
         }
@@ -307,6 +324,14 @@ const toggleFeatureFlagStatus = async (req, res) => {
         }
         featureFlag.isActive = !featureFlag.isActive;
         await featureFlag.save();
+        let pricingPlanSyncResult = null;
+        try {
+            pricingPlanSyncResult = await PricingPlanSyncService_1.default.syncAllPlansWithFeatureFlags();
+            console.log(`✅ Synced pricing plans after toggle: ${pricingPlanSyncResult.updated} updated`);
+        }
+        catch (syncError) {
+            console.error('Error syncing pricing plans:', syncError);
+        }
         try {
             const { syncAllSubscriptionFeatures } = await Promise.resolve().then(() => __importStar(require('../utils/subscriptionFeatures')));
             const syncResult = await syncAllSubscriptionFeatures();
@@ -315,7 +340,11 @@ const toggleFeatureFlagStatus = async (req, res) => {
                 success: true,
                 message: `Feature flag ${featureFlag.isActive ? 'enabled' : 'disabled'} successfully`,
                 data: featureFlag,
-                syncResult: {
+                pricingPlanSync: pricingPlanSyncResult ? {
+                    plansUpdated: pricingPlanSyncResult.updated,
+                    plansFailed: pricingPlanSyncResult.failed,
+                } : null,
+                subscriptionSync: {
                     subscriptionsUpdated: syncResult.updated,
                     subscriptionsFailed: syncResult.failed,
                     totalSubscriptions: syncResult.total,
@@ -328,6 +357,10 @@ const toggleFeatureFlagStatus = async (req, res) => {
                 success: true,
                 message: `Feature flag ${featureFlag.isActive ? 'enabled' : 'disabled'} successfully`,
                 data: featureFlag,
+                pricingPlanSync: pricingPlanSyncResult ? {
+                    plansUpdated: pricingPlanSyncResult.updated,
+                    plansFailed: pricingPlanSyncResult.failed,
+                } : null,
                 warning: 'Subscriptions were not automatically updated.',
             });
         }
@@ -415,11 +448,19 @@ const updateTierFeatures = async (req, res) => {
         else {
             result = await FeatureFlag_1.FeatureFlag.updateMany({ key: { $in: featureKeys } }, { $pull: { allowedTiers: tier } });
         }
-        let syncResult = null;
+        let pricingPlanSyncResult = null;
+        try {
+            pricingPlanSyncResult = await PricingPlanSyncService_1.default.syncTierFeatures(tier);
+            console.log(`✅ Synced pricing plans for tier ${tier}: ${pricingPlanSyncResult.updated} updated`);
+        }
+        catch (syncError) {
+            console.error('Error syncing pricing plans:', syncError);
+        }
+        let subscriptionSyncResult = null;
         try {
             const { syncAllSubscriptionFeatures } = await Promise.resolve().then(() => __importStar(require('../utils/subscriptionFeatures')));
-            syncResult = await syncAllSubscriptionFeatures();
-            console.log(`✅ Synced subscription features after bulk tier update: ${syncResult.updated} updated`);
+            subscriptionSyncResult = await syncAllSubscriptionFeatures();
+            console.log(`✅ Synced subscription features after bulk tier update: ${subscriptionSyncResult.updated} updated`);
         }
         catch (syncError) {
             console.error('Error syncing subscription features:', syncError);
@@ -433,10 +474,14 @@ const updateTierFeatures = async (req, res) => {
                 matchedCount: result.matchedCount,
                 modifiedCount: result.modifiedCount,
             },
-            syncResult: syncResult ? {
-                subscriptionsUpdated: syncResult.updated,
-                subscriptionsFailed: syncResult.failed,
-                totalSubscriptions: syncResult.total,
+            pricingPlanSync: pricingPlanSyncResult ? {
+                plansUpdated: pricingPlanSyncResult.updated,
+                plansFailed: pricingPlanSyncResult.failed,
+            } : null,
+            subscriptionSync: subscriptionSyncResult ? {
+                subscriptionsUpdated: subscriptionSyncResult.updated,
+                subscriptionsFailed: subscriptionSyncResult.failed,
+                totalSubscriptions: subscriptionSyncResult.total,
             } : null,
         });
     }
