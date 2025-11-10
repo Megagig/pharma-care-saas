@@ -13,6 +13,7 @@ export type ErrorCode =
   | 'NOT_FOUND'
   | 'UNAUTHORIZED'
   | 'FORBIDDEN'
+  | 'CONFLICT'
   | 'DUPLICATE_RESOURCE'
   | 'PLAN_LIMIT_EXCEEDED'
   | 'TENANT_VIOLATION'

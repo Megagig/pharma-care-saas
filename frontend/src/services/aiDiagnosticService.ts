@@ -82,7 +82,14 @@ export interface AIAnalysisResult {
 
 export interface DiagnosticCase {
     id: string;
-    patientId: string;
+    patientId: string | {
+        _id?: string;
+        id?: string;
+        firstName?: string;
+        lastName?: string;
+        age?: number;
+        gender?: string;
+    };
     caseData: DiagnosticCaseData;
     aiAnalysis?: AIAnalysisResult;
     status: 'draft' | 'submitted' | 'analyzing' | 'completed' | 'failed';
@@ -231,32 +238,62 @@ class AIdiagnosticService {
             // Transform data to match backend API expectations
             const apiPayload = {
                 patientId: caseData.patientId,
-                symptoms: caseData.symptoms,
-                labResults: caseData.labResults || [],
-                currentMedications: caseData.currentMedications || [],
-                vitalSigns: caseData.vitalSigns || caseData.vitals || {},
-                patientConsent: caseData.patientConsent || {
-                    provided: true,
-                    method: 'electronic'
-                }
+                inputSnapshot: {
+                    symptoms: caseData.symptoms,
+                    vitals: caseData.vitalSigns || caseData.vitals || {},
+                    currentMedications: caseData.currentMedications || [],
+                    allergies: caseData.allergies || [],
+                    medicalHistory: caseData.medicalHistory || [],
+                    labResultIds: caseData.labResults || [],
+                },
+                priority: 'routine' as const,
+                consentObtained: caseData.patientConsent?.provided ?? true
             };
 
+            console.log('🚨🚨🚨 SUBMITCASE METHOD CALLED - CODE IS UPDATED 🚨🚨🚨');
+
+            // Debug: Log the payload being sent
+            console.log('🚀 Submitting to backend:', JSON.stringify(apiPayload, null, 2));
+
             // Use extended timeout for AI analysis (3 minutes)
-            const response = await apiClient.post('/diagnostics/ai', apiPayload, {
+            const response = await apiClient.post('/diagnostics', apiPayload, {
                 timeout: 180000 // 3 minutes timeout for AI processing
             });
 
+            console.log('🚨🚨🚨 RESPONSE RECEIVED 🚨🚨🚨');
+            console.log('🚨 typeof response:', typeof response);
+            console.log('🚨 response keys:', response ? Object.keys(response) : 'null');
+
+            // Debug: Log the full response structure
+            console.log('🔍 Full API Response:', response);
+            console.log('🔍 Response Data:', response.data);
+            console.log('🔍 Response Data.data:', response.data.data);
+
             // Transform response to match frontend expectations
             const responseData = response.data.data;
+            console.log('🔍 Response Data Object:', responseData);
+
+            const diagnosticRequest = responseData.request;
+            console.log('🔍 Diagnostic Request:', diagnosticRequest);
+            console.log('🔍 Request ID (_id):', diagnosticRequest?._id);
+            console.log('🔍 Request ID (id):', diagnosticRequest?.id);
+
+            const requestId = diagnosticRequest?._id || diagnosticRequest?.id;
+            console.log('🔍 Extracted Request ID:', requestId);
+
+            console.log('🚨🚨🚨 ABOUT TO RETURN OBJECT 🚨🚨🚨');
+            console.log('🚨 requestId value:', requestId);
+            console.log('🚨 requestId type:', typeof requestId);
+
             const transformedAnalysis = this.transformAnalysisStructure(responseData.analysis);
 
             return {
-                id: responseData.caseId,
+                id: requestId,
                 patientId: caseData.patientId,
                 caseData: caseData,
                 aiAnalysis: {
-                    id: responseData.caseId,
-                    caseId: responseData.caseId,
+                    id: requestId,
+                    caseId: requestId,
                     analysis: transformedAnalysis,
                     confidence: responseData.analysis?.confidenceScore || 0,
                     processingTime: responseData.processingTime,
@@ -281,10 +318,43 @@ class AIdiagnosticService {
             ) {
                 const response = error.response as {
                     status: number;
-                    data?: { message?: string };
+                    data?: {
+                        message?: string;
+                        details?: any;
+                        errors?: any;
+                    };
                 };
 
-                if (response.status === 401) {
+                // Log full error details for debugging
+                console.error('API Error Response:', {
+                    status: response.status,
+                    data: response.data
+                });
+
+                if (response.status === 422) {
+                    // Validation error - provide detailed feedback
+                    const details = response.data?.details || response.data?.errors;
+                    let message = 'Validation failed:\n';
+
+                    if (Array.isArray(details)) {
+                        // Handle array of validation errors
+                        message += details.map((err: any) => {
+                            if (typeof err === 'string') return err;
+                            if (err.path && err.message) return `• ${err.path}: ${err.message}`;
+                            if (err.message) return `• ${err.message}`;
+                            if (err.msg) return `• ${err.msg}`;
+                            return `• ${JSON.stringify(err)}`;
+                        }).join('\n');
+                    } else if (details && typeof details === 'object') {
+                        // Handle object of validation errors
+                        message += JSON.stringify(details, null, 2);
+                    } else {
+                        message += response.data?.message || 'Please check your input';
+                    }
+
+                    console.error('Validation Error Details:', message);
+                    throw new Error(message);
+                } else if (response.status === 401) {
                     const message = response.data?.message || 'Authentication failed';
                     throw new Error(`Authentication Error: ${message}`);
                 } else if (response.status === 403) {
@@ -326,22 +396,30 @@ class AIdiagnosticService {
      */
     async getCase(caseId: string): Promise<DiagnosticCase> {
         try {
-            const response = await apiClient.get(`/diagnostics/cases/${caseId}`, {
+            const response = await apiClient.get(`/diagnostics/${caseId}`, {
                 timeout: 30000 // 30 seconds timeout for getting case data
             });
             const diagnosticCase = response.data.data;
 
+            console.log('🔧 Backend diagnosticCase:', diagnosticCase);
+            console.log('🔧 diagnosticCase._id:', diagnosticCase._id);
+            console.log('🔧 diagnosticCase.id:', diagnosticCase.id);
+
+            // Extract ID - try both _id and id
+            const extractedId = diagnosticCase._id || diagnosticCase.id || caseId;
+
+            // Extract patientId
+            const extractedPatientId = diagnosticCase.patientId && typeof diagnosticCase.patientId === 'object'
+                ? diagnosticCase.patientId._id || diagnosticCase.patientId.id
+                : diagnosticCase.patientId;
+
             // Transform backend response to frontend format
             return {
-                id: diagnosticCase._id,
-                patientId: diagnosticCase.patientId && typeof diagnosticCase.patientId === 'object'
-                    ? diagnosticCase.patientId._id || diagnosticCase.patientId.id
-                    : diagnosticCase.patientId,
+                id: extractedId,
+                patientId: extractedPatientId || 'unknown',
                 caseData: {
-                    patientId: diagnosticCase.patientId && typeof diagnosticCase.patientId === 'object'
-                        ? diagnosticCase.patientId._id || diagnosticCase.patientId.id
-                        : diagnosticCase.patientId,
-                    symptoms: diagnosticCase.symptoms,
+                    patientId: extractedPatientId || 'unknown',
+                    symptoms: diagnosticCase.symptoms || { subjective: [], objective: [], duration: '', severity: 'mild' as const, onset: 'acute' as const },
                     vitals: diagnosticCase.vitalSigns || {},
                     currentMedications: diagnosticCase.currentMedications || [],
                     allergies: [], // Not stored in this format
@@ -349,8 +427,8 @@ class AIdiagnosticService {
                     labResults: diagnosticCase.labResults || []
                 },
                 aiAnalysis: diagnosticCase.aiAnalysis ? {
-                    id: diagnosticCase._id,
-                    caseId: diagnosticCase.caseId,
+                    id: extractedId,
+                    caseId: extractedId,
                     analysis: this.transformAnalysisStructure(diagnosticCase.aiAnalysis),
                     confidence: this.getConfidenceScore(diagnosticCase.aiAnalysis),
                     processingTime: diagnosticCase.aiRequestData?.processingTime || 0,

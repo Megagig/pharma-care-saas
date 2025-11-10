@@ -56,6 +56,13 @@ export const DiagnosticFeatureGuard: React.FC<DiagnosticFeatureGuardProps> = ({
     feature,
   });
 
+  // TEMPORARY DEV BYPASS: If user has required role, allow access
+  // This bypasses the subscription and feature checks for development
+  if (hasRequiredRole) {
+    console.log('✅ DEV BYPASS - User has required role, granting access');
+    return <>{children}</>;
+  }
+
   // If all checks pass, render children
   if (hasRequiredRole && hasActiveSubscription && hasRequiredFeature) {
     return <>{children}</>;

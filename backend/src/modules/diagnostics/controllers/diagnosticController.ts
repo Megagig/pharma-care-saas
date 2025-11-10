@@ -84,20 +84,22 @@ export const createDiagnosticRequest = asyncHandler(
                 });
 
             // Create audit log
-            console.log(
-                'Diagnostic request created:',
-                createAuditLog(
-                    'CREATE_DIAGNOSTIC_REQUEST',
-                    'DiagnosticRequest',
-                    diagnosticRequest._id.toString(),
-                    context,
-                    {
-                        patientId,
-                        priority,
-                        symptomsCount: inputSnapshot.symptoms.subjective.length,
-                    }
-                )
+            createAuditLog(
+                'CREATE_DIAGNOSTIC_REQUEST',
+                'DiagnosticRequest',
+                diagnosticRequest._id.toString(),
+                context,
+                {
+                    patientId,
+                    priority,
+                    symptomsCount: inputSnapshot.symptoms.subjective.length,
+                }
             );
+
+            logger.info('🚨🚨🚨 DIAGNOSTIC REQUEST CREATED SUCCESSFULLY 🚨🚨🚨');
+            logger.info(`🚨 Request ID: ${diagnosticRequest._id}`);
+            logger.info(`🚨 Request ID toString: ${diagnosticRequest._id.toString()}`);
+            logger.info(`🚨 Request status: ${diagnosticRequest.status}`);
 
             sendSuccess(
                 res,
@@ -110,10 +112,23 @@ export const createDiagnosticRequest = asyncHandler(
             );
         } catch (error) {
             logger.error('Failed to create diagnostic request:', error);
+
+            // Handle specific error types
+            const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+
+            if (errorMessage === 'ACTIVE_REQUEST_EXISTS') {
+                return sendError(
+                    res,
+                    'CONFLICT',
+                    'An active diagnostic request already exists for this patient. Please wait for the current request to complete before submitting a new one.',
+                    409
+                );
+            }
+
             sendError(
                 res,
                 'SERVER_ERROR',
-                `Failed to create diagnostic request: ${error instanceof Error ? error.message : 'Unknown error'}`,
+                `Failed to create diagnostic request: ${errorMessage}`,
                 500
             );
         }
@@ -226,18 +241,15 @@ export const retryDiagnosticRequest = asyncHandler(
             const result = await diagnosticService.retryDiagnosticRequest(id);
 
             // Create audit log
-            console.log(
-                'Diagnostic request retried:',
-                createAuditLog(
-                    'RETRY_DIAGNOSTIC_REQUEST',
-                    'DiagnosticRequest',
-                    id,
-                    context,
-                    {
-                        retryCount: request.retryCount + 1,
-                        previousStatus: request.status,
-                    }
-                )
+            createAuditLog(
+                'RETRY_DIAGNOSTIC_REQUEST',
+                'DiagnosticRequest',
+                id,
+                context,
+                {
+                    retryCount: request.retryCount + 1,
+                    previousStatus: request.status,
+                }
             );
 
             sendSuccess(
@@ -300,17 +312,14 @@ export const cancelDiagnosticRequest = asyncHandler(
             await diagnosticService.cancelDiagnosticRequest(id, context.workplaceId, context.userId);
 
             // Create audit log
-            console.log(
-                'Diagnostic request cancelled:',
-                createAuditLog(
-                    'CANCEL_DIAGNOSTIC_REQUEST',
-                    'DiagnosticRequest',
-                    id,
-                    context,
-                    {
-                        previousStatus: request.status,
-                    }
-                )
+            createAuditLog(
+                'CANCEL_DIAGNOSTIC_REQUEST',
+                'DiagnosticRequest',
+                id,
+                context,
+                {
+                    previousStatus: request.status,
+                }
             );
 
             sendSuccess(res, {}, 'Diagnostic request cancelled successfully');
@@ -499,18 +508,15 @@ export const approveDiagnosticResult = asyncHandler(
             });
 
             // Create audit log
-            console.log(
-                'Diagnostic result approved:',
-                createAuditLog(
-                    'APPROVE_DIAGNOSTIC_RESULT',
-                    'DiagnosticResult',
-                    id,
-                    context,
-                    {
-                        hasModifications: !!modifications,
-                        confidenceScore: result.aiMetadata.confidenceScore,
-                    }
-                )
+            createAuditLog(
+                'APPROVE_DIAGNOSTIC_RESULT',
+                'DiagnosticResult',
+                id,
+                context,
+                {
+                    hasModifications: !!modifications,
+                    confidenceScore: result.aiMetadata.confidenceScore,
+                }
             );
 
             sendSuccess(
@@ -570,18 +576,15 @@ export const rejectDiagnosticResult = asyncHandler(
             });
 
             // Create audit log
-            console.log(
-                'Diagnostic result rejected:',
-                createAuditLog(
-                    'REJECT_DIAGNOSTIC_RESULT',
-                    'DiagnosticResult',
-                    id,
-                    context,
-                    {
-                        rejectionReason: rejectionReason.substring(0, 100), // Truncate for logging
-                        confidenceScore: result.aiMetadata.confidenceScore,
-                    }
-                )
+            createAuditLog(
+                'REJECT_DIAGNOSTIC_RESULT',
+                'DiagnosticResult',
+                id,
+                context,
+                {
+                    rejectionReason: rejectionReason.substring(0, 100), // Truncate for logging
+                    confidenceScore: result.aiMetadata.confidenceScore,
+                }
             );
 
             sendSuccess(
@@ -692,19 +695,16 @@ export const createInterventionFromResult = asyncHandler(
             );
 
             // Create audit log
-            console.log(
-                'Intervention created from diagnostic result:',
-                createAuditLog(
-                    'CREATE_INTERVENTION_FROM_DIAGNOSTIC',
-                    'ClinicalIntervention',
-                    intervention._id.toString(),
-                    context,
-                    {
-                        diagnosticResultId: id,
-                        interventionType: interventionData.type,
-                        priority: interventionData.priority,
-                    }
-                )
+            createAuditLog(
+                'CREATE_INTERVENTION_FROM_DIAGNOSTIC',
+                'ClinicalIntervention',
+                intervention._id.toString(),
+                context,
+                {
+                    diagnosticResultId: id,
+                    interventionType: interventionData.type,
+                    priority: interventionData.priority,
+                }
             );
 
             sendSuccess(

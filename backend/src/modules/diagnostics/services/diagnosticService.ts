@@ -85,7 +85,7 @@ export class DiagnosticService {
                 throw new Error('Patient consent is required for AI diagnostic processing');
             }
 
-            // Check for existing active requests for this patient
+            // Check for existing active requests for this patient to prevent abuse
             const existingRequest = await DiagnosticRequest.findOne({
                 patientId: data.patientId,
                 workplaceId: data.workplaceId,
@@ -94,7 +94,7 @@ export class DiagnosticService {
             });
 
             if (existingRequest) {
-                throw new Error('An active diagnostic request already exists for this patient');
+                throw new Error('ACTIVE_REQUEST_EXISTS');
             }
 
             // Create diagnostic request
@@ -122,9 +122,11 @@ export class DiagnosticService {
                     userRole: pharmacist.role,
                 },
                 {
-                    action: 'diagnostic_request_created',
+                    action: 'DIAGNOSTIC_CASE_CREATED',
                     resourceType: 'DiagnosticRequest',
                     resourceId: savedRequest._id,
+                    complianceCategory: 'patient_care',
+                    riskLevel: data.priority === 'urgent' ? 'high' : 'low',
                     details: {
                         patientId: data.patientId,
                         priority: data.priority,
@@ -144,6 +146,12 @@ export class DiagnosticService {
             return savedRequest;
         } catch (error) {
             logger.error('Failed to create diagnostic request:', error);
+
+            // Re-throw specific errors without wrapping
+            if (error instanceof Error && error.message === 'ACTIVE_REQUEST_EXISTS') {
+                throw error;
+            }
+
             throw new Error(`Failed to create diagnostic request: ${error}`);
         }
     }
@@ -264,9 +272,11 @@ export class DiagnosticService {
                     workspaceId: request.workplaceId.toString(),
                 },
                 {
-                    action: 'diagnostic_analysis_completed',
+                    action: 'DIAGNOSTIC_ANALYSIS_REQUESTED',
                     resourceType: 'DiagnosticResult',
                     resourceId: diagnosticResult._id,
+                    complianceCategory: 'patient_care',
+                    riskLevel: diagnosticResult.redFlags.length > 0 ? 'high' : 'low',
                     details: {
                         requestId,
                         processingTime,
@@ -313,9 +323,11 @@ export class DiagnosticService {
                         userRole: userRole,
                     },
                     {
-                        action: 'diagnostic_analysis_failed',
+                        action: 'DIAGNOSTIC_ANALYSIS_REQUESTED',
                         resourceType: 'DiagnosticRequest',
                         resourceId: new Types.ObjectId(requestId),
+                        complianceCategory: 'patient_care',
+                        riskLevel: 'high',
                         details: {
                             error: error instanceof Error ? error.message : 'Unknown error',
                             processingTime,
@@ -509,7 +521,11 @@ export class DiagnosticService {
                     modelVersion: 'v3.1',
                     confidenceScore: aiAnalysis.analysis.confidenceScore / 100,
                     processingTime: aiAnalysis.processingTime,
-                    tokenUsage: aiAnalysis.usage,
+                    tokenUsage: {
+                        promptTokens: aiAnalysis.usage.prompt_tokens,
+                        completionTokens: aiAnalysis.usage.completion_tokens,
+                        totalTokens: aiAnalysis.usage.total_tokens,
+                    },
                     requestId: aiAnalysis.requestId,
                 },
                 rawResponse: JSON.stringify(aiAnalysis.analysis),
@@ -838,9 +854,11 @@ export class DiagnosticService {
                     workspaceId: workplaceId,
                 },
                 {
-                    action: 'diagnostic_request_cancelled',
+                    action: 'DIAGNOSTIC_CASE_DELETED',
                     resourceType: 'DiagnosticRequest',
                     resourceId: new Types.ObjectId(requestId),
+                    complianceCategory: 'patient_care',
+                    riskLevel: 'low',
                     details: {
                         reason: reason || 'Cancelled by user',
                         originalStatus: request.status,

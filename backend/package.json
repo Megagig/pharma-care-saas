@@ -20,6 +20,7 @@
     "seed:security-logs": "ts-node src/scripts/seedSecurityAuditLogs.ts",
     "drop-indexes": "ts-node scripts/dropOldIndexes.ts",
     "clean-db": "ts-node scripts/cleanDatabase.ts",
+    "clear-diagnostics": "ts-node scripts/clearPendingDiagnosticRequests.ts",
     "migrate:workspace": "ts-node scripts/migrateToWorkspaceSubscriptions.ts",
     "setup:workspace-subscriptions": "ts-node scripts/setupWorkspaceSubscriptionSystem.ts",
     "setup:feature-flags": "ts-node scripts/setupFeatureFlags.ts",
