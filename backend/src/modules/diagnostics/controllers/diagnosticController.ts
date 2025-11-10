@@ -825,14 +825,17 @@ export const getDiagnosticAnalytics = asyncHandler(
             : new Date();
 
         try {
-            // Query legacy DiagnosticCase collection for analytics
+            // Query DiagnosticRequest collection for analytics (updated to use new model)
             const matchStage = {
                 workplaceId: new Types.ObjectId(context.workplaceId),
                 createdAt: {
                     $gte: fromDate,
                     $lte: toDate,
                 },
+                isDeleted: { $ne: true },
             };
+
+            console.log('🔍 Analytics query:', { matchStage, fromDate, toDate });
 
             // Get basic counts and averages
             const [
@@ -844,32 +847,59 @@ export const getDiagnosticAnalytics = asyncHandler(
                 completionTrends,
                 referralsCount
             ] = await Promise.all([
-                DiagnosticCase.countDocuments(matchStage),
-                DiagnosticCase.countDocuments({ ...matchStage, status: 'completed' }),
-                DiagnosticHistory.countDocuments({
-                    workplaceId: new Types.ObjectId(context.workplaceId),
-                    'followUp.required': true,
-                    'followUp.completed': false,
-                }),
-                DiagnosticCase.aggregate([
-                    { $match: matchStage },
+                DiagnosticRequest.countDocuments(matchStage),
+                DiagnosticRequest.countDocuments({ ...matchStage, status: 'completed' }),
+                DiagnosticRequest.countDocuments({ ...matchStage, status: { $in: ['pending', 'processing'] } }),
+                // Get average confidence from DiagnosticResult collection
+                DiagnosticResult.aggregate([
+                    {
+                        $lookup: {
+                            from: 'diagnosticrequests',
+                            localField: 'requestId',
+                            foreignField: '_id',
+                            as: 'request'
+                        }
+                    },
+                    {
+                        $match: {
+                            'request.workplaceId': new Types.ObjectId(context.workplaceId),
+                            'request.createdAt': { $gte: fromDate, $lte: toDate },
+                            'request.isDeleted': { $ne: true },
+                            confidenceScore: { $exists: true, $ne: null }
+                        }
+                    },
                     {
                         $group: {
                             _id: null,
-                            avgConfidence: { $avg: '$aiAnalysis.confidenceScore' },
-                            avgProcessingTime: { $avg: '$aiAnalysis.processingTime' },
+                            avgConfidence: { $avg: '$confidenceScore' },
+                            avgProcessingTime: { $avg: '$processingDuration' },
                         },
                     },
                 ]),
-                // Get top diagnoses
-                DiagnosticCase.aggregate([
-                    { $match: matchStage },
-                    { $unwind: '$aiAnalysis.differentialDiagnoses' },
+                // Get top diagnoses from DiagnosticResult collection
+                DiagnosticResult.aggregate([
+                    {
+                        $lookup: {
+                            from: 'diagnosticrequests',
+                            localField: 'requestId',
+                            foreignField: '_id',
+                            as: 'request'
+                        }
+                    },
+                    {
+                        $match: {
+                            'request.workplaceId': new Types.ObjectId(context.workplaceId),
+                            'request.createdAt': { $gte: fromDate, $lte: toDate },
+                            'request.isDeleted': { $ne: true },
+                            'differentialDiagnoses': { $exists: true, $ne: [] }
+                        }
+                    },
+                    { $unwind: '$differentialDiagnoses' },
                     {
                         $group: {
-                            _id: '$aiAnalysis.differentialDiagnoses.condition',
+                            _id: '$differentialDiagnoses.condition',
                             count: { $sum: 1 },
-                            averageConfidence: { $avg: '$aiAnalysis.differentialDiagnoses.probability' },
+                            averageConfidence: { $avg: '$differentialDiagnoses.probability' },
                         },
                     },
                     { $sort: { count: -1 } },
@@ -883,8 +913,8 @@ export const getDiagnosticAnalytics = asyncHandler(
                         },
                     },
                 ]),
-                // Get completion trends (group by day)
-                DiagnosticCase.aggregate([
+                // Get completion trends (group by day) from DiagnosticRequest
+                DiagnosticRequest.aggregate([
                     { $match: matchStage },
                     {
                         $group: {
@@ -904,14 +934,28 @@ export const getDiagnosticAnalytics = asyncHandler(
                     },
                     { $sort: { _id: 1 } },
                 ]),
-                DiagnosticHistory.countDocuments({
-                    workplaceId: new Types.ObjectId(context.workplaceId),
-                    'referral.generated': true,
-                    createdAt: {
-                        $gte: fromDate,
-                        $lte: toDate,
+                // Count referrals from DiagnosticResult collection
+                DiagnosticResult.aggregate([
+                    {
+                        $lookup: {
+                            from: 'diagnosticrequests',
+                            localField: 'requestId',
+                            foreignField: '_id',
+                            as: 'request'
+                        }
                     },
-                }),
+                    {
+                        $match: {
+                            'request.workplaceId': new Types.ObjectId(context.workplaceId),
+                            'request.createdAt': { $gte: fromDate, $lte: toDate },
+                            'request.isDeleted': { $ne: true },
+                            'referralRecommendation.recommended': true
+                        }
+                    },
+                    {
+                        $count: 'referralsCount'
+                    }
+                ]).then(result => result.length > 0 ? result[0].referralsCount : 0),
             ]);
 
             const analytics = {
