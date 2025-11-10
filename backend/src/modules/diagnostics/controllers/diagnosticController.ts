@@ -941,14 +941,14 @@ export const getAllDiagnosticCases = asyncHandler(
             sortOptions[sortBy] = sortOrder === 'asc' ? 1 : -1;
 
             const [cases, totalCases] = await Promise.all([
-                DiagnosticCase.find(query)
-                    .populate('patientId', 'firstName lastName age gender')
+                DiagnosticRequest.find(query)
+                    .populate('patientId', 'firstName lastName dateOfBirth gender')
                     .populate('pharmacistId', 'firstName lastName')
                     .sort(sortOptions)
                     .skip(skip)
                     .limit(parseInt(limit))
                     .lean(),
-                DiagnosticCase.countDocuments(query),
+                DiagnosticRequest.countDocuments(query),
             ]);
 
             // Format cases

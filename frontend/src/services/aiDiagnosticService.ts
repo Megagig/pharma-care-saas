@@ -170,41 +170,141 @@ class AIdiagnosticService {
     }
 
     /**
+     * Extract confidence score from diagnostic result
+     */
+    private extractConfidenceScore(diagnosticResult: any): number {
+        // Try multiple possible confidence score fields
+        if (diagnosticResult.confidenceScore !== undefined) {
+            return Number(diagnosticResult.confidenceScore) || 0;
+        }
+        
+        if (diagnosticResult.aiMetadata?.confidenceScore !== undefined) {
+            return Number(diagnosticResult.aiMetadata.confidenceScore) || 0;
+        }
+
+        // Calculate from primary diagnosis probability if available
+        if (diagnosticResult.diagnoses?.[0]?.probability !== undefined) {
+            return Number(diagnosticResult.diagnoses[0].probability) / 100 || 0;
+        }
+
+        // Default fallback
+        return 0;
+    }
+
+    /**
      * Extract follow-up recommendations from diagnostic result
      */
     private extractFollowUpRecommendations(diagnosticResult: any): Array<{ recommendation: string; priority: string; timeframe?: string }> {
         const recommendations = [];
+
+        console.log('🔧 Extracting follow-up recommendations from:', diagnosticResult);
 
         // Add referral recommendation if present
         if (diagnosticResult.referralRecommendation?.recommended) {
             recommendations.push({
                 recommendation: `Refer to ${diagnosticResult.referralRecommendation.specialty}: ${diagnosticResult.referralRecommendation.reason}`,
                 priority: diagnosticResult.referralRecommendation.urgency || 'routine',
-                timeframe: diagnosticResult.referralRecommendation.urgency
+                timeframe: this.mapUrgencyToTimeframe(diagnosticResult.referralRecommendation.urgency)
             });
         }
 
         // Add follow-up requirements
         if (diagnosticResult.followUpRequired) {
             recommendations.push({
-                recommendation: 'Schedule follow-up appointment to monitor progress',
+                recommendation: 'Schedule follow-up appointment to monitor progress and treatment response',
                 priority: 'routine',
                 timeframe: '1-2 weeks'
             });
         }
 
         // Add monitoring recommendations from red flags
-        diagnosticResult.redFlags?.forEach((flag: any) => {
-            if (flag.action) {
-                recommendations.push({
-                    recommendation: flag.action,
-                    priority: flag.severity || 'medium',
-                    timeframe: flag.timeframe
-                });
-            }
-        });
+        if (diagnosticResult.redFlags && Array.isArray(diagnosticResult.redFlags)) {
+            diagnosticResult.redFlags.forEach((flag: any) => {
+                if (flag.action) {
+                    recommendations.push({
+                        recommendation: flag.action,
+                        priority: flag.severity || 'medium',
+                        timeframe: flag.timeframe || this.mapSeverityToTimeframe(flag.severity)
+                    });
+                }
+            });
+        }
 
+        // Add medication monitoring if medication suggestions exist
+        if (diagnosticResult.medicationSuggestions && Array.isArray(diagnosticResult.medicationSuggestions)) {
+            diagnosticResult.medicationSuggestions.forEach((med: any) => {
+                if (med.monitoringParameters && Array.isArray(med.monitoringParameters)) {
+                    med.monitoringParameters.forEach((param: string) => {
+                        recommendations.push({
+                            recommendation: `Monitor ${param} for ${med.drugName}`,
+                            priority: 'routine',
+                            timeframe: '1-2 weeks'
+                        });
+                    });
+                }
+            });
+        }
+
+        // Add test follow-up recommendations
+        if (diagnosticResult.suggestedTests && Array.isArray(diagnosticResult.suggestedTests)) {
+            diagnosticResult.suggestedTests.forEach((test: any) => {
+                if (test.priority === 'urgent') {
+                    recommendations.push({
+                        recommendation: `Follow up on ${test.testName} results`,
+                        priority: 'high',
+                        timeframe: '24-48 hours'
+                    });
+                }
+            });
+        }
+
+        // If no specific recommendations, add general follow-up
+        if (recommendations.length === 0) {
+            recommendations.push({
+                recommendation: 'Schedule routine follow-up to assess treatment response and symptom progression',
+                priority: 'routine',
+                timeframe: '1-2 weeks'
+            });
+        }
+
+        console.log('🔧 Extracted follow-up recommendations:', recommendations);
         return recommendations;
+    }
+
+    /**
+     * Map urgency to timeframe
+     */
+    private mapUrgencyToTimeframe(urgency: string): string {
+        switch (urgency?.toLowerCase()) {
+            case 'immediate':
+                return 'within 24 hours';
+            case 'within_24h':
+                return 'within 24 hours';
+            case 'within_week':
+                return 'within 1 week';
+            case 'routine':
+                return '1-2 weeks';
+            default:
+                return '1-2 weeks';
+        }
+    }
+
+    /**
+     * Map severity to timeframe
+     */
+    private mapSeverityToTimeframe(severity: string): string {
+        switch (severity?.toLowerCase()) {
+            case 'critical':
+                return 'immediately';
+            case 'high':
+                return 'within 24 hours';
+            case 'medium':
+                return 'within 1 week';
+            case 'low':
+                return '1-2 weeks';
+            default:
+                return '1-2 weeks';
+        }
     }
 
     /**
@@ -554,7 +654,7 @@ class AIdiagnosticService {
                     id: extractedId,
                     caseId: extractedId,
                     analysis: this.transformDiagnosticResultToAnalysis(diagnosticResult),
-                    confidence: diagnosticResult.confidenceScore || 0,
+                    confidence: this.extractConfidenceScore(diagnosticResult),
                     processingTime: responseData.processingTime || 0,
                     createdAt: diagnosticResult.createdAt || diagnosticRequest.createdAt,
                     status: 'completed' as const

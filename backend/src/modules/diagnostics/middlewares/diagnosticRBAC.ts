@@ -160,8 +160,8 @@ export const requireSeniorPharmacistRole = (
     }
 
     // Check if user is a senior pharmacist or higher, OR workspace owner
-    const allowedRoles = ['senior_pharmacist', 'chief_pharmacist', 'owner'];
-    const allowedWorkplaceRoles = ['senior_pharmacist', 'pharmacy_manager', 'owner', 'Owner'];
+    const allowedRoles = ['senior_pharmacist', 'chief_pharmacist', 'owner', 'pharmacy_outlet'];
+    const allowedWorkplaceRoles = ['senior_pharmacist', 'pharmacy_manager', 'owner', 'Owner', 'pharmacy_outlet'];
 
     const hasSystemRole = allowedRoles.includes(req.user.role as string);
     const hasWorkplaceRole = req.user.workplaceRole && allowedWorkplaceRoles.includes(req.user.workplaceRole as string);
