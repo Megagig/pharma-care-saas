@@ -5,6 +5,7 @@ import diagnosticHistoryService, {
   DiagnosticAnalytics,
   DiagnosticReferral,
 } from '../services/diagnosticHistoryService';
+import { apiClient } from '../services/apiClient';
 import { useNotifications } from '../components/common/NotificationSystem';
 
 // Query Keys
@@ -238,21 +239,18 @@ export const useRecentDiagnosticActivity = (
 };
 
 /**
- * Hook to get diagnostic dashboard stats
+ * Hook to get diagnostic dashboard data (uses dashboard endpoint instead of analytics)
  */
 export const useDiagnosticDashboardStats = () => {
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  
-  return useDiagnosticAnalytics(
-    {
-      dateFrom: thirtyDaysAgo.toISOString().split('T')[0],
-      dateTo: new Date().toISOString().split('T')[0],
+  return useQuery({
+    queryKey: ['diagnostics', 'dashboard'],
+    queryFn: async () => {
+      const response = await apiClient.get('/diagnostics/dashboard');
+      return response.data.data;
     },
-    {
-      enabled: true,
-    }
-  );
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    enabled: true,
+  });
 };
 
 /**

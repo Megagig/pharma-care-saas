@@ -31,8 +31,10 @@ async function createDiagnosticAnalyticsFeature() {
         { _id: existingFlag._id },
         { 
           $set: { 
-            enabled: true,
+            key: 'diagnostic_analytics', // Ensure key field exists
+            isActive: true, // Use isActive instead of enabled
             allowedTiers: ['free', 'basic', 'pro', 'enterprise', 'free_trial'],
+            allowedRoles: [], // Empty means all roles allowed
             description: 'Access to diagnostic analytics and reporting features',
             updatedAt: new Date()
           } 
@@ -44,10 +46,11 @@ async function createDiagnosticAnalyticsFeature() {
       // Create the feature flag
       const featureFlag = {
         name: 'diagnostic_analytics',
-        displayName: 'Diagnostic Analytics',
+        key: 'diagnostic_analytics', // This is what the middleware looks for
         description: 'Access to diagnostic analytics and reporting features',
-        enabled: true,
+        isActive: true, // This is what the middleware checks
         allowedTiers: ['free', 'basic', 'pro', 'enterprise', 'free_trial'],
+        allowedRoles: [], // Empty means all roles allowed
         createdAt: new Date(),
         updatedAt: new Date()
       };
