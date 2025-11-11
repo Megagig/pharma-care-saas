@@ -206,7 +206,6 @@ export const useThemeStore = create<ThemeStore>()(
           if (totalDuration > 16) {
             console.warn(`Theme toggle took ${totalDuration.toFixed(2)}ms (target: <16ms)`);
           } else if (import.meta.env.DEV) {
-            console.log(`Theme toggle completed in ${totalDuration.toFixed(2)}ms`);
           }
 
           // Sync with backend asynchronously (non-blocking)

@@ -222,7 +222,6 @@ class PatientMedicationService {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
-    console.log(`🌐 Making API request: ${options.method || 'GET'} ${url}`);
 
     const response = await fetch(url, {
       headers: {
@@ -233,8 +232,6 @@ class PatientMedicationService {
       ...options,
     });
 
-    console.log(`📡 Response status: ${response.status} ${response.statusText}`);
-
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: 'Network error' }));
       console.error(`❌ API Error for ${url}:`, error);
@@ -242,7 +239,7 @@ class PatientMedicationService {
     }
 
     const data = await response.json();
-    console.log(`✅ API Success for ${url}:`, data);
+
     return data;
   }
 
@@ -314,7 +311,6 @@ class PatientMedicationService {
 
   static async getMedicationData(patientId: string): Promise<PatientMedicationResponse> {
     try {
-      console.log('🔍 Fetching medication data from API for patient:', patientId);
 
       // Fetch all medication data in parallel using patient portal API
       const [currentResponse, historyResponse, adherenceResponse] = await Promise.allSettled([
@@ -323,21 +319,15 @@ class PatientMedicationService {
         this.makeRequest<{ success: boolean; data: { adherenceData: BackendAdherenceData } }>(`/adherence`)
       ]);
 
-      console.log('📊 API Responses:', {
-        current: currentResponse.status === 'fulfilled' ? currentResponse.value : currentResponse.reason,
-        history: historyResponse.status === 'fulfilled' ? historyResponse.value : historyResponse.reason,
-        adherence: adherenceResponse.status === 'fulfilled' ? adherenceResponse.value : adherenceResponse.reason
-      });
-
       // Process current medications
       let currentMedications: MedicationRecord[] = [];
       if (currentResponse.status === 'fulfilled' && currentResponse.value.success && currentResponse.value.data?.medications) {
-        console.log('✅ Current medications found:', currentResponse.value.data.medications.length);
+
         currentMedications = currentResponse.value.data.medications.map(this.mapMedicationToFrontend);
       } else if (currentResponse.status === 'rejected') {
         console.error('❌ Current medications API failed:', currentResponse.reason);
       } else {
-        console.log('⚠️ Current medications API returned unexpected response:', currentResponse.status === 'fulfilled' ? currentResponse.value : 'rejected');
+
       }
 
       // Process medication history
@@ -346,18 +336,18 @@ class PatientMedicationService {
         medicationHistory = historyResponse.value.data.medications
           .filter(med => med.status !== 'active') // Only non-active medications for history
           .map(this.mapMedicationToFrontend);
-        console.log('📜 Medication history found:', medicationHistory.length);
+
       }
 
       // Process adherence data
       let adherenceData: AdherenceData | null = null;
       if (adherenceResponse.status === 'fulfilled' && adherenceResponse.value.success && adherenceResponse.value.data?.adherenceData) {
         adherenceData = this.mapAdherenceToFrontend(adherenceResponse.value.data.adherenceData);
-        console.log('📈 Adherence data found');
+
       } else if (adherenceResponse.status === 'rejected') {
         console.error('❌ Adherence data API failed:', adherenceResponse.reason);
       } else {
-        console.log('⚠️ No adherence data available');
+
       }
 
       // Mock refill requests for now since we don't have the endpoint
@@ -374,7 +364,6 @@ class PatientMedicationService {
         message: 'Medication data retrieved successfully'
       };
 
-      console.log('🎯 Final medication data:', result);
       return result;
     } catch (error: any) {
       console.error('💥 Error fetching medication data:', error);
@@ -407,8 +396,6 @@ class PatientMedicationService {
           patientNotes: notes
         })
       });
-
-      console.log('🔍 Refill request response:', response);
 
       if (response.success && response.data?.refillRequest) {
         // Map the simplified response to our RefillRequest format
@@ -475,15 +462,9 @@ export const usePatientMedications = (patientId?: string): UsePatientMedications
 
   // Load medication data when user is authenticated
   const loadMedicationData = useCallback(async () => {
-    console.log('🔄 loadMedicationData called with:', {
-      currentPatientId,
-      patientId,
-      paramsPatientId: params.patientId,
-      userPatientId: user?.id
-    });
 
     if (!currentPatientId) {
-      console.log('⚠️ No patient ID available');
+
       setCurrentMedications(null);
       setMedicationHistory(null);
       setAdherenceData(null);
@@ -491,21 +472,13 @@ export const usePatientMedications = (patientId?: string): UsePatientMedications
       return;
     }
 
-    console.log('🚀 Starting medication data fetch for patient:', currentPatientId);
     setLoading(true);
     setError(null);
 
     try {
       const response = await PatientMedicationService.getMedicationData(currentPatientId);
-      console.log('📦 Received response:', response);
 
       if (response.success && response.data) {
-        console.log('✅ Setting medication data:', {
-          currentMedications: response.data.currentMedications?.length || 0,
-          medicationHistory: response.data.medicationHistory?.length || 0,
-          adherenceData: !!response.data.adherenceData,
-          refillRequests: response.data.refillRequests?.length || 0
-        });
 
         setCurrentMedications(response.data.currentMedications);
         setMedicationHistory(response.data.medicationHistory);

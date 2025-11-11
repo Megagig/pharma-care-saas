@@ -155,7 +155,7 @@ interface Category {
 const Help: React.FC = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
-  
+
   // State management
   const [activeTab, setActiveTab] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
@@ -165,7 +165,7 @@ const Help: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [initialLoading, setInitialLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Dialog states
   const [showContactDialog, setShowContactDialog] = useState(false);
   const [showFeedbackDialog, setShowFeedbackDialog] = useState(false);
@@ -173,13 +173,13 @@ const Help: React.FC = () => {
   const [showArticleDialog, setShowArticleDialog] = useState(false);
   const [selectedVideo, setSelectedVideo] = useState<VideoTutorial | null>(null);
   const [selectedArticle, setSelectedArticle] = useState<HelpArticle | null>(null);
-  
+
   // Feedback form states
   const [feedbackType, setFeedbackType] = useState('general');
   const [feedbackRating, setFeedbackRating] = useState(0);
   const [feedbackTitle, setFeedbackTitle] = useState('');
   const [feedbackComment, setFeedbackComment] = useState('');
-  
+
   // Support ticket form states
   const [showTicketDialog, setShowTicketDialog] = useState(false);
   const [ticketForm, setTicketForm] = useState({
@@ -190,10 +190,10 @@ const Help: React.FC = () => {
     tags: ''
   });
   const [ticketSubmitting, setTicketSubmitting] = useState(false);
-  
+
   // FAQ voting state
   const [votingFAQ, setVotingFAQ] = useState<string | null>(null);
-  
+
   // Data states
   const [helpContent, setHelpContent] = useState<{
     articles: HelpArticle[];
@@ -215,16 +215,13 @@ const Help: React.FC = () => {
       setLoading(true);
       setError(null);
       const params = new URLSearchParams();
-      
+
       if (searchQuery) params.append('search', searchQuery);
       if (selectedCategory !== 'all') params.append('category', selectedCategory);
       if (contentType !== 'all') params.append('contentType', contentType);
       if (selectedDifficulty !== 'all') params.append('difficulty', selectedDifficulty);
-      
-      console.log('Fetching help content with params:', params.toString());
       const response = await apiClient.get(`/help/content?${params}`);
-      console.log('Help content response:', response.data);
-      
+
       // Ensure we have the expected data structure
       const data = response.data?.data || {};
       setHelpContent({
@@ -278,13 +275,13 @@ const Help: React.FC = () => {
         message: feedbackComment,
         category: selectedCategory !== 'all' ? selectedCategory : 'general'
       });
-      
+
       setShowFeedbackDialog(false);
       setFeedbackRating(0);
       setFeedbackTitle('');
       setFeedbackComment('');
       setFeedbackType('general');
-      
+
       // Show success toast
       toast.success('Feedback submitted successfully! Thank you for your input.', {
         duration: 4000,
@@ -303,7 +300,7 @@ const Help: React.FC = () => {
   const submitSupportTicket = async () => {
     try {
       setTicketSubmitting(true);
-      
+
       const ticketData = {
         title: ticketForm.title,
         description: ticketForm.description,
@@ -311,9 +308,9 @@ const Help: React.FC = () => {
         category: ticketForm.category,
         tags: ticketForm.tags.split(',').map(tag => tag.trim()).filter(tag => tag)
       };
-      
+
       const response = await apiClient.post('/help/tickets', ticketData);
-      
+
       setShowTicketDialog(false);
       setTicketForm({
         title: '',
@@ -322,7 +319,7 @@ const Help: React.FC = () => {
         category: 'general',
         tags: ''
       });
-      
+
       // Show success toast
       toast.success(
         `Support ticket created successfully! Ticket #${response.data.data.ticketNumber}. You will receive updates via email.`,
@@ -349,11 +346,11 @@ const Help: React.FC = () => {
       if (selectedCategory !== 'all') {
         params.append('categories', selectedCategory);
       }
-      
+
       const response = await apiClient.get(`/help/manual/pdf?${params}`, {
         responseType: 'blob'
       });
-      
+
       const blob = new Blob([response.data], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
       const link = document.createElement('a');
@@ -375,28 +372,28 @@ const Help: React.FC = () => {
 
   const voteFAQ = async (faqId: string, helpful: boolean) => {
     if (votingFAQ === faqId) return; // Prevent double voting
-    
+
     try {
       setVotingFAQ(faqId);
-      
+
       const response = await apiClient.post(`/help/faqs/${faqId}/vote`, {
         helpful
       });
-      
+
       // Update the FAQ in the local state
       setHelpContent(prev => ({
         ...prev,
-        faqs: prev.faqs.map(faq => 
-          faq._id === faqId 
+        faqs: prev.faqs.map(faq =>
+          faq._id === faqId
             ? {
-                ...faq,
-                helpfulVotes: response.data.data.helpfulVotes,
-                notHelpfulVotes: response.data.data.notHelpfulVotes
-              }
+              ...faq,
+              helpfulVotes: response.data.data.helpfulVotes,
+              notHelpfulVotes: response.data.data.notHelpfulVotes
+            }
             : faq
         )
       }));
-      
+
       toast.success(
         helpful ? 'Thanks for your feedback! 👍' : 'Thanks for your feedback! 👎',
         { duration: 3000 }
@@ -422,7 +419,7 @@ const Help: React.FC = () => {
       ]);
       setInitialLoading(false);
     };
-    
+
     initializeData();
   }, []);
 
@@ -580,17 +577,17 @@ const Help: React.FC = () => {
             <Typography variant="h5" gutterBottom>
               {searchQuery ? `Search Results (${helpContent.faqs?.length || 0})` : 'Popular Questions'}
             </Typography>
-            <Chip 
-              label={`${helpContent.faqs?.length || 0} FAQs`} 
-              color="primary" 
-              variant="outlined" 
+            <Chip
+              label={`${helpContent.faqs?.length || 0} FAQs`}
+              color="primary"
+              variant="outlined"
             />
           </Box>
 
           {helpContent.faqs && helpContent.faqs.map((faq) => (
-            <Accordion 
-              key={faq._id} 
-              sx={{ 
+            <Accordion
+              key={faq._id}
+              sx={{
                 mb: 2,
                 '&:before': { display: 'none' },
                 boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
@@ -617,18 +614,18 @@ const Help: React.FC = () => {
                     </Typography>
                     <Box sx={{ display: 'flex', gap: 1, mt: 1 }}>
                       {faq.tags.slice(0, 3).map((tag) => (
-                        <Chip 
-                          key={tag} 
-                          label={tag} 
-                          size="small" 
+                        <Chip
+                          key={tag}
+                          label={tag}
+                          size="small"
                           variant="outlined"
                           sx={{ fontSize: '0.7rem', height: '20px' }}
                         />
                       ))}
                       {faq.priority === 'high' && (
-                        <Chip 
-                          label="Popular" 
-                          size="small" 
+                        <Chip
+                          label="Popular"
+                          size="small"
                           color="error"
                           sx={{ fontSize: '0.7rem', height: '20px' }}
                         />
@@ -637,9 +634,9 @@ const Help: React.FC = () => {
                   </Box>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, mr: 2 }}>
                     <Tooltip title="Views">
-                      <Chip 
-                        label={faq.viewCount} 
-                        size="small" 
+                      <Chip
+                        label={faq.viewCount}
+                        size="small"
                         icon={<SearchIcon />}
                         variant="outlined"
                       />
@@ -712,8 +709,8 @@ const Help: React.FC = () => {
                 <Typography variant="body2" color="text.secondary" paragraph>
                   Try adjusting your search terms or category filter
                 </Typography>
-                <Button 
-                  variant="outlined" 
+                <Button
+                  variant="outlined"
                   onClick={() => {
                     setSearchQuery('');
                     setSelectedCategory('all');
@@ -810,10 +807,10 @@ const Help: React.FC = () => {
             <Typography variant="h5" gutterBottom>
               {searchQuery ? `Search Results (${helpContent.articles?.length || 0})` : 'User Guides & Articles'}
             </Typography>
-            <Chip 
-              label={`${helpContent.articles?.length || 0} Articles`} 
-              color="secondary" 
-              variant="outlined" 
+            <Chip
+              label={`${helpContent.articles?.length || 0} Articles`}
+              color="secondary"
+              variant="outlined"
             />
           </Box>
 
@@ -821,9 +818,9 @@ const Help: React.FC = () => {
             {helpContent.articles && helpContent.articles.map((article) => (
               <Grid item xs={12} sm={6} lg={4} key={article._id}>
                 <Card
-                  sx={{ 
-                    height: '100%', 
-                    display: 'flex', 
+                  sx={{
+                    height: '100%',
+                    display: 'flex',
                     flexDirection: 'column',
                     transition: 'all 0.3s ease',
                     '&:hover': {
@@ -854,8 +851,8 @@ const Help: React.FC = () => {
                                 article.difficulty === 'beginner'
                                   ? 'success'
                                   : article.difficulty === 'intermediate'
-                                  ? 'warning'
-                                  : 'error'
+                                    ? 'warning'
+                                    : 'error'
                               }
                             />
                           )}
@@ -877,10 +874,10 @@ const Help: React.FC = () => {
                     </Typography>
                     <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5, mt: 2 }}>
                       {article.tags.slice(0, 3).map((tag) => (
-                        <Chip 
-                          key={tag} 
-                          label={tag} 
-                          size="small" 
+                        <Chip
+                          key={tag}
+                          label={tag}
+                          size="small"
                           variant="outlined"
                           sx={{ fontSize: '0.7rem', height: '20px' }}
                         />
@@ -888,9 +885,9 @@ const Help: React.FC = () => {
                     </Box>
                   </CardContent>
                   <CardActions sx={{ p: 2, pt: 0 }}>
-                    <Button 
-                      variant="contained" 
-                      fullWidth 
+                    <Button
+                      variant="contained"
+                      fullWidth
                       startIcon={<ArticleIcon />}
                       onClick={() => handleArticleRead(article)}
                       sx={{
@@ -915,8 +912,8 @@ const Help: React.FC = () => {
                 <Typography variant="body2" color="text.secondary" paragraph>
                   Try adjusting your search terms or filters
                 </Typography>
-                <Button 
-                  variant="outlined" 
+                <Button
+                  variant="outlined"
                   onClick={() => {
                     setSearchQuery('');
                     setSelectedCategory('all');
@@ -1015,10 +1012,10 @@ const Help: React.FC = () => {
             <Typography variant="h5" gutterBottom>
               {searchQuery ? `Search Results (${helpContent.videos?.length || 0})` : 'Video Tutorials'}
             </Typography>
-            <Chip 
-              label={`${helpContent.videos?.length || 0} Videos`} 
-              color="info" 
-              variant="outlined" 
+            <Chip
+              label={`${helpContent.videos?.length || 0} Videos`}
+              color="info"
+              variant="outlined"
             />
           </Box>
 
@@ -1026,9 +1023,9 @@ const Help: React.FC = () => {
             {helpContent.videos && helpContent.videos.map((video) => (
               <Grid item xs={12} sm={6} lg={4} key={video._id}>
                 <Card
-                  sx={{ 
-                    height: '100%', 
-                    display: 'flex', 
+                  sx={{
+                    height: '100%',
+                    display: 'flex',
                     flexDirection: 'column',
                     transition: 'all 0.3s ease',
                     '&:hover': {
@@ -1055,7 +1052,7 @@ const Help: React.FC = () => {
                       sx={{
                         bgcolor: 'rgba(0, 0, 0, 0.7)',
                         color: 'white',
-                        '&:hover': { 
+                        '&:hover': {
                           bgcolor: 'rgba(0, 0, 0, 0.8)',
                           transform: 'scale(1.1)',
                         },
@@ -1086,8 +1083,8 @@ const Help: React.FC = () => {
                         video.difficulty === 'beginner'
                           ? 'success'
                           : video.difficulty === 'intermediate'
-                          ? 'warning'
-                          : 'error'
+                            ? 'warning'
+                            : 'error'
                       }
                       sx={{
                         position: 'absolute',
@@ -1107,18 +1104,18 @@ const Help: React.FC = () => {
                       <Typography variant="caption" color="text.secondary">
                         By {video.authorName}
                       </Typography>
-                      <Chip 
-                        label={`${video.viewCount} views`} 
-                        size="small" 
+                      <Chip
+                        label={`${video.viewCount} views`}
+                        size="small"
                         variant="outlined"
                         icon={<VideoIcon />}
                       />
                     </Box>
                   </CardContent>
                   <CardActions sx={{ p: 2, pt: 0 }}>
-                    <Button 
-                      variant="contained" 
-                      fullWidth 
+                    <Button
+                      variant="contained"
+                      fullWidth
                       startIcon={<PlayIcon />}
                       onClick={() => handleVideoPlay(video)}
                       sx={{
@@ -1128,7 +1125,7 @@ const Help: React.FC = () => {
                       Watch Video
                     </Button>
                     <Tooltip title="Open in YouTube">
-                      <IconButton 
+                      <IconButton
                         onClick={() => window.open(video.youtubeUrl, '_blank')}
                         sx={{ ml: 1 }}
                       >
@@ -1151,8 +1148,8 @@ const Help: React.FC = () => {
                 <Typography variant="body2" color="text.secondary" paragraph>
                   Try adjusting your search terms or filters
                 </Typography>
-                <Button 
-                  variant="outlined" 
+                <Button
+                  variant="outlined"
                   onClick={() => {
                     setSearchQuery('');
                     setSelectedCategory('all');
@@ -1175,10 +1172,10 @@ const Help: React.FC = () => {
         {/* Contact Options */}
         <Grid item xs={12} lg={8}>
           <Card sx={{ mb: 3 }}>
-            <CardHeader 
-              title="Contact Support" 
+            <CardHeader
+              title="Contact Support"
               avatar={<SupportIcon />}
-              sx={{ 
+              sx={{
                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 color: 'white',
                 '& .MuiCardHeader-avatar': { color: 'white' }
@@ -1193,7 +1190,7 @@ const Help: React.FC = () => {
                       cursor: 'pointer',
                       transition: 'all 0.3s ease',
                       border: '2px solid transparent',
-                      '&:hover': { 
+                      '&:hover': {
                         transform: 'translateY(-2px)',
                         boxShadow: '0 4px 20px rgba(37, 211, 102, 0.3)',
                         borderColor: '#25D366',
@@ -1209,9 +1206,9 @@ const Help: React.FC = () => {
                       <Typography variant="body2" color="text.secondary" paragraph>
                         Get instant help via WhatsApp
                       </Typography>
-                      <Chip 
-                        label="Available 24/7" 
-                        color="success" 
+                      <Chip
+                        label="Available 24/7"
+                        color="success"
                         size="small"
                       />
                     </CardContent>
@@ -1224,7 +1221,7 @@ const Help: React.FC = () => {
                     sx={{
                       cursor: 'pointer',
                       transition: 'all 0.3s ease',
-                      '&:hover': { 
+                      '&:hover': {
                         transform: 'translateY(-2px)',
                         boxShadow: '0 4px 20px rgba(33, 150, 243, 0.3)',
                       }
@@ -1252,7 +1249,7 @@ const Help: React.FC = () => {
                     sx={{
                       cursor: 'pointer',
                       transition: 'all 0.3s ease',
-                      '&:hover': { 
+                      '&:hover': {
                         transform: 'translateY(-2px)',
                         boxShadow: '0 4px 20px rgba(76, 175, 80, 0.3)',
                       }
@@ -1278,7 +1275,7 @@ const Help: React.FC = () => {
                     sx={{
                       cursor: 'pointer',
                       transition: 'all 0.3s ease',
-                      '&:hover': { 
+                      '&:hover': {
                         transform: 'translateY(-2px)',
                         boxShadow: '0 4px 20px rgba(255, 152, 0, 0.3)',
                       }
@@ -1311,7 +1308,7 @@ const Help: React.FC = () => {
                       variant="contained"
                       startIcon={<SupportIcon />}
                       onClick={() => setShowTicketDialog(true)}
-                      sx={{ 
+                      sx={{
                         py: 2,
                         mb: 2,
                         background: 'linear-gradient(45deg, #2196F3 30%, #21CBF3 90%)',
@@ -1370,8 +1367,8 @@ const Help: React.FC = () => {
                     primary="User Manual"
                     secondary="Complete documentation"
                   />
-                  <Button 
-                    variant="outlined" 
+                  <Button
+                    variant="outlined"
                     size="small"
                     onClick={downloadPDFManual}
                   >
@@ -1413,8 +1410,8 @@ const Help: React.FC = () => {
             <CardHeader
               title="System Status"
               avatar={
-                <Badge 
-                  badgeContent={helpSettings?.systemStatus?.status === 'operational' ? '●' : '!'} 
+                <Badge
+                  badgeContent={helpSettings?.systemStatus?.status === 'operational' ? '●' : '!'}
                   color={helpSettings?.systemStatus?.status === 'operational' ? 'success' : 'error'}
                 >
                   <SettingsIcon />
@@ -1477,9 +1474,9 @@ const Help: React.FC = () => {
           <Typography variant="body2">
             Please try refreshing the page or contact support if the problem persists.
           </Typography>
-          <Button 
-            variant="outlined" 
-            onClick={() => window.location.reload()} 
+          <Button
+            variant="outlined"
+            onClick={() => window.location.reload()}
             sx={{ mt: 2 }}
           >
             Refresh Page
@@ -1538,8 +1535,8 @@ const Help: React.FC = () => {
       </Box>
 
       {/* Hero Section */}
-      <Card sx={{ 
-        mb: 4, 
+      <Card sx={{
+        mb: 4,
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
         color: 'white',
         position: 'relative',
@@ -1553,7 +1550,7 @@ const Help: React.FC = () => {
             <Typography variant="h6" sx={{ opacity: 0.9, mb: 4 }}>
               Search our knowledge base or browse categories below
             </Typography>
-            
+
             {/* Global Search */}
             <Box sx={{ maxWidth: 600, mx: 'auto', mb: 4 }}>
               <TextField
@@ -1695,7 +1692,7 @@ const Help: React.FC = () => {
               <WhatsAppIcon />
             </Fab>
           </Tooltip>
-          
+
           {/* Feedback FAB */}
           <Tooltip title="Send Feedback" placement="left">
             <Fab
@@ -1866,7 +1863,7 @@ const Help: React.FC = () => {
         </DialogTitle>
         <DialogContent>
           <Typography variant="body2" color="text.secondary" paragraph>
-            Submit a support ticket and our team will get back to you as soon as possible. 
+            Submit a support ticket and our team will get back to you as soon as possible.
             You'll receive updates via email.
           </Typography>
           <Grid container spacing={3}>
@@ -1986,7 +1983,7 @@ const Help: React.FC = () => {
           )}
         </DialogContent>
         <DialogActions>
-          <Button 
+          <Button
             startIcon={<OpenInNewIcon />}
             onClick={() => selectedVideo && window.open(selectedVideo.youtubeUrl, '_blank')}
           >
@@ -2026,8 +2023,8 @@ const Help: React.FC = () => {
                       selectedArticle.difficulty === 'beginner'
                         ? 'success'
                         : selectedArticle.difficulty === 'intermediate'
-                        ? 'warning'
-                        : 'error'
+                          ? 'warning'
+                          : 'error'
                     }
                   />
                 )}
@@ -2037,21 +2034,21 @@ const Help: React.FC = () => {
                   variant="outlined"
                 />
               </Box>
-              
+
               <Typography variant="body2" color="text.secondary" paragraph>
                 By {selectedArticle.authorName} • {selectedArticle.viewCount} views
               </Typography>
-              
+
               <Typography variant="body1" paragraph sx={{ fontWeight: 500 }}>
                 {selectedArticle.excerpt}
               </Typography>
-              
+
               <Divider sx={{ my: 2 }} />
-              
+
               <Typography variant="body1" sx={{ lineHeight: 1.7, whiteSpace: 'pre-wrap' }}>
                 {selectedArticle.content}
               </Typography>
-              
+
               {selectedArticle.tags.length > 0 && (
                 <Box sx={{ mt: 3 }}>
                   <Typography variant="subtitle2" gutterBottom>
@@ -2059,10 +2056,10 @@ const Help: React.FC = () => {
                   </Typography>
                   <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 0.5 }}>
                     {selectedArticle.tags.map((tag) => (
-                      <Chip 
-                        key={tag} 
-                        label={tag} 
-                        size="small" 
+                      <Chip
+                        key={tag}
+                        label={tag}
+                        size="small"
                         variant="outlined"
                       />
                     ))}

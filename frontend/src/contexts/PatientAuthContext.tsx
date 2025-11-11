@@ -185,7 +185,7 @@ export const PatientAuthProvider: React.FC<PatientAuthProviderProps> = ({ childr
           setUser(response.data.patientUser);
         }
       } catch (error) {
-        console.log('No authenticated patient user');
+
         setUser(null);
       } finally {
         setLoading(false);
@@ -202,7 +202,7 @@ export const PatientAuthProvider: React.FC<PatientAuthProviderProps> = ({ childr
     const refreshInterval = setInterval(async () => {
       try {
         await PatientAuthService.refreshToken();
-        console.log('Patient token refreshed successfully');
+
       } catch (error) {
         console.error('Token refresh failed:', error);
         // If refresh fails, logout user
@@ -215,12 +215,11 @@ export const PatientAuthProvider: React.FC<PatientAuthProviderProps> = ({ childr
 
   const login = async (credentials: LoginCredentials): Promise<PatientAuthResponse> => {
     try {
-      console.log('🔐 PatientAuthContext: Calling login service...');
+
       const response = await PatientAuthService.login(credentials);
-      console.log('📥 PatientAuthContext: Login response:', response);
 
       if (response.success && response.data?.patientUser) {
-        console.log('✅ PatientAuthContext: Setting user state:', response.data.patientUser);
+
         setUser(response.data.patientUser);
         return response;
       }

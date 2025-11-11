@@ -325,7 +325,7 @@ const CreateAppointmentDialog: React.FC<CreateAppointmentDialogProps> = ({
       } catch (validationError: any) {
         // If validation fails with 403 (permission denied), skip validation and proceed
         if (validationError?.response?.status === 403) {
-          console.log('Slot validation skipped due to permission restrictions');
+
           // Continue with appointment creation
         } else {
           // Re-throw other errors

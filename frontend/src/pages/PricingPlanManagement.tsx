@@ -47,7 +47,7 @@ const PricingPlanManagement: React.FC = () => {
             setError(null);
             const data = await pricingPlanService.getAllPlans();
             setPlans(data);
-            console.log('✅ Successfully fetched pricing plans:', data.length);
+
         } catch (error: any) {
             console.error('❌ Error fetching pricing plans:', error);
             const errorMessage = error?.response?.data?.message || error?.message || 'Failed to fetch pricing plans';
@@ -62,9 +62,8 @@ const PricingPlanManagement: React.FC = () => {
         try {
             setSyncing(true);
             setError(null);
-            console.log('🔄 Starting pricing plan sync...');
+
             const result = await pricingPlanService.syncAllPlans();
-            console.log('✅ Sync result:', result);
 
             setLastSyncResult(result.data);
             setSyncResultDialog(true);
@@ -89,9 +88,8 @@ const PricingPlanManagement: React.FC = () => {
         try {
             setValidating(true);
             setError(null);
-            console.log('🔍 Starting subscription validation...');
+
             const result = await pricingPlanService.validateSubscriptions();
-            console.log('✅ Validation result:', result);
 
             setLastSyncResult(result.data);
             setSyncResultDialog(true);

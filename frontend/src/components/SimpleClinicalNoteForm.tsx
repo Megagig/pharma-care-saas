@@ -139,7 +139,6 @@ const SimpleClinicalNoteForm: React.FC<SimpleClinicalNoteFormProps> = ({
       // Simulate API call
       await new Promise((resolve) => setTimeout(resolve, 1000));
 
-      console.log('Form submitted:', data);
       onSave?.(data);
     } catch (error) {
       setSubmitError('Failed to save note. Please try again.');

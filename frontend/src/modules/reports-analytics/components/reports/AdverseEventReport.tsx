@@ -954,7 +954,7 @@ const AdverseEventReport: React.FC<AdverseEventReportProps> = ({
                 fullWidth
                 onClick={() => {
                   // Generate regulatory report
-                  console.log('Generating regulatory report...');
+
                 }}
               >
                 Generate Report

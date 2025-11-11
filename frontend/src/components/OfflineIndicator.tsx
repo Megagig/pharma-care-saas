@@ -410,7 +410,7 @@ const OfflineIndicator: React.FC<OfflineIndicatorProps> = ({
                 startIcon={<InfoIcon />}
                 onClick={() => {
                   // Show offline help dialog
-                  console.log('Show offline help');
+
                 }}
               >
                 Help

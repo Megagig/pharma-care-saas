@@ -27,24 +27,23 @@ export interface DashboardAnalytics {
 class DashboardService {
     async getDashboardAnalytics(): Promise<DashboardAnalytics> {
         try {
-            console.log('🚀 Starting dashboard analytics fetch...');
 
             // Try to use the new optimized dashboard endpoint first
             try {
                 const response = await api.get('/dashboard/overview');
-                console.log('🔍 Dashboard API Response:', response.data);
+
                 if (response.data?.success && response.data.data) {
-                    console.log('✅ Using optimized dashboard data');
-                    console.log('📊 Processing dashboard response:', response.data.data);
+
+
                     const processedData = this.processDashboardResponse(response.data.data);
-                    console.log('📈 Processed chart data:', processedData);
+
                     return processedData;
                 } else {
-                    console.log('⚠️ Optimized endpoint returned invalid data:', response.data);
+
                 }
             } catch (error) {
                 console.error('❌ Optimized endpoint failed:', error);
-                console.log('📊 Falling back to legacy fetch');
+
             }
 
             // Fallback to individual API calls if optimized endpoint fails
@@ -58,7 +57,6 @@ class DashboardService {
     }
 
     private async getLegacyDashboardAnalytics(): Promise<DashboardAnalytics> {
-        console.log('📊 Falling back to legacy dashboard data fetch...');
 
         const [patientsResult, notesResult, medicationsResult, mtrResult] = await Promise.allSettled([
             this.fetchPatients(),
@@ -81,7 +79,7 @@ class DashboardService {
         };
 
         if (stats.totalPatients === 0 && stats.totalClinicalNotes === 0 && stats.totalMedications === 0 && stats.totalMTRs === 0) {
-            console.log('⚠️ No real data found, returning empty analytics structure');
+
             return this.getEmptyAnalytics();
         }
 
@@ -138,14 +136,12 @@ class DashboardService {
 
     private async fetchMedications(): Promise<any[]> {
         try {
-            console.log('🔄 Fetching medications data...');
 
             // Try to get actual medication records instead of just stats
             const response = await api.get('/medication-management/medications', {
                 params: { limit: 1000 }
             });
 
-            console.log('📥 Medication API response:', response.data);
             return this.extractArrayFromResponse(response.data);
         } catch (error) {
             console.error('❌ Error fetching medication data:', error);

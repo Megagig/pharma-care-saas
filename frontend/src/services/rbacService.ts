@@ -1339,3 +1339,51 @@ export const getAuditStatistics = async (params?: {
     throw error;
   }
 };
+
+// Alias for getRBACStatistics (used by RBAC Management page)
+export const getRBACStatistics = getAuditStatistics;
+
+// Permission Usage Analytics
+export const getPermissionUsageAnalytics = async (): Promise<{
+  success: boolean;
+  data: any;
+}> => {
+  try {
+    const response = await apiClient.get(`/permissions/usage-analytics`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching permission usage analytics:', error);
+    throw error;
+  }
+};
+
+// Update Permission Matrix
+export const updatePermissionMatrix = async (
+  roleId: string,
+  permissions: Record<string, boolean>
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    const response = await apiClient.put(`/roles/${roleId}/permissions-matrix`, {
+      permissions,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error updating permission matrix:', error);
+    throw error;
+  }
+};
+
+// Export Role Assignments
+export const exportRoleAssignments = async (
+  format: string = 'csv'
+): Promise<Blob> => {
+  try {
+    const response = await apiClient.get(`/roles/export?format=${format}`, {
+      responseType: 'blob',
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error exporting role assignments:', error);
+    throw error;
+  }
+};

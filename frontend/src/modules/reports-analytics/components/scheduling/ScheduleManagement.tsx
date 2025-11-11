@@ -134,7 +134,7 @@ export const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
 
   const handleRunNow = (schedule: ReportSchedule) => {
     // TODO: Implement immediate execution
-    console.log('Running schedule immediately:', schedule.id);
+
     handleMenuClose();
   };
 
@@ -220,7 +220,7 @@ export const ScheduleManagement: React.FC<ScheduleManagementProps> = ({
                 startIcon={<RefreshIcon />}
                 onClick={() => {
                   // TODO: Refresh schedules from API
-                  console.log('Refresh schedules');
+
                 }}
                 size="small"
               >

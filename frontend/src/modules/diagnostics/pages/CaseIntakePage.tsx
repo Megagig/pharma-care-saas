@@ -295,11 +295,10 @@ const CaseIntakePage: React.FC = () => {
   const onSubmit = async (data: CaseIntakeFormData) => {
     try {
       setSubmitting(true);
-      console.log('=== FORM SUBMISSION STARTED ===');
-      console.log('Form data:', data);
+
 
       // First validate patient access
-      console.log('Validating patient access for:', data.patientId);
+
       const accessValidation = await aiDiagnosticService.validatePatientAccess(data.patientId);
 
       if (!accessValidation.hasAccess) {
@@ -307,8 +306,6 @@ const CaseIntakePage: React.FC = () => {
         setSubmitting(false);
         return;
       }
-
-      console.log('Patient access validated for:', accessValidation.patientName);
 
       // Show loading message with time expectation
       toast.loading(
@@ -397,7 +394,6 @@ const CaseIntakePage: React.FC = () => {
       };
 
       // Debug: Log the transformed data
-      console.log('Transformed case data:', caseData);
 
       // Validate required fields before submission
       if (!caseData.patientId) {
@@ -416,25 +412,16 @@ const CaseIntakePage: React.FC = () => {
       }
 
       // Submit case for AI analysis
-      console.log('Submitting to AI service...');
+
       const diagnosticCase = await aiDiagnosticService.submitCase(caseData);
 
       // Dismiss loading toast and show success message
       toast.dismiss('ai-analysis-loading');
       toast.success('AI analysis completed successfully!');
 
-      console.log('=== SUBMISSION SUCCESSFUL ===');
-      console.log('Diagnostic case:', diagnosticCase);
-      console.log('🚨🚨🚨 ABOUT TO NAVIGATE 🚨🚨🚨');
-      console.log('🚨 diagnosticCase.id:', diagnosticCase.id);
-      console.log('🚨 diagnosticCase._id:', diagnosticCase._id);
-      console.log('🚨 typeof diagnosticCase:', typeof diagnosticCase);
-      console.log('🚨 diagnosticCase keys:', diagnosticCase ? Object.keys(diagnosticCase) : 'null');
-      console.log('🚨 Full diagnosticCase object:', JSON.stringify(diagnosticCase, null, 2));
-
       // Navigate to results page with the completed analysis
       const navUrl = `/pharmacy/diagnostics/case/${diagnosticCase.id}/results`;
-      console.log('🚨 Navigating to:', navUrl);
+
       navigate(navUrl);
     } catch (error: unknown) {
       console.error('Failed to submit case:', error);
@@ -2716,10 +2703,9 @@ Examples:
                                 disabled={!watch('consent') || submitting || Object.keys(errors).length > 0}
                                 size="large"
                                 onClick={() => {
-                                  console.log('Submit button clicked');
-                                  console.log('Form errors:', errors);
-                                  console.log('Consent value:', watch('consent'));
-                                  console.log('Submitting:', submitting);
+
+
+
                                 }}
                                 sx={{
                                   borderRadius: 3,

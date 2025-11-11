@@ -359,7 +359,7 @@ const ClinicalInterventionDashboard: React.FC<
                     variant="outlined"
                     startIcon={<GetAppIcon />}
                     onClick={() => {
-                      console.log('Export dashboard data');
+
                     }}
                     size="small"
                     sx={{ flex: 1 }}
@@ -394,7 +394,7 @@ const ClinicalInterventionDashboard: React.FC<
               variant="outlined"
               startIcon={<GetAppIcon />}
               onClick={() => {
-                console.log('Export dashboard data');
+
               }}
             >
               Export
@@ -856,7 +856,7 @@ const ClinicalInterventionDashboard: React.FC<
                         <IconButton
                           size="small"
                           onClick={() => {
-                            console.log('View intervention:', intervention._id);
+
                           }}
                         >
                           <VisibilityIcon sx={{ fontSize: 16 }} />
@@ -924,7 +924,7 @@ const ClinicalInterventionDashboard: React.FC<
                 size="small"
                 fullWidth
                 onClick={() => {
-                  console.log('View all interventions');
+
                 }}
                 sx={{ mt: 1 }}
               >
@@ -956,7 +956,7 @@ const ClinicalInterventionDashboard: React.FC<
                 size="small"
                 onClick={() => {
                   // TODO: Navigate to full interventions list
-                  console.log('View all interventions');
+
                 }}
               >
                 View All
@@ -1036,10 +1036,7 @@ const ClinicalInterventionDashboard: React.FC<
                             edge="end"
                             onClick={() => {
                               // TODO: Navigate to intervention details
-                              console.log(
-                                'View intervention:',
-                                intervention._id
-                              );
+
                             }}
                           >
                             <VisibilityIcon />
@@ -1079,7 +1076,7 @@ const ClinicalInterventionDashboard: React.FC<
             zIndex: 1000,
           }}
           onClick={() => {
-            console.log('Create new intervention');
+
           }}
         >
           <AddIcon />

@@ -871,7 +871,7 @@ const PatientDemographicsReport: React.FC<PatientDemographicsReportProps> = ({
                 fullWidth
                 onClick={() => {
                   // Export geographic data
-                  console.log('Exporting geographic data...');
+
                 }}
               >
                 Export Map Data

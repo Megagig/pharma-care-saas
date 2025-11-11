@@ -103,15 +103,14 @@ class ReportsService {
    */
   async generateReport(reportType: string, filters: ReportFilters = {}): Promise<ReportData> {
     try {
-      console.log(`🚀 Generating report: ${reportType}`, filters);
-      
+
       const params = new URLSearchParams();
-      
+
       if (filters.dateRange) {
         params.append('startDate', filters.dateRange.startDate.toISOString());
         params.append('endDate', filters.dateRange.endDate.toISOString());
       }
-      
+
       if (filters.patientId) params.append('patientId', filters.patientId);
       if (filters.pharmacistId) params.append('pharmacistId', filters.pharmacistId);
       if (filters.therapyType) params.append('therapyType', filters.therapyType);
@@ -121,45 +120,39 @@ class ReportsService {
 
       const queryString = params.toString();
       const url = `/reports/${reportType}${queryString ? `?${queryString}` : ''}`;
-      
-      console.log(`📡 Making API call to: ${url}`);
-      console.log(`🔗 Full URL: ${import.meta.env.VITE_API_BASE_URL || 'https://PharmaPilot-nttq.onrender.com/api'}${url}`);
-      
+
+
       // Add timeout and better error handling with shorter timeout for better UX
-      console.log('🔐 Making authenticated API request...');
+
       const response = await Promise.race([
         apiHelpers.get(url),
-        new Promise((_, reject) => 
+        new Promise((_, reject) =>
           setTimeout(() => reject(new Error('Request timeout after 30 seconds')), 30000)
         )
       ]) as any;
-      
-      console.log('📊 API Response status:', response.status);
-      console.log('📊 API Response data:', response.data);
-      
+
+
       if (!response.data) {
         throw new Error('No data received from API');
       }
-      
+
       // Transform backend response to match frontend ReportData interface
       const transformedData = this.transformBackendResponse(response.data.data || response.data, reportType, filters);
-      
-      console.log('✅ Transformed data:', transformedData);
-      
+
       return transformedData;
     } catch (error: any) {
       console.error(`❌ Error generating ${reportType} report:`, error);
-      
+
       // Provide detailed error information
       if (error.response) {
         console.error('Response status:', error.response.status);
         console.error('Response headers:', error.response.headers);
         console.error('Response data:', error.response.data);
-        
+
         // Create a more specific error message
         const statusCode = error.response.status;
         const errorData = error.response.data;
-        
+
         if (statusCode === 401) {
           throw new Error('Authentication required. Please log in again.');
         } else if (statusCode === 403) {
@@ -292,7 +285,7 @@ class ReportsService {
           const completionRate = backendData.therapyEffectiveness.reduce((sum: number, item: any) => {
             return sum + (item.totalReviews > 0 ? (item.completedReviews / item.totalReviews) * 100 : 0);
           }, 0) / backendData.therapyEffectiveness.length;
-          
+
           metrics.push({
             label: 'Completion Rate',
             value: `${Math.round(completionRate)}%`,
@@ -307,7 +300,7 @@ class ReportsService {
           const totalAccepted = backendData.interventionMetrics.reduce((sum: number, item: any) => sum + (item.acceptedInterventions || 0), 0);
           const totalInterventions = backendData.interventionMetrics.reduce((sum: number, item: any) => sum + (item.totalInterventions || 0), 0);
           const acceptanceRate = totalInterventions > 0 ? (totalAccepted / totalInterventions) * 100 : 0;
-          
+
           metrics.push({
             label: 'Acceptance Rate',
             value: `${Math.round(acceptanceRate)}%`,
@@ -330,8 +323,7 @@ class ReportsService {
   }
 
   private extractTotalRecords(backendData: any): number {
-    console.log('🔍 Extracting total records from:', backendData);
-    
+
     // Extract total records from various possible backend response structures
     if (backendData.therapyEffectiveness?.length) {
       return backendData.therapyEffectiveness.reduce((sum: number, item: any) => sum + (item.totalReviews || 0), 0);
@@ -342,19 +334,19 @@ class ReportsService {
     if (backendData.adherenceMetrics?.length) {
       return backendData.adherenceMetrics.reduce((sum: number, item: any) => sum + (item.totalReviews || 0), 0);
     }
-    
+
     // Check for any array data in the response
     const dataArrays = Object.values(backendData).filter(Array.isArray);
     if (dataArrays.length > 0) {
       const totalFromArrays = dataArrays.reduce((sum: number, arr: any) => sum + arr.length, 0);
       if (totalFromArrays > 0) {
-        console.log('📊 Found data in arrays, total records:', totalFromArrays);
+
         return totalFromArrays;
       }
     }
-    
+
     // If no data found, return 0 (real data only)
-    console.log('⚠️ No data found in backend response');
+
     return 0;
   }
 
@@ -362,7 +354,6 @@ class ReportsService {
 
   private transformChartsData(backendData: any, reportType: string): Array<any> {
     const charts = [];
-    console.log(`📈 Transforming charts data for report type: "${reportType}"`);
 
     // Transform based on report type and available data
     switch (reportType) {
@@ -574,8 +565,7 @@ class ReportsService {
         break;
 
       case 'patient-demographics':
-        console.log('✅ Matched patient-demographics case in transformChartsData');
-        
+
         // Age distribution chart
         if (backendData.ageDistribution && backendData.ageDistribution.length > 0) {
           charts.push({
@@ -588,7 +578,7 @@ class ReportsService {
             }))
           });
         }
-        
+
         // Gender distribution chart
         if (backendData.genderDistribution && backendData.genderDistribution.length > 0) {
           charts.push({
@@ -756,8 +746,6 @@ class ReportsService {
 
   private transformTablesData(backendData: any, reportType: string): Array<any> {
     const tables = [];
-    console.log(`🔄 Transforming tables data for report type: "${reportType}"`);
-    console.log('📊 Backend data keys:', Object.keys(backendData));
 
     // Transform based on report type and available data
     switch (reportType) {
@@ -1020,10 +1008,9 @@ class ReportsService {
         break;
 
       case 'patient-demographics':
-        console.log('✅ Matched patient-demographics case in transformTablesData');
-        console.log('📊 Age distribution data:', backendData.ageDistribution);
-        console.log('📊 Gender distribution data:', backendData.genderDistribution);
-        
+
+
+
         // Age distribution table
         if (backendData.ageDistribution && backendData.ageDistribution.length > 0) {
           tables.push({
@@ -1042,7 +1029,7 @@ class ReportsService {
             })
           });
         }
-        
+
         // Gender distribution table
         if (backendData.genderDistribution && backendData.genderDistribution.length > 0) {
           tables.push({
@@ -1132,7 +1119,7 @@ class ReportsService {
             })
           });
         }
-        
+
         // Comprehensive summary table
         tables.push({
           id: 'demographics-summary-table',
@@ -1231,10 +1218,10 @@ class ReportsService {
 
       default:
         // Only show generic table if we have actual data
-        const entries = Object.entries(backendData).filter(([key, value]) => 
+        const entries = Object.entries(backendData).filter(([key, value]) =>
           key !== 'error' && key !== 'message' && key !== 'timestamp'
         ).slice(0, 10);
-        
+
         if (entries.length > 0) {
           tables.push({
             id: 'generic-table',

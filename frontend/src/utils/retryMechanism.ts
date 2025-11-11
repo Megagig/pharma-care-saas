@@ -169,7 +169,6 @@ export const retryApiCall = async <T>(
         maxAttempts: 3,
         initialDelay: 1000,
         onRetry: (attempt, error) => {
-            console.log(`Retrying ${operationName} (attempt ${attempt}):`, error.message);
 
             // Handle error through error service
             errorHandlingService.handleError(error, `retry_${operationName}`, {

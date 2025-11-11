@@ -30,18 +30,7 @@ export const useDashboardCharts = () => {
         try {
             setData(prev => ({ ...prev, loading: true, error: null }));
 
-            console.log('Fetching real chart data from API...');
-
             const analytics = await dashboardService.getDashboardAnalytics();
-
-            console.log('Chart data received:', {
-                clinicalNotesByType: analytics.clinicalNotesByType.length,
-                mtrsByStatus: analytics.mtrsByStatus.length,
-                patientsByMonth: analytics.patientsByMonth.length,
-                medicationsByStatus: analytics.medicationsByStatus.length,
-                patientAgeDistribution: analytics.patientAgeDistribution.length,
-                monthlyActivity: analytics.monthlyActivity.length,
-            });
 
             setData({
                 clinicalNotesByType: analytics.clinicalNotesByType,

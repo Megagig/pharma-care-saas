@@ -38,7 +38,7 @@ class PatientPortalAdminService {
   // Portal statistics - Map backend response to frontend expected structure
   static async getPortalStats(workspaceId?: string) {
     try {
-      console.log('getPortalStats called with workspaceId:', workspaceId);
+
       const analytics = await PatientPortalAdminService.makeRequest<any>('/analytics', { workspaceId });
 
       // Map backend response to frontend expected structure

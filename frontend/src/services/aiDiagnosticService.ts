@@ -112,8 +112,7 @@ class AIdiagnosticService {
      * Transform DiagnosticResult structure to frontend analysis format
      */
     private transformDiagnosticResultToAnalysis(diagnosticResult: any) {
-        console.log('🔧 Transforming DiagnosticResult:', diagnosticResult);
-        
+
         if (!diagnosticResult) {
             return this.getDefaultAnalysisStructure();
         }
@@ -177,7 +176,7 @@ class AIdiagnosticService {
         if (diagnosticResult.confidenceScore !== undefined) {
             return Number(diagnosticResult.confidenceScore) || 0;
         }
-        
+
         if (diagnosticResult.aiMetadata?.confidenceScore !== undefined) {
             return Number(diagnosticResult.aiMetadata.confidenceScore) || 0;
         }
@@ -196,8 +195,6 @@ class AIdiagnosticService {
      */
     private extractFollowUpRecommendations(diagnosticResult: any): Array<{ recommendation: string; priority: string; timeframe?: string }> {
         const recommendations = [];
-
-        console.log('🔧 Extracting follow-up recommendations from:', diagnosticResult);
 
         // Add referral recommendation if present
         if (diagnosticResult.referralRecommendation?.recommended) {
@@ -267,7 +264,6 @@ class AIdiagnosticService {
             });
         }
 
-        console.log('🔧 Extracted follow-up recommendations:', recommendations);
         return recommendations;
     }
 
@@ -467,40 +463,25 @@ class AIdiagnosticService {
                 consentObtained: caseData.patientConsent?.provided ?? true
             };
 
-            console.log('🚨🚨🚨 SUBMITCASE METHOD CALLED - CODE IS UPDATED 🚨🚨🚨');
-
             // Debug: Log the payload being sent
-            console.log('🚀 Submitting to backend:', JSON.stringify(apiPayload, null, 2));
 
             // Use extended timeout for AI analysis (3 minutes)
             const response = await apiClient.post('/diagnostics', apiPayload, {
                 timeout: 180000 // 3 minutes timeout for AI processing
             });
 
-            console.log('🚨🚨🚨 RESPONSE RECEIVED 🚨🚨🚨');
-            console.log('🚨 typeof response:', typeof response);
-            console.log('🚨 response keys:', response ? Object.keys(response) : 'null');
-
             // Debug: Log the full response structure
-            console.log('🔍 Full API Response:', response);
-            console.log('🔍 Response Data:', response.data);
-            console.log('🔍 Response Data.data:', response.data.data);
+
+
 
             // Transform response to match frontend expectations
             const responseData = response.data.data;
-            console.log('🔍 Response Data Object:', responseData);
 
             const diagnosticRequest = responseData.request;
-            console.log('🔍 Diagnostic Request:', diagnosticRequest);
-            console.log('🔍 Request ID (_id):', diagnosticRequest?._id);
-            console.log('🔍 Request ID (id):', diagnosticRequest?.id);
 
             const requestId = diagnosticRequest?._id || diagnosticRequest?.id;
-            console.log('🔍 Extracted Request ID:', requestId);
 
-            console.log('🚨🚨🚨 ABOUT TO RETURN OBJECT 🚨🚨🚨');
-            console.log('🚨 requestId value:', requestId);
-            console.log('🚨 requestId type:', typeof requestId);
+
 
             const transformedAnalysis = this.transformAnalysisStructure(responseData.analysis);
 
@@ -598,9 +579,8 @@ class AIdiagnosticService {
     async getAnalysis(caseId: string): Promise<AIAnalysisResult> {
         try {
             const caseData = await this.getCase(caseId);
-            console.log('🔧 Case data for analysis:', caseData);
-            console.log('🔧 AI Analysis present:', !!caseData.aiAnalysis);
-            
+
+
             if (caseData.aiAnalysis) {
                 return caseData.aiAnalysis;
             }
@@ -621,9 +601,7 @@ class AIdiagnosticService {
             });
             const responseData = response.data.data;
 
-            console.log('🔧 Backend responseData:', responseData);
-            console.log('🔧 responseData.request:', responseData.request);
-            console.log('🔧 responseData.result:', responseData.result);
+
 
             // Extract the request and result from the backend response
             const diagnosticRequest = responseData.request;

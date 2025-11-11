@@ -43,10 +43,33 @@ import Psychology from '@mui/icons-material/Psychology';
 import Analytics from '@mui/icons-material/Analytics';
 import SupervisorAccount from '@mui/icons-material/SupervisorAccount';
 import Biotech from '@mui/icons-material/Biotech';
+import Security from '@mui/icons-material/Security';
+import MonetizationOn from '@mui/icons-material/MonetizationOn';
+import LocationOn from '@mui/icons-material/LocationOn';
+import QueueMusic from '@mui/icons-material/QueueMusic';
+import Webhook from '@mui/icons-material/Webhook';
+import MoveToInbox from '@mui/icons-material/MoveToInbox';
+import EventNote from '@mui/icons-material/EventNote';
+import CloudDone from '@mui/icons-material/CloudDone';
+import Monitor from '@mui/icons-material/Monitor';
+import Api from '@mui/icons-material/Api';
+import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 
 // Use imported icons with aliases
 const AdminIcon = AdminPanelSettings;
 const LicenseIcon = Assignment;
+const SecurityIcon = Security;
+const MonetizationOnIcon = MonetizationOn;
+const LocationOnIcon = LocationOn;
+const AnalyticsIcon = Analytics;
+const QueueMusicIcon = QueueMusic;
+const WebhookIcon = Webhook;
+const MoveToInboxIcon = MoveToInbox;
+const EventNoteIcon = EventNote;
+const CloudDoneIcon = CloudDone;
+const MonitorIcon = Monitor;
+const ApiIcon = Api;
+const SaasAdminIcon = AdminPanelSettingsIcon;
 // Pharmacy module icon aliases
 const ReviewsIcon = Reviews;
 const MedicalServicesIcon = MedicalServices;
@@ -54,7 +77,6 @@ const ScienceIcon = Science;
 const ForumIcon = Forum;
 const MenuBookIcon = MenuBook;
 const PsychologyIcon = Psychology;
-const AnalyticsIcon = Analytics;
 const SupervisorAccountIcon = SupervisorAccount;
 const BiotechIcon = Biotech;
 import { useSidebarControls } from '../stores/sidebarHooks';
@@ -124,6 +146,24 @@ const Sidebar = () => {
       show: hasFeature('basic_reports'),
     },
     {
+      name: 'Reports',
+      path: '/reports',
+      icon: AssessmentIcon,
+      show: hasRole('pharmacist') || hasRole('pharmacy_team') || hasRole('pharmacy_outlet') || hasRole('owner') || hasRole('super_admin'),
+    },
+    {
+      name: 'Appointment Analytics',
+      path: '/analytics/appointments',
+      icon: EventNoteIcon,
+      show: hasRole('pharmacist') || hasRole('pharmacy_team') || hasRole('pharmacy_outlet') || hasRole('owner') || hasRole('super_admin'),
+    },
+    {
+      name: 'Medication Analytics',
+      path: '/analytics/medications',
+      icon: MedicationIcon,
+      show: hasFeature('medication_management') && (hasRole('pharmacist') || hasRole('pharmacy_team') || hasRole('pharmacy_outlet') || hasRole('owner') || hasRole('super_admin')),
+    },
+    {
       name: 'Patient Engagement',
       path: '/patient-engagement',
       icon: PersonAddIcon,
@@ -161,6 +201,13 @@ const Sidebar = () => {
       name: 'Lab Interpretations',
       path: '/pharmacy/lab-interpretations',
       icon: BiotechIcon,
+      show: hasRole('pharmacist') || hasRole('pharmacy_team') || hasRole('pharmacy_outlet') || hasRole('owner') || hasRole('super_admin'),
+      badge: null,
+    },
+    {
+      name: 'Lab Integration',
+      path: '/pharmacy/lab-integration',
+      icon: ScienceIcon,
       show: hasRole('pharmacist') || hasRole('pharmacy_team') || hasRole('pharmacy_outlet') || hasRole('owner') || hasRole('super_admin'),
       badge: null,
     },
@@ -220,6 +267,96 @@ const Sidebar = () => {
       show: hasRole('super_admin'),
     },
     {
+      name: 'RBAC Management',
+      path: '/admin/rbac-management',
+      icon: SecurityIcon,
+      show: hasRole('super_admin'),
+    },
+    {
+      name: 'Security Dashboard',
+      path: '/admin/security',
+      icon: SecurityIcon,
+      show: hasRole('super_admin'),
+    },
+    {
+      name: 'Pricing Management',
+      path: '/admin/pricing',
+      icon: MonetizationOnIcon,
+      show: hasRole('super_admin'),
+    },
+    {
+      name: 'Usage Monitoring',
+      path: '/admin/usage-monitoring',
+      icon: AnalyticsIcon,
+      show: hasRole('super_admin'),
+    },
+    {
+      name: 'Location Management',
+      path: '/admin/locations',
+      icon: LocationOnIcon,
+      show: hasRole('super_admin'),
+    },
+    {
+      name: 'Pricing Plans',
+      path: '/admin/pricing-plans',
+      icon: MonetizationOnIcon,
+      show: hasRole('super_admin'),
+    },
+    {
+      name: 'Patient Linking',
+      path: '/admin/patient-linking',
+      icon: PeopleIcon,
+      show: hasRole('super_admin'),
+    },
+    {
+      name: 'Health Records',
+      path: '/super-admin/health-records',
+      icon: DescriptionIcon,
+      show: hasRole('super_admin'),
+    },
+    {
+      name: 'Queue Monitoring',
+      path: '/admin/queue-monitoring',
+      icon: QueueMusicIcon,
+      show: hasRole('super_admin'),
+    },
+    {
+      name: 'Webhooks',
+      path: '/admin/webhooks',
+      icon: WebhookIcon,
+      show: hasRole('super_admin'),
+    },
+    {
+      name: 'Migration Dashboard',
+      path: '/admin/migration',
+      icon: MoveToInboxIcon,
+      show: hasRole('super_admin'),
+    },
+    {
+      name: 'SaaS Admin',
+      path: '/admin/saas',
+      icon: SaasAdminIcon,
+      show: hasRole('super_admin'),
+    },
+    {
+      name: 'Deployment Monitoring',
+      path: '/admin/deployment-monitoring',
+      icon: CloudDoneIcon,
+      show: hasRole('super_admin'),
+    },
+    {
+      name: 'System Monitoring',
+      path: '/admin/system-monitoring',
+      icon: MonitorIcon,
+      show: hasRole('super_admin'),
+    },
+    {
+      name: 'API Management',
+      path: '/admin/api-management',
+      icon: ApiIcon,
+      show: hasRole('super_admin'),
+    },
+    {
       name: 'Blog Management',
       path: '/super-admin/blog',
       icon: MenuBookIcon,
@@ -254,13 +391,7 @@ const Sidebar = () => {
   // Debug: Check Team Members visibility
   React.useEffect(() => {
     const shouldShow = hasRole('pharmacy_outlet');
-    console.log('🔍 Team Members Visibility Check:', {
-      userRole: user?.role,
-      userObject: user,
-      hasPharmacyOutletRole: shouldShow,
-      willShowLink: shouldShow,
-      hasRoleFunction: typeof hasRole,
-    });
+
   }, [user?.role, hasRole, user]);
 
   const settingsItems = [

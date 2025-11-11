@@ -49,13 +49,7 @@ const BlogPage: React.FC = () => {
 
   // Debug logging
   React.useEffect(() => {
-    console.log('🔍 BLOG PAGE DEBUG:', {
-      isLoading,
-      hasError: !!error,
-      postsResponse,
-      postsCount: posts.length,
-      totalCount,
-    });
+
   }, [isLoading, error, postsResponse, posts.length, totalCount]);
 
   const handlePageChange = (_event: React.ChangeEvent<unknown>, value: number) => {

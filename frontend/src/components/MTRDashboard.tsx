@@ -202,10 +202,10 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
     }
 
     try {
-      console.log('Auto-saving review with ID:', currentReview._id);
+
       await saveReview();
       setLastSaved(new Date());
-      console.log('Auto-save completed successfully');
+
     } catch (error) {
       console.error('Auto-save failed:', error);
     }
@@ -265,48 +265,25 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
 
       try {
         if (reviewId) {
-          console.log('Loading existing review with ID:', reviewId);
+
           await loadReview(reviewId);
 
           // Verify we have a valid review with ID after loading
           const { currentReview } = useMTRStore.getState();
-          console.log(
-            'Loaded review:',
-            currentReview?._id ? 'ID present' : 'ID missing',
-            currentReview
-              ? JSON.stringify({ id: currentReview._id })
-              : 'No review'
-          );
+
         } else if (patientId) {
-          console.log(
-            'Checking for in-progress review for patient:',
-            patientId
-          );
+
           // First, check if there's an in-progress review for this patient
           const inProgressReview = await loadInProgressReview(patientId);
 
           if (!inProgressReview) {
-            console.log(
-              'No in-progress review found, creating new one for patient:',
-              patientId
-            );
+
             // No in-progress review found, create new one
             await createReview(patientId);
 
             // Verify we have a valid review with ID after creation
             const { currentReview } = useMTRStore.getState();
-            console.log(
-              'Created review:',
-              currentReview?._id ? 'ID present' : 'ID missing',
-              currentReview
-                ? JSON.stringify({ id: currentReview._id })
-                : 'No review'
-            );
-          } else {
-            console.log(
-              'In-progress review found with ID:',
-              inProgressReview._id
-            );
+
           }
           // If in-progress review found, it's already loaded by loadInProgressReview
         }
@@ -338,16 +315,9 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
     const stepParam = searchParams.get('step');
     const urlStep = stepParam ? parseInt(stepParam, 10) : null;
 
-    console.log(
-      'URL sync effect - currentStep:',
-      currentStep,
-      'urlStep:',
-      urlStep
-    );
-
     // Only update URL if it's different from current step
     if (urlStep !== currentStep) {
-      console.log('Updating URL to step:', currentStep);
+
       const newSearchParams = new URLSearchParams(searchParams);
       newSearchParams.set('step', currentStep.toString());
       setSearchParams(newSearchParams, { replace: true });
@@ -360,8 +330,6 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
       return;
     }
 
-    console.log('Setting up auto-save for review:', currentReview._id);
-
     const autoSaveInterval = setInterval(async () => {
       try {
         const { currentReview, loading } = useMTRStore.getState();
@@ -370,9 +338,8 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
           return;
         }
 
-        console.log('Auto-saving review with ID:', currentReview._id);
         await saveReview();
-        console.log('Auto-save completed');
+
       } catch (error) {
         console.error('Auto-save failed:', error);
       }
@@ -385,12 +352,12 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
   useEffect(() => {
     const handleBeforeUnload = (event: BeforeUnloadEvent) => {
       if (!currentReview) {
-        console.log('No review to save before unload');
+
         return;
       }
 
       if (!autoSaveEnabled) {
-        console.log('Auto-save disabled, skipping save before unload');
+
         return;
       }
 
@@ -400,10 +367,7 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
       }
 
       // Trigger auto-save before page unload
-      console.log(
-        'Attempting to save review before unload:',
-        currentReview._id
-      );
+
       autoSave();
 
       // Show confirmation dialog if there are unsaved changes
@@ -607,13 +571,13 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
 
   const handleInterventionRecorded = useCallback(
     (intervention: MTRIntervention) => {
-      console.log('Intervention recorded:', intervention);
+
     },
     []
   );
 
   const handleFollowUpScheduled = useCallback((followUp: MTRFollowUp) => {
-    console.log('Follow-up scheduled:', followUp);
+
   }, []);
 
   // Get current step component
@@ -781,13 +745,13 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
             <PatientSelection
               onPatientSelect={(patient: Patient) => {
                 // Create a new review for the selected patient
-                console.log('Patient selected:', patient);
+
                 selectPatient(convertPatientToStoreType(patient));
                 createReview(patient._id);
               }}
               onNext={() => {
                 // Move to next step after patient selection
-                console.log('Moving to next step');
+
                 goToStep(1);
               }}
               selectedPatient={

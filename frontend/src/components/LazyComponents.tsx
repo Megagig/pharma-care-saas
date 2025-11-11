@@ -50,6 +50,15 @@ export const LazyPharmacistLabInterpretations = lazy(() => import('../pages/phar
 export const LazyAdminDashboard = lazy(() => import('../components/admin/AdminDashboard'));
 export const LazyFeatureManagement = lazy(() => import('../pages/FeatureManagement'));
 export const LazySuperAdminAuditTrail = lazy(() => import('../pages/SuperAdminAuditTrail'));
+export const LazyRBACManagement = lazy(() => import('../pages/admin/RBACManagement'));
+export const LazySecurityDashboard = lazy(() => import('../components/admin/SecurityDashboard'));
+export const LazyPricingManagement = lazy(() => import('../components/admin/PricingManagement'));
+export const LazyUsageMonitoring = lazy(() => import('../components/admin/UsageMonitoring'));
+export const LazyLocationManagement = lazy(() => import('../components/admin/LocationManagement'));
+export const LazyQueueMonitoringDashboard = lazy(() => import('../components/admin/QueueMonitoringDashboard'));
+export const LazyWebhookManagement = lazy(() => import('../components/admin/WebhookManagement'));
+export const LazyMigrationDashboard = lazy(() => import('../components/admin/MigrationDashboard'));
+export const LazyAppointmentAnalyticsDashboard = lazy(() => import('../components/appointments/AppointmentAnalyticsDashboard'));
 
 // Heavy form components
 export const LazyPatientForm = lazy(() => import('../components/PatientForm'));
@@ -74,6 +83,22 @@ export const LazyNotifications = lazy(() => import('../pages/Notifications'));
 export const LazyHelp = lazy(() => import('../pages/Help'));
 export const LazyMTRHelp = lazy(() => import('../pages/MTRHelp'));
 export const LazyLicenseUpload = lazy(() => import('../components/license/LicenseUpload'));
+
+// Additional unrouted pages
+export const LazyLabResultIntegration = lazy(() => import('../pages/LabResultIntegration'));
+export const LazyPaymentSimulation = lazy(() => import('../pages/PaymentSimulation'));
+export const LazyPricingPlanManagement = lazy(() => import('../pages/PricingPlanManagement'));
+export const LazyReports = lazy(() => import('../pages/Reports'));
+export const LazyPatientLinkingAdmin = lazy(() => import('../pages/admin/PatientLinkingAdmin'));
+export const LazyPatientLinkingManagement = lazy(() => import('../pages/admin/PatientLinkingManagement'));
+export const LazySuperAdminHealthRecordsDashboard = lazy(() => import('../pages/super-admin/SuperAdminHealthRecordsDashboard'));
+export const LazyMedicationAnalytics = lazy(() => import('../pages/MedicationAnalytics'));
+
+// Phase 3: Admin Features
+export const LazySaasAdminDashboard = lazy(() => import('../pages/admin/SaasAdminDashboard'));
+export const LazyDeploymentMonitoringDashboard = lazy(() => import('../components/admin/DeploymentMonitoringDashboard'));
+export const LazySystemMonitoringDashboard = lazy(() => import('../components/admin/SystemMonitoringDashboard'));
+export const LazyApiManagementDashboard = lazy(() => import('../components/admin/ApiManagementDashboard'));
 
 // Workspace management components
 export const LazyWorkspaceTeam = lazy(() => import('../pages/workspace/WorkspaceTeam'));

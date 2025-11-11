@@ -95,9 +95,8 @@ const CaseResultsPage: React.FC = () => {
       setLoading(true);
       setError(null);
 
-      console.log('🔍 Loading diagnostic case:', caseId);
       const caseData = await aiDiagnosticService.getCase(caseId);
-      console.log('✅ Case loaded successfully:', caseData);
+
       setDiagnosticCase(caseData);
 
       // If case is completed and has analysis, load it

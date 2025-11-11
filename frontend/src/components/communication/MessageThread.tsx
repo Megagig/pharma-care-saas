@@ -200,7 +200,6 @@ const MessageThread: React.FC<MessageThreadProps> = ({
       }
 
       const result = await response.json();
-      console.log('Thread created:', result.data.threadId);
 
       // Refresh messages to show the new thread
       // This would typically be handled by the parent component
@@ -212,7 +211,7 @@ const MessageThread: React.FC<MessageThreadProps> = ({
   // Handle thread view
   const handleViewThread = (threadId: string) => {
     // This would typically open a thread view modal or navigate to thread
-    console.log('View thread:', threadId);
+
   };
 
   // Filter messages for this thread
@@ -342,15 +341,15 @@ const MessageThread: React.FC<MessageThreadProps> = ({
                         onReply={() => handleReplyToMessage(message)}
                         onEdit={(messageId, newContent) => {
                           // TODO: Implement message editing
-                          console.log('Edit message:', messageId, newContent);
+
                         }}
                         onDelete={(messageId) => {
                           // TODO: Implement message deletion
-                          console.log('Delete message:', messageId);
+
                         }}
                         onReaction={(messageId, emoji) => {
                           // TODO: Implement message reactions
-                          console.log('Add reaction:', { messageId, emoji }, '✅');
+
                         }}
                         onCreateThread={handleCreateThread}
                         onViewThread={handleViewThread}

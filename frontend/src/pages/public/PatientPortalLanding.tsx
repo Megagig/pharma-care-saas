@@ -84,15 +84,15 @@ const PatientPortalLanding: React.FC = () => {
 
   // Debug logging
   React.useEffect(() => {
-    console.log('%c🔍 BLOG DEBUG', 'background: #0891b2; color: white; font-size: 20px; padding: 10px;');
+
     console.table({
       'Featured Loading': featuredLoading,
       'Featured Posts Count': featuredPosts?.data?.length || 0,
       'Latest Loading': latestLoading,
       'Latest Posts Count': latestPosts?.data?.posts?.length || 0,
     });
-    console.log('Featured Posts Data:', featuredPosts);
-    console.log('Latest Posts Data:', latestPosts);
+
+
   }, [featuredLoading, featuredPosts, latestLoading, latestPosts]);
 
   const toggleMobileMenu = () => {

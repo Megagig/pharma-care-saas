@@ -217,19 +217,16 @@ export const useReportsStore = create<ReportsState>()(
             } : undefined;
 
             // Generate report using real API
-            console.log('📡 Calling reportsService.generateReport...');
+
             const reportData = await reportsService.generateReport(reportType, serviceFilters);
-            console.log('📊 Raw report data received:', reportData);
-            
+
             // Store the report data as-is since ReportDisplay expects the original format
             const transformedData = reportData;
-            console.log('🔄 Transformed data:', transformedData);
-            
+
             // Store the generated report data
             state.setReportData(reportType, transformedData);
-            console.log('💾 Data stored in state');
-            
-            console.log('✅ Report generated successfully from API:', transformedData);
+
+
           } catch (error: any) {
             console.error('❌ Error generating report from API:', error);
             

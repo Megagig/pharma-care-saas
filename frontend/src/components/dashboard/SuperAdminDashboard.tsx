@@ -212,16 +212,15 @@ const SuperAdminDashboard: React.FC = () => {
     const fetchSuperAdminData = async () => {
         try {
             setLoading(true);
-            console.log('🔄 Starting to fetch super admin dashboard data...');
+
             const dashboardData = await roleBasedDashboardService.getSuperAdminDashboard();
-            console.log('✅ Super admin dashboard data received:', dashboardData);
-            console.log('📊 System Stats:', dashboardData.systemStats);
-            console.log('🏢 Workspaces count:', dashboardData.workspaces?.length || 0);
-            console.log('🏢 Workspaces data:', dashboardData.workspaces);
-            console.log('👥 User Activity:', dashboardData.userActivity);
-            console.log('💰 Subscriptions:', dashboardData.subscriptions);
-            console.log('📈 Trends:', dashboardData.trends);
-            
+
+
+
+
+
+
+
             // Ensure workspaces is always an array
             const safeData = {
                 ...dashboardData,
@@ -278,16 +277,16 @@ const SuperAdminDashboard: React.FC = () => {
     const handleRoleChange = (role: 'super_admin' | 'workspace_user', workspaceId?: string) => {
         if (role === 'workspace_user' && workspaceId) {
             // Navigate to workspace-specific view
-            console.log('Switching to workspace view:', workspaceId);
+
             // You could trigger a different dashboard component here
         } else {
             // Stay in super admin view
-            console.log('Staying in super admin view');
+
         }
     };
 
     if (loading) {
-        console.log('🔄 SuperAdminDashboard: Showing loading state');
+
         return (
             <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
                 <LinearProgress sx={{ width: '50%' }} />
@@ -296,7 +295,7 @@ const SuperAdminDashboard: React.FC = () => {
     }
 
     if (error) {
-        console.log('❌ SuperAdminDashboard: Showing error state:', error);
+
         return (
             <Card sx={{ p: 3, textAlign: 'center' }}>
                 <Typography color="error" variant="h6" gutterBottom>
@@ -310,7 +309,7 @@ const SuperAdminDashboard: React.FC = () => {
     }
 
     if (!data) {
-        console.log('⚠️ SuperAdminDashboard: No data available, showing empty state');
+
         return (
             <Card sx={{ p: 3, textAlign: 'center' }}>
                 <Typography variant="h6" gutterBottom>
@@ -322,14 +321,6 @@ const SuperAdminDashboard: React.FC = () => {
             </Card>
         );
     }
-
-    console.log('✅ SuperAdminDashboard: Rendering dashboard with data:', {
-        hasSystemStats: !!data.systemStats,
-        workspacesCount: data.workspaces?.length || 0,
-        hasUserActivity: !!data.userActivity,
-        hasSubscriptions: !!data.subscriptions,
-        hasTrends: !!data.trends
-    });
 
     return (
         <Box>

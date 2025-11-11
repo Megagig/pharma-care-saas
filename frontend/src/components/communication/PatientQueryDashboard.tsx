@@ -312,7 +312,7 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
           }
           break;
         default:
-          console.log('Unknown action:', action);
+
       }
     } catch (error) {
       console.error('Query action failed:', error);
@@ -356,7 +356,7 @@ const PatientQueryDashboard: React.FC<PatientQueryDashboardProps> = ({
   // Handle export
   const handleExport = () => {
     // TODO: Implement export functionality
-    console.log('Export queries:', currentTabQueries);
+
   };
 
   // Clear all filters

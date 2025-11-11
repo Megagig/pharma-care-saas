@@ -103,19 +103,14 @@ const BLOOD_GROUPS: BloodGroup[] = [
 const GENOTYPES: Genotype[] = ['AA', 'AS', 'SS', 'AC', 'SC', 'CC'];
 
 const Patients = () => {
-  console.log('🚀 Patients component rendering');
-  
+
   const navigate = useNavigate();
   const [urlParams] = useSearchParams();
   const isForMedications = urlParams.get('for') === 'medications';
   const isForDiagnostics = urlParams.get('for') === 'diagnostics';
 
-  console.log('📍 Patients component - URL params:', { isForMedications, isForDiagnostics });
-
   // RBAC permissions
   const { permissions } = useRBAC();
-  
-  console.log('🔐 Patients component - RBAC permissions:', permissions);
 
   // Search and filter state
   const [searchParams, setSearchParams] = useState<PatientSearchParams>({
@@ -127,8 +122,6 @@ const Patients = () => {
   const [selectedPatient, setSelectedPatient] = useState<string | null>(null);
   const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
 
-  console.log('📊 Patients component - About to call usePatients with params:', searchParams);
-
   // React Query hooks
   const {
     data: patientsResponse,
@@ -136,13 +129,6 @@ const Patients = () => {
     isError,
     error,
   } = usePatients(searchParams);
-
-  console.log('📡 Patients component - usePatients result:', { 
-    hasData: !!patientsResponse, 
-    isLoading, 
-    isError,
-    errorMessage: error?.message 
-  });
 
   const deletePatientMutation = useDeletePatient();
 
@@ -152,15 +138,6 @@ const Patients = () => {
   const currentPage = (searchParams.page || 1) - 1; // MUI pagination is 0-based
 
   // Debug logging
-  console.log('📋 Patients page data:', {
-    patientsResponse,
-    patients: patients.length,
-    totalPatients,
-    searchParams,
-    isLoading,
-    isError,
-    error,
-  });
 
   // Event handlers
   const handleQuickSearch = (value: string) => {

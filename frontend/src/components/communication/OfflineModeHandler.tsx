@@ -65,8 +65,7 @@ const OfflineModeHandler: React.FC<OfflineModeHandlerProps> = ({
     const handleOnline = () => {
       setIsOffline(false);
       if (offlineStartTime) {
-        const offlineDuration = Date.now() - offlineStartTime;
-        console.log(`Back online after ${Math.round(offlineDuration / 1000)}s`);
+        const offlineDuration = Date.now() - offlineStartTime;}s`);
         setOfflineStartTime(null);
       }
 
@@ -162,7 +161,6 @@ const OfflineModeHandler: React.FC<OfflineModeHandlerProps> = ({
         // Update local queue
         setOfflineQueue((prev) => [...prev, queueItem]);
 
-        console.log(`Added ${type} to offline queue:`, queueItem.id);
       } catch (error) {
         console.error('Failed to add item to offline queue:', error);
       }
@@ -200,7 +198,7 @@ const OfflineModeHandler: React.FC<OfflineModeHandlerProps> = ({
           // Remove items that have failed too many times
           if (item.retryCount >= 3) {
             await offlineStorage.removeSyncQueueItem(item.id);
-            console.log(`Removed item ${item.id} after 3 failed attempts`);
+
           }
         }
       }
@@ -210,7 +208,7 @@ const OfflineModeHandler: React.FC<OfflineModeHandlerProps> = ({
 
       if (successCount > 0) {
         setShowSyncSuccess(true);
-        console.log(`Synced ${successCount} items successfully`);
+
       }
 
       if (failureCount > 0) {
@@ -301,7 +299,7 @@ const OfflineModeHandler: React.FC<OfflineModeHandlerProps> = ({
     try {
       await offlineStorage.clearAllData();
       setOfflineQueue([]);
-      console.log('Offline queue cleared');
+
     } catch (error) {
       console.error('Failed to clear offline queue:', error);
     }

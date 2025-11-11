@@ -17,7 +17,6 @@ import { SubscriptionProvider } from './context/SubscriptionContext';
 import { PatientAuthProvider } from './contexts/PatientAuthContext';
 import { initializeStores } from './stores';
 import { queryClient, queryPrefetcher } from './lib/queryClient';
-import { initializeQueryDevtools } from './lib/queryDevtools';
 import { useTheme as useThemeStore } from './stores/themeStore';
 import { versionCheckService } from './services/versionCheckService';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -61,6 +60,11 @@ import {
   LazyAdminDashboard,
   LazyFeatureManagement,
   LazySuperAdminAuditTrail,
+  LazyRBACManagement,
+  LazySecurityDashboard,
+  LazyPricingManagement,
+  LazyUsageMonitoring,
+  LazyLocationManagement,
   LazyPatientForm,
   LazyPatientManagement,
   LazyMedicationsManagementDashboard,
@@ -88,6 +92,22 @@ import {
   LazyBlogPostDetails,
   LazyBlogManagement,
   LazyBlogPostEditor,
+  LazyLabResultIntegration,
+  LazyPaymentSimulation,
+  LazyPricingPlanManagement,
+  LazyReports,
+  LazyPatientLinkingAdmin,
+  LazyPatientLinkingManagement,
+  LazySuperAdminHealthRecordsDashboard,
+  LazyQueueMonitoringDashboard,
+  LazyWebhookManagement,
+  LazyMigrationDashboard,
+  LazyAppointmentAnalyticsDashboard,
+  LazyMedicationAnalytics,
+  LazySaasAdminDashboard,
+  LazyDeploymentMonitoringDashboard,
+  LazySystemMonitoringDashboard,
+  LazyApiManagementDashboard,
 } from './components/LazyComponents';
 
 // Additional lazy imports
@@ -138,9 +158,6 @@ function App(): JSX.Element {
   // Initialize Zustand stores on app startup
   useEffect(() => {
     initializeStores();
-
-    // Initialize query devtools in development
-    initializeQueryDevtools(queryClient);
 
     // Initialize module preloader and compression utils
     modulePreloader.initialize();
@@ -956,6 +973,76 @@ function App(): JSX.Element {
                               }
                             />
 
+                            {/* RBAC Management Route */}
+                            <Route
+                              path="/admin/rbac-management"
+                              element={
+                                <ProtectedRoute requiredRole="super_admin">
+                                  <AppLayout>
+                                    <LazyWrapper fallback={PageSkeleton}>
+                                      <LazyRBACManagement />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
+                              }
+                            />
+
+                            {/* Security Dashboard Route */}
+                            <Route
+                              path="/admin/security"
+                              element={
+                                <ProtectedRoute requiredRole="super_admin">
+                                  <AppLayout>
+                                    <LazyWrapper fallback={PageSkeleton}>
+                                      <LazySecurityDashboard />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
+                              }
+                            />
+
+                            {/* Pricing Management Route */}
+                            <Route
+                              path="/admin/pricing"
+                              element={
+                                <ProtectedRoute requiredRole="super_admin">
+                                  <AppLayout>
+                                    <LazyWrapper fallback={PageSkeleton}>
+                                      <LazyPricingManagement />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
+                              }
+                            />
+
+                            {/* Usage Monitoring Route */}
+                            <Route
+                              path="/admin/usage-monitoring"
+                              element={
+                                <ProtectedRoute requiredRole="super_admin">
+                                  <AppLayout>
+                                    <LazyWrapper fallback={PageSkeleton}>
+                                      <LazyUsageMonitoring />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
+                              }
+                            />
+
+                            {/* Location Management Route */}
+                            <Route
+                              path="/admin/locations"
+                              element={
+                                <ProtectedRoute requiredRole="super_admin">
+                                  <AppLayout>
+                                    <LazyWrapper fallback={PageSkeleton}>
+                                      <LazyLocationManagement />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
+                              }
+                            />
+
                             {/* Super Admin Blog Management Routes */}
                             <Route
                               path="/super-admin/blog"
@@ -993,6 +1080,240 @@ function App(): JSX.Element {
                                 </ProtectedRoute>
                               }
                             />
+
+                            {/* Super Admin Health Records Dashboard */}
+                            <Route
+                              path="/super-admin/health-records"
+                              element={
+                                <ProtectedRoute requiredRole="super_admin">
+                                  <AppLayout>
+                                    <LazyWrapper fallback={PageSkeleton}>
+                                      <LazySuperAdminHealthRecordsDashboard />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
+                              }
+                            />
+
+                            {/* Admin Pricing Plan Management */}
+                            <Route
+                              path="/admin/pricing-plans"
+                              element={
+                                <ProtectedRoute requiredRole="super_admin">
+                                  <AppLayout>
+                                    <LazyWrapper fallback={PageSkeleton}>
+                                      <LazyPricingPlanManagement />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
+                              }
+                            />
+
+                            {/* Admin Patient Linking Management */}
+                            <Route
+                              path="/admin/patient-linking"
+                              element={
+                                <ProtectedRoute requiredRole="super_admin">
+                                  <AppLayout>
+                                    <LazyWrapper fallback={PageSkeleton}>
+                                      <LazyPatientLinkingAdmin />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
+                              }
+                            />
+
+                            <Route
+                              path="/admin/patient-linking-management"
+                              element={
+                                <ProtectedRoute requiredRole="super_admin">
+                                  <AppLayout>
+                                    <LazyWrapper fallback={PageSkeleton}>
+                                      <LazyPatientLinkingManagement />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
+                              }
+                            />
+
+                            {/* Queue Monitoring Dashboard */}
+                            <Route
+                              path="/admin/queue-monitoring"
+                              element={
+                                <ProtectedRoute requiredRole="super_admin">
+                                  <AppLayout>
+                                    <LazyWrapper fallback={PageSkeleton}>
+                                      <LazyQueueMonitoringDashboard />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
+                              }
+                            />
+
+                            {/* Webhook Management */}
+                            <Route
+                              path="/admin/webhooks"
+                              element={
+                                <ProtectedRoute requiredRole="super_admin">
+                                  <AppLayout>
+                                    <LazyWrapper fallback={PageSkeleton}>
+                                      <LazyWebhookManagement />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
+                              }
+                            />
+
+                            {/* Migration Dashboard */}
+                            <Route
+                              path="/admin/migration"
+                              element={
+                                <ProtectedRoute requiredRole="super_admin">
+                                  <AppLayout>
+                                    <LazyWrapper fallback={PageSkeleton}>
+                                      <LazyMigrationDashboard />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
+                              }
+                            />
+
+                            {/* Appointment Analytics Dashboard */}
+                            <Route
+                              path="/analytics/appointments"
+                              element={
+                                <ProtectedRoute
+                                  requiredRole={['pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'owner', 'super_admin']}
+                                >
+                                  <AppLayout>
+                                    <LazyWrapper fallback={PageSkeleton}>
+                                      <LazyAppointmentAnalyticsDashboard />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
+                              }
+                            />
+
+                            {/* Medication Analytics Dashboard */}
+                            <Route
+                              path="/analytics/medications"
+                              element={
+                                <ProtectedRoute
+                                  requiredRole={['pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'owner', 'super_admin']}
+                                  requiredFeature="medication_management"
+                                >
+                                  <AppLayout>
+                                    <LazyWrapper fallback={PageSkeleton}>
+                                      <LazyMedicationAnalytics />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
+                              }
+                            />
+
+                            {/* SaaS Admin Dashboard */}
+                            <Route
+                              path="/admin/saas"
+                              element={
+                                <ProtectedRoute requiredRole="super_admin">
+                                  <AppLayout>
+                                    <LazyWrapper fallback={PageSkeleton}>
+                                      <LazySaasAdminDashboard />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
+                              }
+                            />
+
+                            {/* Deployment Monitoring Dashboard */}
+                            <Route
+                              path="/admin/deployment-monitoring"
+                              element={
+                                <ProtectedRoute requiredRole="super_admin">
+                                  <AppLayout>
+                                    <LazyWrapper fallback={PageSkeleton}>
+                                      <LazyDeploymentMonitoringDashboard />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
+                              }
+                            />
+
+                            {/* System Monitoring Dashboard */}
+                            <Route
+                              path="/admin/system-monitoring"
+                              element={
+                                <ProtectedRoute requiredRole="super_admin">
+                                  <AppLayout>
+                                    <LazyWrapper fallback={PageSkeleton}>
+                                      <LazySystemMonitoringDashboard />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
+                              }
+                            />
+
+                            {/* API Management Dashboard */}
+                            <Route
+                              path="/admin/api-management"
+                              element={
+                                <ProtectedRoute requiredRole="super_admin">
+                                  <AppLayout>
+                                    <LazyWrapper fallback={PageSkeleton}>
+                                      <LazyApiManagementDashboard />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
+                              }
+                            />
+
+                            {/* Lab Result Integration */}
+                            <Route
+                              path="/pharmacy/lab-integration"
+                              element={
+                                <ProtectedRoute
+                                  requiredRole={['pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'owner', 'super_admin']}
+                                  requiresActiveSubscription
+                                >
+                                  <AppLayout>
+                                    <LazyWrapper fallback={PageSkeleton}>
+                                      <LazyLabResultIntegration />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
+                              }
+                            />
+
+                            {/* Reports Page */}
+                            <Route
+                              path="/reports"
+                              element={
+                                <ProtectedRoute
+                                  requiredRole={['pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'owner', 'super_admin']}
+                                >
+                                  <AppLayout>
+                                    <LazyWrapper fallback={PageSkeleton}>
+                                      <LazyReports />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
+                              }
+                            />
+
+                            {/* Payment Simulation (Dev Only) */}
+                            <Route
+                              path="/payment-simulation"
+                              element={
+                                <ProtectedRoute>
+                                  <AppLayout>
+                                    <LazyWrapper fallback={PageSkeleton}>
+                                      <LazyPaymentSimulation />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
+                              }
+                            />
+
                             {/* License Management */}
                             <Route
                               path="/license"

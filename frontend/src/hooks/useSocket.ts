@@ -45,11 +45,11 @@ export const useSocket = (): Socket | null => {
       }
 
       socket.on('connect', () => {
-        console.log('✅ Socket connected successfully');
+
       });
 
       socket.on('disconnect', (reason) => {
-        console.log('Socket disconnected:', reason);
+
       });
 
       socket.on('connect_error', (error) => {
@@ -57,7 +57,7 @@ export const useSocket = (): Socket | null => {
       });
 
       socket.on('reconnect', (attemptNumber) => {
-        console.log('Socket reconnected after', attemptNumber, 'attempts');
+
       });
     }
 
@@ -100,7 +100,7 @@ export const useSocketConnection = (): SocketConnectionInfo => {
       }
 
       socket.on('connect', () => {
-        console.log('✅ Socket connected successfully:', socket?.id);
+
         setConnectionStatus('connected');
         setConnectionInfo({
           connectedAt: new Date(),
@@ -109,7 +109,7 @@ export const useSocketConnection = (): SocketConnectionInfo => {
       });
 
       socket.on('disconnect', (reason) => {
-        console.log('🔌 Socket disconnected:', reason);
+
         setConnectionStatus('disconnected');
       });
 
@@ -122,7 +122,7 @@ export const useSocketConnection = (): SocketConnectionInfo => {
       });
 
       socket.on('reconnect', (attemptNumber) => {
-        console.log('🔄 Socket reconnected after', attemptNumber, 'attempts');
+
         setConnectionStatus('connected');
         setConnectionInfo({
           connectedAt: new Date(),

@@ -127,10 +127,10 @@ export class PerformanceMonitor {
             this.metrics = this.metrics.slice(-1000);
         }
 
-        // Log to console in development
-        if (process.env.NODE_ENV === 'development') {
-            console.log(`[Performance] ${name}: ${value}ms`, tags);
-        }
+        // Performance logs disabled - metrics are still collected and can be accessed via getMetrics()
+        // Uncomment below to enable console logging in development
+        // if (process.env.NODE_ENV === 'development') {
+        // }
     }
 
     /**

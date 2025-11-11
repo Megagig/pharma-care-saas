@@ -136,8 +136,7 @@ const Subscriptions: React.FC = () => {
     }
 
     try {
-      console.log('Verifying payment with reference:', reference);
-      
+
       // Verify the payment
       const verifyResponse = await apiClient.get(`/subscriptions/verify-payment?reference=${reference}`);
       
@@ -146,8 +145,7 @@ const Subscriptions: React.FC = () => {
         setTabValue(0); // Show Plans tab
         
         // Show success notification
-        console.log('Payment verified successfully! Subscription should be activated.');
-        
+
         // Clear query params
         window.history.replaceState({}, '', '/subscriptions');
         

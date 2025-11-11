@@ -157,18 +157,8 @@ class ClinicalNoteService {
       });
 
       const url = `${this.baseUrl}/patient/${patientId}?${searchParams.toString()}`;
-      console.log('Clinical Notes Service: Fetching patient notes', {
-        patientId,
-        url,
-        filters
-      });
 
       const response = await api.get<ClinicalNotesResponse>(url);
-      console.log('Clinical Notes Service: Successfully fetched patient notes', {
-        patientId,
-        notesCount: response.data.notes?.length || 0,
-        total: response.data.total
-      });
 
       return response.data;
     } catch (error: any) {

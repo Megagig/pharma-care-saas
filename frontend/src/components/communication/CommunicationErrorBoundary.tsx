@@ -292,7 +292,6 @@ class CommunicationErrorBoundary extends Component<Props, State> {
           maxAttempts: 3,
           initialDelay: 1000 * retryCount, // Increase delay with each manual retry
           onRetry: (attempt) => {
-            console.log(`Retrying error recovery (attempt ${attempt})`);
           },
         }
       );
@@ -347,7 +346,6 @@ class CommunicationErrorBoundary extends Component<Props, State> {
     };
 
     // In production, this would send to error tracking service
-    console.log('Error Report:', errorReport);
 
     // Copy to clipboard for easy sharing
     navigator.clipboard
@@ -362,7 +360,7 @@ class CommunicationErrorBoundary extends Component<Props, State> {
 
   private showRecoveryMessage = (message: string) => {
     // This would integrate with your notification system
-    console.log('Recovery message:', message);
+
   };
 
   private reportError = (

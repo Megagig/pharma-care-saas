@@ -148,7 +148,7 @@ const MTRReportsDashboard: React.FC = () => {
 
   const exportReport = (reportType: string) => {
     // TODO: Implement export functionality
-    console.log(`Exporting ${reportType} report`);
+
   };
 
   const renderFilters = () => (

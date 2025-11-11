@@ -99,16 +99,7 @@ class PatientService {
       );
 
       // Debug logging
-      console.log('PatientService.getPatients raw response:', result);
-      console.log('PatientService.getPatients response structure:', {
-        hasSuccess: !!result.success,
-        hasData: !!result.data,
-        dataKeys: result.data ? Object.keys(result.data) : [],
-        hasResults: !!(result.data && result.data.results),
-        resultsCount: result.data && result.data.results ? result.data.results.length : 0,
-        hasMeta: !!result.meta,
-        metaKeys: result.meta ? Object.keys(result.meta) : []
-      });
+
 
       // Handle the backend response structure
       // Backend returns: { success: true, data: { results: [...] }, meta: {...} }
@@ -126,12 +117,6 @@ class PatientService {
         success: result.success || false,
         timestamp: result.timestamp || new Date().toISOString(),
       };
-
-      console.log('PatientService.getPatients structured response:', {
-        dataResultsCount: response.data.results ? response.data.results.length : 0,
-        metaTotal: response.meta.total,
-        success: response.success
-      });
 
       return response;
     } catch (error) {
@@ -209,21 +194,12 @@ class PatientService {
       }
 
       // Log the search request
-      console.log('Searching for patients with query:', query);
 
       const result = await this.makeRequest<any>(
         `/patients/search?q=${encodeURIComponent(query)}`
       );
 
       // Debug the response structure
-      console.log('Search response structure:', {
-        result,
-        hasData: !!result?.data,
-        hasPatients: !!(result?.data?.patients),
-        patientsCount: result?.data?.patients ? result.data.patients.length : 0,
-        responseType: typeof result,
-        keys: result ? Object.keys(result) : [],
-      });
 
       // Handle the backend response structure
       // Backend returns: { success: true, data: { patients: [...], total: X, query: "..." } }
@@ -235,7 +211,7 @@ class PatientService {
         searchData.patients = searchData.patients.map((patient: any) => {
           // If _id is missing but mrn exists, use mrn as _id
           if (!patient._id && patient.mrn) {
-            console.log('🔧 Frontend Service - Fixing missing _id, using mrn:', patient.mrn);
+
             patient._id = patient.mrn;
           }
           return patient;
@@ -243,15 +219,6 @@ class PatientService {
       }
 
       // Debug the actual patient data being returned
-      console.log('🔍 Frontend Service - Search data being returned:', {
-        patientsCount: searchData.patients ? searchData.patients.length : 0,
-        total: searchData.total,
-        query: searchData.query,
-        firstPatient: searchData.patients?.[0],
-        firstPatientKeys: searchData.patients?.[0] ? Object.keys(searchData.patients[0]) : [],
-        firstPatientId: searchData.patients?.[0]?._id,
-        firstPatientMrn: searchData.patients?.[0]?.mrn,
-      });
 
       return searchData;
     } catch (error) {
@@ -270,20 +237,12 @@ class PatientService {
       }
 
       // Log the search request
-      console.log('Searching for patients with query:', query);
 
       const result = await this.makeRequest<any>(
         `/patients/search?q=${encodeURIComponent(query)}`
       );
 
       // Debug the response structure
-      console.log('Search response structure:', {
-        result,
-        hasPatients: (result as any)?.data?.patients || (result as any)?.patients,
-        responseType: typeof result,
-        isArray: Array.isArray(result),
-        keys: result ? Object.keys(result) : [],
-      });
 
       // Handle different response structures
       const patients = (result as any)?.data?.patients || (result as any)?.patients || [];
@@ -416,7 +375,6 @@ class PatientService {
       const url = `/patients/${encodedPatientId}/conditions${queryString ? `?${queryString}` : ''
         }`;
 
-      console.log('Fetching conditions with URL:', url);
       return await this.makeRequest<PaginatedResponse<Condition>>(url);
     } catch (error) {
       console.error('Error fetching conditions:', error);
@@ -445,19 +403,14 @@ class PatientService {
     conditionData: CreateConditionData
   ): Promise<ApiResponse<{ condition: Condition }>> {
     try {
-      console.log(
-        'Creating condition for patient:',
-        patientId,
-        'with data:',
-        conditionData
-      );
+
       const response = await this.makeRequest<
         ApiResponse<{ condition: Condition }>
       >(`/patients/${patientId}/conditions`, {
         method: 'POST',
         body: JSON.stringify(conditionData),
       });
-      console.log('Condition creation response:', response);
+
       return response;
     } catch (error) {
       console.error('Error creating condition:', error);
@@ -522,19 +475,14 @@ class PatientService {
     medicationData: CreateMedicationData
   ): Promise<ApiResponse<{ medication: MedicationRecord }>> {
     try {
-      console.log(
-        'Creating medication for patient:',
-        patientId,
-        'with data:',
-        medicationData
-      );
+
       const response = await this.makeRequest<
         ApiResponse<{ medication: MedicationRecord }>
       >(`/patients/${patientId}/medications`, {
         method: 'POST',
         body: JSON.stringify(medicationData),
       });
-      console.log('Medication creation response:', response);
+
       return response;
     } catch (error) {
       console.error('Error creating medication:', error);
@@ -599,19 +547,14 @@ class PatientService {
     assessmentData: CreateAssessmentData
   ): Promise<ApiResponse<{ assessment: ClinicalAssessment }>> {
     try {
-      console.log(
-        'Creating assessment for patient:',
-        patientId,
-        'with data:',
-        assessmentData
-      );
+
       const response = await this.makeRequest<
         ApiResponse<{ assessment: ClinicalAssessment }>
       >(`/patients/${patientId}/assessments`, {
         method: 'POST',
         body: JSON.stringify(assessmentData),
       });
-      console.log('Assessment creation response:', response);
+
       return response;
     } catch (error) {
       console.error('Error creating assessment:', error);
@@ -667,19 +610,14 @@ class PatientService {
     dtpData: CreateDTPData
   ): Promise<ApiResponse<{ dtp: DrugTherapyProblem }>> {
     try {
-      console.log(
-        'Creating DTP for patient:',
-        patientId,
-        'with data:',
-        dtpData
-      );
+
       const response = await this.makeRequest<
         ApiResponse<{ dtp: DrugTherapyProblem }>
       >(`/patients/${patientId}/dtps`, {
         method: 'POST',
         body: JSON.stringify(dtpData),
       });
-      console.log('DTP creation response:', response);
+
       return response;
     } catch (error) {
       console.error('Error saving DTP:', error);

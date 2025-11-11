@@ -142,8 +142,7 @@ const ClinicalAssessmentComponent: React.FC<ClinicalAssessmentProps> = ({
   });
 
   const handleOpenDialog = (assessment?: ClinicalAssessment) => {
-    console.log('handleOpenDialog called with:', assessment);
-    console.log('Current isDialogOpen state:', isDialogOpen);
+
 
     if (assessment) {
       setSelectedAssessment(assessment);

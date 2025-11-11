@@ -57,7 +57,6 @@ import { activityService } from '../../services/activityService';
 import { roleBasedDashboardService } from '../../services/roleBasedDashboardService';
 import DashboardChart from './DashboardChart';
 import SuperAdminDashboard from './SuperAdminDashboard';
-import WorkspaceDebugger from '../../utils/debugWorkspace';
 import QuickActionCard from './QuickActionCard';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useNavigate } from 'react-router-dom';
@@ -286,18 +285,15 @@ export const ModernDashboard: React.FC = () => {
   const isSuperAdmin = roleBasedDashboardService.isSuperAdmin(user?.role as any);
 
   // Debug logging for role detection
-  console.log('🔍 Dashboard Role Detection Debug:');
-  console.log('- isSuperAdmin:', isSuperAdmin);
-  console.log('- Current user from AuthContext:', user);
-  console.log('- User role:', user?.role);
+
+
+
 
   // If super admin, render super admin dashboard instead
   if (isSuperAdmin) {
-    console.log('✅ Rendering SuperAdminDashboard for super admin user');
+
     return <SuperAdminDashboard />;
   }
-
-  console.log('📊 Rendering regular dashboard for non-super admin user');
 
   // Dashboard data hooks
   const {
@@ -307,15 +303,6 @@ export const ModernDashboard: React.FC = () => {
     error: dashboardError,
     refresh: refreshDashboard,
   } = useDashboardData();
-
-  // Debug functionality for development
-  const handleDebugWorkspace = async () => {
-    if (process.env.NODE_ENV === 'development') {
-      await WorkspaceDebugger.debugCurrentWorkspace();
-      await WorkspaceDebugger.testDashboardEndpoints();
-      WorkspaceDebugger.getCurrentUserInfo();
-    }
-  };
 
   // Chart data hooks - separate for better performance and real data
   const {
@@ -459,21 +446,6 @@ export const ModernDashboard: React.FC = () => {
           </Box>
 
           <Box display="flex" gap={1}>
-            {/* Debug Panel for Development */}
-            {process.env.NODE_ENV === 'development' && (
-              <Tooltip title="Debug Workspace Data">
-                <IconButton
-                  onClick={handleDebugWorkspace}
-                  sx={{
-                    bgcolor: 'warning.light',
-                    color: 'warning.contrastText',
-                    '&:hover': { bgcolor: 'warning.main' }
-                  }}
-                >
-                  🔍
-                </IconButton>
-              </Tooltip>
-            )}
             <Tooltip title="Refresh Dashboard">
               <IconButton
                 onClick={handleRefresh}

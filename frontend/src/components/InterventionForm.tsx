@@ -707,7 +707,6 @@ const InterventionForm: React.FC<InterventionFormProps> = ({
 
       // Show recovery instructions
       const instructions = getRecoveryInstructions(appError);
-      console.log('Recovery instructions:', instructions);
 
       // If network error and not already offline, try storing offline
       if (

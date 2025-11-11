@@ -450,9 +450,7 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
 
   // Initialize filters on component mount
   useEffect(() => {
-    console.log('Component mount - current filters:', filters); // Debug log
     if (!filters || Object.keys(filters).length === 0) {
-      console.log('Initializing filters...'); // Debug log
       const initFilters = {
         page: 1,
         limit: 10,

@@ -392,7 +392,7 @@ export const useDataFetch = <T>(
             retry(key, fetchFunction, {
               maxRetries,
               onRetry: (attempt) => {
-                console.log(`Retrying ${key} - attempt ${attempt}`);
+
               },
             })
         : fetchFunction;

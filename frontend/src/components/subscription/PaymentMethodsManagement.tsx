@@ -79,11 +79,6 @@ const AddPaymentMethodForm: React.FC<AddPaymentMethodFormProps> = ({
 
     // TODO: These variables will be used when Stripe integration is implemented
     // Currently preserved for future use: onSuccess, setLoading, addNotification
-    console.log('Variables ready for Stripe integration:', {
-      onSuccess,
-      setLoading,
-      addNotification,
-    });
 
     // TODO: Implement Stripe integration
     // Original Stripe code commented out below:

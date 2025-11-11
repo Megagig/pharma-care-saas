@@ -42,7 +42,7 @@ class ChunkErrorBoundary extends Component<Props, State> {
 
         // Auto-reload if it's a chunk error (new deployment detected)
         if (this.state.isChunkError) {
-            console.log('Chunk error detected - auto-reloading in 2 seconds...');
+
             setTimeout(() => {
                 window.location.reload();
             }, 2000);

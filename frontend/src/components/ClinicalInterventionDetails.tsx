@@ -327,7 +327,6 @@ const ClinicalInterventionDetails: React.FC = () => {
                     <Button
                       variant="outlined"
                       startIcon={<AddIcon />}
-                      onClick={() => console.log('Add Strategy')}
                     >
                       Add Strategy
                     </Button>
@@ -352,7 +351,6 @@ const ClinicalInterventionDetails: React.FC = () => {
                     <Button
                       variant="outlined"
                       startIcon={<TrendingUpIcon />}
-                      onClick={() => console.log('Record Outcome')}
                     >
                       Record Outcome
                     </Button>
@@ -431,7 +429,6 @@ const ClinicalInterventionDetails: React.FC = () => {
                 <Button
                   variant="outlined"
                   startIcon={<AssignmentIcon />}
-                  onClick={() => console.log('Assign Team Member')}
                   fullWidth
                 >
                   Assign Team Member
@@ -439,7 +436,6 @@ const ClinicalInterventionDetails: React.FC = () => {
                 <Button
                   variant="outlined"
                   startIcon={<TrendingUpIcon />}
-                  onClick={() => console.log('Record Outcome')}
                   fullWidth
                 >
                   Record Outcome
@@ -447,7 +443,6 @@ const ClinicalInterventionDetails: React.FC = () => {
                 <Button
                   variant="outlined"
                   startIcon={<ScheduleIcon />}
-                  onClick={() => console.log('Schedule Follow-up')}
                   fullWidth
                 >
                   Schedule Follow-up

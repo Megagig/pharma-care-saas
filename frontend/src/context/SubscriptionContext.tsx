@@ -63,16 +63,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({
     try {
       setLoading(true);
 
-      console.log(
-        '🔍 SubscriptionContext: Making request to /subscriptions/status'
-      );
-
       const response = await apiClient.get('/subscriptions/status');
-
-      console.log('🔍 SubscriptionContext: Response received:', {
-        status: response.status,
-        data: response.data,
-      });
 
       if (response.data.success) {
         setSubscriptionStatus(response.data.data);

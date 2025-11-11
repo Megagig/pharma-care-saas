@@ -110,7 +110,6 @@ const FollowUpScheduler: React.FC<FollowUpSchedulerProps> = ({
 
   // Available interventions for linking to follow-ups (for future use)
   const availableInterventions = interventions || [];
-  console.log('Available interventions:', availableInterventions.length);
 
   const { addNotification } = useUIStore();
 

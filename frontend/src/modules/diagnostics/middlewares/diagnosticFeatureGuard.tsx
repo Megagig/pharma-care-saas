@@ -28,7 +28,7 @@ export const DiagnosticFeatureGuard: React.FC<DiagnosticFeatureGuardProps> = ({
 
   // Super admins bypass all checks
   if (isSuperAdmin) {
-    console.log('✅ Super admin bypass - granting diagnostic access');
+
     return <>{children}</>;
   }
 
@@ -48,18 +48,11 @@ export const DiagnosticFeatureGuard: React.FC<DiagnosticFeatureGuardProps> = ({
   const hasRequiredFeature = hasFeature(feature);
 
   // Debug logging
-  console.log('🔍 DiagnosticFeatureGuard Check:', {
-    hasRequiredRole,
-    hasActiveSubscription,
-    hasRequiredFeature,
-    subscriptionStatus,
-    feature,
-  });
 
   // TEMPORARY DEV BYPASS: If user has required role, allow access
   // This bypasses the subscription and feature checks for development
   if (hasRequiredRole) {
-    console.log('✅ DEV BYPASS - User has required role, granting access');
+
     return <>{children}</>;
   }
 

@@ -170,11 +170,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     const initAuth = async (): Promise<void> => {
       try {
-        console.log('AuthContext: Starting authentication check...');
 
         // Try to get current user - if successful, we're authenticated
         const userData = await authService.getCurrentUser();
-        console.log('AuthContext: Authentication successful');
+
         setUser(convertUserData(userData.user));
         markAuthAttempted();
       } catch (error: unknown) {
@@ -183,11 +182,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
         // Only clear user on explicit 401 Unauthorized
         if (authError?.status === 401) {
-          console.log('AuthContext: 401 received - clearing user');
+
           setUser(null);
           clearSessionState();
         } else {
-          console.log('AuthContext: Non-401 error - keeping current state');
+
           // For all other errors (network, server errors, etc.), maintain current state
           // This prevents losing authentication due to temporary issues
         }
@@ -209,7 +208,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     const tokenRefreshInterval = setInterval(async () => {
       try {
         // Check if user is logged in from a ref or some other means that doesn't cause re-renders
-        console.log('AuthContext: Running scheduled token refresh');
+
         const refreshed = await authService.refreshToken();
         if (!refreshed) {
           console.warn('AuthContext: Scheduled token refresh failed');

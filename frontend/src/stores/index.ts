@@ -166,6 +166,5 @@ export const getStoreStatus = () => {
 export const initializeStores = async () => {
   // This function can be called on app startup to initialize all stores
   // You can add any initialization logic here
-  console.log('Zustand stores initialized');
-  console.log('Store status:', getStoreStatus());
+
 };

@@ -50,7 +50,14 @@ import {
   CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
 import { useRBAC } from '../../hooks/useRBAC';
-import { rbacService } from '../../services/rbacService';
+import {
+  getAllRoles,
+  getAllPermissions,
+  getPermissionMatrix,
+  createRole,
+  updateRole,
+  deleteRole,
+} from '../../services/rbacService';
 import type {
   Role,
   Permission,
@@ -114,9 +121,10 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect }) => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [rolesResponse, permissionsResponse] = await Promise.all([
-        rbacService.getRoles({ page: 1, limit: 100 }),
-        rbacService.getPermissions({ page: 1, limit: 500 }),
+      const [rolesResponse, permissionsResponse, matrixResponse] = await Promise.all([
+        getAllRoles({ page: 1, limit: 100 }),
+        getAllPermissions({ page: 1, limit: 500 }),
+        getPermissionMatrix({ includeInactive: false }),
       ]);
 
       if (rolesResponse.success) {
@@ -125,7 +133,22 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect }) => {
 
       if (permissionsResponse.success) {
         setPermissions(permissionsResponse.data.permissions);
-        setPermissionCategories(permissionsResponse.data.categories);
+      }
+
+      if (matrixResponse.success && matrixResponse.data.matrix) {
+        // Transform matrix into PermissionCategory format
+        const categories: PermissionCategory[] = Object.entries(matrixResponse.data.matrix).map(
+          ([categoryName, permissions]) => ({
+            name: categoryName,
+            displayName: categoryName
+              .split('_')
+              .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(' '),
+            description: `Permissions for ${categoryName.replace(/_/g, ' ')}`,
+            permissions: permissions as Permission[],
+          })
+        );
+        setPermissionCategories(categories);
       }
     } catch (error) {
       console.error('Error loading role data:', error);
@@ -179,7 +202,7 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect }) => {
     try {
       if (editingRole) {
         // Update existing role
-        const response = await rbacService.updateRole(
+        const response = await updateRole(
           editingRole._id,
           roleForm
         );
@@ -189,7 +212,7 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect }) => {
         }
       } else {
         // Create new role
-        const response = await rbacService.createRole(roleForm);
+        const response = await createRole(roleForm);
         if (response.success) {
           showSnackbar('Role created successfully', 'success');
           await loadData();
@@ -206,7 +229,7 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect }) => {
     if (!roleToDelete) return;
 
     try {
-      const response = await rbacService.deleteRole(roleToDelete._id);
+      const response = await deleteRole(roleToDelete._id);
       if (response.success) {
         showSnackbar('Role deleted successfully', 'success');
         await loadData();
@@ -222,10 +245,15 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect }) => {
 
   const handleCloneRole = async (role: Role) => {
     try {
-      const response = await rbacService.cloneRole(
-        role._id,
-        `${role.name}_copy`
-      );
+      // Clone role by creating a new one with the same permissions
+      const clonedRole = {
+        name: `${role.name}_copy`,
+        displayName: `${role.displayName} (Copy)`,
+        description: role.description,
+        category: role.category,
+        permissions: role.permissions,
+      };
+      const response = await createRole(clonedRole);
       if (response.success) {
         showSnackbar('Role cloned successfully', 'success');
         await loadData();
@@ -383,8 +411,8 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect }) => {
                           role.category === 'system'
                             ? 'primary'
                             : role.category === 'workplace'
-                            ? 'secondary'
-                            : 'default'
+                              ? 'secondary'
+                              : 'default'
                         }
                         variant="outlined"
                       />
@@ -574,46 +602,60 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect }) => {
               <Typography variant="h6" gutterBottom>
                 Permissions
               </Typography>
-              {permissionCategories.map((category) => (
-                <Accordion key={category.name}>
-                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography variant="subtitle1">
-                      {category.displayName}
-                      <Chip
-                        label={
-                          category.permissions.filter((p) =>
-                            roleForm.permissions.includes(p.action)
-                          ).length
-                        }
-                        size="small"
-                        sx={{ ml: 1 }}
-                      />
-                    </Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <List dense>
-                      {category.permissions.map((permission) => (
-                        <ListItem key={permission.action} disablePadding>
-                          <ListItemIcon>
-                            <Checkbox
-                              checked={roleForm.permissions.includes(
-                                permission.action
-                              )}
-                              onChange={() =>
-                                handlePermissionToggle(permission.action)
-                              }
-                            />
-                          </ListItemIcon>
-                          <ListItemText
-                            primary={permission.displayName}
-                            secondary={permission.description}
-                          />
-                        </ListItem>
-                      ))}
-                    </List>
-                  </AccordionDetails>
-                </Accordion>
-              ))}
+              {permissionCategories && permissionCategories.length > 0 ? (
+                permissionCategories.map((category) => (
+                  <Accordion key={category.name}>
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                      <Typography variant="subtitle1">
+                        {category.displayName}
+                        <Chip
+                          label={
+                            category.permissions && Array.isArray(category.permissions)
+                              ? category.permissions.filter((p) =>
+                                roleForm.permissions.includes(p.action)
+                              ).length
+                              : 0
+                          }
+                          size="small"
+                          sx={{ ml: 1 }}
+                        />
+                      </Typography>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                      <List dense>
+                        {category.permissions && Array.isArray(category.permissions) ? (
+                          category.permissions.map((permission) => (
+                            <ListItem key={permission.action} disablePadding>
+                              <ListItemIcon>
+                                <Checkbox
+                                  checked={roleForm.permissions.includes(
+                                    permission.action
+                                  )}
+                                  onChange={() =>
+                                    handlePermissionToggle(permission.action)
+                                  }
+                                />
+                              </ListItemIcon>
+                              <ListItemText
+                                primary={permission.displayName}
+                                secondary={permission.description}
+                              />
+                            </ListItem>
+                          ))
+                        ) : (
+                          <Alert severity="warning" sx={{ m: 1 }}>
+                            No permissions available for this category.
+                          </Alert>
+                        )}
+                      </List>
+                    </AccordionDetails>
+                  </Accordion>
+                ))
+              ) : (
+                <Alert severity="info" sx={{ mt: 2 }}>
+                  No permission categories available. Please check your backend configuration.
+                </Alert>
+              )}
             </Box>
           </Box>
         </DialogContent>

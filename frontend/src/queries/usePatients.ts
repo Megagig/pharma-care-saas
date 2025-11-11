@@ -387,7 +387,7 @@ export const usePatientConditions = (patientId: string) => {
     queryFn: () => patientService.getConditions(patientId),
     enabled: !!patientId,
     select: (data: unknown) => {
-      console.log('Condition data:', data);
+
       // Handle various response formats
       if (data?.data?.conditions) {
         return {

@@ -404,7 +404,7 @@ const MessageItem: React.FC<MessageItemProps> = React.memo(({
               variant="body2"
               onMentionClick={(userId) => {
                 // TODO: Handle mention click (e.g., show user profile)
-                console.log('Mention clicked:', userId);
+
               }}
               sx={{
                 mb: message.content.attachments?.length ? 1 : 0,

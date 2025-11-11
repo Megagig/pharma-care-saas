@@ -137,7 +137,6 @@ class RoleBasedDashboardService {
      */
     async getDashboardData(userRole: UserRole, workplaceRole?: WorkplaceRole): Promise<DashboardData | SuperAdminDashboardData> {
         try {
-            console.log(`🔍 Fetching dashboard data for role: ${userRole}, workplace role: ${workplaceRole}`);
 
             // Super admin gets system-wide dashboard
             if (userRole === 'super_admin') {
@@ -158,17 +157,9 @@ class RoleBasedDashboardService {
      */
     async getSuperAdminDashboard(): Promise<SuperAdminDashboardData> {
         try {
-            console.log('🌐 Fetching super admin dashboard data from API...');
             const url = '/super-admin/dashboard/overview';
-            console.log('API URL (relative to /api):', url);
 
             const response = await apiClient.get(url);
-
-            console.log('📡 API Response received:', {
-                success: response.data?.success,
-                hasData: !!response.data?.data,
-                dataKeys: response.data?.data ? Object.keys(response.data.data) : []
-            });
 
             if (!response.data?.success) {
                 console.error('❌ API returned unsuccessful response:', response.data);
@@ -180,14 +171,6 @@ class RoleBasedDashboardService {
                 throw new Error('Invalid API response structure');
             }
 
-            console.log('✅ Super admin dashboard data fetched successfully');
-            console.log('Data structure:', {
-                systemStats: response.data.data.systemStats,
-                workspacesCount: response.data.data.workspaces?.length || 0,
-                hasUserActivity: !!response.data.data.userActivity,
-                hasSubscriptions: !!response.data.data.subscriptions,
-                hasTrends: !!response.data.data.trends
-            });
 
             return response.data.data;
 
@@ -211,7 +194,6 @@ class RoleBasedDashboardService {
      */
     async getWorkspaceDashboard(): Promise<DashboardData> {
         try {
-            console.log('🏢 Fetching workspace dashboard data');
 
             const response = await apiClient.get('/dashboard/overview');
 
@@ -219,7 +201,6 @@ class RoleBasedDashboardService {
                 throw new Error(response.data?.message || 'Failed to fetch workspace dashboard');
             }
 
-            console.log('✅ Workspace dashboard data fetched successfully');
             return response.data.data;
 
         } catch (error: any) {
@@ -235,7 +216,6 @@ class RoleBasedDashboardService {
      */
     async getWorkspaceDetails(workspaceId: string): Promise<WorkspaceDetails> {
         try {
-            console.log(`🔍 Fetching details for workspace: ${workspaceId}`);
 
             const response = await apiClient.get(`/super-admin/dashboard/workspace/${workspaceId}`);
 
@@ -243,7 +223,6 @@ class RoleBasedDashboardService {
                 throw new Error(response.data?.message || 'Failed to fetch workspace details');
             }
 
-            console.log('✅ Workspace details fetched successfully');
             return response.data.data;
 
         } catch (error: any) {
@@ -259,11 +238,7 @@ class RoleBasedDashboardService {
     isSuperAdmin(userRole?: UserRole): boolean {
         // If userRole provided, use it; otherwise try to get from stored user data (fallback)
         const role = userRole || this.getCurrentUserRole();
-        console.log('🔍 Super Admin Check:');
-        console.log('- Provided userRole:', userRole);
-        console.log('- Current stored role:', this.getCurrentUserRole());
-        console.log('- Final role being checked:', role);
-        console.log('- Is super admin?:', role === 'super_admin');
+
         return role === 'super_admin';
     }
 
@@ -461,7 +436,6 @@ class RoleBasedDashboardService {
      */
     async getClinicalInterventionsSystemWide(): Promise<SuperAdminClinicalInterventions> {
         try {
-            console.log('💊 Fetching system-wide clinical interventions data...');
 
             const response = await apiClient.get('/super-admin/dashboard/clinical-interventions');
 
@@ -470,7 +444,6 @@ class RoleBasedDashboardService {
                 throw new Error(response.data?.message || 'Failed to fetch clinical interventions data');
             }
 
-            console.log('✅ Clinical interventions data fetched successfully');
             return response.data.data;
 
         } catch (error: any) {
@@ -493,7 +466,6 @@ class RoleBasedDashboardService {
      */
     async getActivitiesSystemWide(limit: number = 20): Promise<SuperAdminActivities> {
         try {
-            console.log('📋 Fetching system-wide activities data...');
 
             const response = await apiClient.get('/super-admin/dashboard/activities', {
                 params: { limit }
@@ -504,7 +476,6 @@ class RoleBasedDashboardService {
                 throw new Error(response.data?.message || 'Failed to fetch activities data');
             }
 
-            console.log('✅ Activities data fetched successfully');
             return response.data.data;
 
         } catch (error: any) {
@@ -527,7 +498,6 @@ class RoleBasedDashboardService {
      */
     async getCommunicationsSystemWide(): Promise<SuperAdminCommunications> {
         try {
-            console.log('💬 Fetching system-wide communications data...');
 
             const response = await apiClient.get('/super-admin/dashboard/communications');
 
@@ -536,7 +506,6 @@ class RoleBasedDashboardService {
                 throw new Error(response.data?.message || 'Failed to fetch communications data');
             }
 
-            console.log('✅ Communications data fetched successfully');
             return response.data.data;
 
         } catch (error: any) {

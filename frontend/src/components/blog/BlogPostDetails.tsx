@@ -54,14 +54,7 @@ const BlogPostDetails: React.FC<BlogPostDetailsProps> = ({ slug: propSlug }) => 
 
   // Debug logging
   useEffect(() => {
-    console.log('🔍 BLOG POST DETAILS DEBUG:', {
-      slug,
-      isLoading,
-      hasError: !!error,
-      postResponse,
-      hasPost: !!post,
-      relatedPostsCount: relatedPosts.length,
-    });
+
   }, [slug, isLoading, error, postResponse, post, relatedPosts.length]);
 
   // Increment view count when post loads (only once per slug)
@@ -110,7 +103,7 @@ const BlogPostDetails: React.FC<BlogPostDetailsProps> = ({ slug: propSlug }) => 
       case 'copy':
         navigator.clipboard.writeText(url).then(() => {
           // You could show a toast notification here
-          console.log('URL copied to clipboard');
+
         });
         break;
     }

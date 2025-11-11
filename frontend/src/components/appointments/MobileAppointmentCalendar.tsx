@@ -708,20 +708,20 @@ const MobileAppointmentCalendar: React.FC<MobileAppointmentCalendarProps> = ({
             appointmentId={selectedAppointment._id}
             onClose={() => setDetailsPanelOpen(false)}
             onEdit={(appointment) => {
-              console.log('Edit appointment:', appointment);
+
               setDetailsPanelOpen(false);
             }}
             onReschedule={(appointment) => {
-              console.log('Reschedule appointment:', appointment);
+
               setDetailsPanelOpen(false);
             }}
             onCancel={(appointment) => {
-              console.log('Appointment cancelled:', appointment);
+
               setDetailsPanelOpen(false);
               refetch();
             }}
             onComplete={(appointment) => {
-              console.log('Appointment completed:', appointment);
+
               setDetailsPanelOpen(false);
               refetch();
             }}

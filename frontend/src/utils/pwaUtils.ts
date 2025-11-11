@@ -51,7 +51,6 @@ class PWAManager {
 
         try {
             this.registration = await navigator.serviceWorker.register('/sw.js');
-            console.log('Service Worker registered successfully');
 
             // Listen for updates
             this.registration.addEventListener('updatefound', () => {
@@ -183,7 +182,7 @@ class PWAManager {
             ];
 
             await cache.addAll(essentialResources);
-            console.log('Essential resources cached');
+
         } catch (error) {
             console.error('Failed to cache essential resources:', error);
         }
@@ -199,7 +198,7 @@ class PWAManager {
             await Promise.all(
                 cacheNames.map(cacheName => caches.delete(cacheName))
             );
-            console.log('All caches cleared');
+
         } catch (error) {
             console.error('Failed to clear cache:', error);
         }
@@ -332,7 +331,7 @@ export const pwaUtils = {
     // Analytics for PWA usage
     trackPWAEvent(event: string, data?: any): void {
         // This would integrate with your analytics system
-        console.log('PWA Event:', event, data);
+
     },
 };
 

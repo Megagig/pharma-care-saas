@@ -21,18 +21,9 @@ const PatientPortalRoute: React.FC<PatientPortalRouteProps> = ({
   const { workspaceId } = useParams<{ workspaceId: string }>();
   const { user, loading, isAuthenticated } = usePatientAuth();
 
-  console.log('🛡️ PatientPortalRoute check:', {
-    workspaceId,
-    user: user?.email,
-    loading,
-    isAuthenticated,
-    requiresAuth,
-    userWorkspaceId: user?.workspaceId,
-  });
-
   // Show loading spinner while checking authentication
   if (loading) {
-    console.log('⏳ PatientPortalRoute: Still loading...');
+
     return (
       <Box
         sx={{
@@ -54,18 +45,12 @@ const PatientPortalRoute: React.FC<PatientPortalRouteProps> = ({
 
   // Redirect to authentication if required and not authenticated
   if (requiresAuth && !isAuthenticated) {
-    console.log('🚫 PatientPortalRoute: Not authenticated, redirecting to auth page');
+
     return <Navigate to={`/patient-auth/${workspaceId}`} replace />;
   }
 
   // Validate workspace access for authenticated users
   if (requiresAuth && isAuthenticated && user && workspaceId) {
-    console.log('🔍 Workspace validation:', {
-      userWorkspaceId: user.workspaceId,
-      urlWorkspaceId: workspaceId,
-      match: user.workspaceId === workspaceId,
-      user: user
-    });
 
     if (user.workspaceId !== workspaceId) {
       return (

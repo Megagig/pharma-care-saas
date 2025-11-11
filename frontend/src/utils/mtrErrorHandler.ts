@@ -114,11 +114,11 @@ export const handleMTRErrorInDev = (error: unknown, context: string): void => {
         const analyzedError = analyzeMTRError(error);
         console.group(`🔍 MTR Error in ${context}`);
         console.error('Original Error:', error);
-        console.log('Error Type:', analyzedError.type);
-        console.log('User Message:', analyzedError.userMessage);
-        console.log('Actionable:', analyzedError.actionable);
+
+
+
         if (analyzedError.suggestedAction) {
-            console.log('Suggested Action:', analyzedError.suggestedAction);
+
         }
         console.groupEnd();
     }

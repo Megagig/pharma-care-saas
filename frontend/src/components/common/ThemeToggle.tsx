@@ -95,10 +95,7 @@ const ThemeToggle: React.FC<ThemeToggleProps> = ({
     <div className={`inline-flex items-center ${className}`}>
       <button
         onClick={() => {
-          console.log(
-            'ThemeToggle: toggleTheme clicked, current theme:',
-            theme
-          );
+
           toggleTheme();
         }}
         className={`

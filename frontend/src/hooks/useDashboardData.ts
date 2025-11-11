@@ -39,12 +39,8 @@ export const useDashboardData = (): DashboardData => {
         try {
             setData(prev => ({ ...prev, loading: true, error: null }));
 
-            console.log('🚀 Fetching optimized dashboard data...');
-
             // Use the optimized dashboard service
             const analytics = await dashboardService.getDashboardAnalytics();
-
-            console.log('✅ Dashboard data received:', analytics);
 
             setData(prev => ({
                 ...prev,
@@ -58,7 +54,7 @@ export const useDashboardData = (): DashboardData => {
 
             // Try to get just stats as fallback
             try {
-                console.log('🔄 Attempting to get stats only...');
+
                 const statsData = await dashboardService.getDashboardAnalytics();
 
                 setData(prev => ({
@@ -79,7 +75,7 @@ export const useDashboardData = (): DashboardData => {
     }, []);
 
     const refresh = useCallback(async () => {
-        console.log('🔄 Refreshing dashboard data...');
+
         await fetchDashboardData();
     }, [fetchDashboardData]);
 

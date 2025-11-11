@@ -37,25 +37,11 @@ export const publicApiClient = axios.create({
 export const drugInfoApi = {
   // Search for drugs by name
   searchDrugs: async (name: string): Promise<DrugSearchResult> => {
-    console.log(
-      `API client making request to public drug-search with name: ${name}`
-    );
+
     try {
       // Use direct connection to backend
-      console.log(
-        `Using direct API endpoint for drug search: ${PUBLIC_API_BASE_URL}/drug-search`
-      );
 
       // Enhanced debugging
-      console.log('Request config:', {
-        url: `${PUBLIC_API_BASE_URL}/drug-search`,
-        method: 'GET',
-        params: { name },
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-        },
-      });
 
       const response = await axios.get(`${PUBLIC_API_BASE_URL}/drug-search`, {
         params: { name },
@@ -70,20 +56,15 @@ export const drugInfoApi = {
         },
       });
 
-      console.log('API response status:', response.status);
-      console.log('API response headers:', response.headers);
-      console.log('API response data type:', typeof response.data);
-      console.log('API response data:', response.data);
+
+
 
       if (typeof response.data === 'string') {
         console.error('Received string response instead of JSON');
         try {
           // Try to parse as JSON
           const parsedData = JSON.parse(response.data);
-          console.log(
-            'Successfully parsed string response as JSON:',
-            parsedData
-          );
+
           return parsedData;
         } catch {
           // Catch parse error without using the error variable
@@ -124,10 +105,7 @@ export const drugInfoApi = {
   // Get drug monograph by ID
   getMonograph: async (id: string): Promise<DrugMonograph> => {
     try {
-      console.log(`Getting drug monograph for id: ${id}`);
-      console.log(
-        `Using direct API endpoint: ${PUBLIC_API_BASE_URL}/drug-monograph/${id}`
-      );
+
 
       const response = await axios.get(
         `${PUBLIC_API_BASE_URL}/drug-monograph/${id}`,
@@ -140,8 +118,6 @@ export const drugInfoApi = {
         }
       );
 
-      console.log('Monograph API response status:', response.status);
-      console.log('Monograph API response data type:', typeof response.data);
 
       return response.data.data;
     } catch (e) {
@@ -172,14 +148,6 @@ export const drugInfoApi = {
     rxcuis?: string[]
   ): Promise<DrugInteraction> => {
     try {
-      console.log(
-        `Checking drug interactions for rxcui: ${rxcui} or rxcuis: ${rxcuis?.join(
-          ', '
-        )}`
-      );
-      console.log(
-        `Using direct API endpoint: ${PUBLIC_API_BASE_URL}/drug-interactions`
-      );
 
       const response = await axios.post(
         `${PUBLIC_API_BASE_URL}/drug-interactions`,
@@ -193,8 +161,6 @@ export const drugInfoApi = {
         }
       );
 
-      console.log('Interactions API response status:', response.status);
-      console.log('Interactions API response data type:', typeof response.data);
 
       return response.data.data;
     } catch (e) {
@@ -222,10 +188,7 @@ export const drugInfoApi = {
   // Get drug indications
   getIndications: async (drugId: string): Promise<DrugIndication> => {
     try {
-      console.log(`Getting drug indications for id: ${drugId}`);
-      console.log(
-        `Using direct API endpoint: ${PUBLIC_API_BASE_URL}/drug-indications/${drugId}`
-      );
+
 
       const response = await axios.get(
         `${PUBLIC_API_BASE_URL}/drug-indications/${drugId}`,
@@ -238,8 +201,6 @@ export const drugInfoApi = {
         }
       );
 
-      console.log('Indications API response status:', response.status);
-      console.log('Indications API response data type:', typeof response.data);
 
       return response.data.data;
     } catch (e) {
@@ -270,7 +231,7 @@ export const drugInfoApi = {
     limit = 10
   ): Promise<AdverseEffect> => {
     try {
-      console.log(`Getting adverse effects for drug id: ${drugId}`);
+
       const response = await axios.get(
         `${PUBLIC_API_BASE_URL}/drug-adverse-effects/${drugId}`,
         {

@@ -64,7 +64,7 @@ export const useMobileNotifications = () => {
                             newWorker.addEventListener('statechange', () => {
                                 if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
                                     // New service worker is available
-                                    console.log('New service worker available');
+
                                 }
                             });
                         }

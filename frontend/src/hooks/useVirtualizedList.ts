@@ -164,13 +164,6 @@ export const useVirtualizedList = <T>({
 
       // Log performance metrics in development
       if (process.env.NODE_ENV === 'development') {
-        console.log('Virtualized List Performance:', {
-          loadTime: `${loadTime}ms`,
-          itemsLoaded: items.length,
-          itemsPerSecond: Math.round((items.length / loadTime) * 1000),
-          cacheHitRatio: `${(metrics.cacheHitRatio * 100).toFixed(1)}%`,
-          averagePageSize: Math.round(metrics.averagePageSize),
-        });
       }
     }
   }, [items.length, metrics]);

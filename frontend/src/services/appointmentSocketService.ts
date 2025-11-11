@@ -305,15 +305,15 @@ class AppointmentSocketService {
 
     // Subscription confirmations
     this.socket.on('calendar_subscribed', (data) => {
-      console.log('Calendar subscription confirmed:', data);
+
     });
 
     this.socket.on('calendar_unsubscribed', (data) => {
-      console.log('Calendar unsubscription confirmed:', data);
+
     });
 
     this.socket.on('followups_subscribed', (data) => {
-      console.log('Follow-ups subscription confirmed:', data);
+
     });
 
     // Health check

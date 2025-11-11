@@ -470,7 +470,7 @@ const BulkOperationProgress: React.FC<BulkOperationProgressProps> = ({
           <Button
             onClick={() => {
               // TODO: Implement operation cancellation
-              console.log('Cancel operation:', operation.id);
+
             }}
             color="error"
           >

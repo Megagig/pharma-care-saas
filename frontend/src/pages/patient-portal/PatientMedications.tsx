@@ -64,10 +64,8 @@ const PatientMedications: React.FC = () => {
   const currentUrl = window.location.pathname;
   const patientIdMatch = currentUrl.match(/\/patients\/([a-f0-9]{24})/);
   const patientId = patientIdMatch ? patientIdMatch[1] : '690ecada0aabc60041eef019'; // fallback to known patient ID
-  
-  console.log('🔍 PatientMedications - Current URL:', currentUrl);
-  console.log('🔍 PatientMedications - Extracted Patient ID:', patientId);
-  
+
+
   const {
     currentMedications,
     medicationHistory,
@@ -350,7 +348,7 @@ const PatientMedications: React.FC = () => {
         }}
         onClick={() => {
           // This could open a quick action menu or navigate to add reminder
-          console.log('Quick action clicked');
+
         }}
       >
         <AddIcon />

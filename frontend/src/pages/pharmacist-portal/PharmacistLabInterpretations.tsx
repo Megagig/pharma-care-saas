@@ -90,18 +90,11 @@ const PharmacistLabInterpretations: React.FC = () => {
             setLoading(true);
             setError(null);
 
-            console.log('🔍 Fetching lab results for interpretation...');
-            console.log('📍 URL:', '/pharmacist/lab-results/pending-interpretation?page=1&limit=100');
-
             const response = await apiHelpers.get('/pharmacist/lab-results/pending-interpretation?page=1&limit=100');
-
-            console.log('✅ Lab results response:', response);
-            console.log('Response type:', typeof response);
-            console.log('Response keys:', Object.keys(response || {}));
 
             if (response.success) {
                 const results = response.data.diagnosticCases || [];
-                console.log(`📊 Fetched ${results.length} lab results`);
+
                 setLabResults(results);
                 setFilteredResults(results);
 
@@ -113,7 +106,7 @@ const PharmacistLabInterpretations: React.FC = () => {
                     pending,
                     completed,
                 });
-                console.log(`📈 Stats - Total: ${results.length}, Pending: ${pending}, Completed: ${completed}`);
+
             } else {
                 console.warn('⚠️ Response success flag is false:', response);
             }

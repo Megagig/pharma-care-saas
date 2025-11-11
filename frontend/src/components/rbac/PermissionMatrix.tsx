@@ -61,7 +61,13 @@ import {
   Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import { useRBAC } from '../../hooks/useRBAC';
-import { rbacService } from '../../services/rbacService';
+import {
+  getPermissionMatrix,
+  getPermissionCategories,
+  getPermissionUsageAnalytics,
+  updatePermissionMatrix,
+  exportRoleAssignments,
+} from '../../services/rbacService';
 import type { Role, Permission, PermissionCategory } from '../../types/rbac';
 
 interface PermissionMatrixProps {
@@ -145,9 +151,9 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
       setLoading(true);
       const [matrixResponse, categoriesResponse, usageResponse] =
         await Promise.all([
-          rbacService.getPermissionMatrix(),
-          rbacService.getPermissionCategories(),
-          rbacService.getPermissionUsageAnalytics(),
+          getPermissionMatrix(),
+          getPermissionCategories(),
+          getPermissionUsageAnalytics(),
         ]);
 
       if (matrixResponse.success) {
@@ -209,7 +215,7 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
       }));
 
       // Update on server
-      const response = await rbacService.updatePermissionMatrix(roleId, {
+      const response = await updatePermissionMatrix(roleId, {
         [permission]: newValue,
       });
 
@@ -253,7 +259,7 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
 
     try {
       setSaving(true);
-      const response = await rbacService.updatePermissionMatrix(
+      const response = await updatePermissionMatrix(
         roleId,
         permissions
       );
@@ -412,7 +418,7 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
             startIcon={<DownloadIcon />}
             onClick={async () => {
               try {
-                const blob = await rbacService.exportRoleAssignments('csv');
+                const blob = await exportRoleAssignments('csv');
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
@@ -712,7 +718,7 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
                             {filteredRoles.map((role) => {
                               const hasPermission =
                                 matrixData.matrix[role._id]?.[
-                                  permission.action
+                                permission.action
                                 ] || false;
                               const isSystemRole = role.isSystemRole;
                               const canModify =

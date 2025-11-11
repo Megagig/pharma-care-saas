@@ -1467,7 +1467,7 @@ const ChartComponent: React.FC<ChartComponentProps> = ({
             if (e.key === 'Enter' || e.key === ' ') {
               e.preventDefault();
               // Focus on first interactive element or provide data summary
-              console.log('Chart data summary:', data.data);
+
             }
           }}
         >

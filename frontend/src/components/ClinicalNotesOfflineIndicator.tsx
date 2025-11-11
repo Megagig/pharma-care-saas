@@ -516,7 +516,7 @@ const ClinicalNotesOfflineIndicator: React.FC<
                   startIcon={<InfoIcon />}
                   onClick={() => {
                     // Show help dialog or navigate to help page
-                    console.log('Show offline help');
+
                   }}
                 >
                   Help

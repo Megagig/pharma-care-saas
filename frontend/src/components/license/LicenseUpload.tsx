@@ -208,14 +208,6 @@ const LicenseUpload: React.FC = () => {
   };
 
   const handleUpload = async () => {
-    console.log('Upload clicked - Debug info:', {
-      selectedFile: selectedFile?.name,
-      licenseNumber,
-      numberValid,
-      expirationDate,
-      pharmacySchool,
-      uploading
-    });
 
     // Detailed validation with specific error messages
     const missingFields = [];

@@ -325,11 +325,11 @@ export const useSendReferralElectronically = () => {
   
   return useMutation({
     mutationFn: ({ caseId, data }: { caseId: string; data: any }) => {
-      console.log('useSendReferralElectronically: Starting mutation', { caseId, data });
+
       return diagnosticHistoryService.sendReferralElectronically(caseId, data);
     },
     onSuccess: (result, variables) => {
-      console.log('useSendReferralElectronically: Mutation successful', { result, caseId: variables.caseId });
+
       queryClient.invalidateQueries({ queryKey: diagnosticHistoryKeys.all });
       showSuccess(
         `Referral sent successfully to ${variables.data.physicianEmail}. Tracking ID: ${result.data?.trackingId || 'N/A'}`,
@@ -374,11 +374,11 @@ export const useUpdateReferralDocument = () => {
   
   return useMutation({
     mutationFn: ({ caseId, content }: { caseId: string; content: string }) => {
-      console.log('useUpdateReferralDocument: Starting mutation', { caseId, contentLength: content.length });
+
       return diagnosticHistoryService.updateReferralDocument(caseId, content);
     },
     onSuccess: (data, variables) => {
-      console.log('useUpdateReferralDocument: Mutation successful', { data, caseId: variables.caseId });
+
       queryClient.invalidateQueries({ queryKey: diagnosticHistoryKeys.all });
       showSuccess('Referral document updated successfully.', 'Document Updated');
     },

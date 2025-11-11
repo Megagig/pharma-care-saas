@@ -490,19 +490,10 @@ class DiagnosticHistoryService {
    * Update referral document
    */
   async updateReferralDocument(caseId: string, content: string): Promise<any> {
-    console.log('diagnosticHistoryService.updateReferralDocument: Making API call', {
-      caseId,
-      contentLength: content.length,
-      url: `/diagnostics/cases/${caseId}/referral/update`
-    });
 
     try {
       const response = await apiClient.put(`/diagnostics/cases/${caseId}/referral/update`, { content });
-      console.log('diagnosticHistoryService.updateReferralDocument: API call successful', {
-        caseId,
-        status: response.status,
-        data: response.data
-      });
+
       return response.data;
     } catch (error: any) {
       console.error('diagnosticHistoryService.updateReferralDocument: API call failed', {
@@ -561,19 +552,10 @@ class DiagnosticHistoryService {
     institution?: string;
     notes?: string;
   }): Promise<any> {
-    console.log('diagnosticHistoryService.sendReferralElectronically: Making API call', {
-      caseId,
-      data,
-      url: `/diagnostics/cases/${caseId}/referral/send`
-    });
 
     try {
       const response = await apiClient.post(`/diagnostics/cases/${caseId}/referral/send`, data);
-      console.log('diagnosticHistoryService.sendReferralElectronically: API call successful', {
-        caseId,
-        status: response.status,
-        data: response.data
-      });
+
       return response.data;
     } catch (error: any) {
       console.error('diagnosticHistoryService.sendReferralElectronically: API call failed', {

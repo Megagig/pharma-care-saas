@@ -107,8 +107,7 @@ const PatientLinkingManagement: React.FC = () => {
     setActionLoading(true);
     try {
       // Placeholder for actual API call
-      console.log('Creating patient record for:', patientUserId);
-      
+
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
       
@@ -126,8 +125,7 @@ const PatientLinkingManagement: React.FC = () => {
     setActionLoading(true);
     try {
       // Placeholder for actual API call
-      console.log('Running batch retry linking...');
-      
+
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 2000));
       

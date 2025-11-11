@@ -219,16 +219,9 @@ export const RBACGuard: React.FC<RBACGuardProps> = ({
 }) => {
   const { canAccess, role } = useRBAC();
 
-  console.log('RBACGuard check:', {
-    action,
-    requiredRole,
-    currentRole: role,
-    canAccess: action ? canAccess(action) : 'no action check',
-  });
-
   // Check action permission
   if (action && !canAccess(action)) {
-    console.log('RBACGuard: Access denied for action:', action);
+
     return <>{fallback}</>;
   }
 
@@ -236,17 +229,11 @@ export const RBACGuard: React.FC<RBACGuardProps> = ({
   if (requiredRole) {
     const roles = Array.isArray(requiredRole) ? requiredRole : [requiredRole];
     if (!roles.includes(role)) {
-      console.log(
-        'RBACGuard: Role check failed. Required:',
-        roles,
-        'Current:',
-        role
-      );
+
       return <>{fallback}</>;
     }
   }
 
-  console.log('RBACGuard: Access granted');
   return <>{children}</>;
 };
 

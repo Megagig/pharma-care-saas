@@ -130,7 +130,7 @@ const ResponsiveCommunicationHub: React.FC<ResponsiveCommunicationHubProps> = ({
               showHeader={true}
               onConversationAction={(action, conversationId) => {
                 // Handle conversation actions
-                console.log('Conversation action:', action, conversationId);
+
               }}
             />
           ) : (
@@ -243,7 +243,7 @@ const ResponsiveCommunicationHub: React.FC<ResponsiveCommunicationHubProps> = ({
             showHeader={true}
             onConversationAction={(action, conversationId) => {
               // Handle conversation actions
-              console.log('Conversation action:', action, conversationId);
+
             }}
           />
         ) : (

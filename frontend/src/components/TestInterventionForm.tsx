@@ -21,15 +21,14 @@ const TestInterventionForm: React.FC = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('🔍 Test form submission:', formData);
-    
+
     setIsSubmitting(true);
     setError(null);
     setResult(null);
     
     try {
       const response = await createMutation.mutateAsync(formData);
-      console.log('🔍 Test form success:', response);
+
       setResult(response);
     } catch (err: any) {
       console.error('🔍 Test form error:', err);

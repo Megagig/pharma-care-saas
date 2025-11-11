@@ -143,7 +143,6 @@ const PatientAuth: React.FC = () => {
     setError('');
 
     try {
-      console.log('🔐 Patient login attempt:', { email: loginForm.email, workspaceId });
 
       // Use PatientAuthContext login method which handles cookies and state management
       await patientAuth.login({
@@ -151,8 +150,6 @@ const PatientAuth: React.FC = () => {
         password: loginForm.password,
         workspaceId: workspaceId || '',
       });
-
-      console.log('✅ Patient login successful, navigating to portal...');
 
       // Redirect to patient portal on success
       navigate(`/patient-portal/${workspaceId}`);
