@@ -3,8 +3,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.diagnosticAnalyticsMiddleware = exports.diagnosticApproveMiddleware = exports.diagnosticReviewMiddleware = exports.diagnosticProcessMiddleware = exports.diagnosticCreateMiddleware = exports.validatePatientConsent = exports.checkDiagnosticResultAccess = exports.checkDiagnosticAccess = exports.checkAIProcessingLimits = exports.checkDiagnosticLimits = exports.requireSeniorPharmacistRole = exports.requirePharmacistRole = exports.requireDiagnosticAnalyticsFeature = exports.requireDrugInteractionFeature = exports.requireLabIntegrationFeature = exports.requireAIDiagnosticsFeature = exports.requireDiagnosticAnalytics = exports.requireDiagnosticRetry = exports.requireDiagnosticCancel = exports.requireDiagnosticIntervention = exports.requireDiagnosticApprove = exports.requireDiagnosticReview = exports.requireDiagnosticProcess = exports.requireDiagnosticCreate = exports.requireDiagnosticRead = void 0;
-const auth_1 = require("../../../middlewares/auth");
+exports.diagnosticAnalyticsMiddleware = exports.diagnosticApproveMiddleware = exports.diagnosticReviewMiddleware = exports.diagnosticProcessMiddleware = exports.diagnosticCreateMiddleware = exports.validatePatientConsent = exports.checkDiagnosticResultAccess = exports.checkDiagnosticAccess = exports.checkAIProcessingLimits = exports.checkDiagnosticLimits = exports.requireSeniorPharmacistRole = exports.requirePharmacistRole = exports.requireDiagnosticAnalyticsFeatureOrTrial = exports.requireDiagnosticAnalyticsFeature = exports.requireDrugInteractionFeature = exports.requireLabIntegrationFeature = exports.requireAIDiagnosticsFeature = exports.requireDiagnosticAnalytics = exports.requireDiagnosticRetry = exports.requireDiagnosticCancel = exports.requireDiagnosticIntervention = exports.requireDiagnosticApprove = exports.requireDiagnosticReview = exports.requireDiagnosticProcess = exports.requireDiagnosticCreate = exports.requireDiagnosticRead = void 0;
 const rbac_1 = require("../../../middlewares/rbac");
 const logger_1 = __importDefault(require("../../../utils/logger"));
 exports.requireDiagnosticRead = (0, rbac_1.requirePermission)('diagnostic:read');
@@ -16,10 +15,19 @@ exports.requireDiagnosticIntervention = (0, rbac_1.requirePermission)('diagnosti
 exports.requireDiagnosticCancel = (0, rbac_1.requirePermission)('diagnostic:cancel');
 exports.requireDiagnosticRetry = (0, rbac_1.requirePermission)('diagnostic:retry');
 exports.requireDiagnosticAnalytics = (0, rbac_1.requirePermission)('diagnostic:analytics');
-exports.requireAIDiagnosticsFeature = (0, auth_1.requireFeature)('ai_diagnostics');
-exports.requireLabIntegrationFeature = (0, auth_1.requireFeature)('lab_integration');
-exports.requireDrugInteractionFeature = (0, auth_1.requireFeature)('drug_interactions');
-exports.requireDiagnosticAnalyticsFeature = (0, auth_1.requireFeature)('diagnostic_analytics');
+exports.requireAIDiagnosticsFeature = (0, rbac_1.requireFeature)('ai_diagnostics');
+exports.requireLabIntegrationFeature = (0, rbac_1.requireFeature)('lab_integration');
+exports.requireDrugInteractionFeature = (0, rbac_1.requireFeature)('drug_interactions');
+exports.requireDiagnosticAnalyticsFeature = (0, rbac_1.requireFeature)('diagnostic_analytics', 'ai_diagnostics');
+const requireDiagnosticAnalyticsFeatureOrTrial = (req, res, next) => {
+    const wc = req.workspaceContext;
+    const isTrialActive = wc?.workspace?.subscriptionStatus === 'trial' && !wc?.isTrialExpired;
+    if (isTrialActive) {
+        return next();
+    }
+    return exports.requireDiagnosticAnalyticsFeature(req, res, next);
+};
+exports.requireDiagnosticAnalyticsFeatureOrTrial = requireDiagnosticAnalyticsFeatureOrTrial;
 const requirePharmacistRole = (req, res, next) => {
     if (!req.user) {
         res.status(401).json({
@@ -251,13 +259,30 @@ const checkDiagnosticAccess = async (req, res, next) => {
         if (!id) {
             return next();
         }
-        const DiagnosticRequest = require('../models/DiagnosticRequest').default;
-        const request = await DiagnosticRequest.findOne({
-            _id: id,
-            workplaceId: req.workspaceContext.workspace._id,
-            isDeleted: false,
-        });
-        if (!request) {
+        const workplaceId = req.workspaceContext.workspace._id;
+        const isMongoId = /^[0-9a-fA-F]{24}$/.test(id);
+        const isLegacyCaseId = /^DX-[A-Z0-9]+-[A-Z0-9]+$/i.test(id);
+        let hasAccess = false;
+        let request = null;
+        if (isMongoId) {
+            const DiagnosticRequest = require('../models/DiagnosticRequest').default;
+            request = await DiagnosticRequest.findOne({
+                _id: id,
+                workplaceId,
+                isDeleted: false,
+            });
+            hasAccess = !!request;
+        }
+        else if (isLegacyCaseId) {
+            const DiagnosticCase = require('../../../models/DiagnosticCase').default;
+            const legacyCase = await DiagnosticCase.findOne({
+                caseId: id.toUpperCase(),
+                workplaceId,
+            });
+            hasAccess = !!legacyCase;
+            request = legacyCase;
+        }
+        if (!hasAccess) {
             res.status(404).json({
                 success: false,
                 message: 'Diagnostic request not found or access denied',
@@ -374,9 +399,46 @@ exports.diagnosticApproveMiddleware = [
     exports.checkDiagnosticResultAccess,
 ];
 exports.diagnosticAnalyticsMiddleware = [
-    rbac_1.requireActiveSubscription,
-    exports.requireDiagnosticAnalyticsFeature,
-    exports.requirePharmacistRole,
+    rbac_1.requireSubscriptionOrTrial,
+    exports.requireDiagnosticAnalyticsFeatureOrTrial,
+    (req, res, next) => {
+        if (!req.user) {
+            return res.status(401).json({ success: false, message: 'Authentication required' });
+        }
+        const systemRole = (req.user.role || '').toString();
+        const workplaceRole = (req.user.workplaceRole || '').toString();
+        if (systemRole === 'super_admin')
+            return next();
+        const allowedSystemRoles = [
+            'pharmacist',
+            'intern_pharmacist',
+            'owner',
+            'pharmacy_outlet',
+            'admin'
+        ];
+        const allowedWorkplaceRoles = [
+            'pharmacist',
+            'intern_pharmacist',
+            'pharmacy_manager',
+            'owner',
+            'Owner',
+            'pharmacy_outlet',
+            'Pharmacy team'
+        ];
+        const hasSystem = allowedSystemRoles.includes(systemRole);
+        const hasWorkplace = allowedWorkplaceRoles.includes(workplaceRole);
+        if (!hasSystem && !hasWorkplace) {
+            return res.status(403).json({
+                success: false,
+                message: 'Access denied: insufficient role for diagnostics analytics',
+                requiredRoles: allowedSystemRoles,
+                requiredWorkplaceRoles: allowedWorkplaceRoles,
+                userRole: systemRole,
+                userWorkplaceRole: workplaceRole,
+            });
+        }
+        return next();
+    },
     exports.requireDiagnosticAnalytics,
 ];
 exports.default = {

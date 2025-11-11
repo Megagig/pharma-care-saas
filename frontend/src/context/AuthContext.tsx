@@ -41,6 +41,9 @@ interface User {
     canceledAt?: string;
     tier?: string;
   };
+  // Workspace permissions - authoritative source for feature access
+  permissions?: string[];
+  tier?: string;
 }
 
 interface AuthResponse {
@@ -295,12 +298,26 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const hasFeature = (featureName: string): boolean => {
-    if (!user || !user.currentPlan) return false;
-    return (
-      user.currentPlan.features[
-      featureName as keyof typeof user.currentPlan.features
-      ] === true
-    );
+    if (!user) return false;
+
+    // Super admin has access to all features
+    if (user.role === 'super_admin') return true;
+
+    // Check workspace permissions first (authoritative source from backend)
+    if (user.permissions && user.permissions.length > 0) {
+      return user.permissions.includes(featureName);
+    }
+
+    // Fallback to plan features for backward compatibility
+    if (user.currentPlan) {
+      return (
+        user.currentPlan.features[
+        featureName as keyof typeof user.currentPlan.features
+        ] === true
+      );
+    }
+
+    return false;
   };
 
   const checkLimit = (limitName: string, currentCount: number): boolean => {

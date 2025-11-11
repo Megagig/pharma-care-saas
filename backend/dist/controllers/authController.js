@@ -684,6 +684,8 @@ const getMe = async (req, res) => {
         else {
             subscriptionData = await Subscription_1.default.findById(userSubscription).populate('planId');
         }
+        const permissions = req.workspaceContext?.permissions || [];
+        const tier = subscriptionData?.tier || req.workspaceContext?.subscription?.tier || null;
         res.json({
             success: true,
             user: {
@@ -705,6 +707,8 @@ const getMe = async (req, res) => {
                 hasSubscription: !!subscriptionData,
                 lastLoginAt: user.lastLoginAt,
                 themePreference: user.themePreference,
+                permissions,
+                tier,
             },
         });
     }
@@ -724,7 +728,8 @@ const updateProfile = async (req, res) => {
             });
             return;
         }
-        const user = await User_1.default.findByIdAndUpdate(req.user.userId, req.body, {
+        const userId = req.user._id || req.user.id;
+        const user = await User_1.default.findByIdAndUpdate(userId, req.body, {
             new: true,
             runValidators: true,
         }).select('-passwordHash');
@@ -760,7 +765,8 @@ const updateThemePreference = async (req, res) => {
             });
             return;
         }
-        const user = await User_1.default.findByIdAndUpdate(req.user.userId, { themePreference }, {
+        const userId = req.user._id || req.user.id;
+        const user = await User_1.default.findByIdAndUpdate(userId, { themePreference }, {
             new: true,
             runValidators: true,
         }).select('-passwordHash');

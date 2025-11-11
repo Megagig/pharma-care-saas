@@ -5,6 +5,10 @@ const zod_1 = require("zod");
 const mongoIdSchema = zod_1.z
     .string()
     .regex(/^[0-9a-fA-F]{24}$/, 'Invalid MongoDB ObjectId');
+const legacyCaseIdSchema = zod_1.z
+    .string()
+    .regex(/^DX-[A-Z0-9]+-[A-Z0-9]+$/i, 'Invalid legacy Diagnostic Case ID');
+const caseIdOrMongoIdSchema = zod_1.z.union([mongoIdSchema, legacyCaseIdSchema]);
 const phoneRegex = /^\+234[7-9]\d{9}$/;
 exports.paginationSchema = zod_1.z.object({
     page: zod_1.z
@@ -145,7 +149,7 @@ exports.createDiagnosticRequestSchema = zod_1.z.object({
     }),
 });
 exports.diagnosticParamsSchema = zod_1.z.object({
-    id: mongoIdSchema,
+    id: caseIdOrMongoIdSchema,
 });
 exports.patientHistoryParamsSchema = zod_1.z.object({
     patientId: mongoIdSchema,

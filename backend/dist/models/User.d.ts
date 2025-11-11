@@ -27,7 +27,7 @@ export interface IUser extends Document {
         uploadedAt: Date;
         fileSize: number;
         mimeType: string;
-        uploadMethod: 'cloudinary' | 'local';
+        uploadMethod: 'cloudinary' | 'local' | 'both';
     };
     licenseStatus: 'not_required' | 'pending' | 'approved' | 'rejected';
     licenseVerifiedAt?: Date;

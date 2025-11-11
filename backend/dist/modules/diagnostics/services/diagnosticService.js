@@ -8,6 +8,7 @@ const mongoose_1 = require("mongoose");
 const logger_1 = __importDefault(require("../../../utils/logger"));
 const DiagnosticRequest_1 = __importDefault(require("../models/DiagnosticRequest"));
 const DiagnosticResult_1 = __importDefault(require("../models/DiagnosticResult"));
+const DiagnosticCase_1 = __importDefault(require("../../../models/DiagnosticCase"));
 const Patient_1 = __importDefault(require("../../../models/Patient"));
 const User_1 = __importDefault(require("../../../models/User"));
 const openRouterService_1 = __importDefault(require("../../../services/openRouterService"));
@@ -471,16 +472,59 @@ class DiagnosticService {
     }
     async getDiagnosticRequest(requestId, workplaceId) {
         try {
-            const request = await DiagnosticRequest_1.default.findOne({
-                _id: requestId,
-                workplaceId: new mongoose_1.Types.ObjectId(workplaceId),
-                isDeleted: false,
-            })
-                .populate('patientId', 'firstName lastName dateOfBirth gender')
-                .populate('pharmacistId', 'firstName lastName')
-                .lean()
-                .maxTimeMS(10000);
-            return request;
+            const isMongoId = /^[0-9a-fA-F]{24}$/.test(requestId);
+            const isLegacyCaseId = /^DX-[A-Z0-9]+-[A-Z0-9]+$/i.test(requestId);
+            const workplaceObjectId = new mongoose_1.Types.ObjectId(workplaceId);
+            if (isMongoId) {
+                const request = await DiagnosticRequest_1.default.findOne({
+                    _id: requestId,
+                    workplaceId: workplaceObjectId,
+                    isDeleted: false,
+                })
+                    .populate('patientId', 'firstName lastName dateOfBirth gender')
+                    .populate('pharmacistId', 'firstName lastName')
+                    .lean()
+                    .maxTimeMS(10000);
+                return request;
+            }
+            if (isLegacyCaseId) {
+                const legacyCase = await DiagnosticCase_1.default.findOne({
+                    caseId: requestId.toUpperCase(),
+                    workplaceId: workplaceObjectId,
+                })
+                    .populate('patientId', 'firstName lastName dateOfBirth gender')
+                    .populate('pharmacistId', 'firstName lastName')
+                    .lean()
+                    .maxTimeMS(10000);
+                if (!legacyCase)
+                    return null;
+                const requestLike = {
+                    _id: legacyCase._id,
+                    patientId: legacyCase.patientId,
+                    pharmacistId: legacyCase.pharmacistId,
+                    workplaceId: legacyCase.workplaceId,
+                    inputSnapshot: {
+                        symptoms: legacyCase.symptoms || { subjective: [], objective: [], duration: '', severity: 'mild', onset: 'acute' },
+                        vitals: legacyCase.vitalSigns || {},
+                        currentMedications: legacyCase.currentMedications || [],
+                        allergies: [],
+                        medicalHistory: [],
+                        labResultIds: [],
+                    },
+                    priority: 'routine',
+                    consentObtained: true,
+                    promptVersion: 'legacy',
+                    status: legacyCase.aiAnalysis ? 'completed' : 'processing',
+                    processingStartedAt: legacyCase.createdAt,
+                    processingCompletedAt: legacyCase.aiAnalysis ? legacyCase.updatedAt : undefined,
+                    createdAt: legacyCase.createdAt,
+                    updatedAt: legacyCase.updatedAt,
+                    createdBy: legacyCase.pharmacistId,
+                    retryCount: 0,
+                };
+                return requestLike;
+            }
+            return null;
         }
         catch (error) {
             logger_1.default.error('Failed to get diagnostic request:', error);
@@ -489,14 +533,109 @@ class DiagnosticService {
     }
     async getDiagnosticResult(requestId, workplaceId) {
         try {
-            const result = await DiagnosticResult_1.default.findOne({
-                requestId: new mongoose_1.Types.ObjectId(requestId),
-                workplaceId: new mongoose_1.Types.ObjectId(workplaceId),
-                isDeleted: false,
-            })
-                .lean()
-                .maxTimeMS(10000);
-            return result;
+            const isMongoId = /^[0-9a-fA-F]{24}$/.test(requestId);
+            const isLegacyCaseId = /^DX-[A-Z0-9]+-[A-Z0-9]+$/i.test(requestId);
+            const workplaceObjectId = new mongoose_1.Types.ObjectId(workplaceId);
+            if (isMongoId) {
+                const result = await DiagnosticResult_1.default.findOne({
+                    requestId: new mongoose_1.Types.ObjectId(requestId),
+                    workplaceId: workplaceObjectId,
+                    isDeleted: false,
+                })
+                    .lean()
+                    .maxTimeMS(10000);
+                return result;
+            }
+            if (isLegacyCaseId) {
+                const legacyCase = await DiagnosticCase_1.default.findOne({
+                    caseId: requestId.toUpperCase(),
+                    workplaceId: workplaceObjectId,
+                }).lean().maxTimeMS(10000);
+                if (!legacyCase || !legacyCase.aiAnalysis) {
+                    return null;
+                }
+                const ai = legacyCase.aiAnalysis;
+                const diagnoses = (ai.differentialDiagnoses || []).map((d) => ({
+                    condition: d.condition || 'Unknown',
+                    probability: typeof d.probability === 'number' && d.probability > 1 ? d.probability / 100 : (d.probability || 0),
+                    reasoning: d.reasoning || 'No reasoning provided',
+                    severity: d.severity || 'medium',
+                    icdCode: undefined,
+                    snomedCode: undefined,
+                    confidence: d.severity || 'medium',
+                    evidenceLevel: 'probable',
+                }));
+                const suggestedTests = (ai.recommendedTests || []).map((t) => ({
+                    testName: t.testName || 'Unknown test',
+                    priority: t.priority || 'routine',
+                    reasoning: t.reasoning || 'No reasoning provided',
+                    loincCode: undefined,
+                    expectedCost: undefined,
+                    turnaroundTime: undefined,
+                    clinicalSignificance: 'Recommended based on presenting symptoms',
+                }));
+                const medicationSuggestions = (ai.therapeuticOptions || []).map((m) => ({
+                    drugName: m.medication || 'Unknown',
+                    dosage: m.dosage || '',
+                    frequency: m.frequency || '',
+                    duration: m.duration || '',
+                    reasoning: m.reasoning || 'No reasoning provided',
+                    safetyNotes: m.safetyNotes || [],
+                    rxcui: undefined,
+                    contraindications: [],
+                    monitoringParameters: [],
+                    alternativeOptions: [],
+                }));
+                const redFlags = (ai.redFlags || []).map((r) => ({
+                    flag: r.flag || 'Risk factor',
+                    severity: r.severity || 'medium',
+                    action: r.action || 'Monitor',
+                    timeframe: undefined,
+                    clinicalRationale: r.action || 'See action',
+                }));
+                const highestSeverity = redFlags.reduce((acc, cur) => {
+                    const order = { low: 1, medium: 2, high: 3, critical: 4 };
+                    return order[cur.severity] > order[acc] ? cur.severity : acc;
+                }, 'medium');
+                const resultLike = {
+                    _id: legacyCase._id,
+                    requestId: legacyCase._id,
+                    workplaceId: legacyCase.workplaceId,
+                    diagnoses,
+                    suggestedTests,
+                    medicationSuggestions,
+                    redFlags,
+                    referralRecommendation: ai.referralRecommendation || undefined,
+                    differentialDiagnosis: diagnoses.map((d) => d.condition),
+                    clinicalImpression: 'AI-assisted diagnostic impression',
+                    riskAssessment: {
+                        overallRisk: highestSeverity,
+                        riskFactors: redFlags.map((r) => r.flag),
+                        mitigatingFactors: [],
+                    },
+                    aiMetadata: {
+                        modelId: 'legacy',
+                        modelVersion: 'legacy',
+                        confidenceScore: ai.confidenceScore || 0,
+                        processingTime: ai.processingTime || 0,
+                        tokenUsage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+                        requestId: requestId,
+                    },
+                    rawResponse: JSON.stringify({ source: 'legacy', caseId: legacyCase.caseId }),
+                    disclaimer: ai.disclaimer || 'This AI-generated diagnostic analysis is for informational purposes only.',
+                    validationScore: undefined,
+                    qualityFlags: [],
+                    pharmacistReview: undefined,
+                    followUpRequired: false,
+                    followUpDate: undefined,
+                    followUpInstructions: [],
+                    createdAt: legacyCase.createdAt,
+                    updatedAt: legacyCase.updatedAt,
+                    isDeleted: false,
+                };
+                return resultLike;
+            }
+            return null;
         }
         catch (error) {
             logger_1.default.error('Failed to get diagnostic result:', error);

@@ -161,7 +161,7 @@ const userSchema = new mongoose_1.Schema({
         mimeType: String,
         uploadMethod: {
             type: String,
-            enum: ['cloudinary', 'local'],
+            enum: ['cloudinary', 'local', 'both'],
             default: 'local'
         }
     },

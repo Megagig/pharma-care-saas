@@ -182,7 +182,7 @@ export declare const createDiagnosticRequestSchema: z.ZodObject<{
     consentObtained: z.ZodBoolean;
 }, z.core.$strip>;
 export declare const diagnosticParamsSchema: z.ZodObject<{
-    id: z.ZodString;
+    id: z.ZodUnion<readonly [z.ZodString, z.ZodString]>;
 }, z.core.$strip>;
 export declare const patientHistoryParamsSchema: z.ZodObject<{
     patientId: z.ZodString;

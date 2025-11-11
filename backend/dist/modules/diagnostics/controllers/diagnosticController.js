@@ -176,38 +176,41 @@ exports.getPatientDiagnosticHistory = (0, responseHelpers_1.asyncHandler)(async 
 exports.getDiagnosticDashboard = (0, responseHelpers_1.asyncHandler)(async (req, res) => {
     const context = (0, responseHelpers_1.getRequestContext)(req);
     try {
+        const workplaceFilter = context.userRole === 'super_admin'
+            ? {}
+            : { workplaceId: new mongoose_1.Types.ObjectId(context.workplaceId) };
         const [totalRequests, pendingRequests, processingRequests, completedRequests, failedRequests, pendingReviews, recentRequests,] = await Promise.all([
             DiagnosticRequest_1.default.countDocuments({
-                workplaceId: new mongoose_1.Types.ObjectId(context.workplaceId),
+                ...workplaceFilter,
                 isDeleted: false,
             }),
             DiagnosticRequest_1.default.countDocuments({
-                workplaceId: new mongoose_1.Types.ObjectId(context.workplaceId),
+                ...workplaceFilter,
                 status: 'pending',
                 isDeleted: false,
             }),
             DiagnosticRequest_1.default.countDocuments({
-                workplaceId: new mongoose_1.Types.ObjectId(context.workplaceId),
+                ...workplaceFilter,
                 status: 'processing',
                 isDeleted: false,
             }),
             DiagnosticRequest_1.default.countDocuments({
-                workplaceId: new mongoose_1.Types.ObjectId(context.workplaceId),
+                ...workplaceFilter,
                 status: 'completed',
                 isDeleted: false,
             }),
             DiagnosticRequest_1.default.countDocuments({
-                workplaceId: new mongoose_1.Types.ObjectId(context.workplaceId),
+                ...workplaceFilter,
                 status: 'failed',
                 isDeleted: false,
             }),
             DiagnosticResult_1.default.countDocuments({
-                workplaceId: new mongoose_1.Types.ObjectId(context.workplaceId),
+                ...workplaceFilter,
                 pharmacistReview: { $exists: false },
                 isDeleted: false,
             }),
             DiagnosticRequest_1.default.find({
-                workplaceId: new mongoose_1.Types.ObjectId(context.workplaceId),
+                ...workplaceFilter,
                 isDeleted: false,
             })
                 .populate('patientId', 'firstName lastName')
@@ -216,6 +219,9 @@ exports.getDiagnosticDashboard = (0, responseHelpers_1.asyncHandler)(async (req,
                 .limit(10)
                 .lean(),
         ]);
+        const confidenceMatchFilter = context.userRole === 'super_admin'
+            ? { 'request.isDeleted': false, confidenceScore: { $exists: true, $ne: null } }
+            : { 'request.workplaceId': new mongoose_1.Types.ObjectId(context.workplaceId), 'request.isDeleted': false, confidenceScore: { $exists: true, $ne: null } };
         const avgConfidenceResult = await DiagnosticResult_1.default.aggregate([
             {
                 $lookup: {
@@ -226,11 +232,7 @@ exports.getDiagnosticDashboard = (0, responseHelpers_1.asyncHandler)(async (req,
                 }
             },
             {
-                $match: {
-                    'request.workplaceId': new mongoose_1.Types.ObjectId(context.workplaceId),
-                    'request.isDeleted': false,
-                    confidenceScore: { $exists: true, $ne: null }
-                }
+                $match: confidenceMatchFilter
             },
             {
                 $group: {
@@ -243,7 +245,7 @@ exports.getDiagnosticDashboard = (0, responseHelpers_1.asyncHandler)(async (req,
             ? Math.round(avgConfidenceResult[0].avgConfidence * 100)
             : 0;
         const referralsGenerated = await DiagnosticResult_1.default.countDocuments({
-            workplaceId: new mongoose_1.Types.ObjectId(context.workplaceId),
+            ...workplaceFilter,
             'referralRecommendation.recommended': true,
             isDeleted: false,
         });
@@ -417,15 +419,23 @@ exports.getDiagnosticAnalytics = (0, responseHelpers_1.asyncHandler)(async (req,
         ? new Date(to || dateTo)
         : new Date();
     try {
-        const matchStage = {
-            workplaceId: new mongoose_1.Types.ObjectId(context.workplaceId),
-            createdAt: {
-                $gte: fromDate,
-                $lte: toDate,
-            },
-            isDeleted: { $ne: true },
-        };
-        console.log('🔍 Analytics query:', { matchStage, fromDate, toDate });
+        const matchStage = context.userRole === 'super_admin'
+            ? {
+                createdAt: {
+                    $gte: fromDate,
+                    $lte: toDate,
+                },
+                isDeleted: { $ne: true },
+            }
+            : {
+                workplaceId: new mongoose_1.Types.ObjectId(context.workplaceId),
+                createdAt: {
+                    $gte: fromDate,
+                    $lte: toDate,
+                },
+                isDeleted: { $ne: true },
+            };
+        console.log('🔍 Analytics query:', { matchStage, fromDate, toDate, userRole: context.userRole });
         const [totalCases, completedCases, pendingFollowUps, avgMetrics, topDiagnoses, completionTrends, referralsCount] = await Promise.all([
             DiagnosticRequest_1.default.countDocuments(matchStage),
             DiagnosticRequest_1.default.countDocuments({ ...matchStage, status: 'completed' }),
@@ -440,12 +450,18 @@ exports.getDiagnosticAnalytics = (0, responseHelpers_1.asyncHandler)(async (req,
                     }
                 },
                 {
-                    $match: {
-                        'request.workplaceId': new mongoose_1.Types.ObjectId(context.workplaceId),
-                        'request.createdAt': { $gte: fromDate, $lte: toDate },
-                        'request.isDeleted': { $ne: true },
-                        confidenceScore: { $exists: true, $ne: null }
-                    }
+                    $match: context.userRole === 'super_admin'
+                        ? {
+                            'request.createdAt': { $gte: fromDate, $lte: toDate },
+                            'request.isDeleted': { $ne: true },
+                            confidenceScore: { $exists: true, $ne: null }
+                        }
+                        : {
+                            'request.workplaceId': new mongoose_1.Types.ObjectId(context.workplaceId),
+                            'request.createdAt': { $gte: fromDate, $lte: toDate },
+                            'request.isDeleted': { $ne: true },
+                            confidenceScore: { $exists: true, $ne: null }
+                        }
                 },
                 {
                     $group: {
@@ -465,12 +481,18 @@ exports.getDiagnosticAnalytics = (0, responseHelpers_1.asyncHandler)(async (req,
                     }
                 },
                 {
-                    $match: {
-                        'request.workplaceId': new mongoose_1.Types.ObjectId(context.workplaceId),
-                        'request.createdAt': { $gte: fromDate, $lte: toDate },
-                        'request.isDeleted': { $ne: true },
-                        'differentialDiagnoses': { $exists: true, $ne: [] }
-                    }
+                    $match: context.userRole === 'super_admin'
+                        ? {
+                            'request.createdAt': { $gte: fromDate, $lte: toDate },
+                            'request.isDeleted': { $ne: true },
+                            'differentialDiagnoses': { $exists: true, $ne: [] }
+                        }
+                        : {
+                            'request.workplaceId': new mongoose_1.Types.ObjectId(context.workplaceId),
+                            'request.createdAt': { $gte: fromDate, $lte: toDate },
+                            'request.isDeleted': { $ne: true },
+                            'differentialDiagnoses': { $exists: true, $ne: [] }
+                        }
                 },
                 { $unwind: '$differentialDiagnoses' },
                 {
@@ -521,12 +543,18 @@ exports.getDiagnosticAnalytics = (0, responseHelpers_1.asyncHandler)(async (req,
                     }
                 },
                 {
-                    $match: {
-                        'request.workplaceId': new mongoose_1.Types.ObjectId(context.workplaceId),
-                        'request.createdAt': { $gte: fromDate, $lte: toDate },
-                        'request.isDeleted': { $ne: true },
-                        'referralRecommendation.recommended': true
-                    }
+                    $match: context.userRole === 'super_admin'
+                        ? {
+                            'request.createdAt': { $gte: fromDate, $lte: toDate },
+                            'request.isDeleted': { $ne: true },
+                            'referralRecommendation.recommended': true
+                        }
+                        : {
+                            'request.workplaceId': new mongoose_1.Types.ObjectId(context.workplaceId),
+                            'request.createdAt': { $gte: fromDate, $lte: toDate },
+                            'request.isDeleted': { $ne: true },
+                            'referralRecommendation.recommended': true
+                        }
                 },
                 {
                     $count: 'referralsCount'
@@ -557,9 +585,9 @@ exports.getAllDiagnosticCases = (0, responseHelpers_1.asyncHandler)(async (req, 
     const context = (0, responseHelpers_1.getRequestContext)(req);
     const { page = 1, limit = 20, status, patientId, search, sortBy = 'createdAt', sortOrder = 'desc', } = req.query;
     try {
-        const query = {
-            workplaceId: new mongoose_1.Types.ObjectId(context.workplaceId),
-        };
+        const query = context.userRole === 'super_admin'
+            ? {}
+            : { workplaceId: new mongoose_1.Types.ObjectId(context.workplaceId) };
         if (status) {
             query.status = status;
         }

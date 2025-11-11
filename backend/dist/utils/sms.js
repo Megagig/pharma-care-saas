@@ -5,6 +5,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.sendAppointmentReminder = exports.sendMedicationReminder = exports.sendSMS = void 0;
 const twilio_1 = __importDefault(require("twilio"));
+const logger_1 = __importDefault(require("./logger"));
 const isValidTwilioConfig = () => {
     const accountSid = process.env.TWILIO_ACCOUNT_SID;
     const authToken = process.env.TWILIO_AUTH_TOKEN;
@@ -20,19 +21,19 @@ let client = null;
 if (isValidTwilioConfig()) {
     try {
         client = (0, twilio_1.default)(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
-        console.log('Twilio SMS service initialized successfully');
+        logger_1.default.info('Twilio SMS service initialized successfully');
     }
     catch (error) {
-        console.warn('Failed to initialize Twilio client:', error);
+        logger_1.default.warn('Failed to initialize Twilio client', { error });
         client = null;
     }
 }
 else {
-    console.log('Twilio SMS service not configured - using mock mode. SMS features will be simulated.');
+    logger_1.default.debug('Twilio SMS service not configured - using mock mode. SMS features will be simulated.');
 }
 const sendSMS = async (to, message) => {
     if (!client) {
-        console.log('SMS Mock Mode - Would send SMS to:', to, 'Message:', message);
+        logger_1.default.debug(`SMS Mock Mode - Would send SMS to: ${to} Message: ${message}`);
         return {
             sid: 'mock_' + Date.now(),
             status: 'delivered',
@@ -50,7 +51,7 @@ const sendSMS = async (to, message) => {
         return result;
     }
     catch (error) {
-        console.error('SMS sending failed:', error);
+        logger_1.default.error('SMS sending failed', { error });
         throw error;
     }
 };
