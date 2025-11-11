@@ -108,6 +108,7 @@ const Patients = () => {
   const [urlParams] = useSearchParams();
   const isForMedications = urlParams.get('for') === 'medications';
   const isForDiagnostics = urlParams.get('for') === 'diagnostics';
+  const isForLabIntegration = urlParams.get('for') === 'lab-integration';
 
   // RBAC permissions
   const { permissions } = useRBAC();
@@ -206,6 +207,9 @@ const Patients = () => {
     } else if (isForDiagnostics) {
       // Navigate back to diagnostic case creation with selected patient
       navigate(`/pharmacy/diagnostics/case/new?selectedPatient=${patientId}`);
+    } else if (isForLabIntegration) {
+      // Navigate back to lab integration case creation with selected patient
+      navigate(`/pharmacy/lab-integration/new?selectedPatient=${patientId}`);
     } else {
       navigate(`/patients/${patientId}`);
     }
@@ -291,7 +295,7 @@ const Patients = () => {
   return (
     <Box sx={{ p: 3 }}>
       {/* Helper message for selection modes */}
-      {(isForMedications || isForDiagnostics) && (
+      {(isForMedications || isForDiagnostics || isForLabIntegration) && (
         <Alert
           severity="info"
           sx={{
@@ -305,7 +309,9 @@ const Patients = () => {
           <Typography variant="body2">
             {isForMedications
               ? 'Select a patient from the list below to manage their medications. Click the "Select" button in the Actions column to proceed.'
-              : 'Select a patient from the list below to create a diagnostic case. Click the "Select" button in the Actions column to proceed.'}
+              : isForDiagnostics
+                ? 'Select a patient from the list below to create a diagnostic case. Click the "Select" button in the Actions column to proceed.'
+                : 'Select a patient from the list below to create a lab integration case. Click the "Select" button in the Actions column to proceed.'}
           </Typography>
         </Alert>
       )}
@@ -338,14 +344,18 @@ const Patients = () => {
               ? 'Select a Patient for Medications'
               : isForDiagnostics
                 ? 'Select a Patient for Diagnostic Case'
-                : 'Patient Management'}
+                : isForLabIntegration
+                  ? 'Select a Patient for Lab Integration'
+                  : 'Patient Management'}
           </Typography>
           <Typography component="div" variant="body1" color="text.secondary">
             {isForMedications
               ? 'Click on any patient to manage their medications'
               : isForDiagnostics
                 ? 'Click on any patient to create a diagnostic case'
-                : 'Comprehensive patient care and medical records management'}
+                : isForLabIntegration
+                  ? 'Click on any patient to create a lab integration case'
+                  : 'Comprehensive patient care and medical records management'}
             {totalPatients > 0 && (
               <Chip
                 label={`${totalPatients} total patients`}
@@ -718,7 +728,7 @@ const Patients = () => {
                         }}
                       >
                         {/* Check if we're in selection mode */}
-                        {isForMedications || isForDiagnostics ? (
+                        {isForMedications || isForDiagnostics || isForLabIntegration ? (
                           <Button
                             size="small"
                             variant="contained"

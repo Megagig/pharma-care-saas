@@ -538,6 +538,10 @@ app.use('/api/manual-lab', manualLabRoutes);
 // AI Diagnostic routes
 app.use('/api/diagnostics', diagnosticRoutes);
 
+// Lab Integration routes (AI-powered lab result interpretation & therapy management)
+import labIntegrationRoutes from './modules/diagnostics/routes/labIntegrationRoutes';
+app.use('/api/lab-integration', labIntegrationRoutes);
+
 // Pharmacist Lab Interpretation routes
 app.use('/api/pharmacist/lab-results', pharmacistLabInterpretationRoutes);
 app.use('/api/pharmacist/vitals', pharmacistVitalsRoutes);

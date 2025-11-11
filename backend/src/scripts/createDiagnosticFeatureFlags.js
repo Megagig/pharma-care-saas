@@ -125,14 +125,14 @@ const featureFlags = [
   {
     name: 'Lab Integration',
     key: 'lab_integration',
-    description: 'Integration with laboratory systems for test results',
+    description: 'AI-powered lab result interpretation with therapy recommendations and medication management',
     isActive: true,
-    allowedTiers: ['pro', 'enterprise'],
-    allowedRoles: ['pharmacist', 'senior_pharmacist', 'pharmacy_manager', 'owner', 'pharmacy_outlet'],
+    allowedTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+    allowedRoles: ['pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'intern_pharmacist', 'owner'],
     metadata: {
       category: 'diagnostics',
-      priority: 'medium',
-      tags: ['lab', 'integration', 'test-results']
+      priority: 'high',
+      tags: ['lab', 'ai', 'therapy', 'medication-management', 'clinical-decision-support']
     }
   },
   {
@@ -154,14 +154,14 @@ const featureFlags = [
 const createFeatureFlags = async () => {
   try {
     console.log('🚀 Creating diagnostic feature flags...');
-    
+
     for (const flagData of featureFlags) {
       // Check if flag already exists
       const existingFlag = await FeatureFlag.findOne({ key: flagData.key });
-      
+
       if (existingFlag) {
         console.log(`⚠️  Feature flag '${flagData.key}' already exists, updating...`);
-        
+
         // Update existing flag to ensure it has correct configuration
         await FeatureFlag.findOneAndUpdate(
           { key: flagData.key },
@@ -171,7 +171,7 @@ const createFeatureFlags = async () => {
           },
           { new: true }
         );
-        
+
         console.log(`✅ Updated feature flag: ${flagData.name}`);
       } else {
         // Create new flag
@@ -180,20 +180,20 @@ const createFeatureFlags = async () => {
           createdAt: new Date(),
           updatedAt: new Date()
         });
-        
+
         await newFlag.save();
         console.log(`✅ Created feature flag: ${flagData.name}`);
       }
     }
-    
+
     console.log('🎉 All diagnostic feature flags created/updated successfully!');
-    
+
     // Verify the flags were created
     console.log('\n📋 Verifying created feature flags:');
-    const createdFlags = await FeatureFlag.find({ 
-      key: { $in: featureFlags.map(f => f.key) } 
+    const createdFlags = await FeatureFlag.find({
+      key: { $in: featureFlags.map(f => f.key) }
     }).select('name key isActive allowedTiers allowedRoles');
-    
+
     createdFlags.forEach(flag => {
       console.log(`  ✓ ${flag.name} (${flag.key})`);
       console.log(`    - Active: ${flag.isActive}`);
@@ -201,7 +201,7 @@ const createFeatureFlags = async () => {
       console.log(`    - Roles: ${flag.allowedRoles.join(', ')}`);
       console.log('');
     });
-    
+
   } catch (error) {
     console.error('❌ Error creating feature flags:', error);
     throw error;
@@ -213,10 +213,10 @@ const main = async () => {
   try {
     await connectDB();
     await createFeatureFlags();
-    
+
     console.log('✅ Script completed successfully!');
     console.log('🔄 Please restart your backend server to apply changes.');
-    
+
   } catch (error) {
     console.error('❌ Script failed:', error);
     process.exit(1);

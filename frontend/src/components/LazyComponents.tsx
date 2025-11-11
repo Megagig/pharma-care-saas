@@ -86,6 +86,8 @@ export const LazyLicenseUpload = lazy(() => import('../components/license/Licens
 
 // Additional unrouted pages
 export const LazyLabResultIntegration = lazy(() => import('../pages/LabResultIntegration'));
+export const LazyLabIntegrationCaseDetail = lazy(() => import('../pages/LabIntegrationCaseDetail'));
+export const LazyLabIntegrationNewCase = lazy(() => import('../pages/LabIntegrationNewCase'));
 export const LazyPaymentSimulation = lazy(() => import('../pages/PaymentSimulation'));
 export const LazyPricingPlanManagement = lazy(() => import('../pages/PricingPlanManagement'));
 export const LazyReports = lazy(() => import('../pages/Reports'));

@@ -277,6 +277,48 @@ export const PERMISSION_MATRIX: PermissionMatrix = {
     },
 
     // ========================================
+    // LAB INTEGRATION (AI-Powered Lab Result Interpretation & Therapy Management)
+    // ========================================
+    'lab_integration:create': {
+        workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet'],
+        systemRoles: ['pharmacy_team'],
+        features: ['lab_integration'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'lab_integration:read': {
+        workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet'],
+        systemRoles: ['pharmacy_team', 'intern_pharmacist'],
+        features: ['lab_integration'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'lab_integration:approve': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['lab_integration'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: false,
+    },
+    'lab_integration:escalate': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['lab_integration'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: false,
+    },
+    'lab_integration:trends': {
+        workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet'],
+        systemRoles: ['pharmacy_team'],
+        features: ['lab_integration', 'advancedReports'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+
+    // ========================================
     // APPOINTMENT MANAGEMENT
     // ========================================
     'appointment.create': {
@@ -948,6 +990,7 @@ export const TIER_FEATURES: Record<SubscriptionTier, string[]> = {
         'auditLogs',
         'integrations',
         'ai_diagnostics',
+        'lab_integration',
         'clinicalInterventions',
     ],
     pharmily: [
@@ -966,6 +1009,7 @@ export const TIER_FEATURES: Record<SubscriptionTier, string[]> = {
         'scheduledReports',
         'dataBackup',
         'ai_diagnostics',
+        'lab_integration',
         'clinicalInterventions',
     ],
     network: [
@@ -988,6 +1032,7 @@ export const TIER_FEATURES: Record<SubscriptionTier, string[]> = {
         'teamManagement',
         'multiUserSupport',
         'ai_diagnostics',
+        'lab_integration',
         'clinicalInterventions',
     ],
     enterprise: [
@@ -1013,6 +1058,7 @@ export const TIER_FEATURES: Record<SubscriptionTier, string[]> = {
         'prioritySupport',
         'dedicatedManager',
         'ai_diagnostics',
+        'lab_integration',
         'clinicalInterventions',
     ],
 };

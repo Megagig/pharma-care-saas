@@ -64,6 +64,7 @@ const VirtualizedPatientsPage: React.FC = () => {
   const [urlParams] = useSearchParams();
   const isForMedications = urlParams.get('for') === 'medications';
   const isForDiagnostics = urlParams.get('for') === 'diagnostics';
+  const isForLabIntegration = urlParams.get('for') === 'lab-integration';
 
   // RBAC permissions
   const { permissions } = useRBAC();
@@ -151,10 +152,12 @@ const VirtualizedPatientsPage: React.FC = () => {
       navigate(`/patients/${patient._id}/medications`);
     } else if (isForDiagnostics) {
       navigate(`/pharmacy/diagnostics/case/new?selectedPatient=${patient._id}`);
+    } else if (isForLabIntegration) {
+      navigate(`/pharmacy/lab-integration/new?selectedPatient=${patient._id}`);
     } else {
       navigate(`/patients/${patient._id}`);
     }
-  }, [navigate, isForMedications, isForDiagnostics]);
+  }, [navigate, isForMedications, isForDiagnostics, isForLabIntegration]);
 
   const handlePatientEdit = useCallback((patient: Patient) => {
     navigate(`/patients/${patient._id}/edit`);
@@ -373,8 +376,8 @@ const VirtualizedPatientsPage: React.FC = () => {
             {isForMedications
               ? 'Select Patient for Medications'
               : isForDiagnostics
-              ? 'Select Patient for Diagnostic Case'
-              : 'Virtualized Patient Management'}
+                ? 'Select Patient for Diagnostic Case'
+                : 'Virtualized Patient Management'}
           </Typography>
           <Typography variant="body1" color="text.secondary">
             High-performance patient list with virtualization

@@ -93,6 +93,8 @@ import {
   LazyBlogManagement,
   LazyBlogPostEditor,
   LazyLabResultIntegration,
+  LazyLabIntegrationCaseDetail,
+  LazyLabIntegrationNewCase,
   LazyPaymentSimulation,
   LazyPricingPlanManagement,
   LazyReports,
@@ -1278,6 +1280,40 @@ function App(): JSX.Element {
                                   <AppLayout>
                                     <LazyWrapper fallback={PageSkeleton}>
                                       <LazyLabResultIntegration />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
+                              }
+                            />
+
+                            {/* Lab Integration - New Case */}
+                            <Route
+                              path="/pharmacy/lab-integration/new"
+                              element={
+                                <ProtectedRoute
+                                  requiredRole={['pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'owner', 'super_admin']}
+                                  requiresActiveSubscription
+                                >
+                                  <AppLayout>
+                                    <LazyWrapper fallback={PageSkeleton}>
+                                      <LazyLabIntegrationNewCase />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
+                              }
+                            />
+
+                            {/* Lab Integration - Case Detail */}
+                            <Route
+                              path="/pharmacy/lab-integration/:id"
+                              element={
+                                <ProtectedRoute
+                                  requiredRole={['pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'owner', 'super_admin']}
+                                  requiresActiveSubscription
+                                >
+                                  <AppLayout>
+                                    <LazyWrapper fallback={PageSkeleton}>
+                                      <LazyLabIntegrationCaseDetail />
                                     </LazyWrapper>
                                   </AppLayout>
                                 </ProtectedRoute>
