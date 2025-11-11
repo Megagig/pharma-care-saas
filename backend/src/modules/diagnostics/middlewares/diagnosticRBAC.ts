@@ -1,6 +1,6 @@
 import { Response, NextFunction } from 'express';
-import { AuthRequest, requireFeature } from '../../../middlewares/auth';
-import { requirePermission, requireActiveSubscription } from '../../../middlewares/rbac';
+import { AuthRequest } from '../../../types/auth';
+import { requirePermission, requireActiveSubscription, requireSubscriptionOrTrial, requireFeature } from '../../../middlewares/rbac';
 import logger from '../../../utils/logger';
 
 /**
@@ -77,9 +77,30 @@ export const requireLabIntegrationFeature = requireFeature('lab_integration');
 export const requireDrugInteractionFeature = requireFeature('drug_interactions');
 
 /**
- * Require diagnostic analytics feature to be enabled
+ * Require diagnostic analytics feature to be enabled (must include AI diagnostics too)
+ * Uses RBAC requireFeature which supports multiple keys
  */
-export const requireDiagnosticAnalyticsFeature = requireFeature('diagnostic_analytics');
+export const requireDiagnosticAnalyticsFeature = requireFeature('diagnostic_analytics', 'ai_diagnostics');
+
+/**
+ * Allow trials to bypass feature checks for analytics (full access during trial)
+ */
+export const requireDiagnosticAnalyticsFeatureOrTrial = (
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+): void => {
+    const wc: any = (req as any).workspaceContext;
+    const isTrialActive = wc?.workspace?.subscriptionStatus === 'trial' && !wc?.isTrialExpired;
+    if (isTrialActive) {
+        return next();
+    }
+    return (requireDiagnosticAnalyticsFeature as unknown as (req: AuthRequest, res: Response, next: NextFunction) => void)(
+        req,
+        res,
+        next
+    );
+};
 
 // ===============================
 // ROLE-BASED RESTRICTIONS
@@ -410,15 +431,34 @@ export const checkDiagnosticAccess = async (
             return next(); // No specific resource to check
         }
 
-        // Check if diagnostic request belongs to user's workplace
-        const DiagnosticRequest = require('../models/DiagnosticRequest').default;
-        const request = await DiagnosticRequest.findOne({
-            _id: id,
-            workplaceId: (req as any).workspaceContext.workspace._id,
-            isDeleted: false,
-        });
+        const workplaceId = (req as any).workspaceContext.workspace._id;
+        const isMongoId = /^[0-9a-fA-F]{24}$/.test(id);
+        const isLegacyCaseId = /^DX-[A-Z0-9]+-[A-Z0-9]+$/i.test(id);
 
-        if (!request) {
+        // Check access against appropriate model
+        let hasAccess = false;
+        let request: any = null;
+
+        if (isMongoId) {
+            const DiagnosticRequest = require('../models/DiagnosticRequest').default;
+            request = await DiagnosticRequest.findOne({
+                _id: id,
+                workplaceId,
+                isDeleted: false,
+            });
+            hasAccess = !!request;
+        } else if (isLegacyCaseId) {
+            // Legacy diagnostic case by caseId (DX-*)
+            const DiagnosticCase = require('../../../models/DiagnosticCase').default;
+            const legacyCase = await DiagnosticCase.findOne({
+                caseId: id.toUpperCase(),
+                workplaceId,
+            });
+            hasAccess = !!legacyCase;
+            request = legacyCase; // attach for downstream if needed
+        }
+
+        if (!hasAccess) {
             res.status(404).json({
                 success: false,
                 message: 'Diagnostic request not found or access denied',
@@ -426,8 +466,8 @@ export const checkDiagnosticAccess = async (
             return;
         }
 
-        // Add request to req object for use in controller
-        req.diagnosticRequest = request;
+        // Add request to req object for use in controller (legacy or new)
+        (req as any).diagnosticRequest = request;
         next();
     } catch (error) {
         logger.error('Error checking diagnostic access:', error);
@@ -589,9 +629,51 @@ export const diagnosticApproveMiddleware = [
  * Complete middleware chain for diagnostic analytics
  */
 export const diagnosticAnalyticsMiddleware = [
-    requireActiveSubscription,
-    requireDiagnosticAnalyticsFeature,
-    requirePharmacistRole, // Changed from requireSeniorPharmacistRole to allow pharmacy_outlet
+    requireSubscriptionOrTrial,
+    requireDiagnosticAnalyticsFeatureOrTrial,
+    // Allow broader access per policy: pharmacist, intern_pharmacist, owner, pharmacy_outlet, admin, super_admin
+    (req: AuthRequest, res: Response, next: NextFunction) => {
+        if (!req.user) {
+            return res.status(401).json({ success: false, message: 'Authentication required' });
+        }
+        const systemRole = (req.user.role || '').toString();
+        const workplaceRole = (req.user.workplaceRole || '').toString();
+
+        // Bypass for super_admin
+        if (systemRole === 'super_admin') return next();
+
+        const allowedSystemRoles = [
+            'pharmacist',
+            'intern_pharmacist',
+            'owner',
+            'pharmacy_outlet',
+            'admin'
+        ];
+        const allowedWorkplaceRoles = [
+            'pharmacist',
+            'intern_pharmacist',
+            'pharmacy_manager',
+            'owner',
+            'Owner',
+            'pharmacy_outlet',
+            'Pharmacy team'
+        ];
+
+        const hasSystem = allowedSystemRoles.includes(systemRole);
+        const hasWorkplace = allowedWorkplaceRoles.includes(workplaceRole);
+
+        if (!hasSystem && !hasWorkplace) {
+            return res.status(403).json({
+                success: false,
+                message: 'Access denied: insufficient role for diagnostics analytics',
+                requiredRoles: allowedSystemRoles,
+                requiredWorkplaceRoles: allowedWorkplaceRoles,
+                userRole: systemRole,
+                userWorkplaceRole: workplaceRole,
+            });
+        }
+        return next();
+    },
     requireDiagnosticAnalytics,
 ];
 

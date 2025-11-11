@@ -394,6 +394,11 @@ export const getDiagnosticDashboard = asyncHandler(
         const context = getRequestContext(req);
 
         try {
+            // Build query filter - super admins can see all workplaces
+            const workplaceFilter = context.userRole === 'super_admin' 
+                ? {} 
+                : { workplaceId: new Types.ObjectId(context.workplaceId) };
+
             // Get dashboard statistics
             const [
                 totalRequests,
@@ -405,36 +410,36 @@ export const getDiagnosticDashboard = asyncHandler(
                 recentRequests,
             ] = await Promise.all([
                 DiagnosticRequest.countDocuments({
-                    workplaceId: new Types.ObjectId(context.workplaceId),
+                    ...workplaceFilter,
                     isDeleted: false,
                 }),
                 DiagnosticRequest.countDocuments({
-                    workplaceId: new Types.ObjectId(context.workplaceId),
+                    ...workplaceFilter,
                     status: 'pending',
                     isDeleted: false,
                 }),
                 DiagnosticRequest.countDocuments({
-                    workplaceId: new Types.ObjectId(context.workplaceId),
+                    ...workplaceFilter,
                     status: 'processing',
                     isDeleted: false,
                 }),
                 DiagnosticRequest.countDocuments({
-                    workplaceId: new Types.ObjectId(context.workplaceId),
+                    ...workplaceFilter,
                     status: 'completed',
                     isDeleted: false,
                 }),
                 DiagnosticRequest.countDocuments({
-                    workplaceId: new Types.ObjectId(context.workplaceId),
+                    ...workplaceFilter,
                     status: 'failed',
                     isDeleted: false,
                 }),
                 DiagnosticResult.countDocuments({
-                    workplaceId: new Types.ObjectId(context.workplaceId),
+                    ...workplaceFilter,
                     pharmacistReview: { $exists: false },
                     isDeleted: false,
                 }),
                 DiagnosticRequest.find({
-                    workplaceId: new Types.ObjectId(context.workplaceId),
+                    ...workplaceFilter,
                     isDeleted: false,
                 })
                     .populate('patientId', 'firstName lastName')
@@ -445,6 +450,10 @@ export const getDiagnosticDashboard = asyncHandler(
             ]);
 
             // Calculate average confidence score
+            const confidenceMatchFilter = context.userRole === 'super_admin' 
+                ? { 'request.isDeleted': false, confidenceScore: { $exists: true, $ne: null } }
+                : { 'request.workplaceId': new Types.ObjectId(context.workplaceId), 'request.isDeleted': false, confidenceScore: { $exists: true, $ne: null } };
+
             const avgConfidenceResult = await DiagnosticResult.aggregate([
                 {
                     $lookup: {
@@ -455,11 +464,7 @@ export const getDiagnosticDashboard = asyncHandler(
                     }
                 },
                 {
-                    $match: {
-                        'request.workplaceId': new Types.ObjectId(context.workplaceId),
-                        'request.isDeleted': false,
-                        confidenceScore: { $exists: true, $ne: null }
-                    }
+                    $match: confidenceMatchFilter
                 },
                 {
                     $group: {
@@ -475,7 +480,7 @@ export const getDiagnosticDashboard = asyncHandler(
 
             // Count referrals generated
             const referralsGenerated = await DiagnosticResult.countDocuments({
-                workplaceId: new Types.ObjectId(context.workplaceId),
+                ...workplaceFilter,
                 'referralRecommendation.recommended': true,
                 isDeleted: false,
             });
@@ -826,16 +831,25 @@ export const getDiagnosticAnalytics = asyncHandler(
 
         try {
             // Query DiagnosticRequest collection for analytics (updated to use new model)
-            const matchStage = {
-                workplaceId: new Types.ObjectId(context.workplaceId),
-                createdAt: {
-                    $gte: fromDate,
-                    $lte: toDate,
-                },
-                isDeleted: { $ne: true },
-            };
+            // Super admins can see data across all workplaces
+            const matchStage = context.userRole === 'super_admin' 
+                ? {
+                    createdAt: {
+                        $gte: fromDate,
+                        $lte: toDate,
+                    },
+                    isDeleted: { $ne: true },
+                }
+                : {
+                    workplaceId: new Types.ObjectId(context.workplaceId),
+                    createdAt: {
+                        $gte: fromDate,
+                        $lte: toDate,
+                    },
+                    isDeleted: { $ne: true },
+                };
 
-            console.log('🔍 Analytics query:', { matchStage, fromDate, toDate });
+            console.log('🔍 Analytics query:', { matchStage, fromDate, toDate, userRole: context.userRole });
 
             // Get basic counts and averages
             const [
@@ -861,12 +875,18 @@ export const getDiagnosticAnalytics = asyncHandler(
                         }
                     },
                     {
-                        $match: {
-                            'request.workplaceId': new Types.ObjectId(context.workplaceId),
-                            'request.createdAt': { $gte: fromDate, $lte: toDate },
-                            'request.isDeleted': { $ne: true },
-                            confidenceScore: { $exists: true, $ne: null }
-                        }
+                        $match: context.userRole === 'super_admin' 
+                            ? {
+                                'request.createdAt': { $gte: fromDate, $lte: toDate },
+                                'request.isDeleted': { $ne: true },
+                                confidenceScore: { $exists: true, $ne: null }
+                            }
+                            : {
+                                'request.workplaceId': new Types.ObjectId(context.workplaceId),
+                                'request.createdAt': { $gte: fromDate, $lte: toDate },
+                                'request.isDeleted': { $ne: true },
+                                confidenceScore: { $exists: true, $ne: null }
+                            }
                     },
                     {
                         $group: {
@@ -887,12 +907,18 @@ export const getDiagnosticAnalytics = asyncHandler(
                         }
                     },
                     {
-                        $match: {
-                            'request.workplaceId': new Types.ObjectId(context.workplaceId),
-                            'request.createdAt': { $gte: fromDate, $lte: toDate },
-                            'request.isDeleted': { $ne: true },
-                            'differentialDiagnoses': { $exists: true, $ne: [] }
-                        }
+                        $match: context.userRole === 'super_admin' 
+                            ? {
+                                'request.createdAt': { $gte: fromDate, $lte: toDate },
+                                'request.isDeleted': { $ne: true },
+                                'differentialDiagnoses': { $exists: true, $ne: [] }
+                            }
+                            : {
+                                'request.workplaceId': new Types.ObjectId(context.workplaceId),
+                                'request.createdAt': { $gte: fromDate, $lte: toDate },
+                                'request.isDeleted': { $ne: true },
+                                'differentialDiagnoses': { $exists: true, $ne: [] }
+                            }
                     },
                     { $unwind: '$differentialDiagnoses' },
                     {
@@ -945,12 +971,18 @@ export const getDiagnosticAnalytics = asyncHandler(
                         }
                     },
                     {
-                        $match: {
-                            'request.workplaceId': new Types.ObjectId(context.workplaceId),
-                            'request.createdAt': { $gte: fromDate, $lte: toDate },
-                            'request.isDeleted': { $ne: true },
-                            'referralRecommendation.recommended': true
-                        }
+                        $match: context.userRole === 'super_admin' 
+                            ? {
+                                'request.createdAt': { $gte: fromDate, $lte: toDate },
+                                'request.isDeleted': { $ne: true },
+                                'referralRecommendation.recommended': true
+                            }
+                            : {
+                                'request.workplaceId': new Types.ObjectId(context.workplaceId),
+                                'request.createdAt': { $gte: fromDate, $lte: toDate },
+                                'request.isDeleted': { $ne: true },
+                                'referralRecommendation.recommended': true
+                            }
                     },
                     {
                         $count: 'referralsCount'
@@ -1007,10 +1039,10 @@ export const getAllDiagnosticCases = asyncHandler(
         } = req.query as any;
 
         try {
-            // Build query
-            const query: any = {
-                workplaceId: new Types.ObjectId(context.workplaceId),
-            };
+            // Build query - super admins can see all workplaces
+            const query: any = context.userRole === 'super_admin' 
+                ? {}
+                : { workplaceId: new Types.ObjectId(context.workplaceId) };
 
             if (status) {
                 query.status = status;
