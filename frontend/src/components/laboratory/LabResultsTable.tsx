@@ -15,6 +15,8 @@ import {
   Typography,
   CircularProgress,
   Avatar,
+  Checkbox,
+  Button,
 } from '@mui/material';
 import {
   Visibility as VisibilityIcon,
@@ -25,6 +27,7 @@ import {
   TrendingUp as TrendingUpIcon,
   TrendingDown as TrendingDownIcon,
   Remove as RemoveIcon,
+  Science as ScienceIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
@@ -64,9 +67,21 @@ interface LabResultsTableProps {
     interpretation: string;
   };
   view?: 'all' | 'critical' | 'pending' | 'abnormal';
+  selectionMode?: boolean;
+  selectedLabResults?: string[];
+  onLabResultSelect?: (labResultId: string) => void;
+  patientId?: string | null;
 }
 
-const LabResultsTable: React.FC<LabResultsTableProps> = ({ searchQuery = '', filters, view = 'all' }) => {
+const LabResultsTable: React.FC<LabResultsTableProps> = ({ 
+  searchQuery = '', 
+  filters, 
+  view = 'all',
+  selectionMode = false,
+  selectedLabResults = [],
+  onLabResultSelect,
+  patientId
+}) => {
   const navigate = useNavigate();
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
@@ -94,6 +109,11 @@ const LabResultsTable: React.FC<LabResultsTableProps> = ({ searchQuery = '', fil
 
     if (filters?.interpretation && filters.interpretation !== 'all') {
       params.interpretation = filters.interpretation;
+    }
+
+    // Filter by patient when in selection mode
+    if (selectionMode && patientId) {
+      params.patientId = patientId;
     }
 
     return params;
@@ -231,6 +251,7 @@ const LabResultsTable: React.FC<LabResultsTableProps> = ({ searchQuery = '', fil
         <Table>
           <TableHead>
             <TableRow>
+              {selectionMode && <TableCell padding="checkbox">Select</TableCell>}
               <TableCell>Patient</TableCell>
               <TableCell>Test Name</TableCell>
               <TableCell>Category</TableCell>
@@ -249,9 +270,22 @@ const LabResultsTable: React.FC<LabResultsTableProps> = ({ searchQuery = '', fil
                 key={result._id}
                 hover
                 sx={{
-                  backgroundColor: result.isCritical ? 'rgba(211, 47, 47, 0.05)' : 'inherit',
+                  backgroundColor: result.isCritical 
+                    ? 'rgba(211, 47, 47, 0.05)' 
+                    : selectedLabResults.includes(result._id) && selectionMode
+                    ? 'rgba(25, 118, 210, 0.08)'
+                    : 'inherit',
                 }}
               >
+                {selectionMode && (
+                  <TableCell padding="checkbox">
+                    <Checkbox
+                      checked={selectedLabResults.includes(result._id)}
+                      onChange={() => onLabResultSelect?.(result._id)}
+                      color="primary"
+                    />
+                  </TableCell>
+                )}
                 <TableCell>
                   <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
                     <Avatar sx={{ width: 32, height: 32, bgcolor: 'primary.main', fontSize: 14 }}>
@@ -312,21 +346,35 @@ const LabResultsTable: React.FC<LabResultsTableProps> = ({ searchQuery = '', fil
                   </Typography>
                 </TableCell>
                 <TableCell align="right">
-                  <Tooltip title="View Details">
-                    <IconButton size="small" onClick={() => navigate(`/laboratory/${result._id}`)}>
-                      <VisibilityIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Edit">
-                    <IconButton size="small" onClick={() => navigate(`/laboratory/${result._id}/edit`)}>
-                      <EditIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
-                  <Tooltip title="Delete">
-                    <IconButton size="small" onClick={() => handleDelete(result._id)} color="error">
-                      <DeleteIcon fontSize="small" />
-                    </IconButton>
-                  </Tooltip>
+                  {selectionMode ? (
+                    <Button
+                      size="small"
+                      variant={selectedLabResults.includes(result._id) ? "contained" : "outlined"}
+                      startIcon={<ScienceIcon />}
+                      onClick={() => onLabResultSelect?.(result._id)}
+                      color="primary"
+                    >
+                      {selectedLabResults.includes(result._id) ? 'Selected' : 'Select'}
+                    </Button>
+                  ) : (
+                    <>
+                      <Tooltip title="View Details">
+                        <IconButton size="small" onClick={() => navigate(`/laboratory/${result._id}`)}>
+                          <VisibilityIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Edit">
+                        <IconButton size="small" onClick={() => navigate(`/laboratory/${result._id}/edit`)}>
+                          <EditIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                      <Tooltip title="Delete">
+                        <IconButton size="small" onClick={() => handleDelete(result._id)} color="error">
+                          <DeleteIcon fontSize="small" />
+                        </IconButton>
+                      </Tooltip>
+                    </>
+                  )}
                 </TableCell>
               </TableRow>
             ))}

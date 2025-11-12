@@ -19,12 +19,15 @@ export interface LabIntegration {
     fhirResourceId?: string;
   };
   aiInterpretation?: AIInterpretation;
+  aiProcessingStatus?: 'pending' | 'processing' | 'completed' | 'failed' | 'skipped';
+  aiProcessingError?: string;
   therapyRecommendations: TherapyRecommendation[];
   safetyChecks: SafetyCheck[];
   pharmacistReview?: PharmacistReview;
   medicationAdjustments: MedicationAdjustment[];
   status: 'draft' | 'pending_interpretation' | 'pending_review' | 'pending_approval' | 'approved' | 'implemented' | 'completed' | 'cancelled';
-  priority: 'routine' | 'urgent' | 'critical';
+  urgency?: 'stat' | 'urgent' | 'routine';
+  priority?: 'routine' | 'urgent' | 'critical'; // Deprecated - use urgency instead
   patientConsent?: {
     consentGiven: boolean;
     consentDate: Date;
@@ -121,6 +124,9 @@ export interface CreateLabIntegrationRequest {
     consentDate: Date;
     consentMethod: string;
   };
+  symptoms?: string;
+  medicalHistory?: string;
+  notes?: string;
 }
 
 export interface ApproveRecommendationsRequest {

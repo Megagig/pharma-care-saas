@@ -26,6 +26,13 @@ import {
   ListItemSecondaryAction,
   CircularProgress,
   Avatar,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  ListItemIcon,
+  Tooltip,
+  LinearProgress,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -37,6 +44,11 @@ import {
   Refresh as RefreshIcon,
   Search as SearchIcon,
   CheckCircle as CheckCircleIcon,
+  Edit as EditIcon,
+  CloudUpload as CloudUploadIcon,
+  AttachFile as AttachFileIcon,
+  Save as SaveIcon,
+  Cancel as CancelIcon,
 } from '@mui/icons-material';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
@@ -64,13 +76,22 @@ const LabIntegrationNewCase: React.FC = () => {
   const [consentGiven, setConsentGiven] = useState(false);
   const [notes, setNotes] = useState('');
 
+  // Duplicate submission prevention
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Additional form state for enhanced functionality
+  const [symptoms, setSymptoms] = useState('');
+  const [medicalHistory, setMedicalHistory] = useState('');
+  const [showAddLabModal, setShowAddLabModal] = useState(false);
+  const [editingLabResult, setEditingLabResult] = useState<any>(null);
+  const [uploadingFiles, setUploadingFiles] = useState(false);
+
   // Fetch patients on mount
   useEffect(() => {
     const loadPatients = async () => {
       try {
         await fetchPatients();
       } catch (error) {
-        console.error('Failed to fetch patients:', error);
         toast.error('Failed to load patients');
       }
     };
@@ -88,15 +109,45 @@ const LabIntegrationNewCase: React.FC = () => {
     }
   }, [searchParams, patients]);
 
-  // Fetch lab results for selected patient
-  const { data: labResultsData, isLoading: labResultsLoading } = useQuery({
-    queryKey: ['labResults', patientId],
+  // Handle selected lab results from Laboratory Findings page
+  useEffect(() => {
+    const selectedLabResults = searchParams.get('selectedLabResults');
+    if (selectedLabResults) {
+      try {
+        const labResultIds = JSON.parse(decodeURIComponent(selectedLabResults));
+        if (Array.isArray(labResultIds)) {
+          setLabResultIds(prev => [...new Set([...prev, ...labResultIds])]);
+          // Clean up URL parameters
+          const newSearchParams = new URLSearchParams(searchParams);
+          newSearchParams.delete('selectedLabResults');
+          navigate({ search: newSearchParams.toString() }, { replace: true });
+          toast.success(`${labResultIds.length} lab result(s) selected from Laboratory Findings`);
+        }
+      } catch (error) {
+        toast.error('Failed to process selected lab results');
+      }
+    }
+  }, [searchParams, navigate]);
+
+  // Fetch lab results for selected patient from Laboratory Findings module
+  const { data: labResultsData, isLoading: labResultsLoading, refetch: refetchLabResults } = useQuery({
+    queryKey: ['laboratoryResults', patientId],
     queryFn: async () => {
       if (!patientId) return [];
-      const response = await axios.get(`/api/diagnostics/lab-results/patient/${patientId}`);
-      return response.data.data || [];
+      try {
+        const response = await axios.get(`/api/laboratory/results/patient/${patientId}`);
+        const results = response.data.data || [];
+        return results;
+      } catch (error: any) {
+        // Show detailed error message
+        const errorMessage = error.response?.data?.message || error.message || 'Failed to load lab results for this patient';
+        toast.error(errorMessage);
+
+        return [];
+      }
     },
     enabled: !!patientId,
+    staleTime: 30000, // 30 seconds
   });
 
   const handleBack = () => {
@@ -113,7 +164,99 @@ const LabIntegrationNewCase: React.FC = () => {
     setLabResultIds(labResultIds.filter((id) => id !== labResultId));
   };
 
+  // Handle lab result selection with checkbox
+  const handleLabResultToggle = (labResultId: string) => {
+    if (labResultIds.includes(labResultId)) {
+      setLabResultIds(labResultIds.filter((id) => id !== labResultId));
+    } else {
+      setLabResultIds([...labResultIds, labResultId]);
+    }
+  };
+
+  // Navigate to Laboratory Findings with return parameters
+  const handleGoToLaboratoryFindings = () => {
+    const returnUrl = `/pharmacy/lab-integration/new?selectedPatient=${patientId}`;
+    navigate(`/laboratory?returnTo=lab-integration&patientId=${patientId}&returnUrl=${encodeURIComponent(returnUrl)}`);
+  };
+
+  // Handle file upload for lab results
+  const handleFileUpload = async (files: FileList) => {
+    if (!patientId) {
+      toast.error('Please select a patient first');
+      return;
+    }
+
+    setUploadingFiles(true);
+    try {
+      const formData = new FormData();
+      Array.from(files).forEach((file) => {
+        formData.append('files', file);
+      });
+      formData.append('patientId', patientId);
+      formData.append('processWithAI', 'true');
+
+      const response = await axios.post('/api/laboratory/results/upload-and-process', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      const newLabResults = response.data.data;
+      toast.success(`Successfully processed ${newLabResults.length} lab results from uploaded files`);
+
+      // Auto-select the newly created lab results
+      const newLabResultIds = newLabResults.map((lr: any) => lr._id);
+      setLabResultIds([...labResultIds, ...newLabResultIds]);
+
+      // Refetch lab results to show the new ones
+      refetchLabResults();
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to process uploaded files');
+    } finally {
+      setUploadingFiles(false);
+    }
+  };
+
+  // Handle adding new lab result
+  const handleAddNewLabResult = async (labResultData: any) => {
+    try {
+      const response = await axios.post('/api/laboratory/results', {
+        ...labResultData,
+        patientId,
+      });
+
+      const newLabResult = response.data.data;
+      toast.success('Lab result added successfully');
+
+      // Auto-select the newly created lab result
+      setLabResultIds([...labResultIds, newLabResult._id]);
+
+      // Refetch lab results to show the new one
+      refetchLabResults();
+      setShowAddLabModal(false);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to add lab result');
+    }
+  };
+
+  // Handle editing lab result
+  const handleEditLabResult = async (labResultId: string, updatedData: any) => {
+    try {
+      await axios.put(`/api/laboratory/results/${labResultId}`, updatedData);
+      toast.success('Lab result updated successfully');
+      refetchLabResults();
+      setEditingLabResult(null);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to update lab result');
+    }
+  };
+
   const handleSubmit = async () => {
+    // Prevent duplicate submissions
+    if (isSubmitting || createMutation.isPending) {
+      return;
+    }
+
     // Validation
     if (!patientId) {
       toast.error('Please select a patient');
@@ -131,19 +274,25 @@ const LabIntegrationNewCase: React.FC = () => {
     }
 
     try {
+      setIsSubmitting(true);
+
       const newCase = await createMutation.mutateAsync({
         patientId,
         labResultIds,
         source,
         priority,
         notes: notes || undefined,
+        symptoms: symptoms || undefined,
+        medicalHistory: medicalHistory || undefined,
       });
 
       toast.success('Lab integration case created successfully');
       navigate(`/pharmacy/lab-integration/${newCase._id}`);
-    } catch (error) {
-      console.error('Failed to create case:', error);
+    } catch (error: any) {
+      toast.error(error.response?.data?.message || 'Failed to create lab integration case');
+      setIsSubmitting(false); // Reset on error so user can retry
     }
+    // Note: We don't reset isSubmitting on success because we're navigating away
   };
 
   return (
@@ -448,108 +597,102 @@ const LabIntegrationNewCase: React.FC = () => {
                       <Box sx={{ display: 'flex', justifyContent: 'center', p: 3 }}>
                         <CircularProgress />
                       </Box>
-                    ) : !labResultsData || labResultsData.length === 0 ? (
-                      <Box>
-                        <Alert severity="warning" sx={{ mb: 2 }}>
-                          No lab results found for this patient. Please add lab results first.
-                        </Alert>
-                        <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
-                          <Button
-                            variant="outlined"
-                            startIcon={<ScienceIcon />}
-                            onClick={() => navigate('/laboratory')}
-                          >
-                            Go to Laboratory Findings
-                          </Button>
-                          <Button
-                            variant="contained"
-                            startIcon={<AddIcon />}
-                            onClick={() => navigate(`/laboratory/add?patientId=${selectedPatient}`)}
-                          >
-                            Add Lab Result
-                          </Button>
-                        </Box>
-                      </Box>
                     ) : (
-                      <>
-                        {/* Selected Lab Results */}
-                        {labResultIds.length > 0 && (
-                          <Paper variant="outlined" sx={{ p: 2, mb: 2, bgcolor: 'primary.50' }}>
-                            <Typography variant="subtitle2" gutterBottom sx={{ fontWeight: 600 }}>
-                              Selected Lab Results ({labResultIds.length})
-                            </Typography>
-                            <List dense>
-                              {labResultIds.map((id) => {
-                                const labResult = labResultsData.find((lr: any) => lr._id === id);
-                                return (
-                                  <ListItem key={id}>
-                                    <ListItemText
-                                      primary={
-                                        <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                          {labResult?.testName}
-                                          {labResult?.criticalValue && (
-                                            <Chip
-                                              label="CRITICAL"
-                                              size="small"
-                                              color="error"
-                                              sx={{ ml: 1, height: 20 }}
-                                            />
-                                          )}
-                                        </Typography>
-                                      }
-                                      secondary={
-                                        <>
-                                          {new Date(labResult?.performedAt).toLocaleDateString()} - {labResult?.value} {labResult?.unit}
-                                          {labResult?.interpretation && ` (${labResult.interpretation})`}
-                                        </>
-                                      }
-                                    />
-                                    <ListItemSecondaryAction>
-                                      <IconButton edge="end" onClick={() => handleRemoveLabResult(id)} size="small">
-                                        <DeleteIcon />
-                                      </IconButton>
-                                    </ListItemSecondaryAction>
-                                  </ListItem>
-                                );
-                              })}
-                            </List>
-                          </Paper>
+                      <Box>
+                        {/* Info message about lab results */}
+                        {labResultsData && labResultsData.length > 0 ? (
+                          <Alert severity="info" sx={{ mb: 2 }}>
+                            This patient has {labResultsData.length} lab result{labResultsData.length > 1 ? 's' : ''} available.
+                            Use the options below to select lab results for AI analysis.
+                          </Alert>
+                        ) : (
+                          <Alert severity="warning" sx={{ mb: 2 }}>
+                            No lab results found for this patient. Please add lab results first.
+                          </Alert>
                         )}
 
-                        {/* Available Lab Results */}
-                        <FormControl fullWidth>
-                          <InputLabel>Add Lab Result</InputLabel>
-                          <Select
-                            value=""
-                            onChange={(e) => handleAddLabResult(e.target.value)}
-                            label="Add Lab Result"
+                        <Stack spacing={2}>
+                          <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+                            <Button
+                              variant="outlined"
+                              startIcon={<ScienceIcon />}
+                              onClick={handleGoToLaboratoryFindings}
+                            >
+                              Go to Laboratory Findings
+                            </Button>
+                            <Button
+                              variant="contained"
+                              startIcon={<AddIcon />}
+                              onClick={() => setShowAddLabModal(true)}
+                            >
+                              Add Lab Result
+                            </Button>
+                          </Box>
+
+                          {/* Upload and Import Section */}
+                          <Paper
+                            variant="outlined"
+                            sx={{
+                              p: 3,
+                              borderRadius: 2,
+                              borderStyle: 'dashed',
+                              borderColor: 'primary.main',
+                              bgcolor: 'primary.50',
+                              textAlign: 'center',
+                            }}
                           >
-                            {labResultsData
-                              .filter((lr: any) => !labResultIds.includes(lr._id))
-                              .map((labResult: any) => (
-                                <MenuItem key={labResult._id} value={labResult._id}>
-                                  <Box>
-                                    <Typography variant="body2" sx={{ fontWeight: 500 }}>
-                                      {labResult.testName}
-                                      {labResult.criticalValue && (
-                                        <Chip
-                                          label="CRITICAL"
-                                          size="small"
-                                          color="error"
-                                          sx={{ ml: 1, height: 18 }}
-                                        />
-                                      )}
-                                    </Typography>
-                                    <Typography variant="caption" color="text.secondary">
-                                      {new Date(labResult.performedAt).toLocaleDateString()} - {labResult.value} {labResult.unit}
-                                      {labResult.interpretation && ` (${labResult.interpretation})`}
-                                    </Typography>
-                                  </Box>
-                                </MenuItem>
-                              ))}
-                          </Select>
-                        </FormControl>
-                      </>
+                            <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 1 }}>
+                              <CloudUploadIcon />
+                              Upload & Import Test Results
+                            </Typography>
+                            <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                              Upload lab result files (PDF, images) for AI-powered extraction and interpretation
+                            </Typography>
+
+                            {uploadingFiles ? (
+                              <Box sx={{ width: '100%', mb: 2 }}>
+                                <LinearProgress />
+                                <Typography variant="caption" color="text.secondary">
+                                  Processing uploaded files with AI...
+                                </Typography>
+                              </Box>
+                            ) : (
+                              <Button
+                                variant="contained"
+                                component="label"
+                                startIcon={<UploadIcon />}
+                                sx={{ mb: 1 }}
+                              >
+                                Choose Files to Upload
+                                <input
+                                  type="file"
+                                  hidden
+                                  multiple
+                                  accept=".pdf,.jpg,.jpeg,.png,.csv"
+                                  onChange={(e) => {
+                                    if (e.target.files && e.target.files.length > 0) {
+                                      handleFileUpload(e.target.files);
+                                    }
+                                  }}
+                                />
+                              </Button>
+                            )}
+
+                            <Typography variant="caption" display="block" color="text.secondary">
+                              Supported formats: PDF, JPG, PNG, CSV
+                            </Typography>
+                          </Paper>
+
+                          {/* Selected Lab Results Display */}
+                          {labResultIds.length > 0 && (
+                            <Alert severity="success" sx={{ mt: 2 }}>
+                              <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                {labResultIds.length} lab result{labResultIds.length > 1 ? 's' : ''} selected for AI analysis
+                              </Typography>
+                            </Alert>
+                          )}
+                        </Stack>
+                      </Box>
                     )}
                   </Box>
 
@@ -586,6 +729,39 @@ const LabIntegrationNewCase: React.FC = () => {
                       </FormControl>
                     </Grid>
                   </Grid>
+
+                  {/* Optional Clinical Information */}
+                  <Box>
+                    <Typography variant="h6" gutterBottom>
+                      Additional Clinical Information (Optional)
+                    </Typography>
+                    <Divider sx={{ mb: 2 }} />
+
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} md={6}>
+                        <TextField
+                          label="Symptoms (Optional)"
+                          multiline
+                          rows={3}
+                          value={symptoms}
+                          onChange={(e) => setSymptoms(e.target.value)}
+                          placeholder="Describe patient symptoms..."
+                          fullWidth
+                        />
+                      </Grid>
+                      <Grid item xs={12} md={6}>
+                        <TextField
+                          label="Medical History (Optional)"
+                          multiline
+                          rows={3}
+                          value={medicalHistory}
+                          onChange={(e) => setMedicalHistory(e.target.value)}
+                          placeholder="Relevant medical history..."
+                          fullWidth
+                        />
+                      </Grid>
+                    </Grid>
+                  </Box>
 
                   {/* Notes */}
                   <TextField
@@ -672,15 +848,17 @@ const LabIntegrationNewCase: React.FC = () => {
                   variant="contained"
                   size="large"
                   onClick={handleSubmit}
-                  disabled={createMutation.isPending || !patientId || labResultIds.length === 0 || !consentGiven}
+                  disabled={isSubmitting || createMutation.isPending || !patientId || labResultIds.length === 0 || !consentGiven}
                   fullWidth
+                  startIcon={isSubmitting || createMutation.isPending ? <CircularProgress size={20} /> : undefined}
                 >
-                  Create Case
+                  {isSubmitting || createMutation.isPending ? 'Creating Case...' : 'Create Case'}
                 </Button>
                 <Button
                   variant="outlined"
                   onClick={handleBack}
                   fullWidth
+                  disabled={isSubmitting || createMutation.isPending}
                 >
                   Cancel
                 </Button>
@@ -688,8 +866,335 @@ const LabIntegrationNewCase: React.FC = () => {
             </Stack>
           </Grid>
         </Grid>
+
+        {/* Add Lab Result Modal */}
+        <Dialog
+          open={showAddLabModal}
+          onClose={() => setShowAddLabModal(false)}
+          maxWidth="md"
+          fullWidth
+        >
+          <DialogTitle>Add New Lab Result</DialogTitle>
+          <DialogContent>
+            <AddLabResultForm
+              patientId={patientId}
+              onSubmit={handleAddNewLabResult}
+              onCancel={() => setShowAddLabModal(false)}
+            />
+          </DialogContent>
+        </Dialog>
+
+        {/* Edit Lab Result Modal */}
+        <Dialog
+          open={!!editingLabResult}
+          onClose={() => setEditingLabResult(null)}
+          maxWidth="md"
+          fullWidth
+        >
+          <DialogTitle>Edit Lab Result</DialogTitle>
+          <DialogContent>
+            <EditLabResultForm
+              labResult={editingLabResult}
+              onSubmit={(updatedData) => handleEditLabResult(editingLabResult._id, updatedData)}
+              onCancel={() => setEditingLabResult(null)}
+            />
+          </DialogContent>
+        </Dialog>
       </Container>
     </>
+  );
+};
+
+// Add Lab Result Form Component
+const AddLabResultForm: React.FC<{
+  patientId: string;
+  onSubmit: (data: any) => void;
+  onCancel: () => void;
+}> = ({ patientId, onSubmit, onCancel }) => {
+  const [formData, setFormData] = useState({
+    testName: '',
+    testCode: '',
+    testCategory: '',
+    testValue: '',
+    unit: '',
+    referenceRange: '',
+    interpretation: 'Normal',
+    isCritical: false,
+    isAbnormal: false,
+    testDate: new Date().toISOString().split('T')[0],
+    notes: '',
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit(formData);
+  };
+
+  return (
+    <Box component="form" onSubmit={handleSubmit} sx={{ pt: 2 }}>
+      <Grid container spacing={2}>
+        <Grid item xs={12} md={6}>
+          <TextField
+            label="Test Name"
+            value={formData.testName}
+            onChange={(e) => setFormData({ ...formData, testName: e.target.value })}
+            required
+            fullWidth
+          />
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <TextField
+            label="Test Code"
+            value={formData.testCode}
+            onChange={(e) => setFormData({ ...formData, testCode: e.target.value })}
+            fullWidth
+          />
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <FormControl fullWidth>
+            <InputLabel>Test Category</InputLabel>
+            <Select
+              value={formData.testCategory}
+              onChange={(e) => setFormData({ ...formData, testCategory: e.target.value })}
+              label="Test Category"
+            >
+              <MenuItem value="Hematology">Hematology</MenuItem>
+              <MenuItem value="Chemistry">Chemistry</MenuItem>
+              <MenuItem value="Immunology">Immunology</MenuItem>
+              <MenuItem value="Microbiology">Microbiology</MenuItem>
+              <MenuItem value="Molecular">Molecular</MenuItem>
+              <MenuItem value="Other">Other</MenuItem>
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <TextField
+            label="Test Date"
+            type="date"
+            value={formData.testDate}
+            onChange={(e) => setFormData({ ...formData, testDate: e.target.value })}
+            InputLabelProps={{ shrink: true }}
+            fullWidth
+          />
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <TextField
+            label="Test Value"
+            value={formData.testValue}
+            onChange={(e) => setFormData({ ...formData, testValue: e.target.value })}
+            required
+            fullWidth
+          />
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <TextField
+            label="Unit"
+            value={formData.unit}
+            onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+            fullWidth
+          />
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <TextField
+            label="Reference Range"
+            value={formData.referenceRange}
+            onChange={(e) => setFormData({ ...formData, referenceRange: e.target.value })}
+            fullWidth
+          />
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <FormControl fullWidth>
+            <InputLabel>Interpretation</InputLabel>
+            <Select
+              value={formData.interpretation}
+              onChange={(e) => setFormData({ ...formData, interpretation: e.target.value })}
+              label="Interpretation"
+            >
+              <MenuItem value="Normal">Normal</MenuItem>
+              <MenuItem value="Abnormal">Abnormal</MenuItem>
+              <MenuItem value="High">High</MenuItem>
+              <MenuItem value="Low">Low</MenuItem>
+              <MenuItem value="Critical">Critical</MenuItem>
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', height: '100%' }}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={formData.isCritical}
+                  onChange={(e) => setFormData({ ...formData, isCritical: e.target.checked })}
+                />
+              }
+              label="Critical"
+            />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={formData.isAbnormal}
+                  onChange={(e) => setFormData({ ...formData, isAbnormal: e.target.checked })}
+                />
+              }
+              label="Abnormal"
+            />
+          </Box>
+        </Grid>
+        <Grid item xs={12}>
+          <TextField
+            label="Notes"
+            multiline
+            rows={3}
+            value={formData.notes}
+            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+            fullWidth
+          />
+        </Grid>
+      </Grid>
+
+      <DialogActions sx={{ px: 0, pt: 3 }}>
+        <Button onClick={onCancel} startIcon={<CancelIcon />}>
+          Cancel
+        </Button>
+        <Button type="submit" variant="contained" startIcon={<SaveIcon />}>
+          Add Lab Result
+        </Button>
+      </DialogActions>
+    </Box>
+  );
+};
+
+// Edit Lab Result Form Component
+const EditLabResultForm: React.FC<{
+  labResult: any;
+  onSubmit: (data: any) => void;
+  onCancel: () => void;
+}> = ({ labResult, onSubmit, onCancel }) => {
+  const [formData, setFormData] = useState({
+    testName: labResult?.testName || '',
+    testCode: labResult?.testCode || '',
+    testCategory: labResult?.testCategory || '',
+    testValue: labResult?.testValue || labResult?.value || '',
+    unit: labResult?.unit || '',
+    referenceRange: labResult?.referenceRange || '',
+    interpretation: labResult?.interpretation || 'Normal',
+    isCritical: labResult?.isCritical || false,
+    isAbnormal: labResult?.isAbnormal || false,
+    testDate: labResult?.testDate ? new Date(labResult.testDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+    notes: labResult?.notes || '',
+  });
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    onSubmit(formData);
+  };
+
+  if (!labResult) return null;
+
+  return (
+    <Box component="form" onSubmit={handleSubmit} sx={{ pt: 2 }}>
+      <Grid container spacing={2}>
+        <Grid item xs={12} md={6}>
+          <TextField
+            label="Test Name"
+            value={formData.testName}
+            onChange={(e) => setFormData({ ...formData, testName: e.target.value })}
+            required
+            fullWidth
+          />
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <TextField
+            label="Test Code"
+            value={formData.testCode}
+            onChange={(e) => setFormData({ ...formData, testCode: e.target.value })}
+            fullWidth
+          />
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <TextField
+            label="Test Value"
+            value={formData.testValue}
+            onChange={(e) => setFormData({ ...formData, testValue: e.target.value })}
+            required
+            fullWidth
+          />
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <TextField
+            label="Unit"
+            value={formData.unit}
+            onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+            fullWidth
+          />
+        </Grid>
+        <Grid item xs={12} md={4}>
+          <TextField
+            label="Reference Range"
+            value={formData.referenceRange}
+            onChange={(e) => setFormData({ ...formData, referenceRange: e.target.value })}
+            fullWidth
+          />
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <FormControl fullWidth>
+            <InputLabel>Interpretation</InputLabel>
+            <Select
+              value={formData.interpretation}
+              onChange={(e) => setFormData({ ...formData, interpretation: e.target.value })}
+              label="Interpretation"
+            >
+              <MenuItem value="Normal">Normal</MenuItem>
+              <MenuItem value="Abnormal">Abnormal</MenuItem>
+              <MenuItem value="High">High</MenuItem>
+              <MenuItem value="Low">Low</MenuItem>
+              <MenuItem value="Critical">Critical</MenuItem>
+            </Select>
+          </FormControl>
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', height: '100%' }}>
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={formData.isCritical}
+                  onChange={(e) => setFormData({ ...formData, isCritical: e.target.checked })}
+                />
+              }
+              label="Critical"
+            />
+            <FormControlLabel
+              control={
+                <Checkbox
+                  checked={formData.isAbnormal}
+                  onChange={(e) => setFormData({ ...formData, isAbnormal: e.target.checked })}
+                />
+              }
+              label="Abnormal"
+            />
+          </Box>
+        </Grid>
+        <Grid item xs={12}>
+          <TextField
+            label="Notes"
+            multiline
+            rows={3}
+            value={formData.notes}
+            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+            fullWidth
+          />
+        </Grid>
+      </Grid>
+
+      <DialogActions sx={{ px: 0, pt: 3 }}>
+        <Button onClick={onCancel} startIcon={<CancelIcon />}>
+          Cancel
+        </Button>
+        <Button type="submit" variant="contained" startIcon={<SaveIcon />}>
+          Update Lab Result
+        </Button>
+      </DialogActions>
+    </Box>
   );
 };
 

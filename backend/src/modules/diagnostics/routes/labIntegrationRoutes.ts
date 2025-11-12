@@ -1,12 +1,12 @@
 import express from 'express';
-import { auth } from '../../../middlewares/auth';
+import { authWithWorkspace } from '../../../middlewares/authWithWorkspace';
 import { requireRole, requirePermission, requireFeature } from '../../../middlewares/rbac';
 import * as labIntegrationController from '../controllers/labIntegrationController';
 
 const router = express.Router();
 
-// All routes require authentication
-router.use(auth);
+// All routes require authentication and workspace context
+router.use(authWithWorkspace);
 
 // All routes require lab_integration feature access
 router.use(requireFeature('lab_integration'));

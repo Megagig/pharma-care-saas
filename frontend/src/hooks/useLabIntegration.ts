@@ -34,12 +34,22 @@ export const LAB_INTEGRATION_KEYS = {
  * Get lab integration by ID
  */
 export const useLabIntegration = (id: string, enabled: boolean = true) => {
-  return useQuery({
+  const query = useQuery({
     queryKey: LAB_INTEGRATION_KEYS.detail(id),
     queryFn: () => labIntegrationService.getLabIntegrationById(id),
     enabled: enabled && !!id,
     staleTime: 30000, // 30 seconds
+    refetchInterval: (data) => {
+      // Poll every 3 seconds if AI is processing
+      if (data?.aiProcessingStatus === 'processing') {
+        return 3000;
+      }
+      // Stop polling once processing is complete or failed
+      return false;
+    },
   });
+
+  return query;
 };
 
 /**
@@ -126,7 +136,7 @@ export const useCreateLabIntegration = () => {
       // Invalidate relevant queries
       queryClient.invalidateQueries({ queryKey: LAB_INTEGRATION_KEYS.patient(data.patientId) });
       queryClient.invalidateQueries({ queryKey: LAB_INTEGRATION_KEYS.pendingReviews() });
-      
+
       toast.success('Lab integration created successfully. AI interpretation in progress...');
     },
     onError: (error: any) => {
@@ -149,7 +159,7 @@ export const useRequestAIInterpretation = () => {
       queryClient.setQueryData(LAB_INTEGRATION_KEYS.detail(data._id), data);
       queryClient.invalidateQueries({ queryKey: LAB_INTEGRATION_KEYS.patient(data.patientId) });
       queryClient.invalidateQueries({ queryKey: LAB_INTEGRATION_KEYS.pendingReviews() });
-      
+
       toast.success('AI interpretation completed successfully');
     },
     onError: (error: any) => {
@@ -174,17 +184,17 @@ export const useApproveRecommendations = () => {
       queryClient.invalidateQueries({ queryKey: LAB_INTEGRATION_KEYS.patient(data.patientId) });
       queryClient.invalidateQueries({ queryKey: LAB_INTEGRATION_KEYS.pendingReviews() });
       queryClient.invalidateQueries({ queryKey: LAB_INTEGRATION_KEYS.criticalCases() });
-      
+
       const decision = data.pharmacistReview?.decision;
       const message =
         decision === 'approved'
           ? 'Recommendations approved successfully'
           : decision === 'rejected'
-          ? 'Recommendations rejected'
-          : decision === 'escalated'
-          ? 'Case escalated to physician'
-          : 'Recommendations updated';
-      
+            ? 'Recommendations rejected'
+            : decision === 'escalated'
+              ? 'Case escalated to physician'
+              : 'Recommendations updated';
+
       toast.success(message);
     },
     onError: (error: any) => {
@@ -208,10 +218,10 @@ export const useImplementAdjustments = () => {
       queryClient.setQueryData(LAB_INTEGRATION_KEYS.detail(data._id), data);
       queryClient.invalidateQueries({ queryKey: LAB_INTEGRATION_KEYS.patient(data.patientId) });
       queryClient.invalidateQueries({ queryKey: LAB_INTEGRATION_KEYS.pendingReviews() });
-      
+
       // Also invalidate medication queries since we've made changes
       queryClient.invalidateQueries({ queryKey: ['medications', data.patientId] });
-      
+
       toast.success('Medication adjustments implemented successfully');
     },
     onError: (error: any) => {

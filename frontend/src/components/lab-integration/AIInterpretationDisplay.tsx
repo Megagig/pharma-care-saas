@@ -27,6 +27,8 @@ import type { AIInterpretation } from '../../services/labIntegrationService';
 interface AIInterpretationDisplayProps {
   interpretation?: AIInterpretation;
   status: string;
+  aiProcessingStatus?: string;
+  aiProcessingError?: string;
   onRequestInterpretation?: () => void;
   loading?: boolean;
 }
@@ -34,6 +36,8 @@ interface AIInterpretationDisplayProps {
 const AIInterpretationDisplay: React.FC<AIInterpretationDisplayProps> = ({
   interpretation,
   status,
+  aiProcessingStatus,
+  aiProcessingError,
   onRequestInterpretation,
   loading = false,
 }) => {
@@ -63,9 +67,59 @@ const AIInterpretationDisplay: React.FC<AIInterpretationDisplayProps> = ({
     return 'error';
   };
 
+  // Check if AI is processing
+  if (aiProcessingStatus === 'processing' || status === 'pending_interpretation') {
+    return (
+      <Box sx={{ textAlign: 'center', py: 6 }}>
+        <PsychologyIcon sx={{ fontSize: 80, color: 'primary.main', mb: 2 }} />
+        <Typography variant="h6" gutterBottom>
+          AI Interpretation in Progress
+        </Typography>
+        <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
+          The AI is analyzing the lab results. This may take a few moments...
+        </Typography>
+        <LinearProgress sx={{ maxWidth: 400, mx: 'auto' }} />
+        <Typography variant="caption" color="text.secondary" sx={{ mt: 2, display: 'block' }}>
+          Status: {aiProcessingStatus || 'Processing'}
+        </Typography>
+      </Box>
+    );
+  }
+
+  // Check if AI processing failed
+  if (aiProcessingStatus === 'failed') {
+    return (
+      <Alert severity="error" sx={{ mb: 2 }}>
+        <Typography variant="subtitle2" gutterBottom>
+          AI Interpretation Failed
+        </Typography>
+        <Typography variant="body2" sx={{ mb: 1 }}>
+          {aiProcessingError || 'The AI interpretation could not be completed. Please try again or contact support.'}
+        </Typography>
+        {aiProcessingError && (
+          <Typography variant="caption" color="text.secondary" sx={{ display: 'block', mb: 2, fontStyle: 'italic' }}>
+            Error details: {aiProcessingError}
+          </Typography>
+        )}
+        {onRequestInterpretation && (
+          <Button
+            variant="outlined"
+            size="small"
+            onClick={onRequestInterpretation}
+            disabled={loading}
+            startIcon={<RefreshIcon />}
+            sx={{ mt: 1 }}
+          >
+            Retry AI Interpretation
+          </Button>
+        )}
+      </Alert>
+    );
+  }
+
   // No interpretation yet
   if (!interpretation) {
-    if (status === 'draft') {
+    if (status === 'draft' || aiProcessingStatus === 'pending') {
       return (
         <Box sx={{ textAlign: 'center', py: 6 }}>
           <PsychologyIcon sx={{ fontSize: 80, color: 'text.secondary', mb: 2 }} />
@@ -85,21 +139,6 @@ const AIInterpretationDisplay: React.FC<AIInterpretationDisplayProps> = ({
               Request AI Interpretation
             </Button>
           )}
-        </Box>
-      );
-    }
-
-    if (status === 'pending_interpretation') {
-      return (
-        <Box sx={{ textAlign: 'center', py: 6 }}>
-          <PsychologyIcon sx={{ fontSize: 80, color: 'primary.main', mb: 2 }} />
-          <Typography variant="h6" gutterBottom>
-            AI Interpretation in Progress
-          </Typography>
-          <Typography variant="body2" color="text.secondary" sx={{ mb: 3 }}>
-            The AI is analyzing the lab results. This may take a few moments...
-          </Typography>
-          <LinearProgress sx={{ maxWidth: 400, mx: 'auto' }} />
         </Box>
       );
     }

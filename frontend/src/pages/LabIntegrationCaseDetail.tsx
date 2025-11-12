@@ -34,6 +34,7 @@ import {
 import { useNavigate, useParams } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Helmet } from 'react-helmet-async';
+import { toast } from 'react-hot-toast';
 import { useLabIntegration, useRequestAIInterpretation } from '../hooks/useLabIntegration';
 import AIInterpretationDisplay from '../components/lab-integration/AIInterpretationDisplay';
 import TherapyRecommendationReview from '../components/lab-integration/TherapyRecommendationReview';
@@ -73,7 +74,7 @@ const LabIntegrationCaseDetail: React.FC = () => {
   useEffect(() => {
     if (labIntegration) {
       // Check for critical values
-      const hasCriticalValues = labIntegration.labResultIds?.some((result: any) => result.criticalValue);
+      const hasCriticalValues = labIntegration.labResultIds?.some((result: any) => result.isCritical);
       const hasCriticalInterpretation = labIntegration.aiInterpretation?.clinicalSignificance === 'critical';
       const hasCriticalSafety = labIntegration.criticalSafetyIssues;
 
@@ -111,8 +112,30 @@ const LabIntegrationCaseDetail: React.FC = () => {
   };
 
   const handleRequestAI = async () => {
-    if (id) {
+    if (!id) return;
+
+    try {
       await requestAIMutation.mutateAsync(id);
+      toast.success('AI interpretation requested successfully. Processing will begin shortly.');
+    } catch (error: any) {
+      // Extract error message from response
+      const errorMessage = error?.response?.data?.error?.message
+        || error?.response?.data?.message
+        || error?.message
+        || 'Failed to request AI interpretation';
+
+      // Show user-friendly error message
+      toast.error(errorMessage, {
+        duration: 5000,
+      });
+
+      // Log detailed error for debugging
+      console.error('AI interpretation request failed:', {
+        status: error?.response?.status,
+        statusText: error?.response?.statusText,
+        data: error?.response?.data,
+        message: error?.message,
+      });
     }
   };
 
@@ -138,13 +161,13 @@ const LabIntegrationCaseDetail: React.FC = () => {
     return colors[status] || 'default';
   };
 
-  const getPriorityColor = (priority: string) => {
+  const getUrgencyColor = (urgency?: string) => {
     const colors: Record<string, 'default' | 'warning' | 'error'> = {
       routine: 'default',
       urgent: 'warning',
-      critical: 'error',
+      stat: 'error',
     };
-    return colors[priority] || 'default';
+    return colors[urgency || 'routine'] || 'default';
   };
 
   if (isLoading) {
@@ -209,7 +232,7 @@ const LabIntegrationCaseDetail: React.FC = () => {
             )}
             {(labIntegration.criticalSafetyIssues ||
               labIntegration.aiInterpretation?.clinicalSignificance === 'critical' ||
-              labIntegration.labResultIds?.some((r: any) => r.criticalValue)) && (
+              labIntegration.labResultIds?.some((r: any) => r.isCritical)) && (
                 <Button
                   variant="contained"
                   color="warning"
@@ -238,11 +261,11 @@ const LabIntegrationCaseDetail: React.FC = () => {
               </Grid>
               <Grid item xs={12} md={3}>
                 <Typography variant="body2" color="text.secondary" gutterBottom>
-                  Priority
+                  Urgency
                 </Typography>
                 <Chip
-                  label={labIntegration.priority.toUpperCase()}
-                  color={getPriorityColor(labIntegration.priority)}
+                  label={labIntegration.urgency?.toUpperCase() || 'ROUTINE'}
+                  color={getUrgencyColor(labIntegration.urgency)}
                   size="medium"
                 />
               </Grid>
@@ -275,10 +298,10 @@ const LabIntegrationCaseDetail: React.FC = () => {
             )}
 
             {/* Critical Alert */}
-            {labIntegration.priority === 'critical' && (
+            {labIntegration.urgency === 'stat' && (
               <Alert severity="error" sx={{ mt: 2 }}>
                 <Typography variant="subtitle2" gutterBottom>
-                  CRITICAL CASE - Immediate Attention Required
+                  STAT CASE - Immediate Attention Required
                 </Typography>
                 <Typography variant="body2">
                   This case has been flagged as critical and requires immediate pharmacist review.
@@ -324,6 +347,8 @@ const LabIntegrationCaseDetail: React.FC = () => {
             <AIInterpretationDisplay
               interpretation={labIntegration.aiInterpretation}
               status={labIntegration.status}
+              aiProcessingStatus={labIntegration.aiProcessingStatus}
+              aiProcessingError={labIntegration.aiProcessingError}
               onRequestInterpretation={handleRequestAI}
               loading={requestAIMutation.isPending}
             />

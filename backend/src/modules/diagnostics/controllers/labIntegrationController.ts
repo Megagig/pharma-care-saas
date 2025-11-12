@@ -3,7 +3,7 @@ import { Types } from 'mongoose';
 import logger from '../../../utils/logger';
 import labIntegrationService, { CreateLabIntegrationRequest } from '../services/labIntegrationService';
 import labIntegrationAlertService from '../services/labIntegrationAlertService';
-import { AuthRequest } from '../../../middlewares/auth';
+import { AuthRequest } from '../../../types/auth';
 
 /**
  * Create a new lab integration case
@@ -14,10 +14,23 @@ export const createLabIntegration = async (
     next: NextFunction
 ): Promise<void> => {
     try {
+        logger.info('Creating lab integration case', {
+            userId: req.user?._id,
+            workplaceId: req.user?.workplaceId,
+            hasWorkspaceContext: !!req.workspaceContext,
+            workspaceContextWorkplaceId: req.workspaceContext?.workspace?._id,
+            requestBody: req.body
+        });
+
         const userId = req.user?._id;
         const workplaceId = req.user?.workplaceId;
 
         if (!userId || !workplaceId) {
+            logger.error('Unauthorized: User or workplace not found', {
+                userId,
+                workplaceId,
+                hasUser: !!req.user
+            });
             res.status(401).json({
                 success: false,
                 message: 'Unauthorized: User or workplace not found'
@@ -31,7 +44,15 @@ export const createLabIntegration = async (
             workplaceId: workplaceId.toString()
         };
 
+        logger.info('Calling labIntegrationService.createLabIntegration', {
+            requestData
+        });
+
         const labIntegration = await labIntegrationService.createLabIntegration(requestData);
+
+        logger.info('Lab integration created successfully', {
+            labIntegrationId: labIntegration._id
+        });
 
         // Automatically request AI interpretation if lab results are provided
         if (requestData.labResultIds && requestData.labResultIds.length > 0) {
@@ -53,6 +74,7 @@ export const createLabIntegration = async (
     } catch (error) {
         logger.error('Failed to create lab integration case', {
             error: error instanceof Error ? error.message : 'Unknown error',
+            stack: error instanceof Error ? error.stack : undefined,
             userId: req.user?._id
         });
         next(error);

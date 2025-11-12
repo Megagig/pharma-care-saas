@@ -489,20 +489,53 @@ export const getPatientLabResults = async (
     try {
         const { patientId } = req.params;
         const { startDate, endDate, testCategory, limit } = req.query;
+        const userId = req.user?.id;
+        const userRole = req.user?.role;
+        const workplaceId = req.user?.workplaceId;
 
-        const options: any = {};
-        if (startDate) options.startDate = new Date(startDate as string);
-        if (endDate) options.endDate = new Date(endDate as string);
-        if (testCategory) options.testCategory = testCategory;
-        if (limit) options.limit = Number(limit);
+        // Build query - super admins can see all results, others filtered by workplace
+        const query: any = {
+            patientId: new mongoose.Types.ObjectId(patientId),
+            isDeleted: false
+        };
 
-        const results = await LabResult.findByPatient(
-            new mongoose.Types.ObjectId(patientId),
-            options
-        )
+        // Filter by workplace for non-super-admin users
+        if (userRole !== 'super_admin' && workplaceId) {
+            query.workplaceId = new mongoose.Types.ObjectId(workplaceId as string);
+        }
+
+        // Add date filters
+        if (startDate || endDate) {
+            query.testDate = {};
+            if (startDate) query.testDate.$gte = new Date(startDate as string);
+            if (endDate) query.testDate.$lte = new Date(endDate as string);
+        }
+
+        // Add category filter
+        if (testCategory) {
+            query.testCategory = testCategory;
+        }
+
+        // Build query with filters
+        let queryBuilder = LabResult.find(query)
             .populate('createdBy', 'firstName lastName')
             .populate('signedOffBy', 'firstName lastName')
-            .lean();
+            .sort({ testDate: -1 });
+
+        // Apply limit if specified
+        if (limit) {
+            queryBuilder = queryBuilder.limit(Number(limit));
+        }
+
+        const results = await queryBuilder.lean();
+
+        logger.info('Patient lab results fetched', {
+            patientId,
+            resultCount: results.length,
+            userId,
+            userRole,
+            workplaceId
+        });
 
         res.status(200).json({
             success: true,
@@ -1462,6 +1495,230 @@ export const downloadCSVTemplate = async (
 
     } catch (error) {
         logger.error('Error downloading CSV template', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+            userId: req.user?.id
+        });
+        next(error);
+    }
+};
+/**
+ * @route   POST /api/laboratory/results/upload-and-process
+ * @desc    Upload lab result files and process with AI/OCR
+ * @access  Pharmacist, Pharmacy Team, Pharmacy Outlet, Lab Technician, Owner, Super Admin
+ */
+export const uploadAndProcessLabResults = async (
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
+    try {
+        const userId = req.user?.id;
+        const userRole = req.user?.role;
+        let workplaceId = req.user?.workplaceId;
+        const { patientId, processWithAI } = req.body;
+        const files = req.files as Express.Multer.File[];
+
+        if (!userId) {
+            res.status(401).json({
+                success: false,
+                message: 'Unauthorized: User not found'
+            });
+            return;
+        }
+
+        if (!files || files.length === 0) {
+            res.status(400).json({
+                success: false,
+                message: 'No files uploaded'
+            });
+            return;
+        }
+
+        if (!patientId) {
+            res.status(400).json({
+                success: false,
+                message: 'Patient ID is required'
+            });
+            return;
+        }
+
+        // Validate patient exists and get their workplace
+        const patient = await Patient.findById(patientId);
+        if (!patient) {
+            res.status(404).json({
+                success: false,
+                message: 'Patient not found'
+            });
+            return;
+        }
+
+        // For super admins without a workplace, use the patient's workplace
+        if (userRole === 'super_admin' && !workplaceId) {
+            workplaceId = patient.workplaceId;
+        }
+
+        if (!workplaceId) {
+            res.status(400).json({
+                success: false,
+                message: 'Workplace not found'
+            });
+            return;
+        }
+
+        const processedResults = [];
+
+        for (const file of files) {
+            try {
+                let extractedData: any = {};
+
+                // Read file into buffer for processing
+                const fileBuffer = fs.readFileSync(file.path);
+
+                // Process file based on type
+                if (file.mimetype === 'application/pdf') {
+                    try {
+                        const pdfResult = await parseLabResultPDF(fileBuffer);
+                        if (pdfResult.success && pdfResult.results.length > 0) {
+                            extractedData = pdfResult.results[0]; // Use first result
+                            if (pdfResult.metadata) {
+                                extractedData = { ...extractedData, ...pdfResult.metadata };
+                            }
+                        } else {
+                            logger.warn('PDF parsing failed or no results found', {
+                                fileName: file.originalname,
+                                error: pdfResult.error
+                            });
+                        }
+                    } catch (pdfError) {
+                        logger.error('PDF parsing error', {
+                            fileName: file.originalname,
+                            error: pdfError instanceof Error ? pdfError.message : 'Unknown error'
+                        });
+                    }
+                } else if (file.mimetype.startsWith('image/')) {
+                    // For images, we would use OCR service (placeholder for now)
+                    extractedData = {
+                        testName: `Test from ${file.originalname}`,
+                        testValue: 'Pending OCR processing',
+                        notes: `Uploaded from image: ${file.originalname}`
+                    };
+                } else if (file.mimetype === 'text/csv') {
+                    try {
+                        const csvResult = await parseLabResultCSV(fileBuffer);
+                        if (csvResult.success && csvResult.results.length > 0) {
+                            extractedData = csvResult.results[0]; // Use first result
+                        } else {
+                            logger.warn('CSV parsing failed or no results found', {
+                                fileName: file.originalname,
+                                errors: csvResult.errors
+                            });
+                        }
+                    } catch (csvError) {
+                        logger.error('CSV parsing error', {
+                            fileName: file.originalname,
+                            error: csvError instanceof Error ? csvError.message : 'Unknown error'
+                        });
+                    }
+                }
+
+                // Ensure we have at least basic data
+                if (!extractedData.testName) {
+                    extractedData.testName = `Test from ${file.originalname}`;
+                }
+                if (!extractedData.testValue) {
+                    extractedData.testValue = 'Pending processing';
+                }
+
+                // Upload file to Cloudinary
+                const uploadResult = await uploadDocument(file.path, `lab-results/${workplaceId}/${patientId}/uploads`);
+
+                // Create lab result record
+                const labResult = await LabResult.create({
+                    patientId: new mongoose.Types.ObjectId(patientId),
+                    workplaceId: new mongoose.Types.ObjectId(workplaceId as string),
+                    testName: extractedData.testName || `Test from ${file.originalname}`,
+                    testCode: extractedData.testCode || '',
+                    testCategory: extractedData.testCategory || 'Other',
+                    specimenType: extractedData.specimenType || '',
+                    testValue: extractedData.testValue || 'Processing...',
+                    numericValue: extractedData.numericValue || null,
+                    unit: extractedData.unit || '',
+                    referenceRange: extractedData.referenceRange || '',
+                    referenceRangeLow: extractedData.referenceRangeLow || null,
+                    referenceRangeHigh: extractedData.referenceRangeHigh || null,
+                    interpretation: extractedData.interpretation || 'Pending',
+                    isCritical: extractedData.isCritical || false,
+                    isAbnormal: extractedData.isAbnormal || false,
+                    testDate: extractedData.testDate ? new Date(extractedData.testDate) : new Date(),
+                    resultDate: extractedData.reportDate ? new Date(extractedData.reportDate) : new Date(),
+                    orderingPhysician: extractedData.orderingPhysician || '',
+                    performingLaboratory: extractedData.laboratoryName || extractedData.performingLaboratory || '',
+                    laboratoryAddress: '',
+                    accessionNumber: extractedData.accessionNumber || '',
+                    notes: extractedData.notes || `Uploaded and processed from: ${file.originalname}`,
+                    clinicalIndication: '',
+                    status: 'Pending Review',
+                    createdBy: new mongoose.Types.ObjectId(userId as string),
+                    aiProcessed: processWithAI === 'true',
+                    alertSent: false,
+                    attachments: [{
+                        fileName: file.originalname,
+                        fileType: file.mimetype,
+                        fileSize: file.size,
+                        cloudinaryUrl: uploadResult.secure_url,
+                        cloudinaryPublicId: uploadResult.public_id,
+                        uploadedBy: new mongoose.Types.ObjectId(userId as string),
+                        uploadedAt: new Date()
+                    }]
+                });
+
+                // Populate patient details
+                await labResult.populate('patientId', 'firstName lastName dateOfBirth mrn');
+
+                processedResults.push(labResult);
+
+                // Clean up temporary file
+                if (fs.existsSync(file.path)) {
+                    fs.unlinkSync(file.path);
+                }
+
+                logger.info('Lab result created from uploaded file', {
+                    labResultId: labResult._id,
+                    fileName: file.originalname,
+                    patientId,
+                    userId
+                });
+
+            } catch (fileError) {
+                logger.error('Failed to process uploaded file', {
+                    fileName: file.originalname,
+                    error: fileError instanceof Error ? fileError.message : 'Unknown error',
+                    userId
+                });
+
+                // Clean up temporary file on error
+                if (fs.existsSync(file.path)) {
+                    fs.unlinkSync(file.path);
+                }
+            }
+        }
+
+        if (processedResults.length === 0) {
+            res.status(400).json({
+                success: false,
+                message: 'Failed to process any of the uploaded files'
+            });
+            return;
+        }
+
+        res.status(201).json({
+            success: true,
+            message: `Successfully processed ${processedResults.length} lab result(s) from uploaded files`,
+            data: processedResults
+        });
+
+    } catch (error) {
+        logger.error('Error uploading and processing lab results', {
             error: error instanceof Error ? error.message : 'Unknown error',
             userId: req.user?.id
         });

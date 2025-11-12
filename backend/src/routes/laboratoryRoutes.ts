@@ -213,6 +213,18 @@ router.post(
 );
 
 /**
+ * @route   POST /api/laboratory/results/upload-and-process
+ * @desc    Upload lab result files and process with AI/OCR
+ * @access  Pharmacist, Pharmacy Team, Pharmacy Outlet, Lab Technician, Owner, Super Admin
+ */
+router.post(
+    '/results/upload-and-process',
+    requirePermission('lab_results:create'),
+    upload.array('files', 10), // Allow up to 10 files
+    laboratoryController.uploadAndProcessLabResults
+);
+
+/**
  * @route   POST /api/laboratory/batch-upload
  * @desc    Batch upload lab results (CSV)
  * @access  Pharmacist, Owner, Super Admin

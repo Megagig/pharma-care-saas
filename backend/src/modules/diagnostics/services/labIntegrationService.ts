@@ -8,7 +8,7 @@ import LabIntegration, {
     IMedicationAdjustment,
     IPharmacistReview
 } from '../models/LabIntegration';
-import LabResult, { ILabResult } from '../models/LabResult';
+import LabResult, { ILabResult } from '../../../models/LabResult'; // Use universal LabResult model
 import LabOrder from '../models/LabOrder';
 import Patient from '../../../models/Patient';
 import Medication from '../../../models/Medication';
@@ -333,18 +333,18 @@ export class LabIntegrationService {
                 patientData: input.patientData,
                 symptoms: {
                     subjective: [`Lab results analysis for ${input.labResults.map(r => r.testName).join(', ')}`],
-                    objective: input.labResults.map(r => `${r.testName}: ${r.value} ${r.unit} (Ref: ${r.referenceRange.text || `${r.referenceRange.low}-${r.referenceRange.high}`})`),
+                    objective: input.labResults.map(r => `${r.testName}: ${r.testValue} ${r.unit || ''} (Ref: ${r.referenceRange || 'N/A'})`),
                     duration: 'current',
-                    severity: input.labResults.some(r => r.criticalValue) ? 'severe' as const : 'moderate' as const,
+                    severity: input.labResults.some(r => r.isCritical) ? 'severe' as const : 'moderate' as const,
                     onset: 'acute' as const
                 },
                 vitalSigns: {},
                 medications: input.patientData.currentMedications.map(m => m.name),
                 labResults: input.labResults.map(r => ({
                     testName: r.testName,
-                    value: r.value,
-                    referenceRange: r.referenceRange.text || `${r.referenceRange.low || ''}-${r.referenceRange.high || ''}${r.referenceRange.unit ? ' ' + r.referenceRange.unit : ''}`,
-                    abnormal: r.interpretation !== 'normal'
+                    value: r.testValue,
+                    referenceRange: r.referenceRange || 'N/A',
+                    abnormal: r.interpretation !== 'Normal'
                 })),
                 allergies: input.patientData.allergies,
                 chronicConditions: input.patientData.conditions
@@ -381,7 +381,7 @@ export class LabIntegrationService {
      */
     private buildLabInterpretationPrompt(input: AIInterpretationInput): string {
         const labResultsText = input.labResults.map(result =>
-            `${result.testName} (${result.testCode}): ${result.value} ${result.unit || ''} [Reference: ${result.referenceRange.text || `${result.referenceRange.low}-${result.referenceRange.high}`}] - ${result.interpretation}`
+            `${result.testName} (${result.testCode || 'N/A'}): ${result.testValue} ${result.unit || ''} [Reference: ${result.referenceRange || 'N/A'}] - ${result.interpretation}`
         ).join('\n');
 
         const medicationsText = input.patientData.currentMedications.map(med =>
@@ -963,10 +963,10 @@ Focus on:
                 unit: labResults[0].unit,
                 referenceRange: labResults[0].referenceRange,
                 dataPoints: labResults.map(result => ({
-                    date: result.performedAt,
+                    date: result.testDate,
                     value: result.numericValue,
                     interpretation: result.interpretation,
-                    criticalValue: result.criticalValue
+                    criticalValue: result.isCritical
                 })),
                 therapyMarkers: labIntegrations.map(integration => ({
                     date: integration.createdAt,
@@ -1021,11 +1021,11 @@ Focus on:
             const lastInterpretation = labResults[labResults.length - 1].interpretation;
             const firstInterpretation = labResults[0].interpretation;
 
-            if (lastInterpretation === 'normal' && firstInterpretation !== 'normal') {
+            if (lastInterpretation === 'Normal' && firstInterpretation !== 'Normal') {
                 direction = 'improving';
-            } else if (lastInterpretation !== 'normal' && firstInterpretation === 'normal') {
+            } else if (lastInterpretation !== 'Normal' && firstInterpretation === 'Normal') {
                 direction = 'worsening';
-            } else if (lastInterpretation === 'critical' || lastInterpretation === 'abnormal') {
+            } else if (lastInterpretation === 'Critical' || lastInterpretation === 'Abnormal') {
                 direction = 'worsening';
             } else {
                 direction = percentChange > 0 ? 'improving' : 'worsening';
@@ -1035,7 +1035,7 @@ Focus on:
         return {
             direction,
             percentChange: Math.round(percentChange * 10) / 10,
-            comparisonPeriod: `${labResults.length} measurements over ${Math.ceil((labResults[labResults.length - 1].performedAt.getTime() - labResults[0].performedAt.getTime()) / (1000 * 60 * 60 * 24))} days`,
+            comparisonPeriod: `${labResults.length} measurements over ${Math.ceil((labResults[labResults.length - 1].testDate.getTime() - labResults[0].testDate.getTime()) / (1000 * 60 * 60 * 24))} days`,
             clinicalImplication: this.getTrendImplication(direction, percentChange)
         };
     }

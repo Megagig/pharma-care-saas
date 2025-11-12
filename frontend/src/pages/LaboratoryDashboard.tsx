@@ -83,6 +83,39 @@ const LaboratoryDashboard: React.FC = () => {
     interpretation: 'all',
   });
 
+  // Check if we're in AI Analysis selection mode
+  const urlParams = new URLSearchParams(window.location.search);
+  const returnTo = urlParams.get('returnTo');
+  const patientId = urlParams.get('patientId');
+  const returnUrl = urlParams.get('returnUrl');
+  const isAIAnalysisMode = returnTo === 'lab-integration';
+  
+  const [selectedLabResults, setSelectedLabResults] = useState<string[]>([]);
+
+  // Handle lab result selection for AI Analysis
+  const handleLabResultSelect = (labResultId: string) => {
+    setSelectedLabResults(prev => 
+      prev.includes(labResultId) 
+        ? prev.filter(id => id !== labResultId)
+        : [...prev, labResultId]
+    );
+  };
+
+  // Handle return to Lab Integration with selected results
+  const handleReturnToLabIntegration = () => {
+    if (selectedLabResults.length === 0) {
+      toast.error('Please select at least one lab result');
+      return;
+    }
+
+    const selectedLabResultsParam = encodeURIComponent(JSON.stringify(selectedLabResults));
+    const baseReturnUrl = returnUrl || '/pharmacy/lab-integration/new';
+    const separator = baseReturnUrl.includes('?') ? '&' : '?';
+    const finalReturnUrl = `${baseReturnUrl}${separator}selectedLabResults=${selectedLabResultsParam}`;
+    
+    navigate(finalReturnUrl);
+  };
+
   // Fetch statistics
   const { data: statistics, isLoading: statsLoading, refetch: refetchStats } = useQuery<LabStatistics>({
     queryKey: ['lab-statistics'],
@@ -131,6 +164,42 @@ const LaboratoryDashboard: React.FC = () => {
     <Container maxWidth="xl" sx={{ py: 4 }}>
       {/* Header */}
       <Box sx={{ mb: 4 }}>
+        {/* AI Analysis Mode Banner */}
+        {isAIAnalysisMode && (
+          <Paper sx={{ p: 2, mb: 3, bgcolor: 'primary.50', border: '1px solid', borderColor: 'primary.main' }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <Box>
+                <Typography variant="h6" color="primary" fontWeight="bold">
+                  Select Lab Results for AI Analysis
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Choose lab results to include in the AI diagnostic analysis for the selected patient
+                </Typography>
+              </Box>
+              <Box sx={{ display: 'flex', gap: 2, alignItems: 'center' }}>
+                <Chip 
+                  label={`${selectedLabResults.length} selected`} 
+                  color="primary" 
+                  variant="filled"
+                />
+                <Button
+                  variant="contained"
+                  onClick={handleReturnToLabIntegration}
+                  disabled={selectedLabResults.length === 0}
+                >
+                  Use Selected Results
+                </Button>
+                <Button
+                  variant="outlined"
+                  onClick={() => navigate(returnUrl || '/pharmacy/lab-integration/new')}
+                >
+                  Cancel
+                </Button>
+              </Box>
+            </Box>
+          </Paper>
+        )}
+
         <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', gap: 2 }}>
             <Box
@@ -151,7 +220,10 @@ const LaboratoryDashboard: React.FC = () => {
                 Laboratory Findings
               </Typography>
               <Typography variant="body2" color="text.secondary">
-                Manage and analyze lab results across all patients
+                {isAIAnalysisMode 
+                  ? `Select lab results for AI analysis${patientId ? ' for the selected patient' : ''}`
+                  : 'Manage and analyze lab results across all patients'
+                }
               </Typography>
             </Box>
           </Box>
@@ -310,6 +382,10 @@ const LaboratoryDashboard: React.FC = () => {
           searchQuery={searchQuery}
           filters={filters}
           view="all"
+          selectionMode={isAIAnalysisMode}
+          selectedLabResults={selectedLabResults}
+          onLabResultSelect={handleLabResultSelect}
+          patientId={patientId}
         />
       </TabPanel>
 
@@ -318,6 +394,10 @@ const LaboratoryDashboard: React.FC = () => {
           searchQuery={searchQuery}
           filters={{ ...filters, interpretation: 'Critical' }}
           view="critical"
+          selectionMode={isAIAnalysisMode}
+          selectedLabResults={selectedLabResults}
+          onLabResultSelect={handleLabResultSelect}
+          patientId={patientId}
         />
       </TabPanel>
 
@@ -326,6 +406,10 @@ const LaboratoryDashboard: React.FC = () => {
           searchQuery={searchQuery}
           filters={{ ...filters, status: 'Pending' }}
           view="pending"
+          selectionMode={isAIAnalysisMode}
+          selectedLabResults={selectedLabResults}
+          onLabResultSelect={handleLabResultSelect}
+          patientId={patientId}
         />
       </TabPanel>
 
@@ -334,6 +418,10 @@ const LaboratoryDashboard: React.FC = () => {
           searchQuery={searchQuery}
           filters={{ ...filters, interpretation: 'Abnormal' }}
           view="abnormal"
+          selectionMode={isAIAnalysisMode}
+          selectedLabResults={selectedLabResults}
+          onLabResultSelect={handleLabResultSelect}
+          patientId={patientId}
         />
       </TabPanel>
     </Container>
