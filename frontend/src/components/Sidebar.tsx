@@ -408,13 +408,13 @@ const Sidebar = () => {
       // Show for workspace owners (pharmacy_outlet role)
       show: hasRole('pharmacy_outlet'),
     },
-    {
-      name: 'Laboratory Findings',
-      path: '/laboratory',
-      icon: Biotech,
-      show: hasFeature('laboratory_findings') && (hasRole('pharmacist') || hasRole('pharmacy_team') || hasRole('pharmacy_outlet') || hasRole('intern_pharmacist') || hasRole('lab_technician') || hasRole('owner') || hasRole('super_admin')),
-      badge: !subscriptionStatus?.isActive ? 'Pro' : null,
-    },
+    // {
+    //   name: 'Laboratory Findings',
+    //   path: '/laboratory',
+    //   icon: Biotech,
+    //   show: hasFeature('laboratory_findings') && (hasRole('pharmacist') || hasRole('pharmacy_team') || hasRole('pharmacy_outlet') || hasRole('intern_pharmacist') || hasRole('lab_technician') || hasRole('owner') || hasRole('super_admin')),
+    //   badge: !subscriptionStatus?.isActive ? 'Pro' : null,
+    // },
     {
       name: 'License Verification',
       path: '/license',
