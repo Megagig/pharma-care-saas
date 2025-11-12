@@ -229,12 +229,13 @@ export const generateDiagnosticAnalysis = async (
         consentMethod: patientConsent.method || 'electronic',
       },
       aiRequestData: {
-        model: 'deepseek/deepseek-chat-v3.1:free',
+        model: aiResult.modelUsed,
         promptTokens: aiResult.usage.prompt_tokens,
         completionTokens: aiResult.usage.completion_tokens,
         totalTokens: aiResult.usage.total_tokens,
         requestId: aiResult.requestId,
         processingTime: aiResult.processingTime,
+        costEstimate: aiResult.costEstimate,
       },
       pharmacistDecision: {
         accepted: false,
@@ -354,6 +355,8 @@ export const generateDiagnosticAnalysis = async (
         drugInteractions,
         processingTime: aiResult.processingTime,
         tokensUsed: aiResult.usage.total_tokens,
+        modelUsed: aiResult.modelUsed,
+        costEstimate: aiResult.costEstimate,
       },
     });
   } catch (error) {
@@ -727,7 +730,11 @@ export const testAIConnection = async (
       data: {
         connected: isConnected,
         service: 'OpenRouter API',
-        model: 'deepseek/deepseek-chat-v3.1:free',
+        models: {
+          primary: 'deepseek/deepseek-chat-v3.1:free',
+          fallback: 'deepseek/deepseek-chat-v3.1',
+          critical: 'google/gemma-2-9b-it'
+        },
         timestamp: new Date().toISOString(),
       },
     });
@@ -740,6 +747,69 @@ export const testAIConnection = async (
     res.status(500).json({
       success: false,
       message: 'AI connection test failed',
+      error:
+        process.env.NODE_ENV === 'development'
+          ? error instanceof Error
+            ? error.message
+            : 'Unknown error'
+          : 'Internal server error',
+    });
+  }
+};
+
+/**
+ * Get AI usage statistics (Super Admin only)
+ */
+export const getAIUsageStats = async (
+  req: AuthRequest,
+  res: Response
+): Promise<void> => {
+  try {
+    // Only super admins can view usage statistics
+    if (req.user!.role !== 'super_admin') {
+      res.status(403).json({
+        success: false,
+        message: 'Access denied. Super admin required.',
+      });
+      return;
+    }
+
+    const usageStats = await openRouterService.getUsageStats();
+
+    if (!usageStats) {
+      res.status(200).json({
+        success: true,
+        data: {
+          message: 'No usage data available yet',
+          currentMonth: new Date().toISOString().slice(0, 7),
+          budgetLimit: parseFloat(process.env.OPENROUTER_MONTHLY_BUDGET || '15'),
+        },
+      });
+      return;
+    }
+
+    const budgetLimit = parseFloat(process.env.OPENROUTER_MONTHLY_BUDGET || '15');
+    const budgetUsedPercent = (usageStats.totalCost / budgetLimit) * 100;
+
+    res.status(200).json({
+      success: true,
+      data: {
+        ...usageStats,
+        budgetLimit,
+        budgetUsedPercent: Math.round(budgetUsedPercent * 100) / 100,
+        budgetRemaining: Math.max(0, budgetLimit - usageStats.totalCost),
+        canUsePaidModels: usageStats.totalCost < budgetLimit,
+      },
+    });
+  } catch (error) {
+    logger.error('Failed to get AI usage statistics', {
+      error: error instanceof Error ? error.message : 'Unknown error',
+      pharmacistId: req.user?._id,
+    });
+
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get usage statistics',
       error:
         process.env.NODE_ENV === 'development'
           ? error instanceof Error

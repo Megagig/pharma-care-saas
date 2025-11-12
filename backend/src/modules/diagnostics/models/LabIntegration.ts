@@ -50,6 +50,7 @@ export interface IAIInterpretation {
     processingTime: number;
     modelUsed: string;
     promptVersion?: string;
+    interpretedAt?: Date;
 }
 
 /**
@@ -310,7 +311,11 @@ const aiInterpretationSchema = new Schema({
     }],
     processingTime: Number,
     modelUsed: String,
-    promptVersion: String
+    promptVersion: String,
+    interpretedAt: {
+        type: Date,
+        default: Date.now
+    }
 }, { _id: false });
 
 const pharmacistReviewSchema = new Schema({

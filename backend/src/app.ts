@@ -538,6 +538,10 @@ app.use('/api/manual-lab', manualLabRoutes);
 // AI Diagnostic routes
 app.use('/api/diagnostics', diagnosticRoutes);
 
+// AI Diagnostic Analysis routes (hybrid model system)
+import aiDiagnosticRoutes from './routes/aiDiagnosticRoutes';
+app.use('/api/ai-diagnostics', aiDiagnosticRoutes);
+
 // Lab Integration routes (AI-powered lab result interpretation & therapy management)
 import labIntegrationRoutes from './modules/diagnostics/routes/labIntegrationRoutes';
 app.use('/api/lab-integration', labIntegrationRoutes);

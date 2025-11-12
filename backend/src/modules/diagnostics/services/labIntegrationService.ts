@@ -207,7 +207,10 @@ export class LabIntegrationService {
             const aiInterpretation = await this.generateAIInterpretation(aiInput);
 
             // Update lab integration with AI results
-            labIntegration.aiInterpretation = aiInterpretation;
+            labIntegration.aiInterpretation = {
+                ...aiInterpretation,
+                interpretedAt: new Date()
+            };
             labIntegration.aiProcessingStatus = 'completed';
 
             // Generate therapy recommendations based on AI interpretation
@@ -224,9 +227,28 @@ export class LabIntegrationService {
             labIntegration.recommendationSource = 'ai_generated';
             labIntegration.status = 'pending_review';
 
-            await labIntegration.save();
+            logger.info('About to save AI interpretation results', {
+                labIntegrationId: labIntegration._id,
+                aiInterpretationExists: !!aiInterpretation,
+                redFlagsCount: aiInterpretation.redFlags?.length || 0,
+                redFlagsData: JSON.stringify(aiInterpretation.redFlags),
+                recommendationCount: therapyResult.recommendations.length,
+                criticalIssues: therapyResult.criticalIssues
+            });
 
-            logger.info('AI interpretation completed', {
+            try {
+                await labIntegration.save();
+            } catch (saveError) {
+                logger.error('Failed to save lab integration', {
+                    error: saveError instanceof Error ? saveError.message : 'Unknown error',
+                    stack: saveError instanceof Error ? saveError.stack : undefined,
+                    labIntegrationId: labIntegration._id,
+                    validationErrors: (saveError as any).errors
+                });
+                throw saveError;
+            }
+
+            logger.info('AI interpretation saved successfully', {
                 labIntegrationId: labIntegration._id,
                 confidence: aiInterpretation.confidence,
                 clinicalSignificance: aiInterpretation.clinicalSignificance,
@@ -453,6 +475,44 @@ Focus on:
             // The diagnosticResult is already a structured DiagnosticResponse object
             const analysis = diagnosticResult.analysis || diagnosticResult;
 
+            // Parse redFlags properly - handle both array and string cases
+            let redFlags: Array<{ flag: string; severity: string; action: string }> = [];
+            if (analysis.redFlags) {
+                if (Array.isArray(analysis.redFlags)) {
+                    redFlags = analysis.redFlags.map((r: any) => {
+                        // If r is already an object with the right structure
+                        if (typeof r === 'object' && r !== null && r.flag) {
+                            return {
+                                flag: String(r.flag),
+                                severity: r.severity || 'medium',
+                                action: r.action || 'Review with physician'
+                            };
+                        }
+                        // If r is a string, convert it to the right structure
+                        if (typeof r === 'string') {
+                            return {
+                                flag: r,
+                                severity: 'medium',
+                                action: 'Review with physician'
+                            };
+                        }
+                        // Fallback
+                        return {
+                            flag: String(r),
+                            severity: 'medium',
+                            action: 'Review with physician'
+                        };
+                    });
+                } else if (typeof analysis.redFlags === 'string') {
+                    // If redFlags is a single string, convert to array
+                    redFlags = [{
+                        flag: analysis.redFlags,
+                        severity: 'medium',
+                        action: 'Review with physician'
+                    }];
+                }
+            }
+
             // Map DiagnosticResponse to our IAIInterpretation format
             return {
                 interpretation: this.formatDiagnosticSummary(analysis),
@@ -465,7 +525,7 @@ Focus on:
                 monitoringRecommendations: analysis.monitoringPlan?.parameters?.map((p: any) =>
                     `Monitor ${p.parameter} ${p.frequency}`
                 ) || [],
-                redFlags: analysis.redFlags?.map((r: any) => r.flag) || []
+                redFlags
             };
         } catch (error) {
             logger.error('Failed to parse AI response', { error });
@@ -543,31 +603,56 @@ Focus on:
         const safetyChecks: ISafetyCheck[] = [];
         let criticalIssues = false;
 
-        // Extract therapy recommendations from AI response
-        const aiRecommendations = (aiInterpretation as any).therapyRecommendations || [];
+        // Convert therapeutic implications to structured recommendations
+        const therapeuticImplications = aiInterpretation.therapeuticImplications || [];
 
-        for (const aiRec of aiRecommendations) {
+        for (const implication of therapeuticImplications) {
+            // Parse the therapeutic implication string
+            // Format: "Medication Dose Frequency - Reasoning"
+            const parts = implication.split(' - ');
+            const medicationInfo = parts[0]?.trim() || '';
+            const rationale = parts[1]?.trim() || implication;
+
+            // Extract medication name (first word/phrase before dose)
+            const medicationParts = medicationInfo.split(' ');
+            const medicationName = medicationParts[0] || 'Medication';
+
+            // Determine priority based on clinical significance
+            let priority: 'critical' | 'high' | 'medium' | 'low' = 'medium';
+            if (aiInterpretation.clinicalSignificance === 'critical') {
+                priority = 'critical';
+            } else if (aiInterpretation.clinicalSignificance === 'significant') {
+                priority = 'high';
+            }
+
             recommendations.push({
-                medicationName: aiRec.medicationName,
-                action: aiRec.action,
-                currentDose: aiRec.currentDose,
-                recommendedDose: aiRec.recommendedDose,
-                rationale: aiRec.rationale,
-                priority: aiRec.priority || 'medium',
-                evidenceLevel: aiRec.evidenceLevel
+                medicationName,
+                action: 'start' as const,
+                currentDose: undefined,
+                recommendedDose: medicationInfo.replace(medicationName, '').trim(),
+                rationale,
+                priority,
+                evidenceLevel: 'moderate' as const
             });
 
             // Perform safety checks for each recommendation
-            const checks = await this.performSafetyChecks(
-                aiRec.medicationName,
-                patientData
-            );
+            try {
+                const checks = await this.performSafetyChecks(
+                    medicationName,
+                    patientData
+                );
 
-            safetyChecks.push(...checks);
+                safetyChecks.push(...checks);
 
-            // Check for critical issues
-            if (checks.some(check => check.severity === 'critical' || check.severity === 'major')) {
-                criticalIssues = true;
+                // Check for critical issues
+                if (checks.some(check => check.severity === 'critical' || check.severity === 'major')) {
+                    criticalIssues = true;
+                }
+            } catch (error) {
+                logger.warn('Failed to perform safety checks', {
+                    medicationName,
+                    error: error instanceof Error ? error.message : 'Unknown error'
+                });
             }
         }
 

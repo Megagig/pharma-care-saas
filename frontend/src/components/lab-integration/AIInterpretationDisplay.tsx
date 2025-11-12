@@ -188,10 +188,12 @@ const AIInterpretationDisplay: React.FC<AIInterpretationDisplayProps> = ({
                 Analyzed
               </Typography>
               <Typography variant="body2">
-                {format(new Date(interpretation.interpretedAt), 'MMM dd, yyyy HH:mm')}
+                {interpretation.interpretedAt
+                  ? format(new Date(interpretation.interpretedAt), 'MMM dd, yyyy HH:mm')
+                  : 'Recently'}
               </Typography>
               <Typography variant="caption" color="text.secondary">
-                Model: {interpretation.modelUsed}
+                Model: {interpretation.modelUsed || 'AI Model'}
               </Typography>
             </Grid>
           </Grid>

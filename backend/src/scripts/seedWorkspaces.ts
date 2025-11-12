@@ -5,6 +5,12 @@ import logger from '../utils/logger';
 
 async function seedWorkspaces() {
   try {
+    // Verify MongoDB connection is ready
+    if (mongoose.connection.readyState !== 1) {
+      logger.warn('MongoDB not connected, skipping workspace seeding');
+      return;
+    }
+
     // Check if workspaces already exist
     const existingCount = await Workplace.countDocuments();
     if (existingCount > 0) {

@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
     Dialog,
     DialogTitle,
@@ -48,6 +49,8 @@ const CriticalAlertDialog: React.FC<CriticalAlertDialogProps> = ({
     patientName,
     onEscalate
 }) => {
+    const navigate = useNavigate();
+
     if (!alert) return null;
 
     const getAlertIcon = () => {
@@ -211,10 +214,12 @@ const CriticalAlertDialog: React.FC<CriticalAlertDialogProps> = ({
                     </Button>
                 )}
                 <Button
-                    onClick={onClose}
+                    onClick={() => {
+                        onClose();
+                        navigate(`/pharmacy/lab-integration/${labIntegrationId}`);
+                    }}
                     variant="contained"
                     color="primary"
-                    href={`/pharmacy/lab-integration/${labIntegrationId}`}
                 >
                     View Full Case
                 </Button>
