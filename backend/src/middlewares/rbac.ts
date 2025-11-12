@@ -64,6 +64,16 @@ export const requireDynamicPermission = (action: string, options: {
                 return;
             }
 
+            // Super admin bypasses all permission checks - check BEFORE workspace context
+            const userRole = getUserRole(req.user);
+            if (userRole === 'super_admin') {
+                req.permissionContext = {
+                    action,
+                    source: 'super_admin'
+                };
+                return next();
+            }
+
             if (!req.workspaceContext) {
                 res.status(500).json({
                     success: false,
@@ -641,18 +651,18 @@ export const requireFeature = (...features: string[]) => {
             return;
         }
 
+        // Super admin bypasses feature checks - check BEFORE workspace context
+        const userRole = getUserRole(req.user);
+        if (userRole === 'super_admin') {
+            return next();
+        }
+
         if (!req.workspaceContext) {
             res.status(500).json({
                 success: false,
                 message: 'Workspace context not loaded',
             });
             return;
-        }
-
-        // Super admin bypasses feature checks
-        const userRole = getUserRole(req.user);
-        if (userRole === 'super_admin') {
-            return next();
         }
 
         const userFeatures = req.workspaceContext.permissions || [];
@@ -688,18 +698,18 @@ export const requirePlanTier = (...tiers: string[]) => {
             return;
         }
 
+        // Super admin bypasses tier checks - check BEFORE workspace context
+        const userRole = getUserRole(req.user);
+        if (userRole === 'super_admin') {
+            return next();
+        }
+
         if (!req.workspaceContext) {
             res.status(500).json({
                 success: false,
                 message: 'Workspace context not loaded',
             });
             return;
-        }
-
-        // Super admin bypasses tier checks
-        const userRole = getUserRole(req.user);
-        if (userRole === 'super_admin') {
-            return next();
         }
 
         const currentTier = req.workspaceContext.plan?.tier;
@@ -841,15 +851,7 @@ export const requireAllPermissions = (...actions: string[]) => {
                 return;
             }
 
-            if (!req.workspaceContext) {
-                res.status(500).json({
-                    success: false,
-                    message: 'Workspace context not loaded',
-                });
-                return;
-            }
-
-            // Super admin bypasses all permission checks
+            // Super admin bypasses all permission checks - check BEFORE workspace context
             const userRole = getUserRole(req.user);
             if (userRole === 'super_admin') {
                 req.permissionContext = {
@@ -857,6 +859,14 @@ export const requireAllPermissions = (...actions: string[]) => {
                     source: 'super_admin'
                 };
                 return next();
+            }
+
+            if (!req.workspaceContext) {
+                res.status(500).json({
+                    success: false,
+                    message: 'Workspace context not loaded',
+                });
+                return;
             }
 
             const failedPermissions: string[] = [];
@@ -967,15 +977,7 @@ export const requireAnyPermission = (...actions: string[]) => {
                 return;
             }
 
-            if (!req.workspaceContext) {
-                res.status(500).json({
-                    success: false,
-                    message: 'Workspace context not loaded',
-                });
-                return;
-            }
-
-            // Super admin bypasses all permission checks
+            // Super admin bypasses all permission checks - check BEFORE workspace context
             const userRole = getUserRole(req.user);
             if (userRole === 'super_admin') {
                 req.permissionContext = {
@@ -983,6 +985,14 @@ export const requireAnyPermission = (...actions: string[]) => {
                     source: 'super_admin'
                 };
                 return next();
+            }
+
+            if (!req.workspaceContext) {
+                res.status(500).json({
+                    success: false,
+                    message: 'Workspace context not loaded',
+                });
+                return;
             }
 
             let hasAnyPermission = false;
@@ -1091,18 +1101,18 @@ export const requireActiveSubscription = (
         return;
     }
 
+    // Super admin bypasses subscription checks - check BEFORE workspace context
+    const userRole = getUserRole(req.user);
+    if (userRole === 'super_admin') {
+        return next();
+    }
+
     if (!req.workspaceContext) {
         res.status(500).json({
             success: false,
             message: 'Workspace context not loaded',
         });
         return;
-    }
-
-    // Super admin bypasses subscription checks
-    const userRole = getUserRole(req.user);
-    if (userRole === 'super_admin') {
-        return next();
     }
 
     if (!req.workspaceContext.isSubscriptionActive) {
@@ -1134,18 +1144,18 @@ export const requireSubscriptionOrTrial = (
         return;
     }
 
+    // Super admin bypasses subscription checks - check BEFORE workspace context
+    const userRole = getUserRole(req.user);
+    if (userRole === 'super_admin') {
+        return next();
+    }
+
     if (!req.workspaceContext) {
         res.status(500).json({
             success: false,
             message: 'Workspace context not loaded',
         });
         return;
-    }
-
-    // Super admin bypasses subscription checks
-    const userRole = getUserRole(req.user);
-    if (userRole === 'super_admin') {
-        return next();
     }
 
     const isTrialActive = req.workspaceContext.workspace?.subscriptionStatus === 'trial' &&

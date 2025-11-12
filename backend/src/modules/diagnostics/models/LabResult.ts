@@ -594,4 +594,6 @@ labResultSchema.statics.findRequiringFollowUp = function (workplaceId: mongoose.
     }).sort({ performedAt: -1 });
 };
 
-export default mongoose.model<ILabResult>('LabResult', labResultSchema);
+// Use DiagnosticLabResult to avoid conflict with universal LabResult model
+export default (mongoose.models.DiagnosticLabResult ||
+    mongoose.model<ILabResult>('DiagnosticLabResult', labResultSchema));

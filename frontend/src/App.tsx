@@ -95,6 +95,13 @@ import {
   LazyLabResultIntegration,
   LazyLabIntegrationCaseDetail,
   LazyLabIntegrationNewCase,
+  LazyLaboratoryDashboard,
+  LazyLabResultForm,
+  LazyLabResultDetail,
+  LazyLabUploadPage,
+  LazyLabTemplatesPage,
+  LazyLabTemplateForm,
+  LazyLabTrendsPage,
   LazyPaymentSimulation,
   LazyPricingPlanManagement,
   LazyReports,
@@ -904,6 +911,144 @@ function App(): JSX.Element {
                                 </ProtectedRoute>
                               }
                             />
+
+                            {/* Laboratory Findings Module */}
+                            <Route
+                              path="/laboratory"
+                              element={
+                                <ProtectedRoute
+                                  requiredFeature="laboratory_findings"
+                                  requiresActiveSubscription
+                                >
+                                  <AppLayout>
+                                    <LazyWrapper fallback={PageSkeleton}>
+                                      <LazyLaboratoryDashboard />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/laboratory/add"
+                              element={
+                                <ProtectedRoute
+                                  requiredFeature="laboratory_findings"
+                                  requiresActiveSubscription
+                                >
+                                  <AppLayout>
+                                    <LazyWrapper fallback={FormSkeleton}>
+                                      <LazyLabResultForm />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/laboratory/upload"
+                              element={
+                                <ProtectedRoute
+                                  requiredFeature="laboratory_findings"
+                                  requiresActiveSubscription
+                                >
+                                  <AppLayout>
+                                    <LazyWrapper fallback={PageSkeleton}>
+                                      <LazyLabUploadPage />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/laboratory/templates"
+                              element={
+                                <ProtectedRoute
+                                  requiredFeature="laboratory_findings"
+                                  requiresActiveSubscription
+                                >
+                                  <AppLayout>
+                                    <LazyWrapper fallback={PageSkeleton}>
+                                      <LazyLabTemplatesPage />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/laboratory/templates/new"
+                              element={
+                                <ProtectedRoute
+                                  requiredFeature="laboratory_findings"
+                                  requiresActiveSubscription
+                                >
+                                  <AppLayout>
+                                    <LazyWrapper fallback={FormSkeleton}>
+                                      <LazyLabTemplateForm />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/laboratory/templates/:id/edit"
+                              element={
+                                <ProtectedRoute
+                                  requiredFeature="laboratory_findings"
+                                  requiresActiveSubscription
+                                >
+                                  <AppLayout>
+                                    <LazyWrapper fallback={FormSkeleton}>
+                                      <LazyLabTemplateForm />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/laboratory/trends"
+                              element={
+                                <ProtectedRoute
+                                  requiredFeature="laboratory_findings"
+                                  requiresActiveSubscription
+                                >
+                                  <AppLayout>
+                                    <LazyWrapper fallback={PageSkeleton}>
+                                      <LazyLabTrendsPage />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/laboratory/:id"
+                              element={
+                                <ProtectedRoute
+                                  requiredFeature="laboratory_findings"
+                                  requiresActiveSubscription
+                                >
+                                  <AppLayout>
+                                    <LazyWrapper fallback={PageSkeleton}>
+                                      <LazyLabResultDetail />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
+                              }
+                            />
+                            <Route
+                              path="/laboratory/:id/edit"
+                              element={
+                                <ProtectedRoute
+                                  requiredFeature="laboratory_findings"
+                                  requiresActiveSubscription
+                                >
+                                  <AppLayout>
+                                    <LazyWrapper fallback={FormSkeleton}>
+                                      <LazyLabResultForm />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
+                              }
+                            />
+
                             <Route
                               path="/user-management"
                               element={

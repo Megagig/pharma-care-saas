@@ -29,6 +29,7 @@ import AssignmentIcon from '@mui/icons-material/Assignment';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import AccountBoxIcon from '@mui/icons-material/AccountBox';
 import LocalPharmacyIcon from '@mui/icons-material/LocalPharmacy';
+import BiotechIcon from '@mui/icons-material/Biotech';
 
 import { useRBAC } from '../hooks/useRBAC';
 import { RBACGuard } from '../hooks/useRBAC';
@@ -43,6 +44,7 @@ import DTPManagement from './DTPManagement';
 import CarePlanManagement from './CarePlanManagement';
 import VisitManagement from './VisitManagement';
 import PatientMTRSessionsTab from './PatientMTRSessionsTab';
+import PatientLabResultsTab from './PatientLabResultsTab';
 import type { Patient } from '../types/patientManagement';
 
 // Tab panel component
@@ -136,9 +138,8 @@ const PatientDetails = () => {
 
   const getInitials = (patient?: Patient): string => {
     if (!patient) return '??';
-    return `${patient.firstName[0] || ''}${
-      patient.lastName[0] || ''
-    }`.toUpperCase();
+    return `${patient.firstName[0] || ''}${patient.lastName[0] || ''
+      }`.toUpperCase();
   };
 
   // Tab change handler
@@ -290,9 +291,8 @@ const PatientDetails = () => {
 
               <Stack direction="row" spacing={1} flexWrap="wrap">
                 <Chip
-                  label={`${getPatientAge(patient)} • ${
-                    patient.gender || 'Unknown'
-                  }`}
+                  label={`${getPatientAge(patient)} • ${patient.gender || 'Unknown'
+                    }`}
                   variant="outlined"
                   size="small"
                 />
@@ -409,6 +409,12 @@ const PatientDetails = () => {
               iconPosition="start"
               {...a11yProps(8)}
             />
+            <Tab
+              label="Laboratory"
+              icon={<BiotechIcon />}
+              iconPosition="start"
+              {...a11yProps(9)}
+            />
           </Tabs>
         </Box>
 
@@ -447,6 +453,10 @@ const PatientDetails = () => {
 
         <TabPanel value={currentTab} index={8}>
           <PatientMTRSessionsTab patientId={patientId!} />
+        </TabPanel>
+
+        <TabPanel value={currentTab} index={9}>
+          <PatientLabResultsTab patientId={patientId!} />
         </TabPanel>
       </Card>
     </Box>

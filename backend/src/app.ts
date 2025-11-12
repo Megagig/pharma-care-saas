@@ -542,6 +542,10 @@ app.use('/api/diagnostics', diagnosticRoutes);
 import labIntegrationRoutes from './modules/diagnostics/routes/labIntegrationRoutes';
 app.use('/api/lab-integration', labIntegrationRoutes);
 
+// Laboratory Findings routes (Universal lab results management)
+import laboratoryRoutes from './routes/laboratoryRoutes';
+app.use('/api/laboratory', laboratoryRoutes);
+
 // Pharmacist Lab Interpretation routes
 app.use('/api/pharmacist/lab-results', pharmacistLabInterpretationRoutes);
 app.use('/api/pharmacist/vitals', pharmacistVitalsRoutes);

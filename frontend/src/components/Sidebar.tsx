@@ -152,23 +152,10 @@ const Sidebar = () => {
       show: hasRole('pharmacist') || hasRole('pharmacy_team') || hasRole('pharmacy_outlet') || hasRole('owner') || hasRole('super_admin'),
     },
     {
-      name: 'Appointment Analytics',
-      path: '/analytics/appointments',
-      icon: EventNoteIcon,
-      show: hasRole('pharmacist') || hasRole('pharmacy_team') || hasRole('pharmacy_outlet') || hasRole('owner') || hasRole('super_admin'),
-    },
-    {
       name: 'Medication Analytics',
       path: '/analytics/medications',
       icon: MedicationIcon,
       show: hasFeature('medication_management') && (hasRole('pharmacist') || hasRole('pharmacy_team') || hasRole('pharmacy_outlet') || hasRole('owner') || hasRole('super_admin')),
-    },
-    {
-      name: 'Patient Engagement',
-      path: '/patient-engagement',
-      icon: PersonAddIcon,
-      show: hasFeature('patient_engagement'),
-      badge: !subscriptionStatus?.isActive ? 'Premium' : null,
     },
     {
       name: 'Subscriptions',
@@ -196,6 +183,13 @@ const Sidebar = () => {
       path: '/pharmacy/diagnostics',
       icon: ScienceIcon,
       show: true,
+    },
+    {
+      name: 'Laboratory Findings',
+      path: '/laboratory',
+      icon: Biotech,
+      show: hasFeature('laboratory_findings') && (hasRole('pharmacist') || hasRole('pharmacy_team') || hasRole('pharmacy_outlet') || hasRole('intern_pharmacist') || hasRole('lab_technician') || hasRole('owner') || hasRole('super_admin')),
+      badge: !subscriptionStatus?.isActive ? 'Pro' : null,
     },
     {
       name: 'Lab Interpretations',
@@ -234,6 +228,12 @@ const Sidebar = () => {
 
   const engagementModules = [
     {
+      name: 'Patient Engagement',
+      path: '/patient-engagement',
+      icon: PersonAddIcon,
+      show: hasFeature('patient_engagement'),
+    },
+    {
       name: 'Appointments',
       path: '/appointments',
       icon: CalendarTodayIcon,
@@ -255,6 +255,12 @@ const Sidebar = () => {
       name: 'Patient Portal',
       path: '/workspace-admin/patient-portal',
       icon: EventAvailableIcon,
+      show: hasFeature('patient_engagement'),
+    },
+    {
+      name: 'Appointment Analytics',
+      path: '/analytics/appointments',
+      icon: EventNoteIcon,
       show: hasFeature('patient_engagement'),
     },
   ];
@@ -401,6 +407,13 @@ const Sidebar = () => {
       icon: SupervisorAccountIcon,
       // Show for workspace owners (pharmacy_outlet role)
       show: hasRole('pharmacy_outlet'),
+    },
+    {
+      name: 'Laboratory Findings',
+      path: '/laboratory',
+      icon: Biotech,
+      show: hasFeature('laboratory_findings') && (hasRole('pharmacist') || hasRole('pharmacy_team') || hasRole('pharmacy_outlet') || hasRole('intern_pharmacist') || hasRole('lab_technician') || hasRole('owner') || hasRole('super_admin')),
+      badge: !subscriptionStatus?.isActive ? 'Pro' : null,
     },
     {
       name: 'License Verification',

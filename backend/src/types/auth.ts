@@ -12,6 +12,7 @@ export type UserRole =
   | 'pharmacy_team'
   | 'pharmacy_outlet'
   | 'intern_pharmacist'
+  | 'lab_technician'
   | 'super_admin'
   | 'owner';
 
@@ -23,7 +24,8 @@ export type WorkplaceRole =
   | 'Cashier'
   | 'Technician'
   | 'Assistant'
-  | 'pharmacy_outlet';
+  | 'pharmacy_outlet'
+  | 'intern_pharmacist';
 
 // Define subscription tiers
 export type SubscriptionTier =

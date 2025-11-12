@@ -449,9 +449,27 @@ const LabIntegrationNewCase: React.FC = () => {
                         <CircularProgress />
                       </Box>
                     ) : !labResultsData || labResultsData.length === 0 ? (
-                      <Alert severity="warning">
-                        No lab results found for this patient. Please add lab results first.
-                      </Alert>
+                      <Box>
+                        <Alert severity="warning" sx={{ mb: 2 }}>
+                          No lab results found for this patient. Please add lab results first.
+                        </Alert>
+                        <Box sx={{ display: 'flex', gap: 2, justifyContent: 'center' }}>
+                          <Button
+                            variant="outlined"
+                            startIcon={<ScienceIcon />}
+                            onClick={() => navigate('/laboratory')}
+                          >
+                            Go to Laboratory Findings
+                          </Button>
+                          <Button
+                            variant="contained"
+                            startIcon={<AddIcon />}
+                            onClick={() => navigate(`/laboratory/add?patientId=${selectedPatient}`)}
+                          >
+                            Add Lab Result
+                          </Button>
+                        </Box>
+                      </Box>
                     ) : (
                       <>
                         {/* Selected Lab Results */}

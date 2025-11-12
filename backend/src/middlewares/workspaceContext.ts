@@ -239,6 +239,20 @@ async function loadUserWorkspaceContext(userId: any): Promise<WorkspaceContext> 
             }
         }
 
+        // Also add tier-based features from permission matrix
+        if (subscription?.tier || plan?.tier) {
+            const tier = subscription?.tier || plan?.tier;
+            const { TIER_FEATURES } = await import('../config/permissionMatrix');
+            const tierFeatures = TIER_FEATURES[tier as keyof typeof TIER_FEATURES];
+            if (tierFeatures) {
+                tierFeatures.forEach(feature => {
+                    if (!permissions.includes(feature)) {
+                        permissions.push(feature);
+                    }
+                });
+            }
+        }
+
         // Debug logging for development
         if (process.env.NODE_ENV === 'development') {
             logger.info('Workspace context loaded:', {
