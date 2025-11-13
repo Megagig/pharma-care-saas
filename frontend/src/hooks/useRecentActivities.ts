@@ -9,7 +9,7 @@ interface UseRecentActivitiesReturn {
     refresh: () => Promise<void>;
 }
 
-export const useRecentActivities = (limit: number = 10): UseRecentActivitiesReturn => {
+export const useRecentActivities = (limit: number = 10, skip: boolean = false): UseRecentActivitiesReturn => {
     const [systemActivities, setSystemActivities] = useState<SystemActivity[]>([]);
     const [userActivities, setUserActivities] = useState<UserActivity[]>([]);
     const [loading, setLoading] = useState(true);
@@ -37,8 +37,14 @@ export const useRecentActivities = (limit: number = 10): UseRecentActivitiesRetu
     };
 
     useEffect(() => {
+        // Skip fetching if skip flag is true (e.g., for super admins)
+        if (skip) {
+            setLoading(false);
+            return;
+        }
+
         fetchActivities();
-    }, [limit]);
+    }, [limit, skip]);
 
     return {
         systemActivities,

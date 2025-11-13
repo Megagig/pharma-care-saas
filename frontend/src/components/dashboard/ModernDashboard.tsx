@@ -312,6 +312,48 @@ const ModernDashboardComponent: React.FC = () => {
   const { isMobile } = useResponsive();
   const { user } = useAuth(); // Get user from AuthContext
 
+  // Check if user is super admin - pass user role from AuthContext
+  const isSuperAdmin = roleBasedDashboardService.isSuperAdmin(user?.role as any);
+
+  // CRITICAL: ALL hooks must be called BEFORE any conditional returns (Rules of Hooks)
+  // For super admins, we skip data fetching since they use SuperAdminDashboard
+  // Dashboard data hooks - skip for super admins
+  const {
+    stats,
+    workspaceInfo,
+    loading: dashboardLoading,
+    error: dashboardError,
+    refresh: refreshDashboard,
+  } = useDashboardData(isSuperAdmin);
+
+  // Chart data hooks - skip for super admins
+  const {
+    clinicalNotesByType,
+    mtrsByStatus,
+    patientsByMonth,
+    medicationsByStatus,
+    patientAgeDistribution,
+    monthlyActivity,
+    loading: chartsLoading,
+    error: chartsError,
+    refresh: refreshCharts,
+  } = useDashboardCharts(isSuperAdmin);
+
+  const {
+    dashboardMetrics: clinicalMetrics,
+    loading: clinicalLoading,
+  } = useClinicalInterventionDashboard('month', isSuperAdmin);
+
+  const {
+    systemActivities,
+    loading: activitiesLoading,
+    error: activitiesError,
+    refresh: refreshActivities,
+  } = useRecentActivities(10, isSuperAdmin);
+
+  const [refreshing, setRefreshing] = useState(false);
+
+  // NOW it's safe to have conditional returns - all hooks have been called
   // Show loading state while mounting to prevent context issues
   if (!isMounted) {
     return (
@@ -341,55 +383,11 @@ const ModernDashboardComponent: React.FC = () => {
     );
   }
 
-  // Check if user is super admin - pass user role from AuthContext
-  const isSuperAdmin = roleBasedDashboardService.isSuperAdmin(user?.role as any);
-
-  // Debug logging for role detection
-
-
-
-
   // If super admin, render super admin dashboard instead
+  // This conditional return must come AFTER all hooks
   if (isSuperAdmin) {
-
     return <SuperAdminDashboard />;
   }
-
-  // Dashboard data hooks
-  const {
-    stats,
-    workspaceInfo,
-    loading: dashboardLoading,
-    error: dashboardError,
-    refresh: refreshDashboard,
-  } = useDashboardData();
-
-  // Chart data hooks - separate for better performance and real data
-  const {
-    clinicalNotesByType,
-    mtrsByStatus,
-    patientsByMonth,
-    medicationsByStatus,
-    patientAgeDistribution,
-    monthlyActivity,
-    loading: chartsLoading,
-    error: chartsError,
-    refresh: refreshCharts,
-  } = useDashboardCharts();
-
-  const {
-    dashboardMetrics: clinicalMetrics,
-    loading: clinicalLoading,
-  } = useClinicalInterventionDashboard('month');
-
-  const {
-    systemActivities,
-    loading: activitiesLoading,
-    error: activitiesError,
-    refresh: refreshActivities,
-  } = useRecentActivities(10);
-
-  const [refreshing, setRefreshing] = useState(false);
 
   // Handle refresh
   const handleRefresh = async () => {

@@ -4,7 +4,7 @@ import { useClinicalInterventionStore } from '../stores/clinicalInterventionStor
 
 type DateRange = 'week' | 'month' | 'quarter' | 'year';
 
-export const useClinicalInterventionDashboard = (dateRange: DateRange) => {
+export const useClinicalInterventionDashboard = (dateRange: DateRange, skip: boolean = false) => {
     const store = useClinicalInterventionStore();
 
     const [refreshing, setRefreshing] = useState(false);
@@ -38,6 +38,11 @@ export const useClinicalInterventionDashboard = (dateRange: DateRange) => {
 
     // Load data when component mounts and date range changes
     useEffect(() => {
+        // Skip fetching if skip flag is true (e.g., for super admins)
+        if (skip) {
+            return;
+        }
+
         if (!mountedRef.current) {
             return;
         }
@@ -52,7 +57,7 @@ export const useClinicalInterventionDashboard = (dateRange: DateRange) => {
 
         lastFetchRef.current = fetchKey;
         store.fetchDashboardMetrics({ from, to });
-    }, [dateRange, getDateRange]); // Removed 'store' from dependencies
+    }, [dateRange, getDateRange, skip]); // Removed 'store' from dependencies
 
     // Cleanup on unmount
     useEffect(() => {

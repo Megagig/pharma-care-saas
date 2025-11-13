@@ -12,7 +12,7 @@ interface DashboardChartsData {
     error: string | null;
 }
 
-export const useDashboardCharts = () => {
+export const useDashboardCharts = (skip: boolean = false) => {
     const [data, setData] = useState<DashboardChartsData>({
         clinicalNotesByType: [],
         mtrsByStatus: [],
@@ -58,8 +58,14 @@ export const useDashboardCharts = () => {
     };
 
     useEffect(() => {
+        // Skip fetching if skip flag is true (e.g., for super admins)
+        if (skip) {
+            setData(prev => ({ ...prev, loading: false }));
+            return;
+        }
+
         fetchChartData();
-    }, [refreshKey]);
+    }, [refreshKey, skip]);
 
     return {
         ...data,
