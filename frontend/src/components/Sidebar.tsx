@@ -48,7 +48,6 @@ import MonetizationOn from '@mui/icons-material/MonetizationOn';
 import LocationOn from '@mui/icons-material/LocationOn';
 import QueueMusic from '@mui/icons-material/QueueMusic';
 import Webhook from '@mui/icons-material/Webhook';
-import MoveToInbox from '@mui/icons-material/MoveToInbox';
 import EventNote from '@mui/icons-material/EventNote';
 import CloudDone from '@mui/icons-material/CloudDone';
 import Monitor from '@mui/icons-material/Monitor';
@@ -64,7 +63,6 @@ const LocationOnIcon = LocationOn;
 const AnalyticsIcon = Analytics;
 const QueueMusicIcon = QueueMusic;
 const WebhookIcon = Webhook;
-const MoveToInboxIcon = MoveToInbox;
 const EventNoteIcon = EventNote;
 const CloudDoneIcon = CloudDone;
 const MonitorIcon = Monitor;
@@ -275,33 +273,15 @@ const Sidebar = () => {
       show: hasRole('super_admin'),
     },
     {
-      name: 'Security Dashboard',
-      path: '/admin/security',
-      icon: SecurityIcon,
-      show: hasRole('super_admin'),
-    },
-    {
       name: 'Pricing Management',
       path: '/admin/pricing',
       icon: MonetizationOnIcon,
       show: hasRole('super_admin'),
     },
     {
-      name: 'Usage Monitoring',
-      path: '/admin/usage-monitoring',
-      icon: AnalyticsIcon,
-      show: hasRole('super_admin'),
-    },
-    {
       name: 'AI Usage Monitoring',
       path: '/admin/ai-usage-monitoring',
       icon: PsychologyIcon,
-      show: hasRole('super_admin'),
-    },
-    {
-      name: 'Location Management',
-      path: '/admin/locations',
-      icon: LocationOnIcon,
       show: hasRole('super_admin'),
     },
     {
@@ -332,12 +312,6 @@ const Sidebar = () => {
       name: 'Webhooks',
       path: '/admin/webhooks',
       icon: WebhookIcon,
-      show: hasRole('super_admin'),
-    },
-    {
-      name: 'Migration Dashboard',
-      path: '/admin/migration',
-      icon: MoveToInboxIcon,
       show: hasRole('super_admin'),
     },
     {

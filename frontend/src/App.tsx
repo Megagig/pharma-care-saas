@@ -110,7 +110,6 @@ import {
   LazySuperAdminHealthRecordsDashboard,
   LazyQueueMonitoringDashboard,
   LazyWebhookManagement,
-  LazyMigrationDashboard,
   LazyAppointmentAnalyticsDashboard,
   LazyMedicationAnalytics,
   LazySaasAdminDashboard,
@@ -1302,20 +1301,6 @@ function App(): JSX.Element {
                                   <AppLayout>
                                     <LazyWrapper fallback={PageSkeleton}>
                                       <LazyWebhookManagement />
-                                    </LazyWrapper>
-                                  </AppLayout>
-                                </ProtectedRoute>
-                              }
-                            />
-
-                            {/* Migration Dashboard */}
-                            <Route
-                              path="/admin/migration"
-                              element={
-                                <ProtectedRoute requiredRole="super_admin">
-                                  <AppLayout>
-                                    <LazyWrapper fallback={PageSkeleton}>
-                                      <LazyMigrationDashboard />
                                     </LazyWrapper>
                                   </AppLayout>
                                 </ProtectedRoute>

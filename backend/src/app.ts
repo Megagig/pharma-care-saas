@@ -57,7 +57,6 @@ import usageMonitoringRoutes from './routes/usageMonitoringRoutes';
 import locationRoutes from './routes/locationRoutes';
 import locationDataRoutes from './routes/locationDataRoutes';
 import legacyApiRoutes from './routes/legacyApiRoutes';
-import migrationDashboardRoutes from './routes/migrationDashboardRoutes';
 import deploymentRoutes from './routes/deploymentRoutes';
 import productionValidationRoutes from './routes/productionValidationRoutes';
 import continuousMonitoringRoutes from './routes/continuousMonitoringRoutes';
@@ -695,9 +694,6 @@ app.use('/api/workspace-admin/patient-portal', patientPortalAdminRoutes);
 
 // Legacy API compatibility routes
 app.use('/api/legacy', legacyApiRoutes);
-
-// Migration dashboard routes (Super Admin only)
-app.use('/api/migration', migrationDashboardRoutes);
 
 // Email delivery and webhook routes
 app.use('/api/email', emailWebhookRoutes);

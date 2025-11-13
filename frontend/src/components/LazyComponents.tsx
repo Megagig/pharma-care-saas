@@ -55,7 +55,6 @@ export const LazyUsageMonitoring = lazy(() => import('../components/admin/UsageM
 export const LazyLocationManagement = lazy(() => import('../components/admin/LocationManagement'));
 export const LazyQueueMonitoringDashboard = lazy(() => import('../components/admin/QueueMonitoringDashboard'));
 export const LazyWebhookManagement = lazy(() => import('../components/admin/WebhookManagement'));
-export const LazyMigrationDashboard = lazy(() => import('../components/admin/MigrationDashboard'));
 export const LazyAppointmentAnalyticsDashboard = lazy(() => import('../components/appointments/AppointmentAnalyticsDashboard'));
 
 // Heavy form components
