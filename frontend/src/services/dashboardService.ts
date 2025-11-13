@@ -6,6 +6,11 @@ export interface DashboardStats {
     totalMedications: number;
     totalMTRs: number;
     totalDiagnostics: number;
+    // Enhanced dashboard stats
+    totalAppointments?: number;
+    totalFollowUps?: number;
+    completedToday?: number;
+    portalUsers?: number;
 }
 
 export interface ChartDataPoint {
@@ -70,12 +75,19 @@ class DashboardService {
         const medications = medicationsResult.status === 'fulfilled' ? medicationsResult.value : [];
         const mtrs = mtrResult.status === 'fulfilled' ? mtrResult.value : [];
 
+        // Try to fetch additional stats if available
+        const additionalStats = await this.fetchAdditionalStats();
+        
         const stats: DashboardStats = {
             totalPatients: patients.length,
             totalClinicalNotes: notes.length,
             totalMedications: medications.length,
             totalMTRs: mtrs.length,
-            totalDiagnostics: 0
+            totalDiagnostics: 0,
+            totalAppointments: additionalStats.totalAppointments || 0,
+            totalFollowUps: additionalStats.totalFollowUps || 0,
+            completedToday: additionalStats.completedToday || 0,
+            portalUsers: additionalStats.portalUsers || 0,
         };
 
         if (stats.totalPatients === 0 && stats.totalClinicalNotes === 0 && stats.totalMedications === 0 && stats.totalMTRs === 0) {
@@ -95,8 +107,21 @@ class DashboardService {
     }
 
     private processDashboardResponse(data: any): DashboardAnalytics {
+        // Merge default stats with any additional stats from the backend
+        const defaultStats = { 
+            totalPatients: 0, 
+            totalClinicalNotes: 0, 
+            totalMedications: 0, 
+            totalMTRs: 0, 
+            totalDiagnostics: 0,
+            totalAppointments: 0,
+            totalFollowUps: 0,
+            completedToday: 0,
+            portalUsers: 0,
+        };
+        
         return {
-            stats: data.stats || { totalPatients: 0, totalClinicalNotes: 0, totalMedications: 0, totalMTRs: 0, totalDiagnostics: 0 },
+            stats: { ...defaultStats, ...(data.stats || {}) },
             patientsByMonth: data.charts?.patientsByMonth || [],
             medicationsByStatus: data.charts?.medicationsByStatus || [],
             clinicalNotesByType: data.charts?.clinicalNotesByType || [],
@@ -160,6 +185,57 @@ class DashboardService {
         } catch (error) {
             console.error('Error fetching MTR sessions:', error);
             return [];
+        }
+    }
+
+    private async fetchAdditionalStats(): Promise<Partial<DashboardStats>> {
+        try {
+            // Try to fetch additional dashboard stats from various endpoints
+            const [appointmentsResult, followUpsResult, portalUsersResult] = await Promise.allSettled([
+                this.fetchAppointmentsCount(),
+                this.fetchFollowUpsCount(),
+                this.fetchPortalUsersCount()
+            ]);
+
+            return {
+                totalAppointments: appointmentsResult.status === 'fulfilled' ? appointmentsResult.value : 0,
+                totalFollowUps: followUpsResult.status === 'fulfilled' ? followUpsResult.value : 0,
+                completedToday: 0, // This would need to be calculated based on completed tasks today
+                portalUsers: portalUsersResult.status === 'fulfilled' ? portalUsersResult.value : 0,
+            };
+        } catch (error) {
+            console.error('Error fetching additional stats:', error);
+            return {};
+        }
+    }
+
+    private async fetchAppointmentsCount(): Promise<number> {
+        try {
+            const response = await api.get('/appointments', { params: { limit: 1 } });
+            return response.data?.pagination?.total || response.data?.total || 0;
+        } catch (error) {
+            console.error('Error fetching appointments count:', error);
+            return 0;
+        }
+    }
+
+    private async fetchFollowUpsCount(): Promise<number> {
+        try {
+            const response = await api.get('/follow-ups', { params: { limit: 1, status: 'active' } });
+            return response.data?.pagination?.total || response.data?.total || 0;
+        } catch (error) {
+            console.error('Error fetching follow-ups count:', error);
+            return 0;
+        }
+    }
+
+    private async fetchPortalUsersCount(): Promise<number> {
+        try {
+            const response = await api.get('/patient-portal/users', { params: { limit: 1, status: 'active' } });
+            return response.data?.pagination?.total || response.data?.total || 0;
+        } catch (error) {
+            console.error('Error fetching portal users count:', error);
+            return 0;
         }
     }
 
@@ -328,7 +404,11 @@ class DashboardService {
                 totalClinicalNotes: 0,
                 totalMedications: 0,
                 totalMTRs: 0,
-                totalDiagnostics: 0
+                totalDiagnostics: 0,
+                totalAppointments: 0,
+                totalFollowUps: 0,
+                completedToday: 0,
+                portalUsers: 0,
             },
             patientsByMonth: [],
             medicationsByStatus: [],

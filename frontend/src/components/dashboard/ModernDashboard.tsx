@@ -1192,7 +1192,7 @@ const ModernDashboardComponent: React.FC = () => {
                         p: 2,
                         borderRadius: 2,
                         border: `1px solid ${theme.palette.divider}`,
-                        background: theme.palette.background.paper,
+                        background: theme.palette.background?.paper || theme.palette.common?.white || '#ffffff',
                       }}
                     >
                       <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
