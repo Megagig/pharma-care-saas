@@ -309,6 +309,57 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
   };
 
   // Handlers
+  const handleRefreshSearch = () => {
+    setSearchQuery('');
+  };
+
+  const handleNewPatientSubmit = async (data: NewPatientFormData) => {
+    try {
+      setLoading('createNewPatient', true);
+      setError('createNewPatient', null);
+
+      const newPatientData: CreatePatientData = {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        otherNames: data.otherNames,
+        dob: data.dob?.toISOString(),
+        age: data.age,
+        gender: data.gender,
+        maritalStatus: data.maritalStatus,
+        phone: data.phone,
+        email: data.email,
+        address: data.address,
+        state: data.state,
+        lga: data.lga,
+        bloodGroup: data.bloodGroup,
+        genotype: data.genotype,
+        weightKg: data.weightKg,
+      };
+
+      const response = await createPatientMutation.mutateAsync(
+        newPatientData
+      );
+
+      // Close modal and reset form
+      setShowNewPatientModal(false);
+      resetNewPatientForm();
+
+      // Select the newly created patient - extract from response
+      const createdPatient = (response as any)?.data?.patient;
+      if (createdPatient) {
+        await handlePatientSelect(createdPatient);
+      }
+    } catch (error) {
+      console.error('Error creating patient:', error);
+      setError(
+        'createNewPatient',
+        error instanceof Error ? error.message : 'Failed to create patient'
+      );
+    } finally {
+      setLoading('createNewPatient', false);
+    }
+  };
+
   const handlePatientSelect = async (patient: Patient) => {
     try {
       setLoading('selectPatient', true);
@@ -355,6 +406,11 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
       setLoading('selectPatient', false);
     }
   };
+
+  // Get patients from search results
+  const patients: Patient[] = Array.isArray(searchResults)
+    ? searchResults
+    : (searchResults?.data?.results as Patient[]) || [];
 
   const hasSearchResults = searchQuery.length >= 2 && patients.length > 0;
   const showNoResults =

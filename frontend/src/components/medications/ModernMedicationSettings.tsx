@@ -3,7 +3,6 @@ import {
   Box,
   Typography,
   Paper,
-  Grid,
   Button,
   FormControl,
   FormControlLabel,
@@ -226,9 +225,9 @@ const ModernMedicationSettings: React.FC<ModernMedicationSettingsProps> = ({
         </Box>
       </Fade>
 
-      <Grid container spacing={4}>
+      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 4, width: '100%' }}>
         {/* Reminder Settings */}
-        <Grid item xs={12} lg={6}>
+        <Box sx={{ flex: { xs: '1 1 100%', lg: '1 1 calc(50% - 16px)' }, minWidth: 0 }}>
           <Card
             elevation={0}
             sx={{
@@ -236,6 +235,7 @@ const ModernMedicationSettings: React.FC<ModernMedicationSettingsProps> = ({
               borderColor: 'divider',
               borderRadius: 3,
               overflow: 'visible',
+              height: '100%',
             }}
           >
             <CardContent sx={{ p: 4 }}>
@@ -277,62 +277,62 @@ const ModernMedicationSettings: React.FC<ModernMedicationSettingsProps> = ({
                 <Box>
                   <Divider sx={{ my: 3 }} />
 
-                  <Grid container spacing={3}>
-                    <Grid item xs={12} sm={6}>
-                      <FormControl fullWidth>
-                        <InputLabel>Reminder Method</InputLabel>
-                        <Select
-                          value={reminderSettings.reminderMethod}
-                          label="Reminder Method"
+                  <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, width: '100%' }}>
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, width: '100%' }}>
+                      <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)' }, minWidth: 0 }}>
+                        <FormControl fullWidth>
+                          <InputLabel>Reminder Method</InputLabel>
+                          <Select
+                            value={reminderSettings.reminderMethod}
+                            label="Reminder Method"
+                            onChange={(e) =>
+                              setReminderSettings({
+                                ...reminderSettings,
+                                reminderMethod: e.target.value as 'email' | 'sms' | 'both',
+                              })
+                            }
+                          >
+                            <MenuItem value="email">Email Only</MenuItem>
+                            <MenuItem value="sms">SMS Only</MenuItem>
+                            <MenuItem value="both">Email & SMS</MenuItem>
+                          </Select>
+                        </FormControl>
+                      </Box>
+
+                      <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)' }, minWidth: 0 }}>
+                        <TextField
+                          fullWidth
+                          type="number"
+                          label="Lead Time (minutes)"
+                          value={reminderSettings.defaultNotificationLeadTime}
                           onChange={(e) =>
                             setReminderSettings({
                               ...reminderSettings,
-                              reminderMethod: e.target.value as 'email' | 'sms' | 'both',
+                              defaultNotificationLeadTime: parseInt(e.target.value) || 0,
                             })
                           }
-                        >
-                          <MenuItem value="email">Email Only</MenuItem>
-                          <MenuItem value="sms">SMS Only</MenuItem>
-                          <MenuItem value="both">Email & SMS</MenuItem>
-                        </Select>
-                      </FormControl>
-                    </Grid>
+                          InputProps={{ inputProps: { min: 0, max: 120 } }}
+                          helperText="Minutes before scheduled time"
+                        />
+                      </Box>
+                    </Box>
 
-                    <Grid item xs={12} sm={6}>
-                      <TextField
-                        fullWidth
-                        type="number"
-                        label="Lead Time (minutes)"
-                        value={reminderSettings.defaultNotificationLeadTime}
-                        onChange={(e) =>
-                          setReminderSettings({
-                            ...reminderSettings,
-                            defaultNotificationLeadTime: parseInt(e.target.value) || 0,
-                          })
-                        }
-                        InputProps={{ inputProps: { min: 0, max: 120 } }}
-                        helperText="Minutes before scheduled time"
-                      />
-                    </Grid>
+                    <TextField
+                      fullWidth
+                      multiline
+                      rows={2}
+                      label="Custom Message"
+                      value={reminderSettings.customMessage}
+                      onChange={(e) =>
+                        setReminderSettings({
+                          ...reminderSettings,
+                          customMessage: e.target.value,
+                        })
+                      }
+                      helperText="Personalized message for medication reminders"
+                    />
 
-                    <Grid item xs={12}>
-                      <TextField
-                        fullWidth
-                        multiline
-                        rows={2}
-                        label="Custom Message"
-                        value={reminderSettings.customMessage}
-                        onChange={(e) =>
-                          setReminderSettings({
-                            ...reminderSettings,
-                            customMessage: e.target.value,
-                          })
-                        }
-                        helperText="Personalized message for medication reminders"
-                      />
-                    </Grid>
-
-                    <Grid item xs={12}>
+                    <Box>
                       <Box sx={{ mb: 2 }}>
                         <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                           <ScheduleIcon sx={{ mr: 1, color: 'primary.main' }} />
@@ -387,14 +387,14 @@ const ModernMedicationSettings: React.FC<ModernMedicationSettingsProps> = ({
                           Add Reminder Time
                         </Button>
                       </Box>
-                    </Grid>
+                    </Box>
 
                     {/* Advanced Options */}
-                    <Grid item xs={12}>
+                    <Box>
                       <Typography variant="subtitle1" fontWeight="medium" sx={{ mb: 2 }}>
                         Advanced Options
                       </Typography>
-                      
+
                       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
                         <FormControlLabel
                           control={
@@ -478,22 +478,23 @@ const ModernMedicationSettings: React.FC<ModernMedicationSettingsProps> = ({
                           />
                         )}
                       </Box>
-                    </Grid>
-                  </Grid>
+                    </Box>
+                  </Box>
                 </Box>
               </Slide>
             </CardContent>
           </Card>
-        </Grid>
+        </Box>
 
         {/* Monitoring Settings */}
-        <Grid item xs={12} lg={6}>
+        <Box sx={{ flex: { xs: '1 1 100%', lg: '1 1 calc(50% - 16px)' }, minWidth: 0 }}>
           <Card
             elevation={0}
             sx={{
               border: '1px solid',
               borderColor: 'divider',
               borderRadius: 3,
+              height: '100%',
             }}
           >
             <CardContent sx={{ p: 4 }}>
@@ -504,199 +505,193 @@ const ModernMedicationSettings: React.FC<ModernMedicationSettingsProps> = ({
                 </Typography>
               </Box>
 
-              <Grid container spacing={3}>
-                <Grid item xs={12}>
-                  <Box
-                    sx={{
-                      p: 3,
-                      border: '1px solid',
-                      borderColor: 'divider',
-                      borderRadius: 2,
-                      bgcolor: 'background.default',
-                    }}
-                  >
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={monitoringSettings.adherenceMonitoring}
-                          onChange={(e) =>
-                            setMonitoringSettings({
-                              ...monitoringSettings,
-                              adherenceMonitoring: e.target.checked,
-                            })
-                          }
-                        />
-                      }
-                      label={
-                        <Box>
-                          <Typography variant="subtitle1" fontWeight="medium">
-                            Adherence Monitoring
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            Track and analyze medication adherence patterns
-                          </Typography>
-                        </Box>
-                      }
-                    />
-
-                    {monitoringSettings.adherenceMonitoring && (
-                      <Box sx={{ mt: 2, ml: 4 }}>
-                        <FormControlLabel
-                          control={
-                            <Switch
-                              checked={monitoringSettings.adherenceReporting}
-                              onChange={(e) =>
-                                setMonitoringSettings({
-                                  ...monitoringSettings,
-                                  adherenceReporting: e.target.checked,
-                                })
-                              }
-                              size="small"
-                            />
-                          }
-                          label="Generate Adherence Reports"
-                        />
-
-                        {monitoringSettings.adherenceReporting && (
-                          <FormControl size="small" sx={{ ml: 2, minWidth: 120 }}>
-                            <InputLabel>Frequency</InputLabel>
-                            <Select
-                              value={monitoringSettings.reportFrequency}
-                              label="Frequency"
-                              onChange={(e) =>
-                                setMonitoringSettings({
-                                  ...monitoringSettings,
-                                  reportFrequency: e.target.value as 'daily' | 'weekly' | 'monthly',
-                                })
-                              }
-                            >
-                              <MenuItem value="daily">Daily</MenuItem>
-                              <MenuItem value="weekly">Weekly</MenuItem>
-                              <MenuItem value="monthly">Monthly</MenuItem>
-                            </Select>
-                          </FormControl>
-                        )}
+              <Box sx={{ display: 'flex', flexDirection: 'column', gap: 3, width: '100%' }}>
+                <Box
+                  sx={{
+                    p: 3,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 2,
+                    bgcolor: 'background.default',
+                  }}
+                >
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={monitoringSettings.adherenceMonitoring}
+                        onChange={(e) =>
+                          setMonitoringSettings({
+                            ...monitoringSettings,
+                            adherenceMonitoring: e.target.checked,
+                          })
+                        }
+                      />
+                    }
+                    label={
+                      <Box>
+                        <Typography variant="subtitle1" fontWeight="medium">
+                          Adherence Monitoring
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Track and analyze medication adherence patterns
+                        </Typography>
                       </Box>
-                    )}
-                  </Box>
-                </Grid>
+                    }
+                  />
 
-                <Grid item xs={12}>
-                  <Box
-                    sx={{
-                      p: 3,
-                      border: '1px solid',
-                      borderColor: 'divider',
-                      borderRadius: 2,
-                      bgcolor: 'background.default',
-                    }}
-                  >
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={monitoringSettings.refillReminders}
-                          onChange={(e) =>
-                            setMonitoringSettings({
-                              ...monitoringSettings,
-                              refillReminders: e.target.checked,
-                            })
-                          }
-                        />
-                      }
-                      label={
-                        <Box>
-                          <Typography variant="subtitle1" fontWeight="medium">
-                            Refill Reminders
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            Automatic reminders when medications need refilling
-                          </Typography>
-                        </Box>
-                      }
-                    />
+                  {monitoringSettings.adherenceMonitoring && (
+                    <Box sx={{ mt: 2, ml: 4 }}>
+                      <FormControlLabel
+                        control={
+                          <Switch
+                            checked={monitoringSettings.adherenceReporting}
+                            onChange={(e) =>
+                              setMonitoringSettings({
+                                ...monitoringSettings,
+                                adherenceReporting: e.target.checked,
+                              })
+                            }
+                            size="small"
+                          />
+                        }
+                        label="Generate Adherence Reports"
+                      />
 
-                    {monitoringSettings.refillReminders && (
-                      <Box sx={{ mt: 2, ml: 4 }}>
-                        <TextField
-                          type="number"
-                          label="Refill Threshold (%)"
-                          value={monitoringSettings.refillThreshold}
-                          onChange={(e) =>
-                            setMonitoringSettings({
-                              ...monitoringSettings,
-                              refillThreshold: parseInt(e.target.value) || 0,
-                            })
-                          }
-                          InputProps={{ inputProps: { min: 0, max: 50 } }}
-                          size="small"
-                          sx={{ maxWidth: 200 }}
-                          helperText="Trigger reminder when % remaining"
-                        />
+                      {monitoringSettings.adherenceReporting && (
+                        <FormControl size="small" sx={{ ml: 2, minWidth: 120 }}>
+                          <InputLabel>Frequency</InputLabel>
+                          <Select
+                            value={monitoringSettings.reportFrequency}
+                            label="Frequency"
+                            onChange={(e) =>
+                              setMonitoringSettings({
+                                ...monitoringSettings,
+                                reportFrequency: e.target.value as 'daily' | 'weekly' | 'monthly',
+                              })
+                            }
+                          >
+                            <MenuItem value="daily">Daily</MenuItem>
+                            <MenuItem value="weekly">Weekly</MenuItem>
+                            <MenuItem value="monthly">Monthly</MenuItem>
+                          </Select>
+                        </FormControl>
+                      )}
+                    </Box>
+                  )}
+                </Box>
+
+                <Box
+                  sx={{
+                    p: 3,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 2,
+                    bgcolor: 'background.default',
+                  }}
+                >
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={monitoringSettings.refillReminders}
+                        onChange={(e) =>
+                          setMonitoringSettings({
+                            ...monitoringSettings,
+                            refillReminders: e.target.checked,
+                          })
+                        }
+                      />
+                    }
+                    label={
+                      <Box>
+                        <Typography variant="subtitle1" fontWeight="medium">
+                          Refill Reminders
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Automatic reminders when medications need refilling
+                        </Typography>
                       </Box>
-                    )}
-                  </Box>
-                </Grid>
+                    }
+                  />
 
-                <Grid item xs={12}>
-                  <Box
-                    sx={{
-                      p: 3,
-                      border: '1px solid',
-                      borderColor: 'divider',
-                      borderRadius: 2,
-                      bgcolor: 'background.default',
-                    }}
-                  >
-                    <FormControlLabel
-                      control={
-                        <Switch
-                          checked={monitoringSettings.interactionChecking}
-                          onChange={(e) =>
-                            setMonitoringSettings({
-                              ...monitoringSettings,
-                              interactionChecking: e.target.checked,
-                            })
-                          }
-                        />
-                      }
-                      label={
-                        <Box>
-                          <Typography variant="subtitle1" fontWeight="medium">
-                            Interaction Checking
-                          </Typography>
-                          <Typography variant="body2" color="text.secondary">
-                            Monitor for potential drug interactions
-                          </Typography>
-                        </Box>
-                      }
-                    />
+                  {monitoringSettings.refillReminders && (
+                    <Box sx={{ mt: 2, ml: 4 }}>
+                      <TextField
+                        type="number"
+                        label="Refill Threshold (%)"
+                        value={monitoringSettings.refillThreshold}
+                        onChange={(e) =>
+                          setMonitoringSettings({
+                            ...monitoringSettings,
+                            refillThreshold: parseInt(e.target.value) || 0,
+                          })
+                        }
+                        InputProps={{ inputProps: { min: 0, max: 50 } }}
+                        size="small"
+                        sx={{ maxWidth: 200 }}
+                        helperText="Trigger reminder when % remaining"
+                      />
+                    </Box>
+                  )}
+                </Box>
 
-                    {monitoringSettings.interactionChecking && (
-                      <Box sx={{ mt: 2, ml: 4 }}>
-                        <TextField
-                          type="number"
-                          label="Missed Dose Alert Threshold"
-                          value={monitoringSettings.missedDoseThreshold}
-                          onChange={(e) =>
-                            setMonitoringSettings({
-                              ...monitoringSettings,
-                              missedDoseThreshold: parseInt(e.target.value) || 0,
-                            })
-                          }
-                          InputProps={{ inputProps: { min: 1, max: 10 } }}
-                          size="small"
-                          sx={{ maxWidth: 200 }}
-                          helperText="Consecutive missed doses to alert"
-                        />
+                <Box
+                  sx={{
+                    p: 3,
+                    border: '1px solid',
+                    borderColor: 'divider',
+                    borderRadius: 2,
+                    bgcolor: 'background.default',
+                  }}
+                >
+                  <FormControlLabel
+                    control={
+                      <Switch
+                        checked={monitoringSettings.interactionChecking}
+                        onChange={(e) =>
+                          setMonitoringSettings({
+                            ...monitoringSettings,
+                            interactionChecking: e.target.checked,
+                          })
+                        }
+                      />
+                    }
+                    label={
+                      <Box>
+                        <Typography variant="subtitle1" fontWeight="medium">
+                          Interaction Checking
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Monitor for potential drug interactions
+                        </Typography>
                       </Box>
-                    )}
-                  </Box>
-                </Grid>
-              </Grid>
+                    }
+                  />
+
+                  {monitoringSettings.interactionChecking && (
+                    <Box sx={{ mt: 2, ml: 4 }}>
+                      <TextField
+                        type="number"
+                        label="Missed Dose Alert Threshold"
+                        value={monitoringSettings.missedDoseThreshold}
+                        onChange={(e) =>
+                          setMonitoringSettings({
+                            ...monitoringSettings,
+                            missedDoseThreshold: parseInt(e.target.value) || 0,
+                          })
+                        }
+                        InputProps={{ inputProps: { min: 1, max: 10 } }}
+                        size="small"
+                        sx={{ maxWidth: 200 }}
+                        helperText="Consecutive missed doses to alert"
+                      />
+                    </Box>
+                  )}
+                </Box>
+              </Box>
             </CardContent>
           </Card>
-        </Grid>
-      </Grid>
+        </Box>
+      </Box>
 
       {/* Success/Error Messages */}
       {updateSettingsMutation.isSuccess && (
