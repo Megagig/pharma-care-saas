@@ -49,6 +49,7 @@ export const LazyAIUsageMonitoring = lazy(() => import('../pages/AIUsageMonitori
 export const LazyFeatureManagement = lazy(() => import('../pages/FeatureManagement'));
 export const LazySuperAdminAuditTrail = lazy(() => import('../pages/SuperAdminAuditTrail'));
 export const LazyRBACManagement = lazy(() => import('../pages/admin/RBACManagement'));
+export const LazyWorkspaceRBACManagement = lazy(() => import('../pages/workspace/WorkspaceRBACManagement'));
 export const LazySecurityDashboard = lazy(() => import('../components/admin/SecurityDashboard'));
 export const LazyPricingManagement = lazy(() => import('../components/admin/PricingManagement'));
 export const LazyUsageMonitoring = lazy(() => import('../components/admin/UsageMonitoring'));

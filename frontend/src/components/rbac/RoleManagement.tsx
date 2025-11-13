@@ -67,9 +67,11 @@ import type {
 
 interface RoleManagementProps {
   onRoleSelect?: (role: Role) => void;
+  workspaceScoped?: boolean;
+  workspaceId?: string;
 }
 
-const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect }) => {
+const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect, workspaceScoped = false, workspaceId }) => {
   const { canAccess } = useRBAC();
 
   // State management

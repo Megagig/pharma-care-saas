@@ -62,6 +62,7 @@ import {
   LazyFeatureManagement,
   LazySuperAdminAuditTrail,
   LazyRBACManagement,
+  LazyWorkspaceRBACManagement,
   LazySecurityDashboard,
   LazyPricingManagement,
   LazyUsageMonitoring,
@@ -1054,6 +1055,23 @@ function App(): JSX.Element {
                                   <AppLayout>
                                     <LazyWrapper fallback={PageSkeleton}>
                                       <LazyWorkspaceTeam />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
+                              }
+                            />
+
+                            {/* Workspace RBAC Management - Only for pharmacy_outlet users */}
+                            <Route
+                              path="/workspace/rbac-management"
+                              element={
+                                <ProtectedRoute
+                                  requiredRole="pharmacy_outlet"
+                                  requiresActiveSubscription
+                                >
+                                  <AppLayout>
+                                    <LazyWrapper fallback={PageSkeleton}>
+                                      <LazyWorkspaceRBACManagement />
                                     </LazyWrapper>
                                   </AppLayout>
                                 </ProtectedRoute>

@@ -265,12 +265,6 @@ const Sidebar = () => {
       show: hasRole('super_admin'),
     },
     {
-      name: 'RBAC Management',
-      path: '/admin/rbac-management',
-      icon: SecurityIcon,
-      show: hasRole('super_admin'),
-    },
-    {
       name: 'Pricing Management',
       path: '/admin/pricing',
       icon: MonetizationOnIcon,
@@ -374,6 +368,12 @@ const Sidebar = () => {
       path: '/workspace/team',
       icon: SupervisorAccountIcon,
       // Show for workspace owners (pharmacy_outlet role)
+      show: hasRole('pharmacy_outlet'),
+    },
+    {
+      name: 'Roles & Permission',
+      path: '/workspace/rbac-management',
+      icon: SecurityIcon,
       show: hasRole('pharmacy_outlet'),
     },
     // {

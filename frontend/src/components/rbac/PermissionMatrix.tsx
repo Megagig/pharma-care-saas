@@ -73,6 +73,8 @@ import type { Role, Permission, PermissionCategory } from '../../types/rbac';
 interface PermissionMatrixProps {
   selectedRole?: Role | null;
   onRoleSelect?: (role: Role) => void;
+  workspaceScoped?: boolean;
+  workspaceId?: string;
 }
 
 interface MatrixData {
@@ -92,6 +94,8 @@ interface PermissionUsage {
 const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
   selectedRole,
   onRoleSelect,
+  workspaceScoped = false,
+  workspaceId,
 }) => {
   const { canAccess } = useRBAC();
 
