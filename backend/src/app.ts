@@ -57,7 +57,6 @@ import usageMonitoringRoutes from './routes/usageMonitoringRoutes';
 import locationRoutes from './routes/locationRoutes';
 import locationDataRoutes from './routes/locationDataRoutes';
 import legacyApiRoutes from './routes/legacyApiRoutes';
-import deploymentRoutes from './routes/deploymentRoutes';
 import productionValidationRoutes from './routes/productionValidationRoutes';
 import continuousMonitoringRoutes from './routes/continuousMonitoringRoutes';
 import emailWebhookRoutes from './routes/emailWebhookRoutes';
@@ -460,9 +459,6 @@ app.use('/api/reports', reportsRoutes);
 app.use('/api/lighthouse', lighthouseRoutes);
 app.use('/api/performance-budgets', performanceBudgetRoutes);
 app.use('/api/performance-monitoring', performanceMonitoringRoutes);
-
-// Deployment monitoring routes (admin only)
-app.use('/api/deployment', deploymentRoutes);
 
 // Production validation routes (admin only)
 app.use('/api/production-validation', productionValidationRoutes);

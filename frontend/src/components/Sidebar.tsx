@@ -49,7 +49,6 @@ import LocationOn from '@mui/icons-material/LocationOn';
 import QueueMusic from '@mui/icons-material/QueueMusic';
 import Webhook from '@mui/icons-material/Webhook';
 import EventNote from '@mui/icons-material/EventNote';
-import CloudDone from '@mui/icons-material/CloudDone';
 import Monitor from '@mui/icons-material/Monitor';
 import Api from '@mui/icons-material/Api';
 import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
@@ -64,7 +63,6 @@ const AnalyticsIcon = Analytics;
 const QueueMusicIcon = QueueMusic;
 const WebhookIcon = Webhook;
 const EventNoteIcon = EventNote;
-const CloudDoneIcon = CloudDone;
 const MonitorIcon = Monitor;
 const ApiIcon = Api;
 const SaasAdminIcon = AdminPanelSettingsIcon;
@@ -318,12 +316,6 @@ const Sidebar = () => {
       name: 'SaaS Admin',
       path: '/admin/saas',
       icon: SaasAdminIcon,
-      show: hasRole('super_admin'),
-    },
-    {
-      name: 'Deployment Monitoring',
-      path: '/admin/deployment-monitoring',
-      icon: CloudDoneIcon,
       show: hasRole('super_admin'),
     },
     {

@@ -8,7 +8,7 @@
 import express from 'express';
 import monitoringController from '../controllers/monitoringController';
 import { auth } from '../middlewares/auth';
-import { requireWorkspaceContext } from '../middlewares/workspaceContext';
+import { loadWorkspaceContext } from '../middlewares/workspaceContext';
 
 const router = express.Router();
 
@@ -17,7 +17,7 @@ router.get('/health', monitoringController.healthCheck);
 
 // Protected endpoints (require authentication)
 router.use(auth);
-router.use(requireWorkspaceContext);
+router.use(loadWorkspaceContext);
 
 // System health and metrics
 router.get('/system-health', monitoringController.getSystemHealth);

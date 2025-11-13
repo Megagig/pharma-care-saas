@@ -113,7 +113,6 @@ import {
   LazyAppointmentAnalyticsDashboard,
   LazyMedicationAnalytics,
   LazySaasAdminDashboard,
-  LazyDeploymentMonitoringDashboard,
   LazySystemMonitoringDashboard,
   LazyApiManagementDashboard,
 } from './components/LazyComponents';
@@ -1348,20 +1347,6 @@ function App(): JSX.Element {
                                   <AppLayout>
                                     <LazyWrapper fallback={PageSkeleton}>
                                       <LazySaasAdminDashboard />
-                                    </LazyWrapper>
-                                  </AppLayout>
-                                </ProtectedRoute>
-                              }
-                            />
-
-                            {/* Deployment Monitoring Dashboard */}
-                            <Route
-                              path="/admin/deployment-monitoring"
-                              element={
-                                <ProtectedRoute requiredRole="super_admin">
-                                  <AppLayout>
-                                    <LazyWrapper fallback={PageSkeleton}>
-                                      <LazyDeploymentMonitoringDashboard />
                                     </LazyWrapper>
                                   </AppLayout>
                                 </ProtectedRoute>

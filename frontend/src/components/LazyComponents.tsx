@@ -104,7 +104,6 @@ export const LazyMedicationAnalytics = lazy(() => import('../pages/MedicationAna
 
 // Phase 3: Admin Features
 export const LazySaasAdminDashboard = lazy(() => import('../pages/admin/SaasAdminDashboard'));
-export const LazyDeploymentMonitoringDashboard = lazy(() => import('../components/admin/DeploymentMonitoringDashboard'));
 export const LazySystemMonitoringDashboard = lazy(() => import('../components/admin/SystemMonitoringDashboard'));
 export const LazyApiManagementDashboard = lazy(() => import('../components/admin/ApiManagementDashboard'));
 
