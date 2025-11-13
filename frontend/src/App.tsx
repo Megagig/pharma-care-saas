@@ -58,6 +58,7 @@ import {
   LazyFollowUpCasesPage,
   LazyReportsAnalyticsDashboard,
   LazyAdminDashboard,
+  LazyAIUsageMonitoring,
   LazyFeatureManagement,
   LazySuperAdminAuditTrail,
   LazyRBACManagement,
@@ -1171,6 +1172,20 @@ function App(): JSX.Element {
                                   <AppLayout>
                                     <LazyWrapper fallback={PageSkeleton}>
                                       <LazyUsageMonitoring />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
+                              }
+                            />
+
+                            {/* AI Usage Monitoring Route */}
+                            <Route
+                              path="/admin/ai-usage-monitoring"
+                              element={
+                                <ProtectedRoute requiredRole="super_admin">
+                                  <AppLayout>
+                                    <LazyWrapper fallback={PageSkeleton}>
+                                      <LazyAIUsageMonitoring />
                                     </LazyWrapper>
                                   </AppLayout>
                                 </ProtectedRoute>

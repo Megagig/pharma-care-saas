@@ -172,9 +172,17 @@ export const generateDiagnosticAnalysis = async (
       symptomsCount: symptoms.subjective.length + symptoms.objective.length,
     });
 
-    // Generate AI analysis
-    const aiResult =
-      await openRouterService.generateDiagnosticAnalysis(diagnosticInput);
+    // Generate AI analysis with tracking context
+    const aiResult = await openRouterService.generateDiagnosticAnalysis(
+      diagnosticInput,
+      {
+        workspaceId: workplaceId.toString(),
+        userId: userId.toString(),
+        feature: 'ai_diagnostics',
+        patientId: patientId,
+        caseId: undefined, // Will be set after case creation
+      }
+    );
 
     // Clean AI analysis data to handle null/undefined values
     const cleanedAnalysis = cleanAIAnalysis({

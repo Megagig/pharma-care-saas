@@ -11,7 +11,7 @@ import { PATIENT_ENGAGEMENT_FLAGS } from '../middlewares/patientEngagementFeatur
 import EnhancedFeatureFlagService from './enhancedFeatureFlagService';
 import User from '../models/User';
 import Workplace from '../models/Workplace';
-import { Subscription } from '../models/Subscription';
+import Subscription from '../models/Subscription';
 import logger from '../utils/logger';
 
 export interface RolloutMetrics {

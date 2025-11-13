@@ -48,6 +48,7 @@ export const LazyPharmacistLabInterpretations = lazy(() => import('../pages/phar
 
 // Admin components
 export const LazyAdminDashboard = lazy(() => import('../components/admin/AdminDashboard'));
+export const LazyAIUsageMonitoring = lazy(() => import('../pages/AIUsageMonitoringPage'));
 export const LazyFeatureManagement = lazy(() => import('../pages/FeatureManagement'));
 export const LazySuperAdminAuditTrail = lazy(() => import('../pages/SuperAdminAuditTrail'));
 export const LazyRBACManagement = lazy(() => import('../pages/admin/RBACManagement'));

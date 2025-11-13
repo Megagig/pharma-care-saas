@@ -8,6 +8,7 @@ import {
 } from '../modules/diagnostics/validators/diagnosticValidators';
 import fs from 'fs/promises';
 import path from 'path';
+import AIUsageTrackingService from './AIUsageTrackingService';
 
 export type ISymptomData = z.infer<typeof symptomDataSchema>;
 export type VitalSigns = z.infer<typeof vitalSignsSchema>;
@@ -206,7 +207,16 @@ class OpenRouterService {
   /**
    * Generate structured medical diagnostic analysis with hybrid model selection
    */
-  async generateDiagnosticAnalysis(input: DiagnosticInput): Promise<{
+  async generateDiagnosticAnalysis(
+    input: DiagnosticInput,
+    context?: {
+      workspaceId?: string;
+      userId?: string;
+      feature?: string;
+      patientId?: string;
+      caseId?: string;
+    }
+  ): Promise<{
     analysis: DiagnosticResponse;
     usage: OpenRouterUsage;
     requestId: string;
@@ -264,6 +274,42 @@ class OpenRouterService {
       const costEstimate = this.calculateCost(response.data.usage, response.data.model);
       await this.trackUsage(response.data.model, response.data.usage, costEstimate);
 
+      // Track usage in new AI monitoring system
+      if (context?.workspaceId && context?.userId) {
+        try {
+          const aiUsageService = AIUsageTrackingService.getInstance();
+          await aiUsageService.recordUsage({
+            workspaceId: context.workspaceId,
+            userId: context.userId,
+            feature: context.feature || 'ai_diagnostics',
+            aiModel: response.data.model,
+            requestType: 'analysis',
+            inputTokens: response.data.usage.prompt_tokens,
+            outputTokens: response.data.usage.completion_tokens,
+            cost: costEstimate,
+            requestDuration: processingTime,
+            success: true,
+            metadata: {
+              patientId: context.patientId,
+              caseId: context.caseId,
+              complexity: complexity.isCritical ? 'critical' : 
+                         complexity.score >= 30 ? 'high' : 
+                         complexity.score >= 15 ? 'medium' : 'low',
+              requestId: response.data.id,
+              complexityScore: complexity.score,
+              factors: complexity.factors,
+            },
+          });
+        } catch (trackingError) {
+          logger.error('Failed to record AI usage tracking', {
+            error: trackingError instanceof Error ? trackingError.message : 'Unknown error',
+            workspaceId: context.workspaceId,
+            userId: context.userId,
+          });
+          // Don't fail the main request if tracking fails
+        }
+      }
+
       logger.info('Diagnostic analysis completed', {
         requestId: response.data.id,
         processingTime,
@@ -284,6 +330,37 @@ class OpenRouterService {
     } catch (error) {
       const processingTime = Date.now() - startTime;
       const enhancedError = this.enhanceError(error);
+
+      // Track failed usage in new AI monitoring system
+      if (context?.workspaceId && context?.userId) {
+        try {
+          const aiUsageService = AIUsageTrackingService.getInstance();
+          await aiUsageService.recordUsage({
+            workspaceId: context.workspaceId,
+            userId: context.userId,
+            feature: context.feature || 'ai_diagnostics',
+            aiModel: 'unknown',
+            requestType: 'analysis',
+            inputTokens: 0,
+            outputTokens: 0,
+            cost: 0,
+            requestDuration: processingTime,
+            success: false,
+            errorMessage: enhancedError.message,
+            metadata: {
+              patientId: context.patientId,
+              caseId: context.caseId,
+              statusCode: enhancedError.statusCode,
+            },
+          });
+        } catch (trackingError) {
+          logger.error('Failed to record AI usage tracking for error', {
+            error: trackingError instanceof Error ? trackingError.message : 'Unknown error',
+            workspaceId: context.workspaceId,
+            userId: context.userId,
+          });
+        }
+      }
 
       logger.error('OpenRouter API error', {
         error: enhancedError.message,

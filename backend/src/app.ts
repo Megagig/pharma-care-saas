@@ -707,6 +707,10 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/admin/dashboard', adminDashboardRoutes);
 app.use('/api/admin/saas', saasRoutes);
 
+// AI Usage Monitoring routes (Super Admin only)
+import aiUsageMonitoringRoutes from './routes/aiUsageMonitoringRoutes';
+app.use('/api/admin/ai-usage', aiUsageMonitoringRoutes);
+
 // Patient Engagement Rollout Management routes (Super Admin only)
 import rolloutRoutes from './routes/rolloutRoutes';
 app.use('/api/admin/rollout', rolloutRoutes);

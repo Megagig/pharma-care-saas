@@ -2,6 +2,7 @@ import express from 'express';
 import { auth } from '../middlewares/auth';
 import { authWithWorkspace } from '../middlewares/authWithWorkspace';
 import { requirePermission } from '../middlewares/rbac';
+import { checkAIDiagnosticLimits } from '../middlewares/aiUsageLimits';
 import {
   generateDiagnosticAnalysis,
   saveDiagnosticDecision,
@@ -26,6 +27,7 @@ router.use(authWithWorkspace);
 router.post(
   '/analyze',
   requirePermission('diagnostics:create'),
+  checkAIDiagnosticLimits,
   generateDiagnosticAnalysis
 );
 

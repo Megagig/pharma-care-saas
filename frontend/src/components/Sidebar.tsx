@@ -306,6 +306,12 @@ const Sidebar = () => {
       show: hasRole('super_admin'),
     },
     {
+      name: 'AI Usage Monitoring',
+      path: '/admin/ai-usage-monitoring',
+      icon: PsychologyIcon,
+      show: hasRole('super_admin'),
+    },
+    {
       name: 'Location Management',
       path: '/admin/locations',
       icon: LocationOnIcon,
