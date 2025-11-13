@@ -43,9 +43,6 @@ export const LazyPublicPatientPortal = lazy(() => import('../pages/public/Patien
 export const LazyWorkspaceSearchPage = lazy(() => import('../pages/public/WorkspaceSearchPage'));
 export const LazyPatientWorkspaceDetailPage = lazy(() => import('../pages/public/PatientWorkspaceDetailPage'));
 
-// Pharmacist Portal - Health Records
-export const LazyPharmacistLabInterpretations = lazy(() => import('../pages/pharmacist-portal/PharmacistLabInterpretations'));
-
 // Admin components
 export const LazyAdminDashboard = lazy(() => import('../components/admin/AdminDashboard'));
 export const LazyAIUsageMonitoring = lazy(() => import('../pages/AIUsageMonitoringPage'));
@@ -101,7 +98,6 @@ export const LazyLabTemplateForm = lazy(() => import('../pages/LabTemplateForm')
 export const LazyLabTrendsPage = lazy(() => import('../pages/LabTrendsPage'));
 export const LazyPaymentSimulation = lazy(() => import('../pages/PaymentSimulation'));
 export const LazyPricingPlanManagement = lazy(() => import('../pages/PricingPlanManagement'));
-export const LazyReports = lazy(() => import('../pages/Reports'));
 export const LazyPatientLinkingAdmin = lazy(() => import('../pages/admin/PatientLinkingAdmin'));
 export const LazyPatientLinkingManagement = lazy(() => import('../pages/admin/PatientLinkingManagement'));
 export const LazySuperAdminHealthRecordsDashboard = lazy(() => import('../pages/super-admin/SuperAdminHealthRecordsDashboard'));

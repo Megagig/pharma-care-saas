@@ -18,7 +18,7 @@ import labService from '../services/labService';
 
 // Import models
 import LabOrder from '../models/LabOrder';
-import LabResult from '../models/LabResult';
+import LabResult, { ILabResult } from '../models/LabResult';
 
 /**
  * Lab Management Controller
@@ -557,14 +557,14 @@ export const getLabResult = asyncHandler(
                 .populate('patientId', 'firstName lastName dateOfBirth')
                 .populate('recordedBy', 'firstName lastName')
                 .populate('orderId')
-                .lean();
+                .lean() as any;
 
             if (!result) {
                 return sendError(res, 'NOT_FOUND', 'Lab result not found', 404);
             }
 
             // Get validation details
-            const validation = await labService.validateResult(result);
+            const validation = await labService.validateResult(result as ILabResult);
 
             // Get trend data if available
             let trends = null;

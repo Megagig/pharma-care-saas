@@ -148,12 +148,6 @@ const Sidebar = () => {
       show: hasFeature('basic_reports'),
     },
     {
-      name: 'Reports',
-      path: '/reports',
-      icon: AssessmentIcon,
-      show: hasRole('pharmacist') || hasRole('pharmacy_team') || hasRole('pharmacy_outlet') || hasRole('owner') || hasRole('super_admin'),
-    },
-    {
       name: 'Medication Analytics',
       path: '/analytics/medications',
       icon: MedicationIcon,
@@ -192,13 +186,6 @@ const Sidebar = () => {
       icon: Biotech,
       show: hasFeature('laboratory_findings') && (hasRole('pharmacist') || hasRole('pharmacy_team') || hasRole('pharmacy_outlet') || hasRole('intern_pharmacist') || hasRole('lab_technician') || hasRole('owner') || hasRole('super_admin')),
       badge: !subscriptionStatus?.isActive ? 'Pro' : null,
-    },
-    {
-      name: 'Lab Interpretations',
-      path: '/pharmacy/lab-interpretations',
-      icon: BiotechIcon,
-      show: hasRole('pharmacist') || hasRole('pharmacy_team') || hasRole('pharmacy_outlet') || hasRole('owner') || hasRole('super_admin'),
-      badge: null,
     },
     {
       name: 'Lab Integration',

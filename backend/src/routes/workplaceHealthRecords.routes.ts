@@ -64,10 +64,6 @@ router.patch(
             .optional()
             .isBoolean()
             .withMessage('downloadRecords must be a boolean'),
-        body('labInterpretations')
-            .optional()
-            .isBoolean()
-            .withMessage('labInterpretations must be a boolean'),
         body('vitalsVerification')
             .optional()
             .isBoolean()
@@ -96,7 +92,6 @@ router.patch(
                 'vitalsTracking',
                 'visitHistory',
                 'downloadRecords',
-                'labInterpretations',
                 'vitalsVerification',
                 'visitSummaries',
             ])

@@ -63,7 +63,6 @@ export interface IWorkplace extends Document {
     vitalsTracking: boolean; // Log and view vital signs history
     visitHistory: boolean; // Access visit summaries and SOAP notes
     downloadRecords: boolean; // Download medical records as PDF
-    labInterpretations: boolean; // Show patient-friendly lab interpretations
     vitalsVerification: boolean; // Show verification status on vitals
     visitSummaries: boolean; // Show pharmacist summaries for visits
   };
@@ -263,10 +262,6 @@ const workplaceSchema = new Schema(
         default: true,
       },
       downloadRecords: {
-        type: Boolean,
-        default: true,
-      },
-      labInterpretations: {
         type: Boolean,
         default: true,
       },

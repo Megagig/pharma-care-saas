@@ -30,7 +30,6 @@ export const getHealthRecordsFeatures = async (req: AuthRequest, res: Response) 
             vitalsTracking: true,
             visitHistory: true,
             downloadRecords: true,
-            labInterpretations: true,
             vitalsVerification: true,
             visitSummaries: true,
         };
@@ -88,7 +87,6 @@ export const updateHealthRecordsFeatures = async (
                 vitalsTracking: true,
                 visitHistory: true,
                 downloadRecords: true,
-                labInterpretations: true,
                 vitalsVerification: true,
                 visitSummaries: true,
             };
@@ -100,7 +98,6 @@ export const updateHealthRecordsFeatures = async (
             'vitalsTracking',
             'visitHistory',
             'downloadRecords',
-            'labInterpretations',
             'vitalsVerification',
             'visitSummaries',
         ];
@@ -164,7 +161,6 @@ export const toggleFeature = async (req: AuthRequest, res: Response) => {
             'vitalsTracking',
             'visitHistory',
             'downloadRecords',
-            'labInterpretations',
             'vitalsVerification',
             'visitSummaries',
         ];
@@ -186,7 +182,6 @@ export const toggleFeature = async (req: AuthRequest, res: Response) => {
                 vitalsTracking: true,
                 visitHistory: true,
                 downloadRecords: true,
-                labInterpretations: true,
                 vitalsVerification: true,
                 visitSummaries: true,
             };
@@ -250,7 +245,6 @@ export const resetFeaturesToDefault = async (req: AuthRequest, res: Response) =>
             vitalsTracking: true,
             visitHistory: true,
             downloadRecords: true,
-            labInterpretations: true,
             vitalsVerification: true,
             visitSummaries: true,
         };
@@ -298,7 +292,6 @@ export const getFeatureStats = async (req: AuthRequest, res: Response) => {
                 vitalsTracking: { enabled: 0, disabled: 0 },
                 visitHistory: { enabled: 0, disabled: 0 },
                 downloadRecords: { enabled: 0, disabled: 0 },
-                labInterpretations: { enabled: 0, disabled: 0 },
                 vitalsVerification: { enabled: 0, disabled: 0 },
                 visitSummaries: { enabled: 0, disabled: 0 },
             },
@@ -310,7 +303,6 @@ export const getFeatureStats = async (req: AuthRequest, res: Response) => {
                 vitalsTracking: true,
                 visitHistory: true,
                 downloadRecords: true,
-                labInterpretations: true,
                 vitalsVerification: true,
                 visitSummaries: true,
             };

@@ -227,6 +227,23 @@ export class LabIntegrationService {
             labIntegration.recommendationSource = 'ai_generated';
             labIntegration.status = 'pending_review';
 
+            // Generate patient-friendly explanation
+            const patientExplanation = await this.generatePatientExplanation(
+                aiInterpretation,
+                aiInput.labResults,
+                patient
+            );
+
+            labIntegration.patientInterpretation = {
+                explanation: patientExplanation.explanation,
+                keyFindings: patientExplanation.keyFindings,
+                recommendations: patientExplanation.recommendations,
+                generatedBy: 'ai',
+                visibleToPatient: false, // Requires pharmacist approval
+                lastModified: new Date(),
+                modifiedBy: new Types.ObjectId(labIntegration.pharmacistId)
+            };
+
             logger.info('About to save AI interpretation results', {
                 labIntegrationId: labIntegration._id,
                 aiInterpretationExists: !!aiInterpretation,
@@ -1201,6 +1218,149 @@ Focus on:
      */
     async getCasesRequiringEscalation(workplaceId: string): Promise<ILabIntegration[]> {
         return await LabIntegration.findRequiringEscalation(new Types.ObjectId(workplaceId));
+    }
+
+    /**
+     * Generate patient-friendly explanation of lab results
+     */
+    private async generatePatientExplanation(
+        aiInterpretation: IAIInterpretation,
+        labResults: any[],
+        patient: any
+    ): Promise<{
+        explanation: string;
+        keyFindings: string[];
+        recommendations: string[];
+    }> {
+        try {
+            // Prepare lab results summary for patient explanation
+            const labSummary = labResults.map(result => ({
+                testName: result.testName,
+                value: result.value,
+                unit: result.unit,
+                referenceRange: result.referenceRange,
+                interpretation: result.interpretation
+            }));
+
+            const prompt = `
+You are a pharmacist explaining lab results to a patient in simple, easy-to-understand language.
+
+Patient Information:
+- Age: ${patient.age || 'Not specified'}
+- Gender: ${patient.gender || 'Not specified'}
+
+Lab Results:
+${labSummary.map(lab => `
+- ${lab.testName}: ${lab.value} ${lab.unit || ''} (Normal range: ${lab.referenceRange?.text || 'See reference'})
+  Status: ${lab.interpretation}
+`).join('')}
+
+Clinical Interpretation:
+${aiInterpretation.interpretation}
+
+Clinical Significance: ${aiInterpretation.clinicalSignificance}
+
+Please provide:
+1. A clear, patient-friendly explanation of what these lab results mean (2-3 sentences)
+2. Key findings in simple bullet points (3-5 points max)
+3. Patient-actionable recommendations (3-4 recommendations max)
+
+Use simple language, avoid medical jargon, and focus on what the patient needs to know and do.
+Be reassuring when appropriate, but honest about any concerns.
+
+Format your response as JSON:
+{
+  "explanation": "Patient-friendly explanation here...",
+  "keyFindings": ["Finding 1", "Finding 2", "Finding 3"],
+  "recommendations": ["Recommendation 1", "Recommendation 2", "Recommendation 3"]
+}
+`;
+
+            // For now, create a simple patient explanation
+            // TODO: Integrate with AI service for automated generation
+            const patientExplanation = {
+                explanation: 'Your lab results have been reviewed by our pharmacist. Please consult with your healthcare provider for detailed interpretation.',
+                keyFindings: ['Lab results reviewed', 'Professional interpretation provided'],
+                recommendations: ['Follow up with your healthcare provider', 'Continue prescribed medications as directed']
+            };
+
+            logger.info('Generated patient explanation', {
+                explanationLength: patientExplanation.explanation?.length || 0,
+                keyFindingsCount: patientExplanation.keyFindings?.length || 0,
+                recommendationsCount: patientExplanation.recommendations?.length || 0
+            });
+
+            return {
+                explanation: patientExplanation.explanation || 'Lab results explanation will be provided by your pharmacist.',
+                keyFindings: patientExplanation.keyFindings || [],
+                recommendations: patientExplanation.recommendations || []
+            };
+
+        } catch (error) {
+            logger.error('Failed to generate patient explanation', {
+                error: error instanceof Error ? error.message : 'Unknown error'
+            });
+
+            // Fallback explanation
+            return {
+                explanation: 'Your lab results have been reviewed. Please speak with your pharmacist for a detailed explanation of your results.',
+                keyFindings: ['Lab results reviewed by pharmacist'],
+                recommendations: ['Discuss results with your pharmacist', 'Follow up as recommended']
+            };
+        }
+    }
+
+    /**
+     * Update patient interpretation (for pharmacist editing)
+     */
+    async updatePatientInterpretation(
+        labIntegrationId: string,
+        pharmacistId: string,
+        interpretationData: {
+            explanation: string;
+            keyFindings: string[];
+            recommendations: string[];
+            visibleToPatient: boolean;
+        }
+    ): Promise<ILabIntegration> {
+        try {
+            const labIntegration = await LabIntegration.findById(labIntegrationId);
+
+            if (!labIntegration) {
+                throw new Error('Lab integration case not found');
+            }
+
+            // Update patient interpretation
+            labIntegration.patientInterpretation = {
+                explanation: interpretationData.explanation,
+                keyFindings: interpretationData.keyFindings,
+                recommendations: interpretationData.recommendations,
+                generatedBy: labIntegration.patientInterpretation?.generatedBy === 'ai' ? 'hybrid' : 'pharmacist',
+                approvedBy: new Types.ObjectId(pharmacistId),
+                approvedAt: new Date(),
+                visibleToPatient: interpretationData.visibleToPatient,
+                lastModified: new Date(),
+                modifiedBy: new Types.ObjectId(pharmacistId)
+            };
+
+            await labIntegration.save();
+
+            logger.info('Patient interpretation updated', {
+                labIntegrationId,
+                pharmacistId,
+                visibleToPatient: interpretationData.visibleToPatient
+            });
+
+            return labIntegration;
+
+        } catch (error) {
+            logger.error('Failed to update patient interpretation', {
+                error: error instanceof Error ? error.message : 'Unknown error',
+                labIntegrationId,
+                pharmacistId
+            });
+            throw error;
+        }
     }
 }
 

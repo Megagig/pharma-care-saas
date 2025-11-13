@@ -47,6 +47,7 @@ import {
 } from '@mui/icons-material';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import axios from 'axios';
+import { VisibilityOff } from '@mui/icons-material';
 
 interface ApiKey {
   _id: string;
@@ -61,16 +62,16 @@ interface ApiKey {
 }
 
 interface ApiUsageStats {
-  totalRequests: number;
-  successfulRequests: number;
-  failedRequests: number;
-  averageResponseTime: number;
-  requestsByEndpoint: Array<{
+  totalRequests?: number;
+  successfulRequests?: number;
+  failedRequests?: number;
+  averageResponseTime?: number;
+  requestsByEndpoint?: Array<{
     endpoint: string;
     count: number;
     avgResponseTime: number;
   }>;
-  requestsByStatus: Array<{
+  requestsByStatus?: Array<{
     status: number;
     count: number;
   }>;
@@ -100,21 +101,41 @@ const ApiManagementDashboard: React.FC = () => {
   const queryClient = useQueryClient();
 
   // Fetch API keys
-  const { data: apiKeys, isLoading: keysLoading } = useQuery<ApiKey[]>({
+  const { data: apiKeys, isLoading: keysLoading, error: keysError } = useQuery<ApiKey[]>({
     queryKey: ['api', 'keys'],
     queryFn: async () => {
-      const response = await axios.get('/api/admin/saas/api-management/keys');
-      return response.data.data;
+      try {
+        const response = await axios.get('/api/admin/saas/api-management/keys');
+        return response.data.data || [];
+      } catch (error) {
+        console.warn('Failed to fetch API keys:', error);
+        return [];
+      }
     },
+    retry: false, // Don't retry on failure
   });
 
   // Fetch API usage stats
-  const { data: usageStats, isLoading: statsLoading } = useQuery<ApiUsageStats>({
+  const { data: usageStats, isLoading: statsLoading, error: statsError } = useQuery<ApiUsageStats>({
     queryKey: ['api', 'usage'],
     queryFn: async () => {
-      const response = await axios.get('/api/admin/saas/api-management/analytics');
-      return response.data.data;
+      try {
+        const response = await axios.get('/api/admin/saas/api-management/analytics');
+        return response.data.data || {};
+      } catch (error) {
+        console.warn('Failed to fetch API usage stats:', error);
+        // Return default empty stats instead of throwing
+        return {
+          totalRequests: 0,
+          successfulRequests: 0,
+          failedRequests: 0,
+          averageResponseTime: 0,
+          requestsByEndpoint: [],
+          requestsByStatus: []
+        };
+      }
     },
+    retry: false, // Don't retry on failure
   });
 
   // Create API key mutation
@@ -207,6 +228,15 @@ const ApiManagementDashboard: React.FC = () => {
         </Box>
       </Box>
 
+      {/* Error Alerts */}
+      {(keysError || statsError) && (
+        <Alert severity="warning" sx={{ mb: 3 }}>
+          {keysError && 'Failed to load API keys. '}
+          {statsError && 'Failed to load usage statistics. '}
+          Some features may not be available.
+        </Alert>
+      )}
+
       {/* Usage Statistics */}
       {usageStats && (
         <Grid container spacing={3} mb={3}>
@@ -217,7 +247,7 @@ const ApiManagementDashboard: React.FC = () => {
                   Total Requests
                 </Typography>
                 <Typography variant="h4" fontWeight="bold">
-                  {usageStats.totalRequests.toLocaleString()}
+                  {(usageStats.totalRequests || 0).toLocaleString()}
                 </Typography>
               </CardContent>
             </Card>
@@ -229,7 +259,10 @@ const ApiManagementDashboard: React.FC = () => {
                   Success Rate
                 </Typography>
                 <Typography variant="h4" fontWeight="bold" color="success.main">
-                  {((usageStats.successfulRequests / usageStats.totalRequests) * 100).toFixed(1)}%
+                  {usageStats.totalRequests && usageStats.successfulRequests 
+                    ? (((usageStats.successfulRequests || 0) / (usageStats.totalRequests || 1)) * 100).toFixed(1)
+                    : '0.0'
+                  }%
                 </Typography>
               </CardContent>
             </Card>
@@ -241,7 +274,7 @@ const ApiManagementDashboard: React.FC = () => {
                   Failed Requests
                 </Typography>
                 <Typography variant="h4" fontWeight="bold" color="error.main">
-                  {usageStats.failedRequests.toLocaleString()}
+                  {(usageStats.failedRequests || 0).toLocaleString()}
                 </Typography>
               </CardContent>
             </Card>
@@ -253,7 +286,7 @@ const ApiManagementDashboard: React.FC = () => {
                   Avg Response Time
                 </Typography>
                 <Typography variant="h4" fontWeight="bold">
-                  {usageStats.averageResponseTime.toFixed(0)}ms
+                  {(usageStats.averageResponseTime || 0).toFixed(0)}ms
                 </Typography>
               </CardContent>
             </Card>
@@ -285,48 +318,58 @@ const ApiManagementDashboard: React.FC = () => {
                 </TableRow>
               </TableHead>
               <TableBody>
-                {apiKeys?.map((key) => (
-                  <TableRow key={key._id}>
-                    <TableCell>{key.name}</TableCell>
-                    <TableCell>
-                      <Box display="flex" alignItems="center" gap={1}>
-                        <Typography variant="body2" fontFamily="monospace">
-                          {visibleKeys.has(key._id) ? key.key : '••••••••••••••••'}
-                        </Typography>
-                        <IconButton size="small" onClick={() => toggleKeyVisibility(key._id)}>
-                          {visibleKeys.has(key._id) ? <VisibilityOff fontSize="small" /> : <ViewIcon fontSize="small" />}
-                        </IconButton>
-                        <IconButton size="small" onClick={() => copyToClipboard(key.key)}>
-                          <CopyIcon fontSize="small" />
-                        </IconButton>
-                      </Box>
-                    </TableCell>
-                    <TableCell>
-                      <Chip
-                        label={key.status}
-                        color={getStatusColor(key.status) as any}
-                        icon={getStatusIcon(key.status)}
-                        size="small"
-                      />
-                    </TableCell>
-                    <TableCell align="right">{key.usageCount.toLocaleString()}</TableCell>
-                    <TableCell>
-                      {key.lastUsed ? new Date(key.lastUsed).toLocaleString() : 'Never'}
-                    </TableCell>
-                    <TableCell align="center">
-                      <Tooltip title="Revoke Key">
-                        <IconButton
+                {apiKeys && apiKeys.length > 0 ? (
+                  apiKeys.map((key) => (
+                    <TableRow key={key._id}>
+                      <TableCell>{key.name}</TableCell>
+                      <TableCell>
+                        <Box display="flex" alignItems="center" gap={1}>
+                          <Typography variant="body2" fontFamily="monospace">
+                            {visibleKeys.has(key._id) ? key.key : '••••••••••••••••'}
+                          </Typography>
+                          <IconButton size="small" onClick={() => toggleKeyVisibility(key._id)}>
+                            {visibleKeys.has(key._id) ? <VisibilityOff fontSize="small" /> : <ViewIcon fontSize="small" />}
+                          </IconButton>
+                          <IconButton size="small" onClick={() => copyToClipboard(key.key)}>
+                            <CopyIcon fontSize="small" />
+                          </IconButton>
+                        </Box>
+                      </TableCell>
+                      <TableCell>
+                        <Chip
+                          label={key.status}
+                          color={getStatusColor(key.status) as any}
+                          icon={getStatusIcon(key.status)}
                           size="small"
-                          color="error"
-                          onClick={() => revokeKeyMutation.mutate(key._id)}
-                          disabled={key.status === 'revoked'}
-                        >
-                          <DeleteIcon fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
+                        />
+                      </TableCell>
+                      <TableCell align="right">{(key.usageCount || 0).toLocaleString()}</TableCell>
+                      <TableCell>
+                        {key.lastUsed ? new Date(key.lastUsed).toLocaleString() : 'Never'}
+                      </TableCell>
+                      <TableCell align="center">
+                        <Tooltip title="Revoke Key">
+                          <IconButton
+                            size="small"
+                            color="error"
+                            onClick={() => revokeKeyMutation.mutate(key._id)}
+                            disabled={key.status === 'revoked'}
+                          >
+                            <DeleteIcon fontSize="small" />
+                          </IconButton>
+                        </Tooltip>
+                      </TableCell>
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell colSpan={6} align="center">
+                      <Typography variant="body2" color="text.secondary" sx={{ py: 4 }}>
+                        No API keys found. Create your first API key to get started.
+                      </Typography>
                     </TableCell>
                   </TableRow>
-                ))}
+                )}
               </TableBody>
             </Table>
           </TableContainer>
@@ -351,13 +394,21 @@ const ApiManagementDashboard: React.FC = () => {
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {usageStats?.requestsByEndpoint.slice(0, 10).map((endpoint, index) => (
+                        {usageStats?.requestsByEndpoint?.slice(0, 10).map((endpoint, index) => (
                           <TableRow key={index}>
                             <TableCell>{endpoint.endpoint}</TableCell>
-                            <TableCell align="right">{endpoint.count.toLocaleString()}</TableCell>
-                            <TableCell align="right">{endpoint.avgResponseTime.toFixed(0)}ms</TableCell>
+                            <TableCell align="right">{(endpoint.count || 0).toLocaleString()}</TableCell>
+                            <TableCell align="right">{(endpoint.avgResponseTime || 0).toFixed(0)}ms</TableCell>
                           </TableRow>
-                        ))}
+                        )) || (
+                          <TableRow>
+                            <TableCell colSpan={3} align="center">
+                              <Typography variant="body2" color="text.secondary">
+                                No endpoint data available
+                              </Typography>
+                            </TableCell>
+                          </TableRow>
+                        )}
                       </TableBody>
                     </Table>
                   </TableContainer>
@@ -379,7 +430,7 @@ const ApiManagementDashboard: React.FC = () => {
                         </TableRow>
                       </TableHead>
                       <TableBody>
-                        {usageStats?.requestsByStatus.map((status, index) => (
+                        {usageStats?.requestsByStatus?.map((status, index) => (
                           <TableRow key={index}>
                             <TableCell>
                               <Chip
@@ -388,9 +439,17 @@ const ApiManagementDashboard: React.FC = () => {
                                 size="small"
                               />
                             </TableCell>
-                            <TableCell align="right">{status.count.toLocaleString()}</TableCell>
+                            <TableCell align="right">{(status.count || 0).toLocaleString()}</TableCell>
                           </TableRow>
-                        ))}
+                        )) || (
+                          <TableRow>
+                            <TableCell colSpan={2} align="center">
+                              <Typography variant="body2" color="text.secondary">
+                                No status data available
+                              </Typography>
+                            </TableCell>
+                          </TableRow>
+                        )}
                       </TableBody>
                     </Table>
                   </TableContainer>

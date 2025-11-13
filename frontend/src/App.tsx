@@ -88,7 +88,6 @@ import {
   LazyPublicPatientPortal,
   LazyWorkspaceSearchPage,
   LazyPatientWorkspaceDetailPage,
-  LazyPharmacistLabInterpretations,
   LazyBlogPage,
   LazyBlogPostDetails,
   LazyBlogManagement,
@@ -106,7 +105,6 @@ import {
   LazyLabTrendsPage,
   LazyPaymentSimulation,
   LazyPricingPlanManagement,
-  LazyReports,
   LazyPatientLinkingAdmin,
   LazyPatientLinkingManagement,
   LazySuperAdminHealthRecordsDashboard,
@@ -848,23 +846,6 @@ function App(): JSX.Element {
                               }
                             />
 
-                            {/* Health Records - Lab Interpretations */}
-                            <Route
-                              path="/pharmacy/lab-interpretations"
-                              element={
-                                <ProtectedRoute
-                                  requiredRole={['pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'owner', 'super_admin']}
-                                  requiresActiveSubscription
-                                >
-                                  <AppLayout>
-                                    <LazyWrapper fallback={PageSkeleton}>
-                                      <LazyPharmacistLabInterpretations />
-                                    </LazyWrapper>
-                                  </AppLayout>
-                                </ProtectedRoute>
-                              }
-                            />
-
                             <Route
                               path="/pharmacy/communication"
                               element={
@@ -1492,22 +1473,6 @@ function App(): JSX.Element {
                                   <AppLayout>
                                     <LazyWrapper fallback={PageSkeleton}>
                                       <LazyLabIntegrationReviewQueue />
-                                    </LazyWrapper>
-                                  </AppLayout>
-                                </ProtectedRoute>
-                              }
-                            />
-
-                            {/* Reports Page */}
-                            <Route
-                              path="/reports"
-                              element={
-                                <ProtectedRoute
-                                  requiredRole={['pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'owner', 'super_admin']}
-                                >
-                                  <AppLayout>
-                                    <LazyWrapper fallback={PageSkeleton}>
-                                      <LazyReports />
                                     </LazyWrapper>
                                   </AppLayout>
                                 </ProtectedRoute>

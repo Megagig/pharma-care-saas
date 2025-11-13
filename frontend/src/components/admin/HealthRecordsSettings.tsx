@@ -28,7 +28,6 @@ interface HealthRecordsFeatures {
     vitalsTracking: boolean;
     visitHistory: boolean;
     downloadRecords: boolean;
-    labInterpretations: boolean;
     vitalsVerification: boolean;
     visitSummaries: boolean;
 }
@@ -69,13 +68,6 @@ const featureConfigs: FeatureConfig[] = [
         description: 'Allow patients to download their medical records as PDF',
         icon: <DownloadIcon />,
         category: 'Core',
-    },
-    {
-        key: 'labInterpretations',
-        label: 'Lab Interpretations',
-        description: 'Display patient-friendly interpretations of lab results',
-        icon: <ScienceIcon />,
-        category: 'Enhanced',
     },
     {
         key: 'vitalsVerification',

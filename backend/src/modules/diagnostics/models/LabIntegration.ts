@@ -51,6 +51,12 @@ export interface IAIInterpretation {
     modelUsed: string;
     promptVersion?: string;
     interpretedAt?: Date;
+    
+    // Patient-Friendly Interpretation
+    patientExplanation?: string; // AI-generated patient-friendly explanation
+    patientExplanationApproved?: boolean; // Pharmacist approval status
+    patientExplanationModified?: boolean; // Whether pharmacist modified AI explanation
+    patientExplanationVisibleToPatient?: boolean; // Whether patient can see this explanation
 }
 
 /**
@@ -127,6 +133,19 @@ export interface ILabIntegration extends Document {
     aiInterpretation?: IAIInterpretation;
     aiProcessingStatus: 'pending' | 'processing' | 'completed' | 'failed' | 'skipped';
     aiProcessingError?: string;
+    
+    // Patient-Friendly Interpretation
+    patientInterpretation?: {
+        explanation: string; // Patient-friendly explanation of lab results
+        keyFindings: string[]; // Simple bullet points of key findings
+        recommendations: string[]; // Patient-actionable recommendations
+        generatedBy: 'ai' | 'pharmacist' | 'hybrid';
+        approvedBy?: mongoose.Types.ObjectId; // Pharmacist who approved
+        approvedAt?: Date;
+        visibleToPatient: boolean;
+        lastModified: Date;
+        modifiedBy: mongoose.Types.ObjectId;
+    };
 
     // Safety Checks
     safetyChecks: ISafetyCheck[];
@@ -564,6 +583,51 @@ const labIntegrationSchema = new Schema({
     aiProcessingError: {
         type: String,
         trim: true
+    },
+
+    // Patient-Friendly Interpretation
+    patientInterpretation: {
+        explanation: {
+            type: String,
+            trim: true,
+            maxlength: [2000, 'Patient explanation cannot exceed 2000 characters']
+        },
+        keyFindings: [{
+            type: String,
+            trim: true,
+            maxlength: [200, 'Key finding cannot exceed 200 characters']
+        }],
+        recommendations: [{
+            type: String,
+            trim: true,
+            maxlength: [300, 'Recommendation cannot exceed 300 characters']
+        }],
+        generatedBy: {
+            type: String,
+            enum: ['ai', 'pharmacist', 'hybrid'],
+            default: 'ai'
+        },
+        approvedBy: {
+            type: Schema.Types.ObjectId,
+            ref: 'User'
+        },
+        approvedAt: {
+            type: Date
+        },
+        visibleToPatient: {
+            type: Boolean,
+            default: false,
+            index: true
+        },
+        lastModified: {
+            type: Date,
+            default: Date.now
+        },
+        modifiedBy: {
+            type: Schema.Types.ObjectId,
+            ref: 'User',
+            required: true
+        }
     },
 
     // Safety Checks

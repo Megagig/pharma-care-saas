@@ -458,3 +458,89 @@ export const escalateToPhysician = async (
     }
 };
 
+/**
+ * Update patient interpretation
+ */
+export const updatePatientInterpretation = async (
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
+    try {
+        const { id } = req.params;
+        const userId = req.user?._id;
+        const { explanation, keyFindings, recommendations, visibleToPatient } = req.body;
+
+        if (!userId) {
+            res.status(401).json({
+                success: false,
+                message: 'Unauthorized: User not found'
+            });
+            return;
+        }
+
+        const updatedCase = await labIntegrationService.updatePatientInterpretation(
+            id,
+            userId.toString(),
+            {
+                explanation,
+                keyFindings,
+                recommendations,
+                visibleToPatient
+            }
+        );
+
+        res.status(200).json({
+            success: true,
+            message: 'Patient interpretation updated successfully',
+            data: updatedCase
+        });
+    } catch (error) {
+        logger.error('Failed to update patient interpretation', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+            labIntegrationId: req.params.id
+        });
+        next(error);
+    }
+};
+
+/**
+ * Get patient interpretation for a case
+ */
+export const getPatientInterpretation = async (
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
+    try {
+        const { id } = req.params;
+
+        const labIntegration = await labIntegrationService.getLabIntegrationById(id);
+
+        if (!labIntegration) {
+            res.status(404).json({
+                success: false,
+                message: 'Lab integration case not found'
+            });
+            return;
+        }
+
+        res.status(200).json({
+            success: true,
+            data: {
+                patientInterpretation: labIntegration.patientInterpretation,
+                hasInterpretation: !!labIntegration.patientInterpretation?.explanation,
+                isVisibleToPatient: labIntegration.patientInterpretation?.visibleToPatient || false,
+                lastModified: labIntegration.patientInterpretation?.lastModified,
+                generatedBy: labIntegration.patientInterpretation?.generatedBy
+            }
+        });
+    } catch (error) {
+        logger.error('Failed to get patient interpretation', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+            labIntegrationId: req.params.id
+        });
+        next(error);
+    }
+};
+

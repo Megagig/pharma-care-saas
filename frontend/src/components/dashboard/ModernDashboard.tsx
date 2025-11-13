@@ -275,11 +275,71 @@ const SystemHealthCard: React.FC = () => {
   );
 };
 
-export const ModernDashboard: React.FC = () => {
-  const theme = useTheme();
+const ModernDashboardComponent: React.FC = () => {
+  const [isMounted, setIsMounted] = useState(false);
+
+  // Ensure component is fully mounted before accessing contexts
+  React.useEffect(() => {
+    const timer = setTimeout(() => {
+      setIsMounted(true);
+    }, 100); // Small delay to ensure contexts are ready
+
+    return () => clearTimeout(timer);
+  }, []);
+
+  // Safe theme access with fallback
+  let theme;
+  try {
+    theme = useTheme();
+  } catch (error) {
+    console.warn('Theme context not available, using fallback');
+    // Fallback theme object with essential properties
+    theme = {
+      palette: {
+        primary: { main: '#1976d2' },
+        secondary: { main: '#dc004e' },
+        success: { main: '#2e7d32' },
+        warning: { main: '#ed6c02' },
+        error: { main: '#d32f2f' },
+        info: { main: '#0288d1' },
+        text: { primary: '#000', secondary: '#666' },
+        grey: { 400: '#bdbdbd' }
+      }
+    };
+  }
+
   const navigate = useNavigate();
   const { isMobile } = useResponsive();
   const { user } = useAuth(); // Get user from AuthContext
+
+  // Show loading state while mounting to prevent context issues
+  if (!isMounted) {
+    return (
+      <Box sx={{ p: 3, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+        <Box sx={{ textAlign: 'center' }}>
+          <Box
+            sx={{
+              width: 40,
+              height: 40,
+              border: '3px solid #1976d2',
+              borderTopColor: 'transparent',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+              mx: 'auto',
+              mb: 2,
+              '@keyframes spin': {
+                '0%': { transform: 'rotate(0deg)' },
+                '100%': { transform: 'rotate(360deg)' },
+              },
+            }}
+          />
+          <Typography variant="body2" color="text.secondary">
+            Loading Dashboard...
+          </Typography>
+        </Box>
+      </Box>
+    );
+  }
 
   // Check if user is super admin - pass user role from AuthContext
   const isSuperAdmin = roleBasedDashboardService.isSuperAdmin(user?.role as any);
@@ -1770,5 +1830,8 @@ export const ModernDashboard: React.FC = () => {
     </Box>
   );
 };
+
+// Memoized export to prevent unnecessary re-renders
+export const ModernDashboard = React.memo(ModernDashboardComponent);
 
 export default ModernDashboard;

@@ -29,6 +29,7 @@ import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
 import AssignmentIcon from '@mui/icons-material/Assignment';
 import TrendingUpIcon from '@mui/icons-material/TrendingUp';
 import SecurityIcon from '@mui/icons-material/Security';
+import PersonIcon from '@mui/icons-material/Person';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Helmet } from 'react-helmet-async';
@@ -42,6 +43,7 @@ import SafetyChecksDisplay from '../components/lab-integration/SafetyChecksDispl
 import PhysicianEscalationDialog from '../components/lab-integration/PhysicianEscalationDialog';
 import CriticalAlertDialog from '../components/lab-integration/CriticalAlertDialog';
 import ReviewWorkflowBanner from '../components/lab-integration/ReviewWorkflowBanner';
+import PatientInterpretationEditor from '../components/lab-integration/PatientInterpretationEditor';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -374,6 +376,11 @@ const LabIntegrationCaseDetail: React.FC = () => {
                 icon={<TrendingUpIcon />}
                 iconPosition="start"
               />
+              <Tab
+                label="Patient Interpretation"
+                icon={<PersonIcon />}
+                iconPosition="start"
+              />
             </Tabs>
           </Box>
 
@@ -414,6 +421,17 @@ const LabIntegrationCaseDetail: React.FC = () => {
             <LabTrendVisualization
               patientId={labIntegration.patientId}
               labResultIds={labIntegration.labResultIds}
+            />
+          </TabPanel>
+
+          <TabPanel value={activeTab} index={5}>
+            <PatientInterpretationEditor
+              labIntegrationId={labIntegration._id}
+              patientName={`${labIntegration.patientId?.firstName || ''} ${labIntegration.patientId?.lastName || ''}`}
+              onUpdate={() => {
+                // Optionally refresh the case data
+                window.location.reload();
+              }}
             />
           </TabPanel>
         </Card>

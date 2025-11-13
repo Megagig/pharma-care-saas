@@ -132,5 +132,27 @@ router.post(
     labIntegrationController.escalateToPhysician
 );
 
+/**
+ * @route   PUT /api/lab-integration/:id/patient-interpretation
+ * @desc    Update patient-friendly interpretation for a lab integration case
+ * @access  Pharmacist, Pharmacy Team, Pharmacy Outlet, Owner, Super Admin
+ */
+router.put(
+    '/:id/patient-interpretation',
+    requirePermission('lab_integration:update'),
+    labIntegrationController.updatePatientInterpretation
+);
+
+/**
+ * @route   GET /api/lab-integration/:id/patient-interpretation
+ * @desc    Get patient-friendly interpretation for a lab integration case
+ * @access  Pharmacist, Pharmacy Team, Pharmacy Outlet, Owner, Super Admin
+ */
+router.get(
+    '/:id/patient-interpretation',
+    requirePermission('lab_integration:read'),
+    labIntegrationController.getPatientInterpretation
+);
+
 export default router;
 
