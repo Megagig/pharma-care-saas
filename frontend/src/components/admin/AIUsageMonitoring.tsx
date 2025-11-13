@@ -490,29 +490,78 @@ const AIUsageMonitoring: React.FC = () => {
 
   return (
     <LocalizationProvider dateAdapter={AdapterDateFns}>
-      <Box sx={{ p: 3 }}>
-        <Typography variant="h4" gutterBottom>
-          AI Model Usage Monitoring
-        </Typography>
+      <Box sx={{ p: { xs: 2, md: 3 }, bgcolor: '#f8f9fa', minHeight: '100vh' }}>
+        {/* Header Section */}
+        <Box
+          sx={{
+            mb: 4,
+            p: 3,
+            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+            borderRadius: 3,
+            boxShadow: '0 8px 32px rgba(102, 126, 234, 0.25)',
+            color: 'white'
+          }}
+        >
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+            <Box>
+              <Typography variant="h3" fontWeight="700" gutterBottom>
+                AI Model Usage Monitoring
+              </Typography>
+              <Typography variant="body1" sx={{ opacity: 0.9 }}>
+                Track and manage AI usage across all workspaces
+              </Typography>
+            </Box>
+            <Box
+              sx={{
+                bgcolor: 'rgba(255,255,255,0.2)',
+                borderRadius: 2,
+                p: 2,
+                backdropFilter: 'blur(10px)'
+              }}
+            >
+              <Typography variant="body2" sx={{ opacity: 0.9, mb: 0.5 }}>
+                Current Month
+              </Typography>
+              <Typography variant="h5" fontWeight="600">
+                {dashboardData.globalBudget.currentMonth}
+              </Typography>
+            </Box>
+          </Box>
+        </Box>
 
         {/* Date Range Selector */}
-        <Box sx={{ mb: 3, display: 'flex', gap: 2, alignItems: 'center' }}>
-          <DatePicker
-            label="Start Date"
-            value={dateRange.startDate}
-            onChange={(date) => date && setDateRange(prev => ({ ...prev, startDate: date }))}
-            slotProps={{ textField: { size: 'small' } }}
-          />
-          <DatePicker
-            label="End Date"
-            value={dateRange.endDate}
-            onChange={(date) => date && setDateRange(prev => ({ ...prev, endDate: date }))}
-            slotProps={{ textField: { size: 'small' } }}
-          />
-          <Button variant="outlined" onClick={loadDashboardData}>
-            Refresh
-          </Button>
-        </Box>
+        <Card sx={{ mb: 3, boxShadow: '0 4px 12px rgba(0,0,0,0.08)' }}>
+          <CardContent>
+            <Box sx={{ display: 'flex', gap: 2, alignItems: 'center', flexWrap: 'wrap' }}>
+              <DatePicker
+                label="Start Date"
+                value={dateRange.startDate}
+                onChange={(date) => date && setDateRange(prev => ({ ...prev, startDate: date }))}
+                slotProps={{ textField: { size: 'small' } }}
+              />
+              <DatePicker
+                label="End Date"
+                value={dateRange.endDate}
+                onChange={(date) => date && setDateRange(prev => ({ ...prev, endDate: date }))}
+                slotProps={{ textField: { size: 'small' } }}
+              />
+              <Button
+                variant="contained"
+                onClick={loadDashboardData}
+                sx={{
+                  background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                  boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)',
+                  '&:hover': {
+                    background: 'linear-gradient(135deg, #764ba2 0%, #667eea 100%)',
+                    boxShadow: '0 6px 16px rgba(102, 126, 234, 0.4)',
+                  }
+                }}
+              >
+                Refresh Data
+              </Button>
+            </Box>
+          </CardContent>
+        </Card>
 
         {/* Alerts */}
         {dashboardData.alerts.length > 0 && (
@@ -536,139 +585,482 @@ const AIUsageMonitoring: React.FC = () => {
           </Box>
         )}
 
-        {/* Overview Cards */}
-        <Grid container spacing={3} sx={{ mb: 3 }}>
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
+        {/* Overview Cards - Modern Design with Flexbox */}
+        <Box
+          sx={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: 3,
+            mb: 4
+          }}
+        >
+          {/* Total Requests Card */}
+          <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' } }}>
+            <Card
+              sx={{
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: 'white',
+                boxShadow: '0 8px 24px rgba(102, 126, 234, 0.25)',
+                transition: 'all 0.3s ease-in-out',
+                height: '100%',
+                '&:hover': {
+                  transform: 'translateY(-8px)',
+                  boxShadow: '0 16px 40px rgba(102, 126, 234, 0.4)',
+                }
+              }}
+            >
               <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                  <SpeedIcon color="primary" sx={{ mr: 1 }} />
-                  <Typography variant="h6">Total Requests</Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                  <Box>
+                    <Typography variant="body2" sx={{ opacity: 0.9, mb: 1, fontWeight: 500 }}>
+                      Total Requests
+                    </Typography>
+                    <Typography variant="h3" fontWeight="700">
+                      {dashboardData.overview.totalRequests.toLocaleString()}
+                    </Typography>
+                  </Box>
+                  <Box
+                    sx={{
+                      bgcolor: 'rgba(255,255,255,0.2)',
+                      borderRadius: '12px',
+                      p: 1.5,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <SpeedIcon sx={{ fontSize: 32 }} />
+                  </Box>
                 </Box>
-                <Typography variant="h4">
-                  {dashboardData.overview.totalRequests.toLocaleString()}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  Success Rate: {dashboardData.overview.successRate}%
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  <Chip
+                    label={`${dashboardData.overview.successRate}% Success`}
+                    size="small"
+                    sx={{
+                      bgcolor: 'rgba(255,255,255,0.25)',
+                      color: 'white',
+                      fontWeight: 600,
+                      fontSize: '0.75rem'
+                    }}
+                  />
+                </Box>
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
 
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
+          {/* Total Cost Card */}
+          <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' } }}>
+            <Card
+              sx={{
+                background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                color: 'white',
+                boxShadow: '0 8px 24px rgba(240, 147, 251, 0.25)',
+                transition: 'all 0.3s ease-in-out',
+                height: '100%',
+                '&:hover': {
+                  transform: 'translateY(-8px)',
+                  boxShadow: '0 16px 40px rgba(240, 147, 251, 0.4)',
+                }
+              }}
+            >
               <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                  <MoneyIcon color="success" sx={{ mr: 1 }} />
-                  <Typography variant="h6">Total Cost</Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                  <Box>
+                    <Typography variant="body2" sx={{ opacity: 0.9, mb: 1, fontWeight: 500 }}>
+                      Total Cost
+                    </Typography>
+                    <Typography variant="h3" fontWeight="700">
+                      ${dashboardData.overview.totalCost.toFixed(2)}
+                    </Typography>
+                  </Box>
+                  <Box
+                    sx={{
+                      bgcolor: 'rgba(255,255,255,0.2)',
+                      borderRadius: '12px',
+                      p: 1.5,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <MoneyIcon sx={{ fontSize: 32 }} />
+                  </Box>
                 </Box>
-                <Typography variant="h4">
-                  ${dashboardData.overview.totalCost.toFixed(4)}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.85rem' }}>
                   Avg: ${dashboardData.overview.averageCost.toFixed(6)} per request
                 </Typography>
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
 
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
+          {/* Budget Remaining Card */}
+          <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' } }}>
+            <Card
+              sx={{
+                background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                color: 'white',
+                boxShadow: '0 8px 24px rgba(79, 172, 254, 0.25)',
+                transition: 'all 0.3s ease-in-out',
+                height: '100%',
+                '&:hover': {
+                  transform: 'translateY(-8px)',
+                  boxShadow: '0 16px 40px rgba(79, 172, 254, 0.4)',
+                }
+              }}
+            >
               <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                  <AnalyticsIcon color="info" sx={{ mr: 1 }} />
-                  <Typography variant="h6">Budget Status</Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                  <Box>
+                    <Typography variant="body2" sx={{ opacity: 0.9, mb: 1, fontWeight: 500 }}>
+                      Budget Remaining
+                    </Typography>
+                    <Typography variant="h3" fontWeight="700">
+                      ${dashboardData.globalBudget.remaining.toFixed(2)}
+                    </Typography>
+                  </Box>
+                  <Box
+                    sx={{
+                      bgcolor: 'rgba(255,255,255,0.2)',
+                      borderRadius: '12px',
+                      p: 1.5,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <AnalyticsIcon sx={{ fontSize: 32 }} />
+                  </Box>
                 </Box>
-                <Typography variant="h4">
-                  ${dashboardData.globalBudget.remaining.toFixed(2)}
-                </Typography>
                 <LinearProgress
                   variant="determinate"
                   value={Math.min(dashboardData.globalBudget.usedPercent, 100)}
-                  sx={{ mt: 1, mb: 1 }}
-                  color={dashboardData.globalBudget.usedPercent > 90 ? 'error' : 
-                         dashboardData.globalBudget.usedPercent > 75 ? 'warning' : 'primary'}
+                  sx={{
+                    mt: 1,
+                    mb: 1,
+                    height: 8,
+                    borderRadius: 4,
+                    bgcolor: 'rgba(255,255,255,0.3)',
+                    '& .MuiLinearProgress-bar': {
+                      bgcolor: dashboardData.globalBudget.usedPercent > 90 ? '#ff1744' :
+                               dashboardData.globalBudget.usedPercent > 75 ? '#ffa726' : 'rgba(255,255,255,0.9)',
+                      borderRadius: 4,
+                    }
+                  }}
                 />
-                <Typography variant="body2" color="text.secondary">
+                <Typography variant="body2" sx={{ opacity: 0.9, fontSize: '0.85rem' }}>
                   {dashboardData.globalBudget.usedPercent.toFixed(1)}% of ${dashboardData.globalBudget.monthlyBudget} used
                 </Typography>
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
 
-          <Grid item xs={12} sm={6} md={3}>
-            <Card>
+          {/* Active Workspaces Card */}
+          <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' } }}>
+            <Card
+              sx={{
+                background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+                color: 'white',
+                boxShadow: '0 8px 24px rgba(250, 112, 154, 0.25)',
+                transition: 'all 0.3s ease-in-out',
+                height: '100%',
+                '&:hover': {
+                  transform: 'translateY(-8px)',
+                  boxShadow: '0 16px 40px rgba(250, 112, 154, 0.4)',
+                }
+              }}
+            >
               <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 1 }}>
-                  <PeopleIcon color="warning" sx={{ mr: 1 }} />
-                  <Typography variant="h6">Active Workspaces</Typography>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
+                  <Box>
+                    <Typography variant="body2" sx={{ opacity: 0.9, mb: 1, fontWeight: 500 }}>
+                      Active Workspaces
+                    </Typography>
+                    <Typography variant="h3" fontWeight="700">
+                      {dashboardData.topWorkspaces.length}
+                    </Typography>
+                  </Box>
+                  <Box
+                    sx={{
+                      bgcolor: 'rgba(255,255,255,0.2)',
+                      borderRadius: '12px',
+                      p: 1.5,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}
+                  >
+                    <PeopleIcon sx={{ fontSize: 32 }} />
+                  </Box>
                 </Box>
-                <Typography variant="h4">
-                  {dashboardData.topWorkspaces.length}
-                </Typography>
-                <Typography variant="body2" color="text.secondary">
-                  {dashboardData.suspendedWorkspaces.length} suspended
-                </Typography>
+                <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                  {dashboardData.suspendedWorkspaces.length > 0 && (
+                    <Chip
+                      label={`${dashboardData.suspendedWorkspaces.length} Suspended`}
+                      size="small"
+                      sx={{
+                        bgcolor: 'rgba(255,255,255,0.25)',
+                        color: 'white',
+                        fontWeight: 600,
+                        fontSize: '0.75rem'
+                      }}
+                    />
+                  )}
+                </Box>
               </CardContent>
             </Card>
-          </Grid>
-        </Grid>
+          </Box>
+        </Box>
 
-        {/* Charts */}
-        <Grid container spacing={3} sx={{ mb: 3 }}>
-          {/* Daily Trends */}
-          <Grid item xs={12} md={8}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Daily Usage Trends
-                </Typography>
-                <ResponsiveContainer width="100%" height={300}>
-                  <LineChart data={dashboardData.dailyTrends}>
-                    <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" />
-                    <YAxis yAxisId="left" />
-                    <YAxis yAxisId="right" orientation="right" />
-                    <RechartsTooltip />
-                    <Legend />
-                    <Bar yAxisId="left" dataKey="requests" fill="#8884d8" name="Requests" />
-                    <Line yAxisId="right" type="monotone" dataKey="cost" stroke="#82ca9d" name="Cost ($)" />
-                  </LineChart>
-                </ResponsiveContainer>
+        {/* Charts Section - Redesigned with Flexbox for Better Spacing */}
+        <Box sx={{ mb: 3 }}>
+          {/* Daily Usage Trends - Full Width */}
+          <Box sx={{ mb: 3 }}>
+            <Card
+              sx={{
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                color: 'white',
+                boxShadow: '0 8px 32px rgba(102, 126, 234, 0.25)',
+                transition: 'transform 0.3s ease-in-out',
+                '&:hover': {
+                  transform: 'translateY(-4px)',
+                  boxShadow: '0 12px 48px rgba(102, 126, 234, 0.35)',
+                }
+              }}
+            >
+              <CardContent sx={{ pb: 3 }}>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="h5" fontWeight="600">
+                    Daily Usage Trends
+                  </Typography>
+                  <Chip
+                    label={`${dashboardData.dailyTrends.length} Days`}
+                    sx={{
+                      bgcolor: 'rgba(255,255,255,0.2)',
+                      color: 'white',
+                      fontWeight: 600
+                    }}
+                  />
+                </Box>
+                <Box sx={{ bgcolor: 'rgba(255,255,255,0.95)', borderRadius: 2, p: 2 }}>
+                  <ResponsiveContainer width="100%" height={350}>
+                    <LineChart data={dashboardData.dailyTrends}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                      <XAxis
+                        dataKey="date"
+                        stroke="#666"
+                        style={{ fontSize: '12px' }}
+                      />
+                      <YAxis
+                        yAxisId="left"
+                        stroke="#8884d8"
+                        style={{ fontSize: '12px' }}
+                        label={{ value: 'Requests', angle: -90, position: 'insideLeft' }}
+                      />
+                      <YAxis
+                        yAxisId="right"
+                        orientation="right"
+                        stroke="#82ca9d"
+                        style={{ fontSize: '12px' }}
+                        label={{ value: 'Cost ($)', angle: 90, position: 'insideRight' }}
+                      />
+                      <RechartsTooltip
+                        contentStyle={{
+                          backgroundColor: 'rgba(255,255,255,0.95)',
+                          border: '1px solid #ddd',
+                          borderRadius: '8px',
+                          boxShadow: '0 4px 12px rgba(0,0,0,0.1)'
+                        }}
+                      />
+                      <Legend
+                        wrapperStyle={{ paddingTop: '20px' }}
+                        iconType="circle"
+                      />
+                      <Bar
+                        yAxisId="left"
+                        dataKey="requests"
+                        fill="#8884d8"
+                        name="Requests"
+                        radius={[8, 8, 0, 0]}
+                      />
+                      <Line
+                        yAxisId="right"
+                        type="monotone"
+                        dataKey="cost"
+                        stroke="#82ca9d"
+                        strokeWidth={3}
+                        name="Cost ($)"
+                        dot={{ fill: '#82ca9d', r: 4 }}
+                        activeDot={{ r: 6 }}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </Box>
               </CardContent>
             </Card>
-          </Grid>
+          </Box>
 
-          {/* Feature Breakdown */}
-          <Grid item xs={12} md={4}>
-            <Card>
-              <CardContent>
-                <Typography variant="h6" gutterBottom>
-                  Feature Usage Breakdown
-                </Typography>
-                <ResponsiveContainer width="100%" height={300}>
-                  <PieChart>
-                    <Pie
-                      data={dashboardData.featureBreakdown}
-                      cx="50%"
-                      cy="50%"
-                      labelLine={false}
-                      label={({ feature, percentage }) => `${feature}: ${percentage}%`}
-                      outerRadius={80}
-                      fill="#8884d8"
-                      dataKey="requests"
-                    >
-                      {dashboardData.featureBreakdown.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                      ))}
-                    </Pie>
-                    <RechartsTooltip />
-                  </PieChart>
-                </ResponsiveContainer>
-              </CardContent>
-            </Card>
-          </Grid>
-        </Grid>
+          {/* Feature Breakdown & Cost Distribution - Side by Side with Flexbox */}
+          <Box
+            sx={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 3
+            }}
+          >
+            {/* Feature Usage Breakdown */}
+            <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 calc(50% - 12px)' } }}>
+              <Card
+                sx={{
+                  height: '100%',
+                  background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+                  color: 'white',
+                  boxShadow: '0 8px 32px rgba(240, 147, 251, 0.25)',
+                  transition: 'transform 0.3s ease-in-out',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: '0 12px 48px rgba(240, 147, 251, 0.35)',
+                  }
+                }}
+              >
+                <CardContent>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="h6" fontWeight="600">
+                      Feature Usage Breakdown
+                    </Typography>
+                    <Chip
+                      label={`${dashboardData.featureBreakdown.length} Features`}
+                      sx={{
+                        bgcolor: 'rgba(255,255,255,0.2)',
+                        color: 'white',
+                        fontWeight: 600
+                      }}
+                    />
+                  </Box>
+                  <Box sx={{ bgcolor: 'rgba(255,255,255,0.95)', borderRadius: 2, p: 2 }}>
+                    {dashboardData.featureBreakdown.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={350}>
+                        <PieChart>
+                          <Pie
+                            data={dashboardData.featureBreakdown}
+                            cx="50%"
+                            cy="50%"
+                            labelLine={true}
+                            label={({ feature, percentage }) => `${feature}: ${percentage}%`}
+                            outerRadius={100}
+                            fill="#8884d8"
+                            dataKey="requests"
+                          >
+                            {dashboardData.featureBreakdown.map((entry, index) => (
+                              <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                            ))}
+                          </Pie>
+                          <RechartsTooltip
+                            contentStyle={{
+                              backgroundColor: 'rgba(255,255,255,0.95)',
+                              border: '1px solid #ddd',
+                              borderRadius: '8px'
+                            }}
+                          />
+                        </PieChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <Box sx={{
+                        height: 350,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'text.secondary'
+                      }}>
+                        <Typography variant="body1">No feature usage data available</Typography>
+                      </Box>
+                    )}
+                  </Box>
+                </CardContent>
+              </Card>
+            </Box>
+
+            {/* Cost Distribution */}
+            <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 calc(50% - 12px)' } }}>
+              <Card
+                sx={{
+                  height: '100%',
+                  background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+                  color: 'white',
+                  boxShadow: '0 8px 32px rgba(79, 172, 254, 0.25)',
+                  transition: 'transform 0.3s ease-in-out',
+                  '&:hover': {
+                    transform: 'translateY(-4px)',
+                    boxShadow: '0 12px 48px rgba(79, 172, 254, 0.35)',
+                  }
+                }}
+              >
+                <CardContent>
+                  <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                    <Typography variant="h6" fontWeight="600">
+                      Cost Distribution
+                    </Typography>
+                    <Chip
+                      label={`$${dashboardData.overview.totalCost.toFixed(2)}`}
+                      sx={{
+                        bgcolor: 'rgba(255,255,255,0.2)',
+                        color: 'white',
+                        fontWeight: 600
+                      }}
+                    />
+                  </Box>
+                  <Box sx={{ bgcolor: 'rgba(255,255,255,0.95)', borderRadius: 2, p: 2 }}>
+                    {dashboardData.featureBreakdown.length > 0 ? (
+                      <ResponsiveContainer width="100%" height={350}>
+                        <BarChart
+                          data={dashboardData.featureBreakdown}
+                          layout="horizontal"
+                        >
+                          <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                          <XAxis
+                            type="number"
+                            stroke="#666"
+                            style={{ fontSize: '12px' }}
+                          />
+                          <YAxis
+                            type="category"
+                            dataKey="feature"
+                            stroke="#666"
+                            style={{ fontSize: '12px' }}
+                            width={100}
+                          />
+                          <RechartsTooltip
+                            contentStyle={{
+                              backgroundColor: 'rgba(255,255,255,0.95)',
+                              border: '1px solid #ddd',
+                              borderRadius: '8px'
+                            }}
+                          />
+                          <Legend />
+                          <Bar
+                            dataKey="cost"
+                            fill="#4facfe"
+                            name="Cost ($)"
+                            radius={[0, 8, 8, 0]}
+                          />
+                        </BarChart>
+                      </ResponsiveContainer>
+                    ) : (
+                      <Box sx={{
+                        height: 350,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        color: 'text.secondary'
+                      }}>
+                        <Typography variant="body1">No cost data available</Typography>
+                      </Box>
+                    )}
+                  </Box>
+                </CardContent>
+              </Card>
+            </Box>
+          </Box>
+        </Box>
 
         {/* Quick Search Shortcuts */}
         {showAllWorkspaces && (
@@ -715,37 +1107,74 @@ const AIUsageMonitoring: React.FC = () => {
         )}
 
         {/* All Workspaces with Management Controls */}
-        <Card sx={{ mb: 3 }}>
-          <CardContent>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+        <Card
+          sx={{
+            mb: 3,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+            borderRadius: 3,
+            overflow: 'hidden'
+          }}
+        >
+          <Box
+            sx={{
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              color: 'white',
+              p: 3
+            }}
+          >
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
               <Box>
-                <Typography variant="h6">
+                <Typography variant="h5" fontWeight="600" gutterBottom>
                   Workspace AI Usage Management
                 </Typography>
                 {(searchQuery || tierFilter || statusFilter) && !showAllWorkspaces && (
-                  <Typography variant="caption" color="info.main">
+                  <Typography variant="body2" sx={{ opacity: 0.9 }}>
                     Showing search results from all {allWorkspaces.length} workspaces
                   </Typography>
                 )}
               </Box>
-              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center' }}>
-                <Typography variant="body2" color="text.secondary">
-                  {allWorkspaces.length} total workspaces
-                </Typography>
+              <Box sx={{ display: 'flex', gap: 1, alignItems: 'center', flexWrap: 'wrap' }}>
+                <Chip
+                  label={`${allWorkspaces.length} Total Workspaces`}
+                  sx={{
+                    bgcolor: 'rgba(255,255,255,0.2)',
+                    color: 'white',
+                    fontWeight: 600
+                  }}
+                />
                 <Button
                   variant={showAllWorkspaces ? 'contained' : 'outlined'}
                   size="small"
                   onClick={() => setShowAllWorkspaces(!showAllWorkspaces)}
+                  sx={{
+                    bgcolor: showAllWorkspaces ? 'white' : 'transparent',
+                    color: showAllWorkspaces ? '#667eea' : 'white',
+                    borderColor: 'white',
+                    '&:hover': {
+                      bgcolor: showAllWorkspaces ? 'rgba(255,255,255,0.9)' : 'rgba(255,255,255,0.1)',
+                      borderColor: 'white',
+                    }
+                  }}
                 >
                   {showAllWorkspaces ? 'Show Top Usage' : 'Show All Workspaces'}
                 </Button>
               </Box>
             </Box>
+          </Box>
 
-            {/* Search and Filter Controls */}
+          <CardContent sx={{ p: 3 }}>
+
+            {/* Search and Filter Controls with Flexbox */}
             <Box sx={{ mb: 3 }}>
-              <Grid container spacing={2} alignItems="center">
-                <Grid item xs={12} md={4}>
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: 2,
+                  alignItems: 'center'
+                }}
+              >
+                <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 calc(40% - 8px)' } }}>
                   <TextField
                     fullWidth
                     size="small"
@@ -760,8 +1189,8 @@ const AIUsageMonitoring: React.FC = () => {
                       ),
                     }}
                   />
-                </Grid>
-                <Grid item xs={12} md={3}>
+                </Box>
+                <Box sx={{ flex: { xs: '1 1 calc(50% - 8px)', md: '1 1 calc(20% - 8px)' } }}>
                   <FormControl fullWidth size="small">
                     <InputLabel>Filter by Tier</InputLabel>
                     <Select
@@ -778,8 +1207,8 @@ const AIUsageMonitoring: React.FC = () => {
                       <MenuItem value="enterprise">Enterprise</MenuItem>
                     </Select>
                   </FormControl>
-                </Grid>
-                <Grid item xs={12} md={3}>
+                </Box>
+                <Box sx={{ flex: { xs: '1 1 calc(50% - 8px)', md: '1 1 calc(20% - 8px)' } }}>
                   <FormControl fullWidth size="small">
                     <InputLabel>Filter by Status</InputLabel>
                     <Select
@@ -792,8 +1221,8 @@ const AIUsageMonitoring: React.FC = () => {
                       <MenuItem value="suspended">Suspended</MenuItem>
                     </Select>
                   </FormControl>
-                </Grid>
-                <Grid item xs={12} md={2}>
+                </Box>
+                <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 calc(20% - 8px)' } }}>
                   <Button
                     variant="outlined"
                     size="small"
@@ -806,8 +1235,8 @@ const AIUsageMonitoring: React.FC = () => {
                   >
                     Clear Filters
                   </Button>
-                </Grid>
-              </Grid>
+                </Box>
+              </Box>
 
               {/* Search Results Summary */}
               {(searchQuery || tierFilter || statusFilter) && (
@@ -1033,18 +1462,37 @@ const AIUsageMonitoring: React.FC = () => {
         </Card>
 
         {/* Suspended Workspaces - Always Visible */}
-        <Card sx={{ mb: 3 }}>
-          <CardContent>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-              <Typography variant="h6">
+        <Card
+          sx={{
+            mb: 3,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+            borderRadius: 3,
+            overflow: 'hidden'
+          }}
+        >
+          <Box
+            sx={{
+              background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)',
+              color: 'white',
+              p: 3
+            }}
+          >
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 2 }}>
+              <Typography variant="h5" fontWeight="600">
                 Suspended Workspaces
               </Typography>
               <Chip
                 label={`${dashboardData.suspendedWorkspaces.length} Suspended`}
-                color={dashboardData.suspendedWorkspaces.length > 0 ? 'error' : 'default'}
-                size="small"
+                sx={{
+                  bgcolor: dashboardData.suspendedWorkspaces.length > 0 ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.2)',
+                  color: 'white',
+                  fontWeight: 600
+                }}
               />
             </Box>
+          </Box>
+
+          <CardContent sx={{ p: 3 }}>
             
             {dashboardData.suspendedWorkspaces.length === 0 ? (
               <Box sx={{ textAlign: 'center', py: 4 }}>
@@ -1141,19 +1589,38 @@ const AIUsageMonitoring: React.FC = () => {
         </Card>
 
         {/* Usage Tier Configuration Reference */}
-        <Card sx={{ mb: 3 }}>
-          <CardContent>
-            <Typography variant="h6" gutterBottom>
+        <Card
+          sx={{
+            mb: 3,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+            borderRadius: 3,
+            overflow: 'hidden'
+          }}
+        >
+          <Box
+            sx={{
+              background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+              color: 'white',
+              p: 3
+            }}
+          >
+            <Typography variant="h5" fontWeight="600">
               AI Usage Tier Limits Reference
             </Typography>
+            <Typography variant="body2" sx={{ opacity: 0.9, mt: 1 }}>
+              Default limits for each subscription tier
+            </Typography>
+          </Box>
+
+          <CardContent sx={{ p: 0 }}>
             <TableContainer>
-              <Table size="small">
+              <Table>
                 <TableHead>
-                  <TableRow>
-                    <TableCell>Tier</TableCell>
-                    <TableCell align="right">Requests/Month</TableCell>
-                    <TableCell align="right">Budget/Month</TableCell>
-                    <TableCell>Features</TableCell>
+                  <TableRow sx={{ bgcolor: 'grey.50' }}>
+                    <TableCell sx={{ fontWeight: 600 }}>Tier</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 600 }}>Requests/Month</TableCell>
+                    <TableCell align="right" sx={{ fontWeight: 600 }}>Budget/Month</TableCell>
+                    <TableCell sx={{ fontWeight: 600 }}>Features</TableCell>
                   </TableRow>
                 </TableHead>
                 <TableBody>
