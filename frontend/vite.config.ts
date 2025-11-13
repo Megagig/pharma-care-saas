@@ -177,17 +177,20 @@ export default defineConfig({
       'react-hook-form',
       'zod',
       'web-vitals',
+      // Date pickers and adapters
+      '@mui/x-date-pickers',
+      '@mui/x-date-pickers/AdapterDayjs',
+      '@mui/x-date-pickers/LocalizationProvider',
+      '@mui/x-date-pickers/DatePicker',
     ],
     exclude: [
       // Large libraries that benefit from dynamic imports
       'lucide-react',
       'recharts',
-      '@mui/material',
-      '@mui/icons-material',
       'framer-motion',
     ],
     // Force optimization of problematic dependencies
-    force: process.env.NODE_ENV === 'development',
+    force: true,
   },
   // Enable experimental features for better performance
   experimental: {
