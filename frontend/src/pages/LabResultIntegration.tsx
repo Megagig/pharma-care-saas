@@ -21,18 +21,16 @@ import {
   Badge,
   Paper,
 } from '@mui/material';
-import {
-  Add as AddIcon,
-  Science as ScienceIcon,
-  Warning as WarningIcon,
-  CheckCircle as CheckCircleIcon,
-  Schedule as ScheduleIcon,
-  TrendingUp as TrendingUpIcon,
-  Refresh as RefreshIcon,
-  Visibility as VisibilityIcon,
-  Assignment as AssignmentIcon,
-  LocalHospital as LocalHospitalIcon,
-} from '@mui/icons-material';
+import AddIcon from '@mui/icons-material/Add';
+import ScienceIcon from '@mui/icons-material/Science';
+import WarningIcon from '@mui/icons-material/Warning';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import VisibilityIcon from '@mui/icons-material/Visibility';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
 import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Helmet } from 'react-helmet-async';
@@ -139,6 +137,16 @@ const LabResultIntegration: React.FC = () => {
                 <RefreshIcon />
               </IconButton>
             </Tooltip>
+            {stats.pendingCount > 0 && (
+              <Button
+                variant="outlined"
+                color="warning"
+                startIcon={<AssignmentIcon />}
+                onClick={() => navigate('/pharmacy/lab-integration-reviews')}
+              >
+                Review Queue ({stats.pendingCount})
+              </Button>
+            )}
             <Button
               variant="contained"
               startIcon={<AddIcon />}
@@ -294,9 +302,27 @@ const LabResultIntegration: React.FC = () => {
                             </Box>
                           }
                         />
-                        <IconButton size="small">
-                          <VisibilityIcon />
-                        </IconButton>
+                        <Box sx={{ display: 'flex', gap: 0.5 }}>
+                          <Tooltip title="View Details">
+                            <IconButton size="small">
+                              <VisibilityIcon />
+                            </IconButton>
+                          </Tooltip>
+                          {case_.status === 'pending_review' && (
+                            <Tooltip title="Review Now">
+                              <IconButton
+                                size="small"
+                                color="warning"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  navigate(`/pharmacy/lab-integration/${case_._id}?tab=1`);
+                                }}
+                              >
+                                <AssignmentIcon />
+                              </IconButton>
+                            </Tooltip>
+                          )}
+                        </Box>
                       </ListItem>
                     ))}
                   </List>
@@ -367,9 +393,25 @@ const LabResultIntegration: React.FC = () => {
                             </Box>
                           }
                         />
-                        <IconButton size="small">
-                          <VisibilityIcon />
-                        </IconButton>
+                        <Box sx={{ display: 'flex', gap: 0.5 }}>
+                          <Tooltip title="View Details">
+                            <IconButton size="small">
+                              <VisibilityIcon />
+                            </IconButton>
+                          </Tooltip>
+                          <Tooltip title="Review Now">
+                            <IconButton
+                              size="small"
+                              color="primary"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                navigate(`/pharmacy/lab-integration/${case_._id}?tab=1`);
+                              }}
+                            >
+                              <AssignmentIcon />
+                            </IconButton>
+                          </Tooltip>
+                        </Box>
                       </ListItem>
                     ))}
                   </List>

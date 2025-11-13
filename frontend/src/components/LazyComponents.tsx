@@ -88,6 +88,7 @@ export const LazyLicenseUpload = lazy(() => import('../components/license/Licens
 export const LazyLabResultIntegration = lazy(() => import('../pages/LabResultIntegration'));
 export const LazyLabIntegrationCaseDetail = lazy(() => import('../pages/LabIntegrationCaseDetail'));
 export const LazyLabIntegrationNewCase = lazy(() => import('../pages/LabIntegrationNewCase'));
+export const LazyLabIntegrationReviewQueue = lazy(() => import('../pages/LabIntegrationReviewQueue'));
 
 // Laboratory Findings Module
 export const LazyLaboratoryDashboard = lazy(() => import('../pages/LaboratoryDashboard'));

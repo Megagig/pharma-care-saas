@@ -84,6 +84,7 @@ import { useRBAC } from '../hooks/useRBAC';
 import { useAuth } from '../hooks/useAuth';
 import { ConditionalRender } from './AccessControl';
 import { useSubscriptionStatus } from '../hooks/useSubscription';
+import { useLabIntegrationStats } from '../hooks/useLabIntegration';
 
 const Sidebar = () => {
   const location = useLocation();
@@ -93,6 +94,7 @@ const Sidebar = () => {
   const { hasFeature, hasRole, requiresLicense, getLicenseStatus } = useRBAC();
   const { user } = useAuth();
   const subscriptionStatus = useSubscriptionStatus();
+  const labStats = useLabIntegrationStats();
 
   // Auto-close sidebar on mobile when route changes - using useCallback for stable reference
   const handleMobileClose = React.useCallback(() => {
@@ -204,6 +206,13 @@ const Sidebar = () => {
       icon: ScienceIcon,
       show: hasRole('pharmacist') || hasRole('pharmacy_team') || hasRole('pharmacy_outlet') || hasRole('owner') || hasRole('super_admin'),
       badge: null,
+    },
+    {
+      name: 'Review Queue',
+      path: '/pharmacy/lab-integration-reviews',
+      icon: Assignment,
+      show: hasRole('pharmacist') || hasRole('pharmacy_team') || hasRole('pharmacy_outlet') || hasRole('owner') || hasRole('super_admin'),
+      badge: labStats.pendingCount > 0 ? labStats.pendingCount.toString() : null,
     },
     {
       name: 'Communication Hub',

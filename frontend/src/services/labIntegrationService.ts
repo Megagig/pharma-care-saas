@@ -74,8 +74,9 @@ export interface PharmacistReview {
   reviewedBy: string;
   reviewedAt: Date;
   decision: 'approved' | 'rejected' | 'modified' | 'escalated';
-  comments?: string;
-  modifications?: any[];
+  clinicalNotes: string;
+  modifications?: string;
+  rejectionReason?: string;
   escalationReason?: string;
   escalatedTo?: string;
 }
@@ -131,8 +132,9 @@ export interface CreateLabIntegrationRequest {
 
 export interface ApproveRecommendationsRequest {
   decision: 'approved' | 'rejected' | 'modified' | 'escalated';
-  comments?: string;
-  modifications?: any[];
+  clinicalNotes: string;
+  modifications?: string;
+  rejectionReason?: string;
   escalationReason?: string;
   escalatedTo?: string;
 }

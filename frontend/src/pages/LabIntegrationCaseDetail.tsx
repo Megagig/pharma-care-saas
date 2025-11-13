@@ -19,19 +19,17 @@ import {
   Stack,
   LinearProgress,
 } from '@mui/material';
-import {
-  ArrowBack as ArrowBackIcon,
-  Science as ScienceIcon,
-  CheckCircle as CheckCircleIcon,
-  Warning as WarningIcon,
-  Schedule as ScheduleIcon,
-  Refresh as RefreshIcon,
-  LocalHospital as LocalHospitalIcon,
-  Assignment as AssignmentIcon,
-  TrendingUp as TrendingUpIcon,
-  Security as SecurityIcon,
-} from '@mui/icons-material';
-import { useNavigate, useParams } from 'react-router-dom';
+import ArrowBackIcon from '@mui/icons-material/ArrowBack';
+import ScienceIcon from '@mui/icons-material/Science';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import WarningIcon from '@mui/icons-material/Warning';
+import ScheduleIcon from '@mui/icons-material/Schedule';
+import RefreshIcon from '@mui/icons-material/Refresh';
+import LocalHospitalIcon from '@mui/icons-material/LocalHospital';
+import AssignmentIcon from '@mui/icons-material/Assignment';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import SecurityIcon from '@mui/icons-material/Security';
+import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 import { format } from 'date-fns';
 import { Helmet } from 'react-helmet-async';
 import { toast } from 'react-hot-toast';
@@ -43,6 +41,7 @@ import LabTrendVisualization from '../components/lab-integration/LabTrendVisuali
 import SafetyChecksDisplay from '../components/lab-integration/SafetyChecksDisplay';
 import PhysicianEscalationDialog from '../components/lab-integration/PhysicianEscalationDialog';
 import CriticalAlertDialog from '../components/lab-integration/CriticalAlertDialog';
+import ReviewWorkflowBanner from '../components/lab-integration/ReviewWorkflowBanner';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -61,7 +60,11 @@ const TabPanel: React.FC<TabPanelProps> = ({ children, value, index }) => {
 const LabIntegrationCaseDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const [activeTab, setActiveTab] = useState(0);
+  const [searchParams] = useSearchParams();
+  const [activeTab, setActiveTab] = useState(() => {
+    const tabParam = searchParams.get('tab');
+    return tabParam ? parseInt(tabParam, 10) : 0;
+  });
   const [escalationDialogOpen, setEscalationDialogOpen] = useState(false);
   const [criticalAlertOpen, setCriticalAlertOpen] = useState(false);
   const [criticalAlert, setCriticalAlert] = useState<any>(null);
@@ -245,6 +248,12 @@ const LabIntegrationCaseDetail: React.FC = () => {
           </Box>
         </Box>
 
+        {/* Review Workflow Banner */}
+        <ReviewWorkflowBanner
+          labIntegration={labIntegration}
+          onStartReview={() => setActiveTab(1)}
+        />
+
         {/* Status Banner */}
         <Card sx={{ mb: 3 }}>
           <CardContent>
@@ -295,6 +304,31 @@ const LabIntegrationCaseDetail: React.FC = () => {
                 </Typography>
                 <LinearProgress />
               </Box>
+            )}
+
+            {/* Review Required Alert */}
+            {labIntegration.status === 'pending_review' && (
+              <Alert 
+                severity="warning" 
+                sx={{ mt: 2 }}
+                action={
+                  <Button 
+                    color="inherit" 
+                    size="small" 
+                    onClick={() => setActiveTab(1)}
+                    startIcon={<AssignmentIcon />}
+                  >
+                    Review Now
+                  </Button>
+                }
+              >
+                <Typography variant="subtitle2" gutterBottom>
+                  Pharmacist Review Required
+                </Typography>
+                <Typography variant="body2">
+                  This case requires pharmacist review of AI-generated therapy recommendations.
+                </Typography>
+              </Alert>
             )}
 
             {/* Critical Alert */}
