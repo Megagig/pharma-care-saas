@@ -34,7 +34,21 @@ import SchoolIcon from '@mui/icons-material/School';
 import CalendarIcon from '@mui/icons-material/CalendarToday';
 import BadgeIcon from '@mui/icons-material/Badge';
 import { apiClient } from '../../services/apiClient';
-import { format } from 'date-fns';
+import { format, isValid, parseISO } from 'date-fns';
+
+// Helper function to safely format dates
+const safeFormatDate = (dateValue: string | Date | undefined | null, formatStr: string = 'MMM dd, yyyy'): string => {
+  if (!dateValue) return 'N/A';
+  
+  try {
+    const date = typeof dateValue === 'string' ? parseISO(dateValue) : dateValue;
+    if (!isValid(date)) return 'Invalid Date';
+    return format(date, formatStr);
+  } catch (error) {
+    console.error('Date formatting error:', error, 'Value:', dateValue);
+    return 'Invalid Date';
+  }
+};
 
 interface LicenseInfo {
   userId: string;
@@ -240,9 +254,7 @@ const TenantLicenseManagement: React.FC = () => {
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2">
-                      {license.expirationDate
-                        ? format(new Date(license.expirationDate), 'MMM dd, yyyy')
-                        : 'N/A'}
+                      {safeFormatDate(license.expirationDate, 'MMM dd, yyyy')}
                     </Typography>
                   </TableCell>
                   <TableCell>
@@ -256,7 +268,7 @@ const TenantLicenseManagement: React.FC = () => {
                     {license.documentInfo && (
                       <Box>
                         <Typography variant="caption" display="block">
-                          {format(new Date(license.documentInfo.uploadedAt), 'MMM dd, yyyy')}
+                          {safeFormatDate(license.documentInfo.uploadedAt, 'MMM dd, yyyy')}
                         </Typography>
                         <Typography variant="caption" color="textSecondary">
                           {formatFileSize(license.documentInfo.fileSize)}
@@ -348,7 +360,7 @@ const TenantLicenseManagement: React.FC = () => {
                       Expiration Date
                     </Typography>
                     <Typography variant="body1">
-                      {format(new Date(selectedLicense.expirationDate), 'MMMM dd, yyyy')}
+                      {safeFormatDate(selectedLicense.expirationDate, 'MMMM dd, yyyy')}
                     </Typography>
                   </Box>
                 )}
@@ -480,7 +492,7 @@ const TenantLicenseManagement: React.FC = () => {
                           Expiration Date
                         </Typography>
                         <Typography variant="body2" fontWeight="medium">
-                          {format(new Date(selectedLicense.expirationDate), 'MMMM dd, yyyy')}
+                          {safeFormatDate(selectedLicense.expirationDate, 'MMMM dd, yyyy')}
                         </Typography>
                       </Box>
                     </Box>
