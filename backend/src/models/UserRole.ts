@@ -1,4 +1,5 @@
 import mongoose, { Document, Schema } from 'mongoose';
+import './Workplace'; // Import to ensure model is registered
 
 export interface IUserRole extends Document {
     userId: mongoose.Types.ObjectId;

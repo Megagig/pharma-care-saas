@@ -84,6 +84,8 @@ import pricingManagementRoutes from './routes/pricingManagementRoutes';
 import appointmentAnalyticsRoutes from './routes/appointmentAnalyticsRoutes';
 import saasRoutes from './routes/saasRoutes';
 import workspaceTeamRoutes from './routes/workspaceTeamRoutes';
+import workspaceRBACRoutes from './routes/workspaceRBACRoutes';
+
 import dashboardRoutes from './routes/dashboardRoutes';
 import superAdminDashboardRoutes from './routes/superAdminDashboardRoutes';
 import superAdminAuditRoutes from './routes/superAdminAuditRoutes';
@@ -684,6 +686,11 @@ app.use('/api/location-data', locationDataRoutes);
 
 // Workspace Team Management routes (Workspace owners only)
 app.use('/api/workspace/team', workspaceTeamRoutes);
+
+// Workspace RBAC Management routes (Workspace owners only)
+app.use('/api/workspace/rbac', workspaceRBACRoutes);
+
+
 
 // Workspace Admin - Patient Portal Management routes (Workspace admins only)
 app.use('/api/workspace-admin/patient-portal', patientPortalAdminRoutes);

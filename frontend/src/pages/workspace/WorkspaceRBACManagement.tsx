@@ -25,16 +25,19 @@ import {
     Dashboard as DashboardIcon,
     NavigateNext as NavigateNextIcon,
     Business as WorkspaceIcon,
+    Group as GroupIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
 import RoleManagement from '../../components/rbac/RoleManagement';
 import PermissionMatrix from '../../components/rbac/PermissionMatrix';
+import TeamMemberAssignment from '../../components/rbac/TeamMemberAssignment';
+import AuditTrail from '../../components/rbac/AuditTrail';
 import { useRBAC } from '../../hooks/useRBAC';
 import { useAuth } from '../../hooks/useAuth';
 import {
-    getAllRoles,
-    getAllPermissions,
-    getRBACStatistics,
+    getWorkspaceRoles,
+    getWorkspacePermissions,
+    getWorkspaceRBACStatistics,
 } from '../../services/rbacService';
 import type { Role } from '../../types/rbac';
 
@@ -96,11 +99,10 @@ const WorkspaceRBACManagement: React.FC = () => {
         try {
             setLoading(true);
             // Load workspace-scoped RBAC statistics
-            const workspaceId = user?.pharmacyId;
-            const [rolesResponse, permissionsResponse, auditResponse] = await Promise.all([
-                getAllRoles(), // This should be filtered by workspace in the backend
-                getAllPermissions(),
-                getRBACStatistics(),
+            const [rolesResponse, permissionsResponse, statsResponse] = await Promise.all([
+                getWorkspaceRoles({ limit: 100 }),
+                getWorkspacePermissions({ limit: 200 }),
+                getWorkspaceRBACStatistics(),
             ]);
 
             if (rolesResponse.success) {
@@ -120,11 +122,12 @@ const WorkspaceRBACManagement: React.FC = () => {
                 }));
             }
 
-            if (auditResponse.success) {
+            if (statsResponse.success) {
                 setStats(prev => ({
                     ...prev,
-                    totalUsers: auditResponse.data.totalUsers || 0,
-                    recentAuditLogs: auditResponse.data.recentLogs || 0,
+                    totalUsers: statsResponse.data.totalMembers || 0,
+                    totalRoles: statsResponse.data.totalRoles || prev.totalRoles,
+                    activeRoles: statsResponse.data.activeRoles || prev.activeRoles,
                 }));
             }
         } catch (error) {
@@ -201,7 +204,7 @@ const WorkspaceRBACManagement: React.FC = () => {
                     <SecurityIcon sx={{ fontSize: 32, color: 'primary.main' }} />
                     <Box>
                         <Typography variant="h4" component="h1" fontWeight="bold">
-                            Workspace RBAC Management
+                            Workspace Roles & Permission Management
                         </Typography>
                         <Typography variant="body1" color="text.secondary">
                             Manage roles, permissions, and access control for your workspace team members
@@ -341,11 +344,18 @@ const WorkspaceRBACManagement: React.FC = () => {
                             aria-controls="workspace-rbac-tabpanel-1"
                         />
                         <Tab
+                            icon={<GroupIcon />}
+                            iconPosition="start"
+                            label="Team Members"
+                            id="workspace-rbac-tab-2"
+                            aria-controls="workspace-rbac-tabpanel-2"
+                        />
+                        <Tab
                             icon={<AuditIcon />}
                             iconPosition="start"
                             label="Audit Trail"
-                            id="workspace-rbac-tab-2"
-                            aria-controls="workspace-rbac-tabpanel-2"
+                            id="workspace-rbac-tab-3"
+                            aria-controls="workspace-rbac-tabpanel-3"
                         />
                     </Tabs>
                 </Box>
@@ -367,15 +377,11 @@ const WorkspaceRBACManagement: React.FC = () => {
                 </TabPanel>
 
                 <TabPanel value={activeTab} index={2}>
-                    <Box sx={{ p: 3, textAlign: 'center' }}>
-                        <AuditIcon sx={{ fontSize: 64, color: 'text.secondary', mb: 2 }} />
-                        <Typography variant="h6" color="text.secondary" gutterBottom>
-                            Audit Trail Coming Soon
-                        </Typography>
-                        <Typography variant="body2" color="text.secondary">
-                            Track all role and permission changes in your workspace
-                        </Typography>
-                    </Box>
+                    <TeamMemberAssignment workspaceId={user?.pharmacyId} />
+                </TabPanel>
+
+                <TabPanel value={activeTab} index={3}>
+                    <AuditTrail workspaceId={user?.pharmacyId} />
                 </TabPanel>
             </Paper>
         </Container>

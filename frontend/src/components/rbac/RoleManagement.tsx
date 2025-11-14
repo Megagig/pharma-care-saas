@@ -57,6 +57,13 @@ import {
   createRole,
   updateRole,
   deleteRole,
+  getWorkspaceRoles,
+  getWorkspacePermissions,
+  getWorkspacePermissionMatrix,
+  createWorkspaceRole,
+  updateWorkspaceRole,
+  deleteWorkspaceRole,
+  cloneWorkspaceRole,
 } from '../../services/rbacService';
 import type {
   Role,
@@ -89,6 +96,8 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect, workspace
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [roleToDelete, setRoleToDelete] = useState<Role | null>(null);
+  const [cloneDialogOpen, setCloneDialogOpen] = useState(false);
+  const [roleToClone, setRoleToClone] = useState<Role | null>(null);
 
   // Form state
   const [roleForm, setRoleForm] = useState<RoleFormData>({
@@ -123,10 +132,17 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect, workspace
   const loadData = async () => {
     try {
       setLoading(true);
+      // Use workspace-scoped APIs if workspace context is provided
       const [rolesResponse, permissionsResponse, matrixResponse] = await Promise.all([
-        getAllRoles({ page: 1, limit: 100 }),
-        getAllPermissions({ page: 1, limit: 500 }),
-        getPermissionMatrix({ includeInactive: false }),
+        workspaceScoped
+          ? getWorkspaceRoles({ page: 1, limit: 100 })
+          : getAllRoles({ page: 1, limit: 100 }),
+        workspaceScoped
+          ? getWorkspacePermissions({ page: 1, limit: 500 })
+          : getAllPermissions({ page: 1, limit: 500 }),
+        workspaceScoped
+          ? getWorkspacePermissionMatrix()
+          : getPermissionMatrix({ includeInactive: false }),
       ]);
 
       if (rolesResponse.success) {
@@ -204,17 +220,18 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect, workspace
     try {
       if (editingRole) {
         // Update existing role
-        const response = await updateRole(
-          editingRole._id,
-          roleForm
-        );
+        const response = workspaceScoped
+          ? await updateWorkspaceRole(editingRole._id, roleForm)
+          : await updateRole(editingRole._id, roleForm);
         if (response.success) {
           showSnackbar('Role updated successfully', 'success');
           await loadData();
         }
       } else {
         // Create new role
-        const response = await createRole(roleForm);
+        const response = workspaceScoped
+          ? await createWorkspaceRole(roleForm)
+          : await createRole(roleForm);
         if (response.success) {
           showSnackbar('Role created successfully', 'success');
           await loadData();
@@ -231,7 +248,9 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect, workspace
     if (!roleToDelete) return;
 
     try {
-      const response = await deleteRole(roleToDelete._id);
+      const response = workspaceScoped
+        ? await deleteWorkspaceRole(roleToDelete._id)
+        : await deleteRole(roleToDelete._id);
       if (response.success) {
         showSnackbar('Role deleted successfully', 'success');
         await loadData();
@@ -245,17 +264,29 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect, workspace
     }
   };
 
-  const handleCloneRole = async (role: Role) => {
+  const handleCloneRole = (role: Role) => {
+    setRoleToClone(role);
+    setCloneDialogOpen(true);
+    handleMenuClose();
+  };
+
+  const handleConfirmClone = async (newName: string, newDisplayName: string, newDescription: string) => {
+    if (!roleToClone) return;
+
     try {
-      // Clone role by creating a new one with the same permissions
-      const clonedRole = {
-        name: `${role.name}_copy`,
-        displayName: `${role.displayName} (Copy)`,
-        description: role.description,
-        category: role.category,
-        permissions: role.permissions,
-      };
-      const response = await createRole(clonedRole);
+      const response = workspaceScoped
+        ? await cloneWorkspaceRole(roleToClone._id, {
+          newName,
+          newDisplayName,
+          newDescription,
+        })
+        : await createRole({
+          name: newName,
+          displayName: newDisplayName,
+          description: newDescription,
+          category: 'custom',
+          permissions: roleToClone.permissions,
+        });
       if (response.success) {
         showSnackbar('Role cloned successfully', 'success');
         await loadData();
@@ -263,8 +294,10 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect, workspace
     } catch (error) {
       console.error('Error cloning role:', error);
       showSnackbar('Failed to clone role', 'error');
+    } finally {
+      setCloneDialogOpen(false);
+      setRoleToClone(null);
     }
-    handleMenuClose();
   };
 
   // Menu handlers
@@ -693,6 +726,63 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect, workspace
           <Button onClick={() => setDeleteConfirmOpen(false)}>Cancel</Button>
           <Button onClick={handleDeleteRole} color="error" variant="contained">
             Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Clone Role Dialog */}
+      <Dialog
+        open={cloneDialogOpen}
+        onClose={() => setCloneDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Clone Role</DialogTitle>
+        <DialogContent>
+          <Alert severity="info" sx={{ mb: 2 }}>
+            Create a copy of "{roleToClone?.displayName}" with all its permissions
+          </Alert>
+          <TextField
+            fullWidth
+            label="New Role Name"
+            defaultValue={roleToClone ? `${roleToClone.name}_copy` : ''}
+            id="clone-name"
+            sx={{ mb: 2, mt: 1 }}
+            helperText="Internal name (lowercase, no spaces)"
+          />
+          <TextField
+            fullWidth
+            label="Display Name"
+            defaultValue={roleToClone ? `${roleToClone.displayName} (Copy)` : ''}
+            id="clone-display-name"
+            sx={{ mb: 2 }}
+            helperText="User-friendly name"
+          />
+          <TextField
+            fullWidth
+            label="Description"
+            defaultValue={roleToClone?.description || ''}
+            id="clone-description"
+            multiline
+            rows={3}
+            helperText="Describe what this role can do"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCloneDialogOpen(false)}>Cancel</Button>
+          <Button
+            onClick={() => {
+              const newName = (document.getElementById('clone-name') as HTMLInputElement)?.value;
+              const newDisplayName = (document.getElementById('clone-display-name') as HTMLInputElement)?.value;
+              const newDescription = (document.getElementById('clone-description') as HTMLInputElement)?.value;
+              if (newName && newDisplayName) {
+                handleConfirmClone(newName, newDisplayName, newDescription);
+              }
+            }}
+            variant="contained"
+            startIcon={<ContentCopyIcon />}
+          >
+            Clone Role
           </Button>
         </DialogActions>
       </Dialog>

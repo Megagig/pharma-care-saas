@@ -195,6 +195,8 @@ const transformCategoryData = (categoryData: Array<{ _id: string; count: number 
 };
 
 const SuperAdminDashboard: React.FC = () => {
+    // CRITICAL: ALL hooks must be called unconditionally at the top
+    // This follows the Rules of Hooks - hooks must be called in the same order every render
     const theme = useTheme();
     const [activeTab, setActiveTab] = useState(0);
     const [data, setData] = useState<SuperAdminDashboardData | null>(null);

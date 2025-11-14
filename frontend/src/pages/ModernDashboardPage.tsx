@@ -30,6 +30,45 @@ const DashboardErrorFallback: React.FC<{ error: Error; resetErrorBoundary: () =>
 );
 
 const ModernDashboardPage: React.FC = () => {
+  // Add a small delay to ensure all React contexts are fully initialized
+  // This prevents "dispatcher is null" errors with lazy-loaded components
+  const [isContextReady, setIsContextReady] = React.useState(false);
+
+  React.useEffect(() => {
+    // Use a microtask to ensure React's context providers are ready
+    Promise.resolve().then(() => {
+      setIsContextReady(true);
+    });
+  }, []);
+
+  if (!isContextReady) {
+    return (
+      <Box sx={{ p: 3, display: 'flex', justifyContent: 'center', alignItems: 'center', minHeight: '400px' }}>
+        <Box sx={{ textAlign: 'center' }}>
+          <Box
+            sx={{
+              width: 40,
+              height: 40,
+              border: '3px solid #1976d2',
+              borderTopColor: 'transparent',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+              mx: 'auto',
+              mb: 2,
+              '@keyframes spin': {
+                '0%': { transform: 'rotate(0deg)' },
+                '100%': { transform: 'rotate(360deg)' },
+              },
+            }}
+          />
+          <Typography variant="body2" sx={{ color: '#666' }}>
+            Initializing Dashboard...
+          </Typography>
+        </Box>
+      </Box>
+    );
+  }
+
   return (
     <ErrorBoundary
       FallbackComponent={DashboardErrorFallback}

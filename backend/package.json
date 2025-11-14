@@ -101,7 +101,11 @@
     "load-test:report": "ts-node tests/load/scripts/generateLoadTestReport.ts",
     "load-test:setup": "ts-node tests/load/scripts/setupLoadTestData.ts",
     "load-test:cleanup": "ts-node tests/load/scripts/cleanupLoadTestData.ts",
-    "test:slot-generation": "ts-node src/scripts/testSlotGeneration.ts"
+    "test:slot-generation": "ts-node src/scripts/testSlotGeneration.ts",
+    "seed:permissions": "ts-node scripts/seedPermissions.ts",
+    "seed:roles": "ts-node scripts/seedRoles.ts",
+    "seed:workspace-roles": "ts-node scripts/assignWorkspaceOwnerRoles.ts",
+    "seed:rbac": "npm run seed:permissions && npm run seed:roles && npm run seed:workspace-roles"
   },
   "keywords": [
     "pharmacy",

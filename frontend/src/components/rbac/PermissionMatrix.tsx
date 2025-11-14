@@ -28,7 +28,6 @@ import {
   TableContainer,
   TableHead,
   TableRow,
-  Collapse,
   Card,
   CardContent,
   Grid,
@@ -64,8 +63,8 @@ import { useRBAC } from '../../hooks/useRBAC';
 import {
   getPermissionMatrix,
   getPermissionCategories,
-  getPermissionUsageAnalytics,
   updatePermissionMatrix,
+  getPermissionUsageAnalytics,
   exportRoleAssignments,
 } from '../../services/rbacService';
 import type { Role, Permission, PermissionCategory } from '../../types/rbac';
@@ -108,6 +107,7 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
   const [permissionCategories, setPermissionCategories] = useState<
     PermissionCategory[]
   >([]);
+
   const [permissionUsage, setPermissionUsage] = useState<PermissionUsage[]>([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -157,22 +157,32 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
         await Promise.all([
           getPermissionMatrix(),
           getPermissionCategories(),
-          getPermissionUsageAnalytics(),
+          getPermissionUsageAnalytics().catch(() => ({ success: false, data: { permissionUsage: [] } })),
         ]);
 
-      if (matrixResponse.success) {
-        setMatrixData(matrixResponse.data);
+      if (matrixResponse.success && matrixResponse.data) {
+        setMatrixData({
+          roles: matrixResponse.data.roles || [],
+          permissions: matrixResponse.data.permissions || [],
+          matrix: matrixResponse.data.matrix || {},
+        });
       }
 
       if (categoriesResponse.success) {
-        setPermissionCategories(categoriesResponse.data);
+        // Backend returns array of category objects directly
+        const categories = Array.isArray(categoriesResponse.data)
+          ? categoriesResponse.data
+          : [];
+        setPermissionCategories(categories);
         // Expand all categories by default
-        setExpandedCategories(
-          new Set(categoriesResponse.data.map((cat) => cat.name))
-        );
+        if (categories.length > 0 && categories[0].name) {
+          setExpandedCategories(
+            new Set(categories.map((cat) => cat.name))
+          );
+        }
       }
 
-      if (usageResponse.success) {
+      if (usageResponse.success && usageResponse.data?.permissionUsage) {
         setPermissionUsage(usageResponse.data.permissionUsage);
       }
     } catch (error) {
@@ -263,10 +273,15 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
 
     try {
       setSaving(true);
-      const response = await updatePermissionMatrix(
-        roleId,
-        permissions
-      );
+
+      // Convert permissions object to array
+      const permissionArray = Object.entries(permissions)
+        .filter(([_, granted]) => granted)
+        .map(([permission]) => permission);
+
+      const response = await updateRole(roleId, {
+        permissions: permissionArray,
+      });
 
       if (response.success) {
         showSnackbar('Permissions updated successfully', 'success');
@@ -297,6 +312,11 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
   const filteredCategories = permissionCategories.filter((category) => {
     if (categoryFilter && category.name !== categoryFilter) return false;
 
+    // Safety check: ensure category.permissions exists and is an array
+    if (!category.permissions || !Array.isArray(category.permissions)) {
+      return false;
+    }
+
     const hasMatchingPermissions = category.permissions.some((permission) => {
       const matchesSearch =
         !searchTerm ||
@@ -306,7 +326,7 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
         permission.action.toLowerCase().includes(searchTerm.toLowerCase());
 
       if (showOnlyAssigned) {
-        const hasAssignments = matrixData.roles.some(
+        const hasAssignments = (matrixData.roles || []).some(
           (role) => matrixData.matrix[role._id]?.[permission.action]
         );
         return matchesSearch && hasAssignments;
@@ -318,7 +338,7 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
     return hasMatchingPermissions;
   });
 
-  const filteredRoles = matrixData.roles.filter((role) => {
+  const filteredRoles = (matrixData.roles || []).filter((role) => {
     if (roleFilter && role._id !== roleFilter) return false;
     return true;
   });
@@ -336,36 +356,40 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
     if (!permissionObj) return conflicts;
 
     // Check for dependency conflicts
-    permissionObj.dependsOn.forEach((dependency) => {
-      const rolesWithPermission = filteredRoles.filter(
-        (role) => matrixData.matrix[role._id]?.[permission]
-      );
+    if (permissionObj.dependsOn && Array.isArray(permissionObj.dependsOn)) {
+      permissionObj.dependsOn.forEach((dependency) => {
+        const rolesWithPermission = filteredRoles.filter(
+          (role) => matrixData.matrix[role._id]?.[permission]
+        );
 
-      rolesWithPermission.forEach((role) => {
-        if (!matrixData.matrix[role._id]?.[dependency]) {
-          conflicts.push({
-            type: 'dependency',
-            message: `Role "${role.displayName}" has "${permission}" but missing dependency "${dependency}"`,
-          });
-        }
-      });
-    });
-
-    // Check for direct conflicts
-    permissionObj.conflicts.forEach((conflictPermission) => {
-      const rolesWithBoth = filteredRoles.filter(
-        (role) =>
-          matrixData.matrix[role._id]?.[permission] &&
-          matrixData.matrix[role._id]?.[conflictPermission]
-      );
-
-      rolesWithBoth.forEach((role) => {
-        conflicts.push({
-          type: 'conflict',
-          message: `Role "${role.displayName}" has conflicting permissions: "${permission}" and "${conflictPermission}"`,
+        rolesWithPermission.forEach((role) => {
+          if (!matrixData.matrix[role._id]?.[dependency]) {
+            conflicts.push({
+              type: 'dependency',
+              message: `Role "${role.displayName}" has "${permission}" but missing dependency "${dependency}"`,
+            });
+          }
         });
       });
-    });
+    }
+
+    // Check for direct conflicts
+    if (permissionObj.conflicts && Array.isArray(permissionObj.conflicts)) {
+      permissionObj.conflicts.forEach((conflictPermission) => {
+        const rolesWithBoth = filteredRoles.filter(
+          (role) =>
+            matrixData.matrix[role._id]?.[permission] &&
+            matrixData.matrix[role._id]?.[conflictPermission]
+        );
+
+        rolesWithBoth.forEach((role) => {
+          conflicts.push({
+            type: 'conflict',
+            message: `Role "${role.displayName}" has conflicting permissions: "${permission}" and "${conflictPermission}"`,
+          });
+        });
+      });
+    }
 
     return conflicts;
   };
@@ -429,6 +453,7 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
                 a.download = 'permission-matrix.csv';
                 a.click();
                 window.URL.revokeObjectURL(url);
+                showSnackbar('Export successful', 'success');
               } catch (error) {
                 showSnackbar('Failed to export matrix', 'error');
               }
@@ -474,11 +499,13 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
                 label="Category"
               >
                 <MenuItem value="">All</MenuItem>
-                {permissionCategories.map((category) => (
-                  <MenuItem key={category.name} value={category.name}>
-                    {category.displayName}
-                  </MenuItem>
-                ))}
+                {permissionCategories
+                  .filter((cat) => cat && cat.name && cat.displayName)
+                  .map((category) => (
+                    <MenuItem key={category.name} value={category.name}>
+                      {category.displayName}
+                    </MenuItem>
+                  ))}
               </Select>
             </FormControl>
           </Grid>
@@ -492,7 +519,7 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
                 label="Role"
               >
                 <MenuItem value="">All</MenuItem>
-                {matrixData.roles.map((role) => (
+                {(matrixData.roles || []).map((role) => (
                   <MenuItem key={role._id} value={role._id}>
                     {role.displayName}
                   </MenuItem>
@@ -519,7 +546,11 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
                 size="small"
                 onClick={() =>
                   setExpandedCategories(
-                    new Set(permissionCategories.map((cat) => cat.name))
+                    new Set(
+                      permissionCategories
+                        .filter((cat) => cat && cat.name)
+                        .map((cat) => cat.name)
+                    )
                   )
                 }
               >
@@ -602,7 +633,7 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
                           {category.displayName}
                         </Typography>
                         <Chip
-                          label={`${category.permissions.length} permissions`}
+                          label={`${category.permissions?.length || 0} permissions`}
                           size="small"
                           variant="outlined"
                         />
@@ -611,12 +642,8 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
                   </TableRow>
 
                   {/* Category Permissions */}
-                  <Collapse
-                    in={expandedCategories.has(category.name)}
-                    timeout="auto"
-                    unmountOnExit
-                  >
-                    {category.permissions
+                  {expandedCategories.has(category.name) &&
+                    (category.permissions || [])
                       .filter((permission) => {
                         const matchesSearch =
                           !searchTerm ||
@@ -638,6 +665,10 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
                         return matchesSearch;
                       })
                       .map((permission) => {
+                        if (!permission || !permission.action) {
+                          return null;
+                        }
+
                         const conflicts = getPermissionConflicts(
                           permission.action
                         );
@@ -748,7 +779,6 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
                           </TableRow>
                         );
                       })}
-                  </Collapse>
                 </React.Fragment>
               ))}
             </TableBody>
@@ -765,56 +795,68 @@ const PermissionMatrix: React.FC<PermissionMatrixProps> = ({
       >
         <DialogTitle>Permission Usage Analytics</DialogTitle>
         <DialogContent>
-          <Grid container spacing={3}>
-            <Grid item xs={12} md={6}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Most Used Permissions
-                  </Typography>
-                  <List dense>
-                    {permissionUsage
-                      .sort((a, b) => b.userCount - a.userCount)
-                      .slice(0, 10)
-                      .map((usage) => (
-                        <ListItem key={usage.permission}>
-                          <ListItemText
-                            primary={usage.displayName}
-                            secondary={`${usage.userCount} users, ${usage.roleCount} roles`}
-                          />
-                        </ListItem>
-                      ))}
-                  </List>
-                </CardContent>
-              </Card>
-            </Grid>
+          {permissionUsage.length > 0 ? (
+            <Grid container spacing={3}>
+              <Grid item xs={12} md={6}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Most Used Permissions
+                    </Typography>
+                    <List dense>
+                      {permissionUsage
+                        .sort((a, b) => b.userCount - a.userCount)
+                        .slice(0, 10)
+                        .map((usage) => (
+                          <ListItem key={usage.permission}>
+                            <ListItemText
+                              primary={usage.displayName}
+                              secondary={`${usage.userCount} users, ${usage.roleCount} roles`}
+                            />
+                          </ListItem>
+                        ))}
+                    </List>
+                  </CardContent>
+                </Card>
+              </Grid>
 
-            <Grid item xs={12} md={6}>
-              <Card>
-                <CardContent>
-                  <Typography variant="h6" gutterBottom>
-                    Unused Permissions
-                  </Typography>
-                  <List dense>
-                    {permissionUsage
-                      .filter((usage) => usage.userCount === 0)
-                      .slice(0, 10)
-                      .map((usage) => (
-                        <ListItem key={usage.permission}>
-                          <ListItemIcon>
-                            <WarningIcon color="warning" />
-                          </ListItemIcon>
-                          <ListItemText
-                            primary={usage.displayName}
-                            secondary={usage.category}
-                          />
-                        </ListItem>
-                      ))}
-                  </List>
-                </CardContent>
-              </Card>
+              <Grid item xs={12} md={6}>
+                <Card>
+                  <CardContent>
+                    <Typography variant="h6" gutterBottom>
+                      Unused Permissions
+                    </Typography>
+                    <List dense>
+                      {permissionUsage
+                        .filter((usage) => usage.userCount === 0)
+                        .slice(0, 10)
+                        .map((usage) => (
+                          <ListItem key={usage.permission}>
+                            <ListItemIcon>
+                              <WarningIcon color="warning" />
+                            </ListItemIcon>
+                            <ListItemText
+                              primary={usage.displayName}
+                              secondary={usage.category}
+                            />
+                          </ListItem>
+                        ))}
+                    </List>
+                  </CardContent>
+                </Card>
+              </Grid>
             </Grid>
-          </Grid>
+          ) : (
+            <Box sx={{ p: 3, textAlign: 'center' }}>
+              <InfoIcon color="info" sx={{ fontSize: 48, mb: 2 }} />
+              <Typography variant="h6" gutterBottom>
+                No Analytics Data Available
+              </Typography>
+              <Typography color="textSecondary">
+                Permission usage analytics will be available once data is collected.
+              </Typography>
+            </Box>
+          )}
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setAnalyticsDialogOpen(false)}>Close</Button>
