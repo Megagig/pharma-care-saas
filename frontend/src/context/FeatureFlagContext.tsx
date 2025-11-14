@@ -3,6 +3,7 @@ import featureFlagService, {
   FeatureFlag,
 } from '../services/featureFlagService';
 import FeatureFlagUtil from '../utils/featureFlagUtil';
+import { useAuth } from '../hooks/useAuth';
 
 interface FeatureFlagContextType {
   featureFlags: FeatureFlag[];
@@ -83,13 +84,41 @@ export const FeatureFlagProvider: React.FC<FeatureFlagProviderProps> = ({
   );
 };
 
-// Custom hook to use the feature flag context
+/**
+ * Custom hook to use the feature flag context with user-specific permissions
+ * This checks the user's actual workspace permissions from the backend
+ * rather than just the global feature flag status
+ */
 export const useFeatureFlags = () => {
   const context = useContext(FeatureFlagContext);
+  const auth = useAuth();
+
   if (context === undefined) {
     throw new Error('useFeatureFlags must be used within a FeatureFlagProvider');
   }
-  return context;
+
+  // Override hasFeature to check user's actual permissions
+  const hasFeature = (key: string): boolean => {
+    if (context.isLoading) return false;
+
+    // Super admin has access to all features
+    if (auth.user?.role === 'super_admin') return true;
+
+    // Check user's workspace permissions (authoritative source from backend)
+    if (auth.user?.permissions && auth.user.permissions.length > 0) {
+      return auth.user.permissions.includes(key);
+    }
+
+    // Fallback to global feature flag status for backward compatibility
+    const flag = context.featureFlags.find((f) => f.key === key);
+    return flag ? flag.isActive : false;
+  };
+
+  return {
+    ...context,
+    hasFeature,
+    isFeatureEnabled: hasFeature, // Keep both for consistency
+  };
 };
 
 export default FeatureFlagContext;

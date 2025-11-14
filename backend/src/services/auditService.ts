@@ -1,6 +1,7 @@
 import { AuditLog, IAuditLog } from '../models/AuditLog';
 import { Request } from 'express';
 import mongoose from 'mongoose';
+import logger from '../utils/logger';
 
 export interface AuditLogData {
   action: string;
@@ -73,7 +74,7 @@ class AuditService {
 
       return auditLog;
     } catch (error) {
-      console.error('Error creating audit log:', error);
+      logger.error('Error creating audit log:', error);
       throw new Error('Failed to create audit log');
     }
   }
@@ -145,7 +146,7 @@ class AuditService {
         summary
       };
     } catch (error) {
-      console.error('Error fetching audit logs:', error);
+      logger.error('Error fetching audit logs:', error);
       throw new Error('Failed to fetch audit logs');
     }
   }
@@ -187,7 +188,7 @@ class AuditService {
         lastActivity: lastActivity?.timestamp || null
       };
     } catch (error) {
-      console.error('Error calculating audit summary:', error);
+      logger.error('Error calculating audit summary:', error);
       return {
         totalActions: 0,
         uniqueUsers: 0,
@@ -216,7 +217,7 @@ class AuditService {
         return JSON.stringify(result.logs, null, 2);
       }
     } catch (error) {
-      console.error('Error exporting audit logs:', error);
+      logger.error('Error exporting audit logs:', error);
       throw new Error('Failed to export audit logs');
     }
   }
@@ -325,8 +326,8 @@ class AuditService {
   private static getClientIP(req: Request): string {
     return (
       req.ip ||
-      req.connection.remoteAddress ||
-      req.socket.remoteAddress ||
+      req.connection?.remoteAddress ||
+      req.socket?.remoteAddress ||
       (req.connection as any)?.socket?.remoteAddress ||
       req.get('X-Forwarded-For') ||
       req.get('X-Real-IP') ||
@@ -346,10 +347,10 @@ class AuditService {
         timestamp: { $lt: cutoffDate }
       });
 
-      console.log(`Cleaned up ${result.deletedCount} old audit logs`);
+      logger.info(`Cleaned up ${result.deletedCount} old audit logs`);
       return result.deletedCount;
     } catch (error) {
-      console.error('Error cleaning up old audit logs:', error);
+      logger.error('Error cleaning up old audit logs:', error);
       throw new Error('Failed to cleanup old audit logs');
     }
   }
@@ -409,7 +410,7 @@ class AuditService {
         }, {} as Record<string, number>)
       };
     } catch (error) {
-      console.error('Error generating compliance report:', error);
+      logger.error('Error generating compliance report:', error);
       throw new Error('Failed to generate compliance report');
     }
   }
@@ -447,7 +448,9 @@ class AuditService {
     };
 
     return AuditService.createAuditLog(auditData, {
-      ip: context.ipAddress,
+      ip: context.ipAddress || 'system',
+      connection: {},
+      socket: {},
       get: (header: string) => header === 'User-Agent' ? context.userAgent : undefined,
       sessionID: context.sessionId
     } as any);

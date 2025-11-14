@@ -17,8 +17,6 @@ class VersionCheckService {
     start() {
         if (this.checkTimer) return;
 
-        console.log(`[VersionCheck] Starting version monitoring (current: ${this.currentVersion})`);
-
         this.checkTimer = window.setInterval(() => {
             this.checkForUpdates();
         }, CHECK_INTERVAL);
@@ -34,7 +32,7 @@ class VersionCheckService {
         if (this.checkTimer) {
             clearInterval(this.checkTimer);
             this.checkTimer = null;
-            console.log('[VersionCheck] Stopped version monitoring');
+
         }
     }
 
@@ -73,7 +71,7 @@ class VersionCheckService {
                 (lastModified && storedLastModified && lastModified !== storedLastModified);
 
             if (hasChanged) {
-                console.log('[VersionCheck] New version detected!');
+
                 this.handleNewVersion();
             }
         } catch (error) {

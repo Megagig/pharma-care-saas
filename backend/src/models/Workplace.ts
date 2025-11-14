@@ -47,6 +47,26 @@ export interface IWorkplace extends Document {
   inviteCode: string; // Unique code for staff to join
   teamMembers: mongoose.Types.ObjectId[]; // Array of user IDs who are part of this workplace
 
+  // Patient Portal
+  patientPortalEnabled: boolean; // Enable/disable patient portal access
+  patientPortalSettings?: {
+    allowSelfRegistration: boolean;
+    requireEmailVerification: boolean;
+    requireAdminApproval: boolean;
+    operatingHours?: string;
+    services?: string[];
+  };
+
+  // Patient Health Records Feature Flags
+  healthRecordsFeatures?: {
+    labResults: boolean; // View lab results with pharmacist interpretations
+    vitalsTracking: boolean; // Log and view vital signs history
+    visitHistory: boolean; // Access visit summaries and SOAP notes
+    downloadRecords: boolean; // Download medical records as PDF
+    vitalsVerification: boolean; // Show verification status on vitals
+    visitSummaries: boolean; // Show pharmacist summaries for visits
+  };
+
   // New subscription fields
   currentSubscriptionId?: mongoose.Types.ObjectId;
   subscriptionId?: mongoose.Types.ObjectId; // Alias for currentSubscriptionId for backward compatibility
@@ -198,6 +218,62 @@ const workplaceSchema = new Schema(
         ref: 'User',
       },
     ],
+
+    // Patient Portal Settings
+    patientPortalEnabled: {
+      type: Boolean,
+      default: true, // Enable by default for new workspaces
+      index: true,
+    },
+    patientPortalSettings: {
+      allowSelfRegistration: {
+        type: Boolean,
+        default: true,
+      },
+      requireEmailVerification: {
+        type: Boolean,
+        default: true,
+      },
+      requireAdminApproval: {
+        type: Boolean,
+        default: true,
+      },
+      operatingHours: {
+        type: String,
+        default: 'Monday-Friday: 8:00 AM - 5:00 PM',
+      },
+      services: [{
+        type: String,
+      }],
+    },
+
+    // Patient Health Records Feature Flags
+    healthRecordsFeatures: {
+      labResults: {
+        type: Boolean,
+        default: true,
+      },
+      vitalsTracking: {
+        type: Boolean,
+        default: true,
+      },
+      visitHistory: {
+        type: Boolean,
+        default: true,
+      },
+      downloadRecords: {
+        type: Boolean,
+        default: true,
+      },
+      vitalsVerification: {
+        type: Boolean,
+        default: true,
+      },
+      visitSummaries: {
+        type: Boolean,
+        default: true,
+      },
+    },
 
     // New subscription fields
     currentSubscriptionId: {
@@ -360,11 +436,22 @@ workplaceSchema.pre('save', async function (next) {
     ];
   }
 
+  // Initialize patient portal settings for new workspaces
+  if (this.isNew && !this.patientPortalSettings) {
+    this.patientPortalSettings = {
+      allowSelfRegistration: true,
+      requireEmailVerification: true,
+      requireAdminApproval: true,
+      operatingHours: 'Monday-Friday: 8:00 AM - 5:00 PM',
+      services: ['Prescription Management', 'Appointment Booking', 'Health Records Access'],
+    };
+  }
+
   next();
 });
 
 // Post-save middleware to create subscription for new workspaces
-workplaceSchema.post('save', async function(doc) {
+workplaceSchema.post('save', async function (doc) {
   if (doc.isNew) {
     try {
       // Import the service dynamically to avoid circular dependencies
@@ -385,6 +472,9 @@ workplaceSchema.index({ currentSubscriptionId: 1 });
 workplaceSchema.index({ subscriptionStatus: 1 });
 workplaceSchema.index({ trialEndDate: 1 });
 workplaceSchema.index({ 'stats.lastUpdated': 1 });
+workplaceSchema.index({ patientPortalEnabled: 1 });
+workplaceSchema.index({ state: 1, lga: 1 });
+workplaceSchema.index({ patientPortalEnabled: 1, verificationStatus: 1 });
 
 // Virtual property for backward compatibility
 workplaceSchema.virtual('subscriptionId').get(function () {

@@ -1,4 +1,5 @@
 import twilio from 'twilio';
+import logger from './logger';
 
 interface Patient {
   contactInfo: {
@@ -38,20 +39,18 @@ if (isValidTwilioConfig()) {
       process.env.TWILIO_ACCOUNT_SID!,
       process.env.TWILIO_AUTH_TOKEN!
     );
-    console.log('Twilio SMS service initialized successfully');
+    logger.info('Twilio SMS service initialized successfully');
   } catch (error) {
-    console.warn('Failed to initialize Twilio client:', error);
+    logger.warn('Failed to initialize Twilio client', { error });
     client = null;
   }
 } else {
-  console.log(
-    'Twilio SMS service not configured - using mock mode. SMS features will be simulated.'
-  );
+  logger.debug('Twilio SMS service not configured - using mock mode. SMS features will be simulated.');
 }
 
 export const sendSMS = async (to: string, message: string): Promise<any> => {
   if (!client) {
-    console.log('SMS Mock Mode - Would send SMS to:', to, 'Message:', message);
+    logger.debug(`SMS Mock Mode - Would send SMS to: ${to} Message: ${message}`);
     return {
       sid: 'mock_' + Date.now(),
       status: 'delivered',
@@ -69,7 +68,7 @@ export const sendSMS = async (to: string, message: string): Promise<any> => {
     });
     return result;
   } catch (error) {
-    console.error('SMS sending failed:', error);
+    logger.error('SMS sending failed', { error });
     throw error;
   }
 };

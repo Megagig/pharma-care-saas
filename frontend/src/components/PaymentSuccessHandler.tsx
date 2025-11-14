@@ -28,7 +28,6 @@ const PaymentSuccessHandler: React.FC = () => {
         sessionStorage.getItem('paymentReference');
 
       if (fromPayment && paymentRef) {
-        console.log('Payment success detected, refreshing user data...');
 
         try {
           // Force delay to ensure backend has processed payment
@@ -39,29 +38,26 @@ const PaymentSuccessHandler: React.FC = () => {
             paymentRef
           );
           if (verifyResult.success) {
-            console.log('Payment verification confirmed');
+
           }
 
           // Try to handle successful payment
           try {
             await subscriptionService.handleSuccessfulPayment(paymentRef);
-            console.log('Payment success handling complete');
+
           } catch (e) {
-            console.log(
-              'Payment already processed or error in handling payment:',
-              e
-            );
+
           }
 
           // Refresh user data and subscription status multiple times to ensure we have the latest
-          console.log('First refresh attempt...');
+
           await Promise.all([refreshUser(), refetchSubscription()]);
 
           // Small delay
           await new Promise((resolve) => setTimeout(resolve, 500));
 
           // One more refresh for good measure
-          console.log('Second refresh attempt...');
+
           await Promise.all([refreshUser(), refetchSubscription()]);
 
           // Show success notification
@@ -81,12 +77,7 @@ const PaymentSuccessHandler: React.FC = () => {
           sessionStorage.setItem('paymentReference', paymentRef || '');
 
           // Log the bypass status
-          console.log('⚠️ TEMPORARY SUBSCRIPTION CHECK BYPASS ACTIVATED:', {
-            paymentRef,
-            timestamp: new Date().toLocaleString(),
-          });
 
-          console.log('Payment success flow completed successfully');
         } catch (error) {
           console.error('Error handling payment success:', error);
 

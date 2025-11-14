@@ -353,7 +353,7 @@ export const getAllRoles = async (params?: {
       });
     }
 
-    const response = await apiClient.get(`/admin/roles?${queryParams}`);
+    const response = await apiClient.get(`/roles?${queryParams}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching roles:', error);
@@ -382,7 +382,7 @@ export const getAllPermissions = async (params?: {
       });
     }
 
-    const response = await apiClient.get(`/admin/permissions?${queryParams}`);
+    const response = await apiClient.get(`/permissions?${queryParams}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching permissions:', error);
@@ -962,7 +962,7 @@ export const getPermissionMatrix = async (params?: {
         if (value !== undefined) queryParams.append(key, value.toString());
       });
     }
-    const response = await apiClient.get(`/permissions/matrix?${queryParams}`);
+    const response = await apiClient.get(`/workspace/rbac/permission-matrix?${queryParams}`);
     return response.data;
   } catch (error) {
     console.error('Error fetching permission matrix:', error);
@@ -975,7 +975,7 @@ export const getPermissionCategories = async (): Promise<{
   data: any;
 }> => {
   try {
-    const response = await apiClient.get(`/permissions/categories`);
+    const response = await apiClient.get(`/workspace/rbac/permissions/categories`);
     return response.data;
   } catch (error) {
     console.error('Error fetching permission categories:', error);
@@ -1336,6 +1336,425 @@ export const getAuditStatistics = async (params?: {
     return response.data;
   } catch (error) {
     console.error('Error fetching audit statistics:', error);
+    throw error;
+  }
+};
+
+// Alias for getRBACStatistics (used by RBAC Management page)
+export const getRBACStatistics = getAuditStatistics;
+
+// Permission Usage Analytics
+export const getPermissionUsageAnalytics = async (): Promise<{
+  success: boolean;
+  data: any;
+}> => {
+  try {
+    const response = await apiClient.get(`/workspace/rbac/permissions/usage-analytics`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching permission usage analytics:', error);
+    throw error;
+  }
+};
+
+// Update Permission Matrix
+export const updatePermissionMatrix = async (
+  roleId: string,
+  permissions: Record<string, boolean>
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    const response = await apiClient.put(`/roles/${roleId}/permissions-matrix`, {
+      permissions,
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error updating permission matrix:', error);
+    throw error;
+  }
+};
+
+// Export Role Assignments
+export const exportRoleAssignments = async (
+  format: string = 'csv'
+): Promise<Blob> => {
+  try {
+    const response = await apiClient.get(`/roles/export?format=${format}`, {
+      responseType: 'blob',
+    });
+    return response.data;
+  } catch (error) {
+    console.error('Error exporting role assignments:', error);
+    throw error;
+  }
+};
+
+// ==================== WORKSPACE-SCOPED RBAC FUNCTIONS ====================
+// These functions are for workspace owners to manage roles and permissions
+// within their workspace
+
+/**
+ * Get all roles in the workspace
+ */
+export const getWorkspaceRoles = async (params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  category?: string;
+  isActive?: string;
+  sortBy?: string;
+  sortOrder?: string;
+}): Promise<{
+  success: boolean;
+  data: { roles: Role[]; pagination: unknown };
+}> => {
+  try {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) queryParams.append(key, value.toString());
+      });
+    }
+
+    const response = await apiClient.get(`/workspace/rbac/roles?${queryParams}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching workspace roles:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get a single role by ID
+ */
+export const getWorkspaceRoleById = async (
+  roleId: string
+): Promise<{ success: boolean; data: { role: Role } }> => {
+  try {
+    const response = await apiClient.get(`/workspace/rbac/roles/${roleId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching workspace role:', error);
+    throw error;
+  }
+};
+
+/**
+ * Create a new custom role in workspace
+ */
+export const createWorkspaceRole = async (data: {
+  name: string;
+  displayName: string;
+  description: string;
+  permissions: string[];
+  parentRoleId?: string;
+}): Promise<{ success: boolean; message: string; data: { role: Role } }> => {
+  try {
+    const response = await apiClient.post('/workspace/rbac/roles', data);
+    return response.data;
+  } catch (error) {
+    console.error('Error creating workspace role:', error);
+    throw error;
+  }
+};
+
+/**
+ * Update an existing role
+ */
+export const updateWorkspaceRole = async (
+  roleId: string,
+  data: {
+    displayName?: string;
+    description?: string;
+    permissions?: string[];
+    isActive?: boolean;
+  }
+): Promise<{ success: boolean; message: string; data: { role: Role } }> => {
+  try {
+    const response = await apiClient.put(`/workspace/rbac/roles/${roleId}`, data);
+    return response.data;
+  } catch (error) {
+    console.error('Error updating workspace role:', error);
+    throw error;
+  }
+};
+
+/**
+ * Delete a custom role
+ */
+export const deleteWorkspaceRole = async (
+  roleId: string
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    const response = await apiClient.delete(`/workspace/rbac/roles/${roleId}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error deleting workspace role:', error);
+    throw error;
+  }
+};
+
+/**
+ * Clone an existing role
+ */
+export const cloneWorkspaceRole = async (
+  roleId: string,
+  data: {
+    newName: string;
+    newDisplayName: string;
+    newDescription?: string;
+  }
+): Promise<{ success: boolean; message: string; data: { role: Role } }> => {
+  try {
+    const response = await apiClient.post(`/workspace/rbac/roles/${roleId}/clone`, data);
+    return response.data;
+  } catch (error) {
+    console.error('Error cloning workspace role:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get workspace permissions
+ */
+export const getWorkspacePermissions = async (params?: {
+  page?: number;
+  limit?: number;
+  search?: string;
+  category?: string;
+  riskLevel?: string;
+}): Promise<{
+  success: boolean;
+  data: { permissions: Permission[]; pagination: unknown };
+}> => {
+  try {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) queryParams.append(key, value.toString());
+      });
+    }
+
+    const response = await apiClient.get(`/workspace/rbac/permissions?${queryParams}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching workspace permissions:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get permission matrix grouped by categories
+ */
+export const getWorkspacePermissionMatrix = async (): Promise<{
+  success: boolean;
+  data: {
+    matrix: Record<string, Permission[]>;
+    categories: string[];
+    totalPermissions: number;
+  };
+}> => {
+  try {
+    const response = await apiClient.get('/workspace/rbac/permission-matrix');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching workspace permission matrix:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get permission categories
+ */
+export const getWorkspacePermissionCategories = async (): Promise<{
+  success: boolean;
+  data: { categories: string[] };
+}> => {
+  try {
+    const response = await apiClient.get('/workspace/rbac/permissions/categories');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching permission categories:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get team members with their roles
+ */
+export const getWorkspaceTeamMembers = async (): Promise<{
+  success: boolean;
+  data: { teamMembers: any[] };
+}> => {
+  try {
+    const response = await apiClient.get('/workspace/rbac/team-members');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching workspace team members:', error);
+    throw error;
+  }
+};
+
+/**
+ * Assign role to team member
+ */
+export const assignRoleToTeamMember = async (
+  userId: string,
+  roleId: string,
+  reason?: string
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    const response = await apiClient.post(
+      `/workspace/rbac/team-members/${userId}/assign-role`,
+      { roleId, reason }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error assigning role to team member:', error);
+    throw error;
+  }
+};
+
+/**
+ * Revoke role from team member
+ */
+export const revokeRoleFromTeamMember = async (
+  userId: string,
+  roleId: string,
+  reason?: string
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    const response = await apiClient.delete(
+      `/workspace/rbac/team-members/${userId}/roles/${roleId}`,
+      { data: { reason } }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error revoking role from team member:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get team member's effective permissions
+ */
+export const getTeamMemberPermissions = async (
+  userId: string
+): Promise<{
+  success: boolean;
+  data: { permissions: string[]; roleDetails: any[] };
+}> => {
+  try {
+    const response = await apiClient.get(
+      `/workspace/rbac/team-members/${userId}/permissions`
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching team member permissions:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get pending permission requests
+ */
+export const getPermissionRequests = async (): Promise<{
+  success: boolean;
+  data: { requests: any[] };
+}> => {
+  try {
+    const response = await apiClient.get('/workspace/rbac/permission-requests');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching permission requests:', error);
+    throw error;
+  }
+};
+
+/**
+ * Approve permission request
+ */
+export const approvePermissionRequest = async (
+  requestId: string
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    const response = await apiClient.post(
+      `/workspace/rbac/permission-requests/${requestId}/approve`
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error approving permission request:', error);
+    throw error;
+  }
+};
+
+/**
+ * Reject permission request
+ */
+export const rejectPermissionRequest = async (
+  requestId: string,
+  reason?: string
+): Promise<{ success: boolean; message: string }> => {
+  try {
+    const response = await apiClient.post(
+      `/workspace/rbac/permission-requests/${requestId}/reject`,
+      { reason }
+    );
+    return response.data;
+  } catch (error) {
+    console.error('Error rejecting permission request:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get RBAC audit logs
+ */
+export const getWorkspaceAuditLogs = async (params?: {
+  page?: number;
+  limit?: number;
+  action?: string;
+  category?: string;
+  startDate?: string;
+  endDate?: string;
+}): Promise<{
+  success: boolean;
+  data: { logs: any[]; pagination: unknown };
+}> => {
+  try {
+    const queryParams = new URLSearchParams();
+    if (params) {
+      Object.entries(params).forEach(([key, value]) => {
+        if (value !== undefined) queryParams.append(key, value.toString());
+      });
+    }
+
+    const response = await apiClient.get(`/workspace/rbac/audit-logs?${queryParams}`);
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching workspace audit logs:', error);
+    throw error;
+  }
+};
+
+/**
+ * Get RBAC statistics
+ */
+export const getWorkspaceRBACStatistics = async (): Promise<{
+  success: boolean;
+  data: {
+    totalRoles: number;
+    activeRoles: number;
+    customRoles: number;
+    systemRoles: number;
+    totalMembers: number;
+    roleAssignments: number;
+  };
+}> => {
+  try {
+    const response = await apiClient.get('/workspace/rbac/statistics');
+    return response.data;
+  } catch (error) {
+    console.error('Error fetching workspace RBAC statistics:', error);
     throw error;
   }
 };

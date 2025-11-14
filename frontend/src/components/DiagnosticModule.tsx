@@ -63,6 +63,7 @@ import { usePatients, useSearchPatients } from '../queries/usePatients';
 import type { Patient } from '../types/patientManagement';
 import { Autocomplete } from '@mui/material';
 import { apiHelpers } from '../services/api';
+import { aiDiagnosticService } from '../services/aiDiagnosticService';
 
 interface Symptom {
   type: 'subjective' | 'objective';
@@ -255,7 +256,8 @@ const DiagnosticModule: React.FC = () => {
 
   // Check feature access - super_admin bypasses feature flag checks
   const isSuperAdmin = user?.role === 'super_admin';
-  const hasAccess = isSuperAdmin || hasFeature('clinical_decision_support');
+  // Allow either key to maintain backward compatibility with older flag names
+  const hasAccess = isSuperAdmin || hasFeature('ai_diagnostics') || hasFeature('clinical_decision_support');
 
   // Cache management functions - DEFINED FIRST
   const saveAnalysisToCache = useCallback((analysis: DiagnosticAnalysis, patientId: string) => {
@@ -700,7 +702,8 @@ const DiagnosticModule: React.FC = () => {
     setError(null);
 
     try {
-      const response = await apiHelpers.post('/diagnostics/ai', {
+      // Build case data in the shape expected by aiDiagnosticService
+      const caseData = {
         patientId: selectedPatient,
         symptoms: {
           subjective: symptoms
@@ -715,18 +718,87 @@ const DiagnosticModule: React.FC = () => {
           severity,
           onset,
         },
-        labResults: labResults.filter((lr) => lr.testName && lr.value),
-        currentMedications: medications.filter((m) => m.name && m.dosage),
         vitalSigns,
-        patientConsent: {
-          provided: true,
-          method: 'electronic',
-        },
-      });
+        currentMedications: medications.filter((m) => m.name && m.dosage),
+        labResults: [],
+        patientConsent: { provided: true },
+      } as any;
 
-      const analysisResponse = response.data.data as DiagnosticAnalysis;
+      // Submit and then poll for completion
+      const submitted = await aiDiagnosticService.submitCase(caseData);
+      const requestId = submitted.id;
+      const analysisResult = await aiDiagnosticService.pollAnalysis(requestId, 30);
+
+      // Transform AI result to legacy DiagnosticAnalysis shape used by this component
+      const toPriority = (p: 'high' | 'medium' | 'low' | undefined): 'urgent' | 'routine' | 'optional' =>
+        p === 'high' ? 'urgent' : p === 'low' ? 'optional' : 'routine';
+
+      const primary = analysisResult.analysis?.primaryDiagnosis || { condition: 'Unknown', confidence: 0, reasoning: '' };
+      const others = analysisResult.analysis?.differentialDiagnoses || [];
+
+      const differentialDiagnoses = [
+        {
+          condition: primary.condition || 'Unknown',
+          probability: Math.round(((primary.confidence ?? 0) as number) * 100),
+          reasoning: primary.reasoning || '',
+          severity: ((primary.confidence ?? 0) as number) > 0.7 ? 'high' : ((primary.confidence ?? 0) as number) > 0.4 ? 'medium' : 'low',
+        },
+        ...others.map((dx: any) => ({
+          condition: dx.condition || 'Unknown',
+          probability: Math.round(((dx.confidence ?? 0) as number) * 100),
+          reasoning: dx.reasoning || '',
+          severity: ((dx.confidence ?? 0) as number) > 0.7 ? 'high' : ((dx.confidence ?? 0) as number) > 0.4 ? 'medium' : 'low',
+        })),
+      ];
+
+      const recommendedTests = (analysisResult.analysis?.recommendedTests || []).map((t: any) => ({
+        testName: t.test || t.testName || 'Unknown test',
+        priority: toPriority(t.priority),
+        reasoning: t.reasoning || '',
+      }));
+
+      const therapeuticOptions = (analysisResult.analysis?.treatmentSuggestions || []).map((opt: any) => ({
+        medication: opt.treatment || opt.medication || 'Unknown',
+        dosage: '',
+        frequency: '',
+        duration: '',
+        reasoning: opt.reasoning || '',
+        safetyNotes: [],
+      }));
+
+      const redFlags = (analysisResult.analysis?.riskFactors || []).map((rf: any) => ({
+        flag: rf.factor || 'Risk factor',
+        severity: (rf.severity as 'low' | 'medium' | 'high') || 'medium',
+        action: rf.description || '',
+      }));
+
+      const referralRec = (analysisResult.analysis?.followUpRecommendations || [])[0];
+
+      const analysisResponse: DiagnosticAnalysis = {
+        caseId: requestId,
+        analysis: {
+          differentialDiagnoses,
+          recommendedTests,
+          therapeuticOptions,
+          redFlags,
+          referralRecommendation: referralRec
+            ? {
+              recommended: true,
+              urgency: 'routine',
+              specialty: 'General practice',
+              reason: referralRec.reasoning || referralRec.action || 'Follow-up recommended',
+            }
+            : undefined,
+          disclaimer:
+            'This AI-generated clinical support does not replace professional judgment. Verify findings and follow local protocols.',
+          confidenceScore: Math.round(((analysisResult.confidence ?? 0) as number) * 100),
+        },
+        drugInteractions: [],
+        processingTime: analysisResult.processingTime || 0,
+      };
+
       setAnalysis(analysisResponse);
-      setActiveTab(1); // Switch to results tab
+      setActiveTab(1);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {

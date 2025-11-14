@@ -114,7 +114,13 @@ export const createLocation = async (
 
         // Check if workspace has multi-location feature
         const plan = req.workspaceContext?.plan;
-        if (!plan || !plan.features?.multiLocationDashboard) {
+        const hasMultiLocationFeature = plan?.features
+            ? (Array.isArray(plan.features)
+                ? plan.features.includes('multiLocationDashboard') || plan.features.includes('multi_location_dashboard')
+                : (plan.features as any).multiLocationDashboard === true)
+            : false;
+
+        if (!plan || !hasMultiLocationFeature) {
             res.status(403).json({
                 success: false,
                 message: 'Multi-location feature not available in your current plan',

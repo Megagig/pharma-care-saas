@@ -457,11 +457,11 @@ const MobileChatInterface: React.FC<MobileChatInterfaceProps> = ({
             conversation={conversation}
             onAddParticipant={(userId, role) => {
               // TODO: Implement add participant
-              console.log('Add participant:', userId, role);
+
             }}
             onRemoveParticipant={(userId) => {
               // TODO: Implement remove participant
-              console.log('Remove participant:', userId);
+
             }}
             mobile={true}
           />

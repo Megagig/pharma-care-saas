@@ -51,38 +51,34 @@ import { toast } from 'react-hot-toast';
 // Use the stable version of patient store
 import { usePatientStore } from '../../../stores';
 
-// Test 2: Add back form validation
+// Form validation schema - updated to match new form structure
 const caseIntakeSchema = z.object({
   patientId: z.string().min(1, 'Patient selection is required'),
   symptoms: z.object({
-    subjective: z.string().min(1, 'Subjective symptoms are required'),
+    subjective: z.string().min(1, 'At least one subjective symptom is required (comma-separated)'),
     objective: z.string().optional(),
-    duration: z.string().optional(),
-    severity: z.enum(['mild', 'moderate', 'severe']).optional(),
-    onset: z.enum(['acute', 'chronic', 'subacute']).optional(),
+    duration: z.string().min(1, 'Symptom duration is required (e.g., "3 days", "2 weeks")'),
+    severity: z.enum(['mild', 'moderate', 'severe'], {
+      errorMap: () => ({ message: 'Please select symptom severity' })
+    }),
+    onset: z.enum(['acute', 'chronic', 'subacute'], {
+      errorMap: () => ({ message: 'Please select symptom onset type' })
+    }),
   }),
   vitals: z
     .object({
-      bloodPressure: z.string().optional(),
-      heartRate: z.number().optional(),
-      temperature: z.number().optional(),
-      bloodGlucose: z.number().optional(),
-      respiratoryRate: z.number().optional(),
+      bloodPressure: z.string().regex(/^\d{2,3}\/\d{2,3}$/, 'Format: systolic/diastolic (e.g., 120/80)').optional().or(z.literal('')),
+      heartRate: z.number().min(30, 'Heart rate too low (min: 30)').max(250, 'Heart rate too high (max: 250)').optional(),
+      temperature: z.number().min(30, 'Temperature too low (min: 30°C)').max(45, 'Temperature too high (max: 45°C)').optional(),
+      bloodGlucose: z.number().min(20, 'Blood glucose too low (min: 20)').max(600, 'Blood glucose too high (max: 600)').optional(),
+      respiratoryRate: z.number().min(8, 'Respiratory rate too low (min: 8)').max(60, 'Respiratory rate too high (max: 60)').optional(),
     })
     .optional(),
-  currentMedications: z
-    .array(
-      z.object({
-        name: z.string(),
-        dosage: z.string(),
-        frequency: z.string(),
-      })
-    )
-    .optional(),
+  currentMedications: z.any().optional(), // Accept any format (string or object array)
   allergies: z.string().optional(),
-  medicalHistory: z.string().min(1, 'Medical history is required'),
+  medicalHistory: z.string().min(1, 'Medical history is required (one item per line)'),
   labResults: z.array(z.string()).optional(),
-  consent: z.boolean().refine((val) => val === true, 'Consent is required'),
+  consent: z.boolean().refine((val) => val === true, 'Patient consent is required to proceed'),
 });
 
 type CaseIntakeFormData = z.infer<typeof caseIntakeSchema>;
@@ -125,6 +121,32 @@ const CaseIntakePage: React.FC = () => {
     phone: '',
     dateOfBirth: '',
     email: '',
+  });
+
+  // State for medications management
+  const [medications, setMedications] = useState<Array<{
+    name: string;
+    dosage: string;
+    frequency: string;
+  }>>([]);
+  const [currentMed, setCurrentMed] = useState({
+    name: '',
+    dosage: '',
+    frequency: 'Once daily'
+  });
+
+  // State for lab results management
+  const [labResults, setLabResults] = useState<Array<{
+    testName: string;
+    value: string;
+    unit: string;
+    status: string;
+  }>>([]);
+  const [currentLab, setCurrentLab] = useState({
+    testName: '',
+    value: '',
+    unit: '',
+    status: 'Normal'
   });
 
   // Use individual selectors to avoid object recreation
@@ -235,7 +257,25 @@ const CaseIntakePage: React.FC = () => {
     const fieldsToValidate = getFieldsForStep(activeStep);
     const isValid = await trigger(fieldsToValidate);
 
-    if (isValid && activeStep < STEPS.length - 1) {
+    if (!isValid) {
+      // Show error message indicating which fields need to be filled
+      const stepErrors = fieldsToValidate
+        .filter(field => errors[field])
+        .map(field => {
+          if (field === 'patientId') return 'Patient selection';
+          if (field === 'symptoms') return 'Subjective symptoms';
+          if (field === 'medicalHistory') return 'Medical history';
+          if (field === 'consent') return 'Consent agreement';
+          return field;
+        });
+
+      if (stepErrors.length > 0) {
+        toast.error(`Please fill required fields: ${stepErrors.join(', ')}`);
+      }
+      return;
+    }
+
+    if (activeStep < STEPS.length - 1) {
       setActiveStep(activeStep + 1);
     }
   };
@@ -256,8 +296,9 @@ const CaseIntakePage: React.FC = () => {
     try {
       setSubmitting(true);
 
+
       // First validate patient access
-      console.log('Validating patient access for:', data.patientId);
+
       const accessValidation = await aiDiagnosticService.validatePatientAccess(data.patientId);
 
       if (!accessValidation.hasAccess) {
@@ -265,8 +306,6 @@ const CaseIntakePage: React.FC = () => {
         setSubmitting(false);
         return;
       }
-
-      console.log('Patient access validated for:', accessValidation.patientName);
 
       // Show loading message with time expectation
       toast.loading(
@@ -276,8 +315,30 @@ const CaseIntakePage: React.FC = () => {
         }
       );
 
-      // Debug: Log the form data
-      console.log('Form data received:', data);
+      // Transform medications to proper format
+      let transformedMedications: any[] = [];
+      if (data.currentMedications) {
+        if (Array.isArray(data.currentMedications)) {
+          transformedMedications = data.currentMedications
+            .map((med: any) => {
+              if (typeof med === 'string') {
+                const parts = med.split('-').map(p => p.trim());
+                return {
+                  name: parts[0] || med,
+                  dosage: parts[1] || 'As prescribed',
+                  frequency: parts[2] || 'As directed'
+                };
+              }
+              // If it's already an object, ensure dosage and frequency are not empty
+              return {
+                name: med.name || 'Unknown medication',
+                dosage: med.dosage || 'As prescribed',
+                frequency: med.frequency || 'As directed'
+              };
+            })
+            .filter((med: any) => med.name && med.name.trim()); // Only include meds with names
+        }
+      }
 
       // Transform form data to match API expectations
       const caseData = {
@@ -297,7 +358,9 @@ const CaseIntakePage: React.FC = () => {
                 .map((s) => s.trim())
                 .filter((s) => s.length > 0)
               : [],
-          duration: data.symptoms?.duration || '',
+          duration: data.symptoms?.duration && data.symptoms.duration.trim()
+            ? data.symptoms.duration.trim()
+            : 'Not specified',
           severity: data.symptoms?.severity || 'mild' as const,
           onset: data.symptoms?.onset || 'acute' as const,
         },
@@ -316,8 +379,14 @@ const CaseIntakePage: React.FC = () => {
             ? Number(data.vitals.bloodGlucose)
             : undefined,
         },
-        currentMedications: data.currentMedications || [],
-        labResults: data.labResults || [],
+        currentMedications: transformedMedications,
+        labResults: [], // Lab results should be ObjectIds - for now send empty array
+        medicalHistory: data.medicalHistory
+          ? data.medicalHistory.split('\n').filter(h => h.trim()).map(h => h.trim())
+          : [],
+        allergies: data.allergies
+          ? data.allergies.split('\n').filter(a => a.trim()).map(a => a.trim())
+          : [],
         patientConsent: {
           provided: true,
           method: 'electronic',
@@ -325,11 +394,11 @@ const CaseIntakePage: React.FC = () => {
       };
 
       // Debug: Log the transformed data
-      console.log('Transformed case data:', caseData);
 
       // Validate required fields before submission
       if (!caseData.patientId) {
         toast.error('Patient selection is required');
+        setSubmitting(false);
         return;
       }
 
@@ -338,10 +407,12 @@ const CaseIntakePage: React.FC = () => {
         caseData.symptoms.subjective.length === 0
       ) {
         toast.error('At least one subjective symptom is required');
+        setSubmitting(false);
         return;
       }
 
       // Submit case for AI analysis
+
       const diagnosticCase = await aiDiagnosticService.submitCase(caseData);
 
       // Dismiss loading toast and show success message
@@ -349,16 +420,74 @@ const CaseIntakePage: React.FC = () => {
       toast.success('AI analysis completed successfully!');
 
       // Navigate to results page with the completed analysis
-      navigate(`/pharmacy/diagnostics/case/${diagnosticCase.id}/results`);
+      const navUrl = `/pharmacy/diagnostics/case/${diagnosticCase.id}/results`;
+
+      navigate(navUrl);
     } catch (error: unknown) {
       console.error('Failed to submit case:', error);
 
       // Dismiss loading toast
       toast.dismiss('ai-analysis-loading');
 
-      // Extract error message
+      // Extract and display error message
       let errorMessage = 'Failed to submit case. Please try again.';
 
+      // Check for 409 Conflict (Active request exists)
+      if (
+        error &&
+        typeof error === 'object' &&
+        'response' in error &&
+        error.response &&
+        typeof error.response === 'object' &&
+        'status' in error.response &&
+        error.response.status === 409
+      ) {
+        toast.error(
+          'An active diagnostic request already exists for this patient. Please wait for the current request to complete before submitting a new one.',
+          {
+            duration: 8000,
+            icon: '⏳',
+            style: {
+              background: '#FFF3E0',
+              color: '#E65100',
+              border: '2px solid #FF9800',
+            },
+          }
+        );
+        setSubmitting(false);
+        return;
+      }
+
+      // Check if it's an Error object with our validation message
+      if (error && typeof error === 'object' && 'message' in error) {
+        const err = error as Error;
+        errorMessage = err.message;
+
+        // If it's a validation error with multiple lines, show each as separate toast
+        if (errorMessage.includes('Validation failed:')) {
+          const lines = errorMessage.split('\n').filter(line => line.trim());
+          const title = lines[0]; // "Validation failed:"
+          const errors = lines.slice(1); // Individual error messages
+
+          // Show title
+          toast.error(title, { duration: 5000 });
+
+          // Show each validation error
+          errors.forEach((err, index) => {
+            setTimeout(() => {
+              toast.error(err.replace('• ', ''), {
+                duration: 6000,
+                icon: '⚠️'
+              });
+            }, index * 100); // Stagger the toasts slightly
+          });
+
+          setSubmitting(false);
+          return;
+        }
+      }
+
+      // Fallback: check for axios response errors
       if (
         error &&
         typeof error === 'object' &&
@@ -418,8 +547,10 @@ const CaseIntakePage: React.FC = () => {
         console.error('Full error details:', error.response.data);
       }
 
-      // Show error toast
-      toast.error(errorMessage);
+      // Show error toast (only if not already shown as validation errors)
+      if (!errorMessage.includes('Validation failed:')) {
+        toast.error(errorMessage, { duration: 5000 });
+      }
     } finally {
       setSubmitting(false);
     }
@@ -622,9 +753,22 @@ const CaseIntakePage: React.FC = () => {
                 >
                   <PersonIcon />
                 </Avatar>
-                <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  Choose Patient
-                </Typography>
+                <Box sx={{ flex: 1 }}>
+                  <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                      Choose Patient
+                    </Typography>
+                    <Chip
+                      label="REQUIRED"
+                      size="small"
+                      color="error"
+                      sx={{ fontWeight: 700, fontSize: '0.7rem' }}
+                    />
+                  </Box>
+                  <Typography variant="caption" color="text.secondary">
+                    Select the patient for this diagnostic case
+                  </Typography>
+                </Box>
               </Box>
 
               <Controller
@@ -786,10 +930,18 @@ const CaseIntakePage: React.FC = () => {
                     >
                       <AssignmentIcon />
                     </Avatar>
-                    <Box>
-                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                        Subjective Symptoms
-                      </Typography>
+                    <Box sx={{ flex: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                          Subjective Symptoms
+                        </Typography>
+                        <Chip
+                          label="REQUIRED"
+                          size="small"
+                          color="error"
+                          sx={{ fontWeight: 700, fontSize: '0.7rem' }}
+                        />
+                      </Box>
                       <Typography variant="body2" color="text.secondary">
                         Patient's reported symptoms and complaints
                       </Typography>
@@ -805,15 +957,15 @@ const CaseIntakePage: React.FC = () => {
                         fullWidth
                         multiline
                         rows={6}
-                        placeholder="Describe the patient's reported symptoms in detail... 
+                        placeholder="List patient's reported symptoms (comma-separated)... 
                         
 Examples:
-• Chief complaint and history of present illness
-• Pain descriptions, location, quality, timing
-• Associated symptoms
-• Patient's own words about their condition"
+• Severe headache, nausea, sensitivity to light
+• Chest pain, shortness of breath, sweating
+• Fever, cough, fatigue, body aches
+• Abdominal pain, diarrhea, loss of appetite"
                         error={!!errors.symptoms?.subjective}
-                        helperText={errors.symptoms?.subjective?.message}
+                        helperText={errors.symptoms?.subjective?.message || "Enter symptoms separated by commas"}
                         sx={{
                           '& .MuiOutlinedInput-root': {
                             borderRadius: 2,
@@ -913,10 +1065,19 @@ Examples:
                     >
                       <LocalHospitalIcon />
                     </Avatar>
-                    <Box>
-                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                        Symptom Characteristics
-                      </Typography>
+                    <Box sx={{ flex: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                          Symptom Characteristics
+                        </Typography>
+                        <Chip
+                          label="OPTIONAL"
+                          size="small"
+                          color="default"
+                          variant="outlined"
+                          sx={{ fontSize: '0.7rem' }}
+                        />
+                      </Box>
                       <Typography variant="body2" color="text.secondary">
                         Duration, severity, and onset details
                       </Typography>
@@ -1076,36 +1237,47 @@ Examples:
         return (
           <Box>
             <Grid container spacing={4}>
-              {/* Medical History */}
+              {/* Section 1: Medical History */}
               <Grid item xs={12}>
                 <Paper
                   elevation={0}
                   sx={{
-                    p: 3,
+                    p: 4,
                     borderRadius: 3,
-                    border: '1px solid',
-                    borderColor: errors.medicalHistory ? 'error.main' : 'divider',
+                    border: '2px solid',
+                    borderColor: errors.medicalHistory ? 'error.main' : 'primary.main',
                     bgcolor: 'background.paper',
+                    transition: 'all 0.3s',
+                    '&:hover': {
+                      boxShadow: 4,
+                    }
                   }}
                 >
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                     <Avatar
                       sx={{
-                        bgcolor: 'primary.50',
-                        color: 'primary.main',
-                        width: 40,
-                        height: 40,
+                        bgcolor: 'primary.main',
+                        width: 48,
+                        height: 48,
                         mr: 2,
                       }}
                     >
                       <MedicalInformationIcon />
                     </Avatar>
-                    <Box>
-                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                        Medical History
-                      </Typography>
+                    <Box sx={{ flex: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="h6" sx={{ fontWeight: 700, color: 'primary.main' }}>
+                          1. Medical History
+                        </Typography>
+                        <Chip
+                          label="REQUIRED"
+                          size="small"
+                          color="error"
+                          sx={{ fontWeight: 700, fontSize: '0.7rem' }}
+                        />
+                      </Box>
                       <Typography variant="body2" color="text.secondary">
-                        Comprehensive patient medical background
+                        Patient's medical background and history
                       </Typography>
                     </Box>
                   </Box>
@@ -1118,21 +1290,14 @@ Examples:
                         {...field}
                         fullWidth
                         multiline
-                        rows={6}
-                        placeholder="Document patient's medical history in detail...
-
-Examples:
-• Past medical conditions and diagnoses
-• Previous surgeries and procedures
-• Family medical history
-• Current medications and treatments
-• Previous hospitalizations
-• Chronic conditions"
+                        rows={5}
+                        placeholder="Document patient's medical history (one item per line)...&#10;&#10;Examples:&#10;• Hypertension - diagnosed 2015&#10;• Type 2 Diabetes - managed with metformin&#10;• Previous appendectomy - 2018&#10;• Family history of heart disease"
                         error={!!errors.medicalHistory}
-                        helperText={errors.medicalHistory?.message}
+                        helperText={errors.medicalHistory?.message || "Enter relevant medical history - one item per line"}
                         sx={{
                           '& .MuiOutlinedInput-root': {
                             borderRadius: 2,
+                            bgcolor: 'grey.50'
                           }
                         }}
                       />
@@ -1141,37 +1306,205 @@ Examples:
                 </Paper>
               </Grid>
 
-              {/* Allergies */}
+              {/* Section 2: Current Medications */}
               <Grid item xs={12}>
                 <Paper
                   elevation={0}
                   sx={{
-                    p: 3,
+                    p: 4,
                     borderRadius: 3,
-                    border: '1px solid',
-                    borderColor: 'divider',
+                    border: '2px solid',
+                    borderColor: 'success.main',
                     bgcolor: 'background.paper',
+                    transition: 'all 0.3s',
+                    '&:hover': {
+                      boxShadow: 4,
+                    }
                   }}
                 >
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                     <Avatar
                       sx={{
-                        bgcolor: 'warning.50',
-                        color: 'warning.main',
-                        width: 40,
-                        height: 40,
+                        bgcolor: 'success.main',
+                        width: 48,
+                        height: 48,
+                        mr: 2,
+                      }}
+                    >
+                      💊
+                    </Avatar>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 700, color: 'success.main' }}>
+                        2. Current Medications
+                        <Chip label="Optional" size="small" color="success" variant="outlined" sx={{ ml: 1 }} />
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Add medications with structured fields for accuracy
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  {/* Medication Input Form */}
+                  <Box sx={{ mb: 3 }}>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} md={5}>
+                        <TextField
+                          fullWidth
+                          label="Medication Name"
+                          placeholder="e.g., Metformin, Lisinopril"
+                          value={currentMed.name}
+                          onChange={(e) => setCurrentMed({ ...currentMed, name: e.target.value })}
+                          sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                        />
+                      </Grid>
+                      <Grid item xs={12} md={3}>
+                        <TextField
+                          fullWidth
+                          label="Dosage"
+                          placeholder="e.g., 500mg, 10mg"
+                          value={currentMed.dosage}
+                          onChange={(e) => setCurrentMed({ ...currentMed, dosage: e.target.value })}
+                          sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                        />
+                      </Grid>
+                      <Grid item xs={12} md={3}>
+                        <FormControl fullWidth>
+                          <InputLabel>Frequency</InputLabel>
+                          <Select
+                            value={currentMed.frequency}
+                            label="Frequency"
+                            onChange={(e) => setCurrentMed({ ...currentMed, frequency: e.target.value })}
+                            sx={{ borderRadius: 2 }}
+                          >
+                            <MenuItem value="Once daily">Once daily</MenuItem>
+                            <MenuItem value="Twice daily">Twice daily</MenuItem>
+                            <MenuItem value="Three times daily">Three times daily</MenuItem>
+                            <MenuItem value="Four times daily">Four times daily</MenuItem>
+                            <MenuItem value="Every 4 hours">Every 4 hours</MenuItem>
+                            <MenuItem value="Every 6 hours">Every 6 hours</MenuItem>
+                            <MenuItem value="Every 8 hours">Every 8 hours</MenuItem>
+                            <MenuItem value="Every 12 hours">Every 12 hours</MenuItem>
+                            <MenuItem value="At bedtime">At bedtime</MenuItem>
+                            <MenuItem value="As needed">As needed (PRN)</MenuItem>
+                            <MenuItem value="Weekly">Weekly</MenuItem>
+                            <MenuItem value="Monthly">Monthly</MenuItem>
+                            <MenuItem value="As directed">As directed</MenuItem>
+                          </Select>
+                        </FormControl>
+                      </Grid>
+                      <Grid item xs={12} md={1}>
+                        <Button
+                          fullWidth
+                          variant="contained"
+                          color="success"
+                          onClick={() => {
+                            if (currentMed.name.trim()) {
+                              const newMed = {
+                                name: currentMed.name.trim(),
+                                dosage: currentMed.dosage.trim() || 'As prescribed',
+                                frequency: currentMed.frequency
+                              };
+                              setMedications([...medications, newMed]);
+                              setValue('currentMedications', [...medications, newMed]);
+                              setCurrentMed({ name: '', dosage: '', frequency: 'Once daily' });
+                            }
+                          }}
+                          disabled={!currentMed.name.trim()}
+                          sx={{ height: 56, borderRadius: 2 }}
+                        >
+                          <AddIcon />
+                        </Button>
+                      </Grid>
+                    </Grid>
+                  </Box>
+
+                  {/* Added Medications List */}
+                  {medications.length > 0 && (
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+                        Added Medications ({medications.length})
+                      </Typography>
+                      <Stack spacing={1}>
+                        {medications.map((med, index) => (
+                          <Paper
+                            key={index}
+                            sx={{
+                              p: 2,
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              bgcolor: 'success.50',
+                              border: '1px solid',
+                              borderColor: 'success.main',
+                            }}
+                          >
+                            <Box>
+                              <Typography variant="body1" sx={{ fontWeight: 600 }}>
+                                {med.name}
+                              </Typography>
+                              <Typography variant="body2" color="text.secondary">
+                                {med.dosage} • {med.frequency}
+                              </Typography>
+                            </Box>
+                            <IconButton
+                              size="small"
+                              color="error"
+                              onClick={() => {
+                                const newMeds = medications.filter((_, i) => i !== index);
+                                setMedications(newMeds);
+                                setValue('currentMedications', newMeds);
+                              }}
+                            >
+                              ✕
+                            </IconButton>
+                          </Paper>
+                        ))}
+                      </Stack>
+                    </Box>
+                  )}
+
+                  {medications.length === 0 && (
+                    <Alert severity="info" icon="ℹ️">
+                      No medications added yet. Use the form above to add medications.
+                    </Alert>
+                  )}
+                </Paper>
+              </Grid>
+
+              {/* Section 3: Allergies & Adverse Reactions */}
+              <Grid item xs={12}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 4,
+                    borderRadius: 3,
+                    border: '2px solid',
+                    borderColor: 'warning.main',
+                    bgcolor: 'background.paper',
+                    transition: 'all 0.3s',
+                    '&:hover': {
+                      boxShadow: 4,
+                    }
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                    <Avatar
+                      sx={{
+                        bgcolor: 'warning.main',
+                        width: 48,
+                        height: 48,
                         mr: 2,
                       }}
                     >
                       <LocalHospitalIcon />
                     </Avatar>
                     <Box>
-                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                        Allergies & Adverse Reactions
-                        <Chip label="Optional" size="small" sx={{ ml: 1 }} />
+                      <Typography variant="h6" sx={{ fontWeight: 700, color: 'warning.main' }}>
+                        3. Allergies & Adverse Reactions
+                        <Chip label="Optional" size="small" color="warning" variant="outlined" sx={{ ml: 1 }} />
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Known allergies and adverse drug reactions
+                        Document known allergies and previous adverse reactions
                       </Typography>
                     </Box>
                   </Box>
@@ -1185,17 +1518,12 @@ Examples:
                         fullWidth
                         multiline
                         rows={3}
-                        placeholder="List any known allergies and adverse reactions...
-
-Examples:
-• Drug allergies (penicillin, sulfa, etc.)
-• Food allergies
-• Environmental allergies
-• Previous adverse drug reactions
-• Severity of reactions"
+                        placeholder="List any known allergies (one per line)...&#10;&#10;Examples:&#10;• Penicillin - Rash and hives&#10;• Sulfa drugs - Severe reaction&#10;• Peanuts - Anaphylaxis&#10;• Latex - Contact dermatitis&#10;&#10;Leave blank if no known allergies"
+                        helperText="Enter allergies one per line (optional - leave blank if none)"
                         sx={{
                           '& .MuiOutlinedInput-root': {
                             borderRadius: 2,
+                            bgcolor: 'grey.50'
                           }
                         }}
                       />
@@ -1204,42 +1532,265 @@ Examples:
                 </Paper>
               </Grid>
 
-              {/* Vital Signs */}
+              {/* Section 4: Laboratory Results */}
               <Grid item xs={12}>
                 <Paper
                   elevation={0}
                   sx={{
-                    p: 3,
+                    p: 4,
                     borderRadius: 3,
-                    border: '1px solid',
-                    borderColor: 'divider',
+                    border: '2px solid',
+                    borderColor: 'info.main',
                     bgcolor: 'background.paper',
+                    transition: 'all 0.3s',
+                    '&:hover': {
+                      boxShadow: 4,
+                    }
                   }}
                 >
                   <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
                     <Avatar
                       sx={{
-                        bgcolor: 'secondary.50',
-                        color: 'secondary.main',
-                        width: 40,
-                        height: 40,
+                        bgcolor: 'info.main',
+                        width: 48,
+                        height: 48,
+                        mr: 2,
+                      }}
+                    >
+                      🔬
+                    </Avatar>
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 700, color: 'info.main' }}>
+                        4. Laboratory Results
+                        <Chip label="Optional" size="small" color="info" variant="outlined" sx={{ ml: 1 }} />
+                      </Typography>
+                      <Typography variant="body2" color="text.secondary">
+                        Add lab test results with structured fields
+                      </Typography>
+                    </Box>
+                  </Box>
+
+                  {/* Lab Results Input Form */}
+                  <Box sx={{ mb: 3 }}>
+                    <Grid container spacing={2}>
+                      <Grid item xs={12} md={4}>
+                        <FormControl fullWidth>
+                          <InputLabel>Test Name</InputLabel>
+                          <Select
+                            value={currentLab.testName}
+                            label="Test Name"
+                            onChange={(e) => setCurrentLab({ ...currentLab, testName: e.target.value })}
+                            sx={{ borderRadius: 2 }}
+                          >
+                            <MenuItem value="WBC">WBC (White Blood Cells)</MenuItem>
+                            <MenuItem value="Hemoglobin">Hemoglobin</MenuItem>
+                            <MenuItem value="Hematocrit">Hematocrit</MenuItem>
+                            <MenuItem value="Platelets">Platelets</MenuItem>
+                            <MenuItem value="Glucose">Glucose (Blood Sugar)</MenuItem>
+                            <MenuItem value="HbA1c">HbA1c (Glycated Hemoglobin)</MenuItem>
+                            <MenuItem value="Cholesterol">Total Cholesterol</MenuItem>
+                            <MenuItem value="LDL">LDL Cholesterol</MenuItem>
+                            <MenuItem value="HDL">HDL Cholesterol</MenuItem>
+                            <MenuItem value="Triglycerides">Triglycerides</MenuItem>
+                            <MenuItem value="Creatinine">Creatinine</MenuItem>
+                            <MenuItem value="BUN">BUN (Blood Urea Nitrogen)</MenuItem>
+                            <MenuItem value="ALT">ALT (Liver Function)</MenuItem>
+                            <MenuItem value="AST">AST (Liver Function)</MenuItem>
+                            <MenuItem value="TSH">TSH (Thyroid)</MenuItem>
+                            <MenuItem value="T3">T3 (Thyroid)</MenuItem>
+                            <MenuItem value="T4">T4 (Thyroid)</MenuItem>
+                            <MenuItem value="Sodium">Sodium</MenuItem>
+                            <MenuItem value="Potassium">Potassium</MenuItem>
+                            <MenuItem value="Calcium">Calcium</MenuItem>
+                            <MenuItem value="Other">Other (Custom)</MenuItem>
+                          </Select>
+                        </FormControl>
+                      </Grid>
+                      <Grid item xs={12} md={3}>
+                        <TextField
+                          fullWidth
+                          label={currentLab.testName === 'Other' ? 'Custom Test Name' : 'Value'}
+                          placeholder={currentLab.testName === 'Other' ? 'Enter test name' : 'e.g., 7.2, 14.5'}
+                          value={currentLab.value}
+                          onChange={(e) => setCurrentLab({ ...currentLab, value: e.target.value })}
+                          sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                        />
+                      </Grid>
+                      <Grid item xs={12} md={2}>
+                        <TextField
+                          fullWidth
+                          label="Unit"
+                          placeholder="e.g., mg/dL, g/dL"
+                          value={currentLab.unit}
+                          onChange={(e) => setCurrentLab({ ...currentLab, unit: e.target.value })}
+                          sx={{ '& .MuiOutlinedInput-root': { borderRadius: 2 } }}
+                        />
+                      </Grid>
+                      <Grid item xs={12} md={2}>
+                        <FormControl fullWidth>
+                          <InputLabel>Status</InputLabel>
+                          <Select
+                            value={currentLab.status}
+                            label="Status"
+                            onChange={(e) => setCurrentLab({ ...currentLab, status: e.target.value })}
+                            sx={{ borderRadius: 2 }}
+                          >
+                            <MenuItem value="Normal">Normal</MenuItem>
+                            <MenuItem value="Low">Low</MenuItem>
+                            <MenuItem value="High">High</MenuItem>
+                            <MenuItem value="Critical">Critical</MenuItem>
+                            <MenuItem value="Borderline">Borderline</MenuItem>
+                          </Select>
+                        </FormControl>
+                      </Grid>
+                      <Grid item xs={12} md={1}>
+                        <Button
+                          fullWidth
+                          variant="contained"
+                          color="info"
+                          onClick={() => {
+                            if (currentLab.testName && currentLab.value.trim()) {
+                              const newLab = {
+                                testName: currentLab.testName,
+                                value: currentLab.value.trim(),
+                                unit: currentLab.unit.trim() || 'N/A',
+                                status: currentLab.status
+                              };
+                              setLabResults([...labResults, newLab]);
+                              // Store as formatted strings for submission
+                              const formattedLab = `${newLab.testName}: ${newLab.value} ${newLab.unit} - ${newLab.status}`;
+                              setValue('labResults', [...(watch('labResults') || []), formattedLab]);
+                              setCurrentLab({ testName: '', value: '', unit: '', status: 'Normal' });
+                            }
+                          }}
+                          disabled={!currentLab.testName || !currentLab.value.trim()}
+                          sx={{ height: 56, borderRadius: 2 }}
+                        >
+                          <AddIcon />
+                        </Button>
+                      </Grid>
+                    </Grid>
+                  </Box>
+
+                  {/* Added Lab Results List */}
+                  {labResults.length > 0 && (
+                    <Box sx={{ mb: 2 }}>
+                      <Typography variant="subtitle2" sx={{ mb: 1, fontWeight: 600 }}>
+                        Added Lab Results ({labResults.length})
+                      </Typography>
+                      <Grid container spacing={1}>
+                        {labResults.map((lab, index) => (
+                          <Grid item xs={12} md={6} key={index}>
+                            <Paper
+                              sx={{
+                                p: 2,
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                bgcolor:
+                                  lab.status === 'Critical' ? 'error.50' :
+                                    lab.status === 'High' ? 'warning.50' :
+                                      lab.status === 'Low' ? 'info.50' :
+                                        'success.50',
+                                border: '1px solid',
+                                borderColor:
+                                  lab.status === 'Critical' ? 'error.main' :
+                                    lab.status === 'High' ? 'warning.main' :
+                                      lab.status === 'Low' ? 'info.main' :
+                                        'success.main',
+                              }}
+                            >
+                              <Box sx={{ flex: 1 }}>
+                                <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                                  {lab.testName}
+                                </Typography>
+                                <Typography variant="body2" color="text.secondary">
+                                  {lab.value} {lab.unit} • <Chip
+                                    label={lab.status}
+                                    size="small"
+                                    color={
+                                      lab.status === 'Critical' ? 'error' :
+                                        lab.status === 'High' ? 'warning' :
+                                          lab.status === 'Low' ? 'info' :
+                                            'success'
+                                    }
+                                    sx={{ height: 20, fontSize: '0.7rem' }}
+                                  />
+                                </Typography>
+                              </Box>
+                              <IconButton
+                                size="small"
+                                color="error"
+                                onClick={() => {
+                                  const newLabs = labResults.filter((_, i) => i !== index);
+                                  setLabResults(newLabs);
+                                  const formattedLabs = newLabs.map(l =>
+                                    `${l.testName}: ${l.value} ${l.unit} - ${l.status}`
+                                  );
+                                  setValue('labResults', formattedLabs);
+                                }}
+                              >
+                                ✕
+                              </IconButton>
+                            </Paper>
+                          </Grid>
+                        ))}
+                      </Grid>
+                    </Box>
+                  )}
+
+                  {labResults.length === 0 && (
+                    <Alert severity="info" icon="📋">
+                      No lab results added yet. Lab results are optional but can help improve diagnostic accuracy.
+                    </Alert>
+                  )}
+                </Paper>
+              </Grid>
+
+              {/* Section 5: Vital Signs */}
+              <Grid item xs={12}>
+                <Paper
+                  elevation={0}
+                  sx={{
+                    p: 4,
+                    borderRadius: 3,
+                    border: '2px solid',
+                    borderColor: 'secondary.main',
+                    bgcolor: 'background.paper',
+                    transition: 'all 0.3s',
+                    '&:hover': {
+                      boxShadow: 4,
+                    }
+                  }}
+                >
+                  <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                    <Avatar
+                      sx={{
+                        bgcolor: 'secondary.main',
+                        width: 48,
+                        height: 48,
                         mr: 2,
                       }}
                     >
                       <MonitorHeartIcon />
                     </Avatar>
-                    <Box>
-                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                        Vital Signs
-                        <Chip label="Optional" size="small" sx={{ ml: 1 }} />
+                    <Box sx={{ flex: 1 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 700, color: 'secondary.main' }}>
+                        5. Vital Signs
+                        <Chip label="Optional" size="small" color="secondary" variant="outlined" sx={{ ml: 1 }} />
                       </Typography>
                       <Typography variant="body2" color="text.secondary">
-                        Current vital signs and measurements
+                        Current physiological measurements
                       </Typography>
                     </Box>
                   </Box>
 
+                  <Alert severity="info" icon="📊" sx={{ mb: 3 }}>
+                    <strong>Reference Ranges:</strong> BP: 90-140/60-90 mmHg | HR: 60-100 bpm | Temp: 36.1-37.2°C | RR: 12-20/min | Glucose: 70-100 mg/dL
+                  </Alert>
+
                   <Grid container spacing={3}>
+                    {/* Blood Pressure */}
                     <Grid item xs={12} sm={6} md={4}>
                       <Controller
                         name="vitals.bloodPressure"
@@ -1249,17 +1800,26 @@ Examples:
                             {...field}
                             fullWidth
                             label="Blood Pressure"
-                            placeholder="e.g., 120/80 mmHg"
+                            placeholder="120/80"
                             InputProps={{
                               startAdornment: (
-                                <Box sx={{ mr: 1, color: 'text.secondary' }}>
+                                <Box sx={{ mr: 1, fontSize: '1.5rem' }}>
                                   🩸
                                 </Box>
+                              ),
+                              endAdornment: (
+                                <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
+                                  mmHg
+                                </Typography>
                               ),
                             }}
                             sx={{
                               '& .MuiOutlinedInput-root': {
                                 borderRadius: 2,
+                                bgcolor: 'grey.50',
+                                '&:hover': {
+                                  bgcolor: 'white',
+                                }
                               }
                             }}
                           />
@@ -1267,6 +1827,7 @@ Examples:
                       />
                     </Grid>
 
+                    {/* Heart Rate */}
                     <Grid item xs={12} sm={6} md={4}>
                       <Controller
                         name="vitals.heartRate"
@@ -1277,7 +1838,7 @@ Examples:
                             fullWidth
                             type="number"
                             label="Heart Rate"
-                            placeholder="e.g., 72"
+                            placeholder="72"
                             value={field.value || ''}
                             onChange={(e) =>
                               field.onChange(
@@ -1286,12 +1847,12 @@ Examples:
                             }
                             InputProps={{
                               startAdornment: (
-                                <Box sx={{ mr: 1, color: 'text.secondary' }}>
+                                <Box sx={{ mr: 1, fontSize: '1.5rem' }}>
                                   💓
                                 </Box>
                               ),
                               endAdornment: (
-                                <Typography variant="caption" color="text.secondary">
+                                <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
                                   bpm
                                 </Typography>
                               ),
@@ -1299,6 +1860,10 @@ Examples:
                             sx={{
                               '& .MuiOutlinedInput-root': {
                                 borderRadius: 2,
+                                bgcolor: 'grey.50',
+                                '&:hover': {
+                                  bgcolor: 'white',
+                                }
                               }
                             }}
                           />
@@ -1306,6 +1871,7 @@ Examples:
                       />
                     </Grid>
 
+                    {/* Temperature */}
                     <Grid item xs={12} sm={6} md={4}>
                       <Controller
                         name="vitals.temperature"
@@ -1316,7 +1882,7 @@ Examples:
                             fullWidth
                             type="number"
                             label="Temperature"
-                            placeholder="e.g., 36.5"
+                            placeholder="36.5"
                             value={field.value || ''}
                             onChange={(e) =>
                               field.onChange(
@@ -1325,12 +1891,12 @@ Examples:
                             }
                             InputProps={{
                               startAdornment: (
-                                <Box sx={{ mr: 1, color: 'text.secondary' }}>
+                                <Box sx={{ mr: 1, fontSize: '1.5rem' }}>
                                   🌡️
                                 </Box>
                               ),
                               endAdornment: (
-                                <Typography variant="caption" color="text.secondary">
+                                <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
                                   °C
                                 </Typography>
                               ),
@@ -1338,6 +1904,10 @@ Examples:
                             sx={{
                               '& .MuiOutlinedInput-root': {
                                 borderRadius: 2,
+                                bgcolor: 'grey.50',
+                                '&:hover': {
+                                  bgcolor: 'white',
+                                }
                               }
                             }}
                           />
@@ -1345,6 +1915,7 @@ Examples:
                       />
                     </Grid>
 
+                    {/* Respiratory Rate */}
                     <Grid item xs={12} sm={6} md={4}>
                       <Controller
                         name="vitals.respiratoryRate"
@@ -1355,7 +1926,7 @@ Examples:
                             fullWidth
                             type="number"
                             label="Respiratory Rate"
-                            placeholder="e.g., 16"
+                            placeholder="16"
                             value={field.value || ''}
                             onChange={(e) =>
                               field.onChange(
@@ -1364,12 +1935,12 @@ Examples:
                             }
                             InputProps={{
                               startAdornment: (
-                                <Box sx={{ mr: 1, color: 'text.secondary' }}>
+                                <Box sx={{ mr: 1, fontSize: '1.5rem' }}>
                                   🫁
                                 </Box>
                               ),
                               endAdornment: (
-                                <Typography variant="caption" color="text.secondary">
+                                <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
                                   /min
                                 </Typography>
                               ),
@@ -1377,6 +1948,10 @@ Examples:
                             sx={{
                               '& .MuiOutlinedInput-root': {
                                 borderRadius: 2,
+                                bgcolor: 'grey.50',
+                                '&:hover': {
+                                  bgcolor: 'white',
+                                }
                               }
                             }}
                           />
@@ -1384,6 +1959,7 @@ Examples:
                       />
                     </Grid>
 
+                    {/* Blood Glucose */}
                     <Grid item xs={12} sm={6} md={4}>
                       <Controller
                         name="vitals.bloodGlucose"
@@ -1394,7 +1970,7 @@ Examples:
                             fullWidth
                             type="number"
                             label="Blood Glucose"
-                            placeholder="e.g., 95"
+                            placeholder="95"
                             value={field.value || ''}
                             onChange={(e) =>
                               field.onChange(
@@ -1403,12 +1979,12 @@ Examples:
                             }
                             InputProps={{
                               startAdornment: (
-                                <Box sx={{ mr: 1, color: 'text.secondary' }}>
-                                  🩸
+                                <Box sx={{ mr: 1, fontSize: '1.5rem' }}>
+                                  💉
                                 </Box>
                               ),
                               endAdornment: (
-                                <Typography variant="caption" color="text.secondary">
+                                <Typography variant="caption" color="text.secondary" sx={{ ml: 1 }}>
                                   mg/dL
                                 </Typography>
                               ),
@@ -1416,6 +1992,10 @@ Examples:
                             sx={{
                               '& .MuiOutlinedInput-root': {
                                 borderRadius: 2,
+                                bgcolor: 'grey.50',
+                                '&:hover': {
+                                  bgcolor: 'white',
+                                }
                               }
                             }}
                           />
@@ -1698,12 +2278,20 @@ Examples:
                     >
                       <VerifiedUserIcon />
                     </Avatar>
-                    <Box>
-                      <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                        AI Analysis Consent
-                      </Typography>
+                    <Box sx={{ flex: 1 }}>
+                      <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <Typography variant="h6" sx={{ fontWeight: 600 }}>
+                          AI Analysis Consent
+                        </Typography>
+                        <Chip
+                          label="REQUIRED"
+                          size="small"
+                          color="error"
+                          sx={{ fontWeight: 700, fontSize: '0.7rem' }}
+                        />
+                      </Box>
                       <Typography variant="body2" color="text.secondary">
-                        Required for AI-powered diagnostic analysis
+                        Must be checked before submitting
                       </Typography>
                     </Box>
                   </Box>
@@ -2093,11 +2681,32 @@ Examples:
                               >
                                 🤖 AI analysis may take up to 5 minutes to complete
                               </Typography>
+
+                              {/* Show validation errors if any */}
+                              {Object.keys(errors).length > 0 && (
+                                <Alert severity="error" sx={{ mb: 2, textAlign: 'left' }}>
+                                  <Typography variant="body2" fontWeight={600} gutterBottom>
+                                    Please fix the following errors:
+                                  </Typography>
+                                  <ul style={{ margin: 0, paddingLeft: 20 }}>
+                                    {errors.patientId && <li>{errors.patientId.message}</li>}
+                                    {errors.symptoms?.subjective && <li>{errors.symptoms.subjective.message}</li>}
+                                    {errors.medicalHistory && <li>{errors.medicalHistory.message}</li>}
+                                    {errors.consent && <li>{errors.consent.message}</li>}
+                                  </ul>
+                                </Alert>
+                              )}
+
                               <Button
                                 type="submit"
                                 variant="contained"
-                                disabled={!watch('consent') || submitting}
+                                disabled={!watch('consent') || submitting || Object.keys(errors).length > 0}
                                 size="large"
+                                onClick={() => {
+
+
+
+                                }}
                                 sx={{
                                   borderRadius: 3,
                                   px: 4,
@@ -2107,6 +2716,10 @@ Examples:
                                   background: 'linear-gradient(45deg, #667eea, #764ba2)',
                                   '&:hover': {
                                     background: 'linear-gradient(45deg, #5a6fd8, #6a4190)',
+                                  },
+                                  '&:disabled': {
+                                    background: 'grey.300',
+                                    color: 'grey.600',
                                   }
                                 }}
                                 startIcon={submitting ? <ScienceIcon /> : <CheckCircleIcon />}

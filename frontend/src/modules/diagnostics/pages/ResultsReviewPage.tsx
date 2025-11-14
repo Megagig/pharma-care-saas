@@ -413,11 +413,11 @@ const ResultsReviewPage: React.FC = () => {
           break;
         case 'export':
           // Handle export logic
-          console.log('Exporting report...');
+
           break;
         case 'referral':
           // Handle referral creation
-          console.log('Creating referral...', data);
+
           break;
       }
 

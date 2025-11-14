@@ -316,7 +316,7 @@ const UserManagement: React.FC = () => {
       onSuccess: (session) => {
         setSuccessMessage(`Impersonation session created for ${user.firstName} ${user.lastName}.`);
         setErrorMessage(null);
-        console.log('Impersonation session created:', session);
+
         // You would typically redirect or update the auth context here
       },
       onError: (error: any) => {

@@ -233,7 +233,7 @@ const TenantManagement: React.FC = () => {
   ];
 
   useEffect(() => {
-    console.log('TenantManagement component mounted, loading tenants...');
+
     loadTenants();
     loadSubscriptionPlans();
   }, []);
@@ -241,12 +241,6 @@ const TenantManagement: React.FC = () => {
   const loadSubscriptionPlans = async (billingPeriod?: 'monthly' | 'yearly') => {
     try {
       const response = await saasService.getAvailableSubscriptionPlans(billingPeriod);
-      console.log('Available subscription plans:', response.data.plans);
-      console.log('Plans breakdown:', {
-        total: response.data.plans.length,
-        monthly: response.data.plans.filter((p: any) => p.billingPeriod === 'monthly').length,
-        yearly: response.data.plans.filter((p: any) => p.billingPeriod === 'yearly').length,
-      });
       setSubscriptionPlans(response.data.plans || []);
     } catch (err) {
       console.error('Error loading subscription plans:', err);
@@ -257,15 +251,14 @@ const TenantManagement: React.FC = () => {
   const loadTenants = async () => {
     try {
       setLoading(true);
-      console.log('Loading tenants...');
+
       const response = await saasService.getTenants();
-      console.log('Tenants API response:', response);
 
       if (response.data && response.data.tenants) {
         setTenants(response.data.tenants);
-        console.log(`Loaded ${response.data.tenants.length} tenants`);
+
       } else {
-        console.log('No tenants data in response');
+
         setTenants([]);
       }
     } catch (err: any) {
@@ -349,7 +342,7 @@ const TenantManagement: React.FC = () => {
   const loadTenantCustomization = async (tenantId: string) => {
     try {
       const response = await saasService.getTenantCustomization(tenantId);
-      console.log('Customization response:', response);
+
       setCustomization(response.data?.customization || null);
     } catch (err) {
       console.error('Error loading tenant customization:', err);

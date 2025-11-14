@@ -73,11 +73,11 @@ interface MedicationStore {
 const medicationService = {
   async getMedications(filters: MedicationFilters) {
     // This should be implemented to call your actual API
-    console.log('Fetching medications with filters:', filters);
+
     return { success: true, data: [], pagination: { page: 1, limit: 10, total: 0, pages: 0 } };
   },
   async getMedicationsByPatient(patientId: string) {
-    console.log('Fetching medications for patient:', patientId);
+
     return { success: true, data: [] };
   },
   async createMedication(data: MedicationFormData) {
@@ -101,15 +101,15 @@ const medicationService = {
     return { success: true, data: fullMedication };
   },
   async deleteMedication(id: string) {
-    console.log('Deleting medication:', id);
+
     return { success: true };
   },
   async getMedicationById(id: string) {
-    console.log('Fetching medication by id:', id);
+
     return { success: true, data: null };
   },
   async updateMedicationStatus(id: string, status: string) {
-    console.log('Updating medication status:', id, status);
+
     return { success: true, data: { status } };
   },
 };
@@ -324,7 +324,7 @@ export const useMedicationStore = create<MedicationStore>()(
       },
 
       discontinueMedication: async (id, reason) => {
-        console.log('Discontinuing medication:', id, 'Reason:', reason);
+
         const { updateMedicationStatus } = get();
         return await updateMedicationStatus(id, 'discontinued');
       },

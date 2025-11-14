@@ -191,7 +191,7 @@ const DiagnosticReferralsPage: React.FC = () => {
         () => {
           handleMenuClose();
           // Show success notification instead of alert
-          console.log(`Referral document downloaded as ${filename}`);
+
         },
         (error) => {
           console.error('Download failed:', error);
@@ -213,17 +213,11 @@ const DiagnosticReferralsPage: React.FC = () => {
     }
 
     try {
-      console.log('Sending referral electronically:', {
-        caseId: sendingReferral.caseId,
-        data
-      });
 
       await sendMutation.mutateAsync({
         caseId: sendingReferral.caseId,
         data,
       });
-
-      console.log('Referral sent successfully');
 
       // Clear the sending referral state
       setSendingReferral(null);
@@ -264,18 +258,11 @@ const DiagnosticReferralsPage: React.FC = () => {
     }
 
     try {
-      console.log('Saving referral edit:', {
-        caseId: editingReferral.caseId,
-        contentLength: content.length,
-        content: content.substring(0, 100) + '...' // Log first 100 chars for debugging
-      });
 
       const result = await updateMutation.mutateAsync({
         caseId: editingReferral.caseId,
         content,
       });
-
-      console.log('Save successful:', result);
 
       // Refetch the data to get updated content
       await refetch();

@@ -45,7 +45,7 @@ class ServiceWorkerCacheManager {
 
             // Listen for service worker updates
             navigator.serviceWorker.addEventListener('controllerchange', () => {
-                console.log('Service Worker updated');
+
                 this.clearExpiredCaches();
             });
         } catch (error) {
@@ -60,7 +60,7 @@ class ServiceWorkerCacheManager {
         try {
             const cache = await caches.open(CACHE_CONFIG.STATIC_CACHE);
             await cache.addAll(urls);
-            console.log('Static assets cached successfully');
+
         } catch (error) {
             console.error('Failed to cache static assets:', error);
         }
@@ -195,7 +195,6 @@ class ServiceWorkerCacheManager {
                 }
             }
 
-            console.log('Expired caches cleared');
         } catch (error) {
             console.error('Failed to clear expired caches:', error);
         }
@@ -208,7 +207,7 @@ class ServiceWorkerCacheManager {
         try {
             const cacheNames = Object.values(CACHE_CONFIG).filter(name => typeof name === 'string');
             await Promise.all(cacheNames.map(name => caches.delete(name as string)));
-            console.log('All caches cleared');
+
         } catch (error) {
             console.error('Failed to clear all caches:', error);
         }
@@ -277,7 +276,7 @@ class ServiceWorkerCacheManager {
 
                 // Register background sync
                 await (registration as any).sync.register(tag);
-                console.log(`Background sync scheduled for: ${tag}`);
+
             }
         } catch (error) {
             console.error('Failed to schedule background sync:', error);

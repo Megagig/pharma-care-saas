@@ -171,7 +171,7 @@ const OptimizedChatInterface: React.FC<OptimizedChatInterfaceProps> = ({
   const handleReply = useCallback((message: Message) => {
     // Focus message input and set reply context
     // This would be implemented based on your MessageInput component
-    console.log('Reply to message:', message._id);
+
   }, []);
 
   // Handle message edit
@@ -253,7 +253,7 @@ const OptimizedChatInterface: React.FC<OptimizedChatInterfaceProps> = ({
   // Handle thread view
   const handleViewThread = useCallback((threadId: string) => {
     // Navigate to thread view
-    console.log('View thread:', threadId);
+
   }, []);
 
   // Calculate container height

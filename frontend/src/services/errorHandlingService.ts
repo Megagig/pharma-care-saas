@@ -268,7 +268,6 @@ export class ErrorHandlingService {
         this.retryAttempts.set(retryKey, currentAttempts + 1);
 
         setTimeout(() => {
-            console.log(`Auto-retrying ${context} (attempt ${currentAttempts + 1})`);
             // The actual retry logic would be implemented by the calling code
             // This is just scheduling the retry
         }, delay * Math.pow(2, currentAttempts)); // Exponential backoff

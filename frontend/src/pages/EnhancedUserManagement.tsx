@@ -225,9 +225,9 @@ const EnhancedUserManagement: React.FC = () => {
 
             // Debug logging
             if (usersRes.success && usersRes.data?.users?.length > 0) {
-                console.log('Sample user data:', usersRes.data.users[0]);
-                console.log('User roles field:', usersRes.data.users[0].roles);
-                console.log('User assignedRoles field:', usersRes.data.users[0].assignedRoles);
+
+
+
             }
         } catch (error) {
             console.error('Error fetching data:', error);
@@ -1161,8 +1161,8 @@ function RolesHierarchyTab({ roles, roleHierarchy, loading, fetchRoleHierarchy }
 
     // Debug: Log roles data
     React.useEffect(() => {
-        console.log('Roles Hierarchy Tab - Roles:', roles?.length || 0);
-        console.log('Roles Hierarchy Tab - RoleHierarchy:', roleHierarchy?.length || 0);
+
+
     }, [roles, roleHierarchy]);
 
     const handleToggleExpand = (roleId: string) => {
@@ -1430,14 +1430,13 @@ function PermissionsMatrixTab({ permissions, roles, loading, onRefresh }: any) {
 
         // Prevent duplicate clicks
         if (updatingPermission === toggleKey) {
-            console.log('Already updating this permission, please wait...');
+
             return;
         }
 
         setUpdatingPermission(toggleKey);
 
         try {
-            console.log('Toggle clicked:', { roleId, permissionId, currentlyHas });
 
             // Find the role
             const role = roles.find((r: any) => r._id === roleId);
@@ -1447,11 +1446,8 @@ function PermissionsMatrixTab({ permissions, roles, loading, onRefresh }: any) {
                 return;
             }
 
-            console.log('Found role:', role);
-
             // Get current permissions
             const currentPermissions = role.permissions || [];
-            console.log('Current permissions:', currentPermissions);
 
             // Find the permission name
             const permission = permissions.find((p: any) => p._id === permissionId);
@@ -1461,11 +1457,8 @@ function PermissionsMatrixTab({ permissions, roles, loading, onRefresh }: any) {
                 return;
             }
 
-            console.log('Found permission:', permission);
-
             // Use action field (backend expects this) or fallback to name
             const permissionAction = permission.action || permission.name;
-            console.log('Permission action to use:', permissionAction);
 
             let updatedPermissions;
             if (currentlyHas) {
@@ -1473,21 +1466,17 @@ function PermissionsMatrixTab({ permissions, roles, loading, onRefresh }: any) {
                 updatedPermissions = currentPermissions.filter(
                     (p: string) => p !== permissionAction && p !== permission.name
                 );
-                console.log('Removing permission', permissionAction, 'from role', role.name);
+
             } else {
                 // Add permission using action field
                 updatedPermissions = [...currentPermissions, permissionAction];
-                console.log('Adding permission', permissionAction, 'to role', role.name);
-            }
 
-            console.log('Updated permissions:', updatedPermissions);
+            }
 
             // Update role with new permissions
             const response = await rbacService.updateRole(roleId, {
                 permissions: updatedPermissions
             });
-
-            console.log('Update response:', response);
 
             // Refresh data
             await fetchPermissionMatrix();
@@ -2132,7 +2121,7 @@ function AuditTrailTab({ auditLogs, loading }: any) {
         try {
             const response = await rbacService.exportAuditLogs({ format: 'csv' });
             // Handle download
-            console.log('Exporting logs:', response);
+
         } catch (error) {
             console.error('Error exporting logs:', error);
         }

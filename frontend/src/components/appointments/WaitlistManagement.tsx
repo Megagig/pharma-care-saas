@@ -290,7 +290,7 @@ const WaitlistManagement: React.FC = () => {
   const cancelWaitlistMutation = useMutation({
     mutationFn: (entryId: string) => appointmentService.cancelWaitlistEntry(entryId),
     onSuccess: () => {
-      console.log('Cancel waitlist mutation succeeded');
+
       queryClient.invalidateQueries({ queryKey: ['waitlist'] });
       queryClient.invalidateQueries({ queryKey: ['waitlist-stats'] });
       setSnackbar({
@@ -333,7 +333,7 @@ const WaitlistManagement: React.FC = () => {
   const notifyPatientMutation = useMutation({
     mutationFn: (entryId: string) => appointmentService.notifyWaitlistPatient(entryId),
     onSuccess: () => {
-      console.log('Notify patient mutation succeeded');
+
       setSnackbar({
         open: true,
         message: 'Patient notified successfully',
@@ -365,8 +365,7 @@ const WaitlistManagement: React.FC = () => {
       return response;
     },
     onSuccess: async (response, variables) => {
-      console.log('Schedule appointment mutation succeeded');
-      
+
       // Mark waitlist entry as fulfilled
       if (selectedWaitlistEntry) {
         try {
@@ -450,13 +449,12 @@ const WaitlistManagement: React.FC = () => {
     if (newEntry.preferredPharmacistId) {
       cleanedEntry.preferredPharmacistId = newEntry.preferredPharmacistId;
     }
-    
-    console.log('Sending waitlist data:', cleanedEntry);
+
     addToWaitlistMutation.mutate(cleanedEntry);
   };
 
   const handleCancelWaitlist = (entryId: string) => {
-    console.log('Cancel waitlist clicked for entry:', entryId);
+
     cancelWaitlistMutation.mutate(entryId);
   };
 
@@ -465,12 +463,12 @@ const WaitlistManagement: React.FC = () => {
   };
 
   const handleNotifyPatient = (entryId: string) => {
-    console.log('Notify patient clicked for entry:', entryId);
+
     notifyPatientMutation.mutate(entryId);
   };
 
   const handleScheduleNow = (entry: WaitlistEntry) => {
-    console.log('Schedule now clicked for entry:', entry);
+
     setSelectedWaitlistEntry(entry);
     
     // Set default pharmacist - prefer the entry's preferred pharmacist, or first available
@@ -532,9 +530,8 @@ const WaitlistManagement: React.FC = () => {
       description: schedulingData.notes || `Scheduled from waitlist. Urgency: ${selectedWaitlistEntry.urgencyLevel}`
     };
 
-    console.log('Scheduling appointment with data:', appointmentData);
-    console.log('Selected waitlist entry:', selectedWaitlistEntry);
-    console.log('Scheduling data:', schedulingData);
+
+
     scheduleAppointmentMutation.mutate(appointmentData);
   };
 
@@ -1232,7 +1229,7 @@ const WaitlistManagement: React.FC = () => {
                             variant={schedulingData.selectedTime === slot.time ? "contained" : "outlined"}
                             size="small"
                             onClick={() => {
-                              console.log('Selected slot:', slot);
+
                               setSchedulingData(prev => ({ 
                                 ...prev, 
                                 selectedTime: slot.time,

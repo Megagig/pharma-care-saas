@@ -14,9 +14,7 @@ api.interceptors.request.use(
   (config) => {
     // Credentials are already set in the axios instance, but ensure it's always true
     config.withCredentials = true;
-    console.log(
-      'API Request Interceptor - Credentials included for httpOnly cookies'
-    );
+
     return config;
   },
   (error) => Promise.reject(error)
@@ -35,7 +33,7 @@ api.interceptors.response.use(
 
     // If error is 401 (Unauthorized)
     if (error.response?.status === 401) {
-      console.log('Received 401 error, attempting token refresh');
+
       originalRequest._retry = true;
 
       try {
@@ -47,7 +45,7 @@ api.interceptors.response.use(
         );
 
         if (response.status === 200) {
-          console.log('Token refresh successful, retrying original request');
+
           // New access token is automatically set as httpOnly cookie by server
           // Retry original request with the same config
           return axios({

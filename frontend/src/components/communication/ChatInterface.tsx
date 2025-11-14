@@ -337,11 +337,11 @@ const ChatInterface: React.FC<ChatInterfaceProps> = ({
                 conversation={conversation}
                 onAddParticipant={(userId, role) => {
                   // TODO: Implement add participant
-                  console.log('Add participant:', userId, role);
+
                 }}
                 onRemoveParticipant={(userId) => {
                   // TODO: Implement remove participant
-                  console.log('Remove participant:', userId);
+
                 }}
               />
             </Box>

@@ -177,8 +177,7 @@ const UnifiedNotificationCenter: React.FC = () => {
                 },
             };
 
-            console.log('Sending notification data:', notificationData);
-            console.log('User ID:', user.id, 'Type:', typeof user.id);
+
             await notificationService.createNotification(notificationData);
 
             toast.success('Notification sent successfully!');

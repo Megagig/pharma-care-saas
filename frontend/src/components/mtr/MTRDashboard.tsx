@@ -231,7 +231,7 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
     useEffect(() => {
         const initializeSession = async () => {
             if (reviewId) {
-                console.log('🔄 Loading existing MTR review:', reviewId);
+
                 const hasPermissions = await checkPermissions();
                 if (!hasPermissions) {
                     console.error('❌ No permissions to load MTR review');
@@ -251,16 +251,9 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
         const stepParam = searchParams.get('step');
         const urlStep = stepParam ? parseInt(stepParam, 10) : null;
 
-        console.log(
-            'URL sync effect - currentStep:',
-            currentStep,
-            'urlStep:',
-            urlStep
-        );
-
         // Only update URL if it's different from current step
         if (urlStep !== currentStep) {
-            console.log('Updating URL to step:', currentStep);
+
             const newSearchParams = new URLSearchParams(searchParams);
             newSearchParams.set('step', currentStep.toString());
             setSearchParams(newSearchParams, { replace: true });
@@ -272,7 +265,7 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
         if (currentReview) {
             // Clear any creation errors since we now have a working review
             if (errors.createReview) {
-                console.log('Clearing createReview error since review exists:', currentReview._id);
+
                 clearErrors();
             }
         }
@@ -284,17 +277,15 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
             return;
         }
 
-        console.log('Setting up auto-save for review:', currentReview._id);
-
         const autoSaveInterval = setInterval(async () => {
             if (loading.saveReview) {
                 return;
             }
 
             try {
-                console.log('Auto-saving review with ID:', currentReview._id);
+
                 await saveReview();
-                console.log('Auto-save completed');
+
             } catch (error) {
                 console.error('Auto-save failed:', error);
             }
@@ -465,7 +456,6 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
 
     const handlePatientSelect = useCallback(
         async (patient: Patient) => {
-            console.log('🔍 handlePatientSelect called with patient:', patient);
 
             try {
                 // Convert patientManagement.Patient to stores/types.Patient
@@ -504,7 +494,6 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
 
                 // Check if we need to create a new review
                 if (!currentReview || currentReview.patientId !== patientId) {
-                    console.log('✅ Creating MTR review for patient:', patientId);
 
                     // First check for existing in-progress review
                     const inProgressReview = await loadInProgressReview(patientId);
@@ -543,13 +532,13 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
 
     const handleInterventionRecorded = useCallback(
         (intervention: MTRIntervention) => {
-            console.log('Intervention recorded:', intervention);
+
         },
         []
     );
 
     const handleFollowUpScheduled = useCallback((followUp: MTRFollowUp) => {
-        console.log('Follow-up scheduled:', followUp);
+
     }, []);
 
     // Get current step component
@@ -722,15 +711,12 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
                         <PatientSelection
                             onPatientSelect={async (patient: Patient) => {
                                 try {
-                                    console.log('🔍 Patient selected:', patient);
 
                                     // Get patient ID
                                     const patientId = patient._id || (patient as any).mrn;
                                     if (!patientId) {
                                         throw new Error('Patient ID is missing. Please try selecting a different patient.');
                                     }
-
-                                    console.log('🔍 Using patient ID:', patientId);
 
                                     // Convert patientManagement.Patient to stores/types.Patient
                                     const storePatient: StorePatient = {
@@ -761,14 +747,14 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
                                     selectPatient(storePatient);
 
                                     // Check for existing in-progress review first
-                                    console.log('🔍 Checking for existing MTR review...');
+
                                     const inProgressReview = await loadInProgressReview(patientId);
 
                                     if (!inProgressReview) {
-                                        console.log('✅ Creating new MTR review for patient:', patientId);
+
                                         await createReview(patientId);
                                     } else {
-                                        console.log('✅ Loaded existing MTR review:', inProgressReview._id);
+
                                     }
                                 } catch (error) {
                                     console.error('❌ Error selecting patient:', error);
@@ -777,7 +763,7 @@ const MTRDashboard: React.FC<MTRDashboardProps> = ({
                             }}
                             onNext={() => {
                                 // Move to next step after patient selection
-                                console.log('Moving to next step');
+
                                 goToStep(1);
                             }}
                             selectedPatient={selectedPatient ? {

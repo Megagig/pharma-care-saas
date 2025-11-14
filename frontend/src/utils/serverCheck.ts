@@ -4,7 +4,7 @@ import axios from 'axios';
 export const checkServerHealth = async (): Promise<{ status: string }> => {
   try {
     const response = await axios.get(`${import.meta.env.VITE_API_BASE_URL || 'https://PharmaPilot-nttq.onrender.com/api'}/health`);
-    console.log('Server health check:', response.data);
+
     return response.data;
   } catch (error) {
     console.error('Health check failed:', error);
@@ -24,7 +24,7 @@ export const debugToken = async (): Promise<{
         withCredentials: true, // Include httpOnly cookies
       }
     );
-    console.log('Auth debug response:', response.data);
+
     return response.data;
   } catch (error) {
     console.error('Auth debug failed:', error);

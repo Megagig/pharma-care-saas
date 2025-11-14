@@ -22,7 +22,6 @@ import LockIcon from '@mui/icons-material/Lock';
 import VisibilityIcon from '@mui/icons-material/Visibility';
 import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import toast from 'react-hot-toast';
-import { checkAuthToken, testAPIConnection } from '../utils/authDebug';
 import ThemeToggle from '../components/common/ThemeToggle';
 
 const Login = () => {
@@ -51,25 +50,13 @@ const Login = () => {
     setLoading(true);
 
     try {
-      console.log('Attempting login with:', { email: formData.email });
 
       const response = await login({
         email: formData.email,
         password: formData.password,
       });
 
-      console.log('Login response:', response);
-
       if (response.success) {
-        console.log('Login successful, checking authentication...');
-        const hasToken = await checkAuthToken();
-        console.log('Auth check result:', hasToken);
-
-        if (hasToken) {
-          console.log('Authentication confirmed, testing API...');
-          await testAPIConnection();
-        }
-
         toast.success('Login successful!');
         navigate('/dashboard');
       } else {

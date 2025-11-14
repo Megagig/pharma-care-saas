@@ -50,7 +50,21 @@ import {
   CheckCircle as CheckCircleIcon,
 } from '@mui/icons-material';
 import { useRBAC } from '../../hooks/useRBAC';
-import { rbacService } from '../../services/rbacService';
+import {
+  getAllRoles,
+  getAllPermissions,
+  getPermissionMatrix,
+  createRole,
+  updateRole,
+  deleteRole,
+  getWorkspaceRoles,
+  getWorkspacePermissions,
+  getWorkspacePermissionMatrix,
+  createWorkspaceRole,
+  updateWorkspaceRole,
+  deleteWorkspaceRole,
+  cloneWorkspaceRole,
+} from '../../services/rbacService';
 import type {
   Role,
   Permission,
@@ -60,9 +74,11 @@ import type {
 
 interface RoleManagementProps {
   onRoleSelect?: (role: Role) => void;
+  workspaceScoped?: boolean;
+  workspaceId?: string;
 }
 
-const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect }) => {
+const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect, workspaceScoped = false, workspaceId }) => {
   const { canAccess } = useRBAC();
 
   // State management
@@ -80,6 +96,8 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect }) => {
   const [editingRole, setEditingRole] = useState<Role | null>(null);
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false);
   const [roleToDelete, setRoleToDelete] = useState<Role | null>(null);
+  const [cloneDialogOpen, setCloneDialogOpen] = useState(false);
+  const [roleToClone, setRoleToClone] = useState<Role | null>(null);
 
   // Form state
   const [roleForm, setRoleForm] = useState<RoleFormData>({
@@ -114,9 +132,17 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect }) => {
   const loadData = async () => {
     try {
       setLoading(true);
-      const [rolesResponse, permissionsResponse] = await Promise.all([
-        rbacService.getRoles({ page: 1, limit: 100 }),
-        rbacService.getPermissions({ page: 1, limit: 500 }),
+      // Use workspace-scoped APIs if workspace context is provided
+      const [rolesResponse, permissionsResponse, matrixResponse] = await Promise.all([
+        workspaceScoped
+          ? getWorkspaceRoles({ page: 1, limit: 100 })
+          : getAllRoles({ page: 1, limit: 100 }),
+        workspaceScoped
+          ? getWorkspacePermissions({ page: 1, limit: 500 })
+          : getAllPermissions({ page: 1, limit: 500 }),
+        workspaceScoped
+          ? getWorkspacePermissionMatrix()
+          : getPermissionMatrix({ includeInactive: false }),
       ]);
 
       if (rolesResponse.success) {
@@ -125,7 +151,22 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect }) => {
 
       if (permissionsResponse.success) {
         setPermissions(permissionsResponse.data.permissions);
-        setPermissionCategories(permissionsResponse.data.categories);
+      }
+
+      if (matrixResponse.success && matrixResponse.data.matrix) {
+        // Transform matrix into PermissionCategory format
+        const categories: PermissionCategory[] = Object.entries(matrixResponse.data.matrix).map(
+          ([categoryName, permissions]) => ({
+            name: categoryName,
+            displayName: categoryName
+              .split('_')
+              .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+              .join(' '),
+            description: `Permissions for ${categoryName.replace(/_/g, ' ')}`,
+            permissions: permissions as Permission[],
+          })
+        );
+        setPermissionCategories(categories);
       }
     } catch (error) {
       console.error('Error loading role data:', error);
@@ -179,17 +220,18 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect }) => {
     try {
       if (editingRole) {
         // Update existing role
-        const response = await rbacService.updateRole(
-          editingRole._id,
-          roleForm
-        );
+        const response = workspaceScoped
+          ? await updateWorkspaceRole(editingRole._id, roleForm)
+          : await updateRole(editingRole._id, roleForm);
         if (response.success) {
           showSnackbar('Role updated successfully', 'success');
           await loadData();
         }
       } else {
         // Create new role
-        const response = await rbacService.createRole(roleForm);
+        const response = workspaceScoped
+          ? await createWorkspaceRole(roleForm)
+          : await createRole(roleForm);
         if (response.success) {
           showSnackbar('Role created successfully', 'success');
           await loadData();
@@ -206,7 +248,9 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect }) => {
     if (!roleToDelete) return;
 
     try {
-      const response = await rbacService.deleteRole(roleToDelete._id);
+      const response = workspaceScoped
+        ? await deleteWorkspaceRole(roleToDelete._id)
+        : await deleteRole(roleToDelete._id);
       if (response.success) {
         showSnackbar('Role deleted successfully', 'success');
         await loadData();
@@ -220,12 +264,29 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect }) => {
     }
   };
 
-  const handleCloneRole = async (role: Role) => {
+  const handleCloneRole = (role: Role) => {
+    setRoleToClone(role);
+    setCloneDialogOpen(true);
+    handleMenuClose();
+  };
+
+  const handleConfirmClone = async (newName: string, newDisplayName: string, newDescription: string) => {
+    if (!roleToClone) return;
+
     try {
-      const response = await rbacService.cloneRole(
-        role._id,
-        `${role.name}_copy`
-      );
+      const response = workspaceScoped
+        ? await cloneWorkspaceRole(roleToClone._id, {
+          newName,
+          newDisplayName,
+          newDescription,
+        })
+        : await createRole({
+          name: newName,
+          displayName: newDisplayName,
+          description: newDescription,
+          category: 'custom',
+          permissions: roleToClone.permissions,
+        });
       if (response.success) {
         showSnackbar('Role cloned successfully', 'success');
         await loadData();
@@ -233,8 +294,10 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect }) => {
     } catch (error) {
       console.error('Error cloning role:', error);
       showSnackbar('Failed to clone role', 'error');
+    } finally {
+      setCloneDialogOpen(false);
+      setRoleToClone(null);
     }
-    handleMenuClose();
   };
 
   // Menu handlers
@@ -383,8 +446,8 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect }) => {
                           role.category === 'system'
                             ? 'primary'
                             : role.category === 'workplace'
-                            ? 'secondary'
-                            : 'default'
+                              ? 'secondary'
+                              : 'default'
                         }
                         variant="outlined"
                       />
@@ -574,46 +637,60 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect }) => {
               <Typography variant="h6" gutterBottom>
                 Permissions
               </Typography>
-              {permissionCategories.map((category) => (
-                <Accordion key={category.name}>
-                  <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                    <Typography variant="subtitle1">
-                      {category.displayName}
-                      <Chip
-                        label={
-                          category.permissions.filter((p) =>
-                            roleForm.permissions.includes(p.action)
-                          ).length
-                        }
-                        size="small"
-                        sx={{ ml: 1 }}
-                      />
-                    </Typography>
-                  </AccordionSummary>
-                  <AccordionDetails>
-                    <List dense>
-                      {category.permissions.map((permission) => (
-                        <ListItem key={permission.action} disablePadding>
-                          <ListItemIcon>
-                            <Checkbox
-                              checked={roleForm.permissions.includes(
-                                permission.action
-                              )}
-                              onChange={() =>
-                                handlePermissionToggle(permission.action)
-                              }
-                            />
-                          </ListItemIcon>
-                          <ListItemText
-                            primary={permission.displayName}
-                            secondary={permission.description}
-                          />
-                        </ListItem>
-                      ))}
-                    </List>
-                  </AccordionDetails>
-                </Accordion>
-              ))}
+              {permissionCategories && permissionCategories.length > 0 ? (
+                permissionCategories.map((category) => (
+                  <Accordion key={category.name}>
+                    <AccordionSummary expandIcon={<ExpandMoreIcon />}>
+                      <Typography variant="subtitle1">
+                        {category.displayName}
+                        <Chip
+                          label={
+                            category.permissions && Array.isArray(category.permissions)
+                              ? category.permissions.filter((p) =>
+                                roleForm.permissions.includes(p.action)
+                              ).length
+                              : 0
+                          }
+                          size="small"
+                          sx={{ ml: 1 }}
+                        />
+                      </Typography>
+                    </AccordionSummary>
+                    <AccordionDetails>
+                      <List dense>
+                        {category.permissions && Array.isArray(category.permissions) ? (
+                          category.permissions.map((permission) => (
+                            <ListItem key={permission.action} disablePadding>
+                              <ListItemIcon>
+                                <Checkbox
+                                  checked={roleForm.permissions.includes(
+                                    permission.action
+                                  )}
+                                  onChange={() =>
+                                    handlePermissionToggle(permission.action)
+                                  }
+                                />
+                              </ListItemIcon>
+                              <ListItemText
+                                primary={permission.displayName}
+                                secondary={permission.description}
+                              />
+                            </ListItem>
+                          ))
+                        ) : (
+                          <Alert severity="warning" sx={{ m: 1 }}>
+                            No permissions available for this category.
+                          </Alert>
+                        )}
+                      </List>
+                    </AccordionDetails>
+                  </Accordion>
+                ))
+              ) : (
+                <Alert severity="info" sx={{ mt: 2 }}>
+                  No permission categories available. Please check your backend configuration.
+                </Alert>
+              )}
             </Box>
           </Box>
         </DialogContent>
@@ -649,6 +726,63 @@ const RoleManagement: React.FC<RoleManagementProps> = ({ onRoleSelect }) => {
           <Button onClick={() => setDeleteConfirmOpen(false)}>Cancel</Button>
           <Button onClick={handleDeleteRole} color="error" variant="contained">
             Delete
+          </Button>
+        </DialogActions>
+      </Dialog>
+
+      {/* Clone Role Dialog */}
+      <Dialog
+        open={cloneDialogOpen}
+        onClose={() => setCloneDialogOpen(false)}
+        maxWidth="sm"
+        fullWidth
+      >
+        <DialogTitle>Clone Role</DialogTitle>
+        <DialogContent>
+          <Alert severity="info" sx={{ mb: 2 }}>
+            Create a copy of "{roleToClone?.displayName}" with all its permissions
+          </Alert>
+          <TextField
+            fullWidth
+            label="New Role Name"
+            defaultValue={roleToClone ? `${roleToClone.name}_copy` : ''}
+            id="clone-name"
+            sx={{ mb: 2, mt: 1 }}
+            helperText="Internal name (lowercase, no spaces)"
+          />
+          <TextField
+            fullWidth
+            label="Display Name"
+            defaultValue={roleToClone ? `${roleToClone.displayName} (Copy)` : ''}
+            id="clone-display-name"
+            sx={{ mb: 2 }}
+            helperText="User-friendly name"
+          />
+          <TextField
+            fullWidth
+            label="Description"
+            defaultValue={roleToClone?.description || ''}
+            id="clone-description"
+            multiline
+            rows={3}
+            helperText="Describe what this role can do"
+          />
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={() => setCloneDialogOpen(false)}>Cancel</Button>
+          <Button
+            onClick={() => {
+              const newName = (document.getElementById('clone-name') as HTMLInputElement)?.value;
+              const newDisplayName = (document.getElementById('clone-display-name') as HTMLInputElement)?.value;
+              const newDescription = (document.getElementById('clone-description') as HTMLInputElement)?.value;
+              if (newName && newDisplayName) {
+                handleConfirmClone(newName, newDisplayName, newDescription);
+              }
+            }}
+            variant="contained"
+            startIcon={<ContentCopyIcon />}
+          >
+            Clone Role
           </Button>
         </DialogActions>
       </Dialog>

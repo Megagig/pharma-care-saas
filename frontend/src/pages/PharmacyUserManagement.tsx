@@ -284,7 +284,7 @@ const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
   };
 
   const handleEditUser = (user: DynamicUser) => {
-    console.log('Edit user:', user);
+
     handleUserMenuClose();
   };
 
@@ -299,7 +299,7 @@ const [selectedUserIds, setSelectedUserIds] = useState<string[]>([]);
     try {
       const response = await rbacService.getUserRoles(user._id);
       if (response.success) {
-        console.log('User roles:', response.data);
+
         showSnackbar('User roles loaded successfully', 'success');
       } else {
         showSnackbar('Failed to load user roles', 'error');

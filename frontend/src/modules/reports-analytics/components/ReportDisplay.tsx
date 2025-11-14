@@ -115,10 +115,9 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ reportType, onBack }) => 
   });
 
   // Debug logging
-  console.log('🔍 ReportDisplay - reportType:', reportType);
-  console.log('🔍 ReportDisplay - reportData:', reportData);
-  console.log('🔍 ReportDisplay - loading:', loading);
-  console.log('🔍 ReportDisplay - error:', error);
+
+
+
 
   const reportConfig = useMemo(() => {
     const configs = {
@@ -210,12 +209,12 @@ const ReportDisplay: React.FC<ReportDisplayProps> = ({ reportType, onBack }) => 
   };
 
   const handleReportDateRangeChange = useCallback((newDateRange: DateRange) => {
-    console.log('📅 Report date range changed:', newDateRange);
+
     setReportDateRange(newDateRange);
   }, []);
 
   const handleReportDateRangeApply = useCallback(async (dateRange: DateRange) => {
-    console.log('📅 Applying date range to report:', dateRange);
+
     setReportDateRange(dateRange);
     
     // Regenerate the report with new date range

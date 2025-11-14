@@ -387,7 +387,7 @@ class CommunicationErrorService {
      */
     private showErrorToast(error: CommunicationError): void {
         // This would integrate with your toast notification system
-        console.log('Error Toast:', error.userMessage);
+
     }
 
     /**
@@ -415,7 +415,6 @@ class CommunicationErrorService {
         const currentAttempts = this.retryAttempts.get(retryKey) || 0;
 
         if (currentAttempts >= maxRetries) {
-            console.log(`Max retries (${maxRetries}) reached for ${retryKey}`);
             return;
         }
 
@@ -426,11 +425,10 @@ class CommunicationErrorService {
             initialDelay: this.getRetryDelay(error.type),
             retryCondition: () => true, // We already determined it's retryable
             onRetry: (attempt) => {
-                console.log(`Auto-retrying ${error.type} (attempt ${attempt})`);
             },
             onMaxRetriesReached: () => {
                 this.retryAttempts.delete(retryKey);
-                console.log(`Auto-retry failed for ${error.type}`);
+
             },
         };
 
@@ -484,12 +482,12 @@ class CommunicationErrorService {
                 credentials: 'include'
             });
             if (response.ok) {
-                console.log('Connection check: OK');
+
             } else {
-                console.log('Connection check: Server error');
+
             }
         } catch (error) {
-            console.log('Connection check: Failed');
+
         }
     };
 
@@ -505,7 +503,7 @@ class CommunicationErrorService {
             }
             localStorage.clear();
             sessionStorage.clear();
-            console.log('Cache cleared successfully');
+
         } catch (error) {
             console.error('Failed to clear cache:', error);
         }

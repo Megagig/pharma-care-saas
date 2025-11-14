@@ -216,6 +216,18 @@ class PermissionService {
             planFeatures.includes(feature)
         );
 
+        // Debug logging for development
+        if (process.env.NODE_ENV === 'development' && !hasRequiredFeatures) {
+            logger.warn('Plan feature check failed:', {
+                requiredFeatures: permission.features,
+                availableFeatures: planFeatures.length,
+                hasAiDiagnostics: planFeatures.includes('ai_diagnostics'),
+                firstFiveAvailable: planFeatures.slice(0, 5),
+                subscriptionTier: context.subscription?.tier,
+                planId: context.plan?._id,
+            });
+        }
+
         if (!hasRequiredFeatures) {
             return {
                 allowed: false,

@@ -414,6 +414,13 @@ appointmentSchema.index({ status: 1, scheduledDate: 1 });
 appointmentSchema.index({ 'reminders.scheduledFor': 1, 'reminders.sent': 1 });
 appointmentSchema.index({ createdAt: -1 });
 
+// Indexes for related records (critical for engagement integration performance)
+appointmentSchema.index({ 'relatedRecords.diagnosticCaseId': 1 });
+appointmentSchema.index({ 'relatedRecords.mtrSessionId': 1 });
+appointmentSchema.index({ 'relatedRecords.clinicalInterventionId': 1 });
+appointmentSchema.index({ 'relatedRecords.followUpTaskId': 1 });
+appointmentSchema.index({ 'relatedRecords.visitId': 1 });
+
 // Virtual for patient details
 appointmentSchema.virtual('patient', {
   ref: 'Patient',

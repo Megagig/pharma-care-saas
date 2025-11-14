@@ -450,9 +450,7 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
 
   // Initialize filters on component mount
   useEffect(() => {
-    console.log('Component mount - current filters:', filters); // Debug log
     if (!filters || Object.keys(filters).length === 0) {
-      console.log('Initializing filters...'); // Debug log
       const initFilters = {
         page: 1,
         limit: 10,
@@ -1031,6 +1029,185 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
         </Box>
       )}
 
+      {/* Statistics Cards */}
+      <Box
+        sx={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: 3,
+          mb: 3,
+        }}
+      >
+        <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' }, minWidth: 0 }}>
+          <Card
+            elevation={0}
+            sx={{
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              color: 'white',
+              borderRadius: 3,
+              height: '100%',
+              transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+              '&:hover': {
+                transform: 'translateY(-8px)',
+                boxShadow: '0 12px 40px rgba(102, 126, 234, 0.4)',
+              }
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Box sx={{
+                  bgcolor: 'rgba(255,255,255,0.2)',
+                  borderRadius: 2,
+                  p: 1.5,
+                  mr: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <NoteIcon sx={{ fontSize: 28 }} />
+                </Box>
+                <Box>
+                  <Typography variant="h3" fontWeight="bold" sx={{ mb: 0.5 }}>
+                    {data?.totalNotes || 0}
+                  </Typography>
+                  <Typography variant="body1" sx={{ opacity: 0.9 }}>
+                    Total Notes
+                  </Typography>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Box>
+
+        <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' }, minWidth: 0 }}>
+          <Card
+            elevation={0}
+            sx={{
+              background: 'linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)',
+              color: 'white',
+              borderRadius: 3,
+              height: '100%',
+              transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+              '&:hover': {
+                transform: 'translateY(-8px)',
+                boxShadow: '0 12px 40px rgba(79, 172, 254, 0.4)',
+              }
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Box sx={{
+                  bgcolor: 'rgba(255,255,255,0.2)',
+                  borderRadius: 2,
+                  p: 1.5,
+                  mr: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <ScheduleIcon sx={{ fontSize: 28 }} />
+                </Box>
+                <Box>
+                  <Typography variant="h3" fontWeight="bold" sx={{ mb: 0.5 }}>
+                    {data?.notes?.filter((note: ClinicalNote) => {
+                      const noteDate = new Date(note.createdAt);
+                      const weekAgo = new Date();
+                      weekAgo.setDate(weekAgo.getDate() - 7);
+                      return noteDate >= weekAgo;
+                    }).length || 0}
+                  </Typography>
+                  <Typography variant="body1" sx={{ opacity: 0.9 }}>
+                    Recent (7 days)
+                  </Typography>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Box>
+
+        <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' }, minWidth: 0 }}>
+          <Card
+            elevation={0}
+            sx={{
+              background: 'linear-gradient(135deg, #fa709a 0%, #fee140 100%)',
+              color: 'white',
+              borderRadius: 3,
+              height: '100%',
+              transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+              '&:hover': {
+                transform: 'translateY(-8px)',
+                boxShadow: '0 12px 40px rgba(250, 112, 154, 0.4)',
+              }
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Box sx={{
+                  bgcolor: 'rgba(255,255,255,0.2)',
+                  borderRadius: 2,
+                  p: 1.5,
+                  mr: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <SecurityIcon sx={{ fontSize: 28 }} />
+                </Box>
+                <Box>
+                  <Typography variant="h3" fontWeight="bold" sx={{ mb: 0.5 }}>
+                    {data?.notes?.filter((note: ClinicalNote) => note.isConfidential).length || 0}
+                  </Typography>
+                  <Typography variant="body1" sx={{ opacity: 0.9 }}>
+                    Confidential
+                  </Typography>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Box>
+
+        <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' }, minWidth: 0 }}>
+          <Card
+            elevation={0}
+            sx={{
+              background: 'linear-gradient(135deg, #ff6b6b 0%, #feca57 100%)',
+              color: 'white',
+              borderRadius: 3,
+              height: '100%',
+              transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+              '&:hover': {
+                transform: 'translateY(-8px)',
+                boxShadow: '0 12px 40px rgba(255, 107, 107, 0.4)',
+              }
+            }}
+          >
+            <CardContent sx={{ p: 3 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+                <Box sx={{
+                  bgcolor: 'rgba(255,255,255,0.2)',
+                  borderRadius: 2,
+                  p: 1.5,
+                  mr: 2,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  <FilterIcon sx={{ fontSize: 28 }} />
+                </Box>
+                <Box>
+                  <Typography variant="h3" fontWeight="bold" sx={{ mb: 0.5 }}>
+                    {data?.notes?.filter((note: ClinicalNote) => note.priority === 'high' || note.priority === 'urgent').length || 0}
+                  </Typography>
+                  <Typography variant="body1" sx={{ opacity: 0.9 }}>
+                    High Priority
+                  </Typography>
+                </Box>
+              </Box>
+            </CardContent>
+          </Card>
+        </Box>
+      </Box>
+
       {/* Toolbar */}
       <Card
         sx={{
@@ -1485,7 +1662,19 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
         </Box>
       ) : (
         // Desktop Table Layout
-        <Card>
+        <Card
+          elevation={0}
+          sx={{
+            borderRadius: 3,
+            border: `1px solid ${theme.palette.divider}`,
+            background: `linear-gradient(135deg, ${theme.palette.background.paper} 0%, ${theme.palette.grey[50]} 100%)`,
+            boxShadow: '0 4px 20px rgba(0,0,0,0.08)',
+            transition: 'box-shadow 0.3s ease',
+            '&:hover': {
+              boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+            }
+          }}
+        >
           {/* Render DataGrid with simplified conditions */}
           {isLoading || loading.fetchNotes ? (
             <Box
@@ -1496,8 +1685,16 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
               flexDirection="column"
               gap={2}
             >
-              <CircularProgress />
-              <Typography variant="body2" color="text.secondary">
+              <CircularProgress
+                size={48}
+                sx={{
+                  color: theme.palette.primary.main,
+                  '& .MuiCircularProgress-circle': {
+                    strokeLinecap: 'round',
+                  },
+                }}
+              />
+              <Typography variant="body2" color="text.secondary" sx={{ fontWeight: 500 }}>
                 Loading clinical notes...
               </Typography>
             </Box>
@@ -1510,8 +1707,11 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
               flexDirection="column"
               gap={2}
             >
-              <Typography variant="body2" color="error">
-                Error loading notes: {error.message}
+              <Typography variant="h6" color="error">
+                Error loading notes
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                {error.message}
               </Typography>
             </Box>
           ) : (
@@ -1559,14 +1759,37 @@ const ClinicalNotesDashboard: React.FC<ClinicalNotesDashboardProps> = ({
                   sx={{
                     border: 'none',
                     '& .MuiDataGrid-cell': {
-                      borderBottom: '1px solid #f0f0f0',
+                      borderBottom: `1px solid ${theme.palette.divider}`,
+                      fontSize: '0.875rem',
+                      py: 2,
                     },
                     '& .MuiDataGrid-columnHeaders': {
-                      backgroundColor: '#fafafa',
-                      borderBottom: '2px solid #e0e0e0',
+                      background: `linear-gradient(135deg, ${theme.palette.grey[100]} 0%, ${theme.palette.grey[50]} 100%)`,
+                      borderBottom: `2px solid ${theme.palette.primary.main}`,
+                      fontSize: '0.875rem',
+                      fontWeight: 700,
+                      color: theme.palette.text.primary,
+                      '& .MuiDataGrid-columnHeaderTitle': {
+                        fontWeight: 700,
+                      },
                     },
-                    '& .MuiDataGrid-row:hover': {
-                      backgroundColor: '#f5f5f5',
+                    '& .MuiDataGrid-row': {
+                      transition: 'all 0.2s ease',
+                      '&:hover': {
+                        backgroundColor: `${theme.palette.primary.main}08`,
+                        transform: 'translateX(4px)',
+                        boxShadow: `0 2px 8px ${theme.palette.primary.main}20`,
+                      },
+                      '&.Mui-selected': {
+                        backgroundColor: `${theme.palette.primary.main}15`,
+                        '&:hover': {
+                          backgroundColor: `${theme.palette.primary.main}20`,
+                        },
+                      },
+                    },
+                    '& .MuiDataGrid-footerContainer': {
+                      borderTop: `2px solid ${theme.palette.divider}`,
+                      background: `linear-gradient(135deg, ${theme.palette.grey[50]} 0%, ${theme.palette.background.paper} 100%)`,
                     },
                     // Additional CSS to prevent size property issues
                     '& .MuiDataGrid-columnHeader .MuiCheckbox-root': {

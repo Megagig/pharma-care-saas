@@ -45,6 +45,63 @@ export interface PatientAppointment {
   canCancel: boolean;
 }
 
+export interface DashboardStats {
+  upcomingAppointments: number;
+  activeMedications: number;
+  unreadMessages: number;
+  pendingRefills: number;
+}
+
+export interface CurrentMedication {
+  id: string;
+  name: string;
+  dosage: string;
+  frequency: string;
+  refillsRemaining: number;
+  nextRefillDate: string | null;
+  adherenceScore: number;
+}
+
+export interface RecentMessage {
+  id: string;
+  from: string;
+  subject: string;
+  preview: string;
+  timestamp: string;
+  isRead: boolean;
+}
+
+export interface VitalReading {
+  type: 'blood_pressure' | 'weight' | 'glucose' | 'temperature';
+  value: string;
+  unit: string;
+  date: string;
+  status: 'normal' | 'high' | 'low';
+}
+
+export interface DashboardData {
+  user: {
+    firstName: string;
+    lastName: string;
+    workspaceName: string;
+    onboardingCompleted: boolean;
+  };
+  stats: DashboardStats;
+  upcomingAppointments: Array<{
+    id: string;
+    type: string;
+    date: string;
+    time: string;
+    pharmacistName: string;
+    status: string;
+    duration: number;
+  }>;
+  currentMedications: CurrentMedication[];
+  recentMessages: RecentMessage[];
+  recentVitals: VitalReading[];
+  recentHealthRecords: any[];
+}
+
 class PatientPortalService {
   /**
    * Base request method with error handling
@@ -57,14 +114,17 @@ class PatientPortalService {
       // Import the configured API client
       const { default: apiClient } = await import('./apiClient');
 
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        ...(options.headers as Record<string, string> || {}),
+      };
+
       const response = await apiClient({
         url: url,
         method: options.method || 'GET',
         data: options.body ? JSON.parse(options.body as string) : undefined,
-        headers: {
-          'Content-Type': 'application/json',
-          ...(options.headers || {}),
-        },
+        headers,
+        withCredentials: true, // Include httpOnly cookies for patient authentication
       });
 
       return response.data as T;
@@ -115,13 +175,13 @@ class PatientPortalService {
   /**
    * Book a new appointment
    */
-  async bookAppointment(bookingData: BookingData): Promise<ApiResponse<{ 
-    appointment: PatientAppointment; 
-    confirmationCode: string; 
+  async bookAppointment(bookingData: BookingData): Promise<ApiResponse<{
+    appointment: PatientAppointment;
+    confirmationCode: string;
   }>> {
-    return this.makeRequest<ApiResponse<{ 
-      appointment: PatientAppointment; 
-      confirmationCode: string; 
+    return this.makeRequest<ApiResponse<{
+      appointment: PatientAppointment;
+      confirmationCode: string;
     }>>(
       '/patient-portal/appointments',
       {
@@ -143,10 +203,10 @@ class PatientPortalService {
     cursor?: string;
     includeCompleted?: boolean;
     includeCancelled?: boolean;
-  } = {}): Promise<ApiResponse<{ 
-    appointments: PatientAppointment[]; 
-    hasMore: boolean; 
-    nextCursor?: string; 
+  } = {}): Promise<ApiResponse<{
+    appointments: PatientAppointment[];
+    hasMore: boolean;
+    nextCursor?: string;
   }>> {
     const searchParams = new URLSearchParams();
 
@@ -156,10 +216,10 @@ class PatientPortalService {
       }
     });
 
-    return this.makeRequest<ApiResponse<{ 
-      appointments: PatientAppointment[]; 
-      hasMore: boolean; 
-      nextCursor?: string; 
+    return this.makeRequest<ApiResponse<{
+      appointments: PatientAppointment[];
+      hasMore: boolean;
+      nextCursor?: string;
     }>>(
       `/patient-portal/appointments?${searchParams.toString()}`
     );
@@ -234,9 +294,9 @@ class PatientPortalService {
     time: string;
     type: string;
     pharmacistId?: string;
-  }): Promise<ApiResponse<{ 
-    reservationId: string; 
-    expiresAt: string; 
+  }): Promise<ApiResponse<{
+    reservationId: string;
+    expiresAt: string;
   }>> {
     // This would be a custom endpoint for slot reservation
     // For now, we'll simulate it by returning a mock response
@@ -263,6 +323,16 @@ class PatientPortalService {
       message: 'Slot released successfully',
       timestamp: new Date().toISOString(),
     });
+  }
+
+  /**
+   * Get comprehensive dashboard data
+   * Returns stats, appointments, medications, messages, vitals, and health records
+   */
+  async getDashboardData(): Promise<ApiResponse<DashboardData>> {
+    return this.makeRequest<ApiResponse<DashboardData>>(
+      '/patient-portal/dashboard'
+    );
   }
 }
 

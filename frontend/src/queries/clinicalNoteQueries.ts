@@ -30,7 +30,6 @@ export const clinicalNoteKeys = {
 
 // Query hooks
 export const useClinicalNotes = (filters: ClinicalNoteFilters = {}) => {
-  console.log('useClinicalNotes called with filters:', filters); // Debug log
 
   return useQuery({
     queryKey: filters.search
@@ -42,13 +41,10 @@ export const useClinicalNotes = (filters: ClinicalNoteFilters = {}) => {
       )
       : clinicalNoteKeys.list(filters),
     queryFn: () => {
-      console.log('Query function called, filters:', filters); // Debug log
       if (filters.search) {
-        console.log('Using search with query:', filters.search); // Debug log
         const { search, ...otherFilters } = filters;
         return clinicalNoteService.searchNotes(search, otherFilters);
       }
-      console.log('Using regular getNotes'); // Debug log
       return clinicalNoteService.getNotes(filters);
     },
     staleTime: 5 * 60 * 1000, // 5 minutes

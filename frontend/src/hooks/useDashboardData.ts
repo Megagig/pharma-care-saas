@@ -15,78 +15,88 @@ interface DashboardData {
     refresh: () => Promise<void>;
 }
 
-export const useDashboardData = (): DashboardData => {
-    const [data, setData] = useState<DashboardData>({
-        stats: {
-            totalPatients: 0,
-            totalClinicalNotes: 0,
-            totalMedications: 0,
-            totalMTRs: 0,
-            totalDiagnostics: 0,
-        },
-        patientsByMonth: [],
-        medicationsByStatus: [],
-        clinicalNotesByType: [],
-        mtrsByStatus: [],
-        patientAgeDistribution: [],
-        monthlyActivity: [],
-        loading: true,
-        error: null,
-        refresh: async () => { },
+export const useDashboardData = (skip: boolean = false): DashboardData => {
+    const [stats, setStats] = useState<DashboardStats>({
+        totalPatients: 0,
+        totalClinicalNotes: 0,
+        totalMedications: 0,
+        totalMTRs: 0,
+        totalDiagnostics: 0,
+        totalAppointments: 0,
+        totalFollowUps: 0,
+        completedToday: 0,
+        portalUsers: 0,
     });
+    const [patientsByMonth, setPatientsByMonth] = useState<ChartDataPoint[]>([]);
+    const [medicationsByStatus, setMedicationsByStatus] = useState<ChartDataPoint[]>([]);
+    const [clinicalNotesByType, setClinicalNotesByType] = useState<ChartDataPoint[]>([]);
+    const [mtrsByStatus, setMtrsByStatus] = useState<ChartDataPoint[]>([]);
+    const [patientAgeDistribution, setPatientAgeDistribution] = useState<ChartDataPoint[]>([]);
+    const [monthlyActivity, setMonthlyActivity] = useState<ChartDataPoint[]>([]);
+    const [workspaceInfo, setWorkspaceInfo] = useState<any>();
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     const fetchDashboardData = useCallback(async () => {
         try {
-            setData(prev => ({ ...prev, loading: true, error: null }));
-
-            console.log('🚀 Fetching optimized dashboard data...');
+            setLoading(true);
+            setError(null);
 
             // Use the optimized dashboard service
             const analytics = await dashboardService.getDashboardAnalytics();
 
-            console.log('✅ Dashboard data received:', analytics);
-
-            setData(prev => ({
-                ...prev,
-                ...analytics,
-                loading: false,
-                error: null,
-            }));
+            setStats(analytics.stats);
+            setPatientsByMonth(analytics.patientsByMonth || []);
+            setMedicationsByStatus(analytics.medicationsByStatus || []);
+            setClinicalNotesByType(analytics.clinicalNotesByType || []);
+            setMtrsByStatus(analytics.mtrsByStatus || []);
+            setPatientAgeDistribution(analytics.patientAgeDistribution || []);
+            setMonthlyActivity(analytics.monthlyActivity || []);
+            // WorkspaceInfo might be part of analytics in the future, for now it's undefined
+            setWorkspaceInfo((analytics as any).workspaceInfo);
+            setLoading(false);
 
         } catch (error) {
             console.error('❌ Error fetching dashboard data:', error);
 
             // Try to get just stats as fallback
             try {
-                console.log('🔄 Attempting to get stats only...');
                 const statsData = await dashboardService.getDashboardAnalytics();
-
-                setData(prev => ({
-                    ...prev,
-                    stats: statsData.stats,
-                    loading: false,
-                    error: 'Some dashboard data may be incomplete',
-                }));
+                setStats(statsData.stats);
+                setError('Some dashboard data may be incomplete');
             } catch (fallbackError) {
                 console.error('❌ Fallback also failed:', fallbackError);
-                setData(prev => ({
-                    ...prev,
-                    loading: false,
-                    error: error instanceof Error ? error.message : 'Failed to load dashboard data',
-                }));
+                setError(error instanceof Error ? error.message : 'Failed to load dashboard data');
             }
+            setLoading(false);
         }
     }, []);
 
     const refresh = useCallback(async () => {
-        console.log('🔄 Refreshing dashboard data...');
         await fetchDashboardData();
     }, [fetchDashboardData]);
 
     useEffect(() => {
-        fetchDashboardData();
-    }, [fetchDashboardData]);
+        // Skip fetching if skip flag is true (e.g., for super admins)
+        if (skip) {
+            setLoading(false);
+            return;
+        }
 
-    // Return data with refresh function - do NOT call setData here
-    return { ...data, refresh };
+        fetchDashboardData();
+    }, [fetchDashboardData, skip]);
+
+    return {
+        stats,
+        patientsByMonth,
+        medicationsByStatus,
+        clinicalNotesByType,
+        mtrsByStatus,
+        patientAgeDistribution,
+        monthlyActivity,
+        workspaceInfo,
+        loading,
+        error,
+        refresh,
+    };
 };

@@ -18,11 +18,10 @@ export const hasAuthenticationCookies = async (): Promise<boolean> => {
 
     // Check if the response indicates cookies exist
     if (response.status === 200 && response.data.hasCookies) {
-      console.log('Cookie check: Authentication cookies found');
+
       return true;
     }
 
-    console.log('Cookie check: No authentication cookies found');
     return false;
   } catch (error) {
     console.error('Cookie check failed:', error);

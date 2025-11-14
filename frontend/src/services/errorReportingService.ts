@@ -114,7 +114,7 @@ class ErrorReportingService {
         window.addEventListener('beforeunload', this.handleBeforeUnload);
 
         this.isInitialized = true;
-        console.log('Error reporting service initialized');
+
     }
 
     /**
@@ -390,7 +390,7 @@ class ErrorReportingService {
         if (process.env.NODE_ENV === 'development') {
             console.group(`🐛 Error Report: ${reportId}`);
             console.error('Error:', error);
-            console.log('Report:', report);
+
             console.groupEnd();
         }
 
@@ -428,10 +428,8 @@ class ErrorReportingService {
                 });
             } else {
                 // Log to console if no endpoint configured
-                console.log('Error Reports (no endpoint configured):', reportsToSend);
             }
 
-            console.log(`Flushed ${reportsToSend.length} error reports`);
         } catch (error) {
             console.error('Failed to flush error reports:', error);
 

@@ -12,6 +12,14 @@ const mongoIdSchema = z
     .string()
     .regex(/^[0-9a-fA-F]{24}$/, 'Invalid MongoDB ObjectId');
 
+// Allow legacy diagnostic case IDs like DX-MH3XX3EM-Z4IJZBFEXLR as well as ObjectIds
+const legacyCaseIdSchema = z
+    .string()
+    .regex(/^DX-[A-Z0-9]+-[A-Z0-9]+$/i, 'Invalid legacy Diagnostic Case ID');
+
+// Some params accept either ObjectId or legacy DX-* caseId
+const caseIdOrMongoIdSchema = z.union([mongoIdSchema, legacyCaseIdSchema]);
+
 const phoneRegex = /^\+234[7-9]\d{9}$/; // Nigerian E.164 format
 
 // Query parameter schemas
@@ -169,7 +177,7 @@ export const createDiagnosticRequestSchema = z.object({
 });
 
 export const diagnosticParamsSchema = z.object({
-    id: mongoIdSchema,
+    id: caseIdOrMongoIdSchema,
 });
 
 export const patientHistoryParamsSchema = z.object({

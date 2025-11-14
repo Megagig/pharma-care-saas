@@ -297,8 +297,19 @@ export function useBackgroundSync() {
  */
 export function useCacheWarming() {
   const queryClient = useQueryClient();
+  const location = useLocation();
 
   useEffect(() => {
+    // Only warm cache on authenticated routes (not public routes)
+    const isPublicRoute = location.pathname.startsWith('/patient-portal') ||
+      location.pathname.startsWith('/login') ||
+      location.pathname.startsWith('/register') ||
+      location.pathname === '/';
+
+    if (isPublicRoute) {
+      return; // Skip cache warming on public routes
+    }
+
     // Warm cache with commonly accessed data during idle time
     const warmCache = async () => {
       // Use requestIdleCallback if available
@@ -306,6 +317,14 @@ export function useCacheWarming() {
 
       scheduleWork(async () => {
         try {
+          // Check if we have auth cookies before attempting to warm cache
+          const hasAuthCookie = document.cookie.includes('accessToken') ||
+            document.cookie.includes('refreshToken');
+
+          if (!hasAuthCookie) {
+            return; // Skip if no auth cookies
+          }
+
           // Warm user profile cache
           await queryClient.prefetchQuery({
             queryKey: queryKeys.user.profile(),
@@ -314,7 +333,7 @@ export function useCacheWarming() {
               const response = await fetch(`${base}/api/user/settings/profile`, {
                 credentials: 'include',
               });
-              if (!response.ok) throw new Error('Failed to warm user profile cache');
+              if (!response.ok) return null; // Silently fail - user not authenticated
               const data = await response.json();
               return data.data; // Extract user data from response
             },
@@ -329,14 +348,15 @@ export function useCacheWarming() {
               const response = await fetch(`${base}/api/workspace/settings`, {
                 credentials: 'include',
               });
-              if (!response.ok) throw new Error('Failed to warm workspace settings cache');
+              if (!response.ok) return null; // Silently fail - user not authenticated
               return response.json();
             },
             staleTime: 30 * 60 * 1000,
           });
 
         } catch (error) {
-          console.warn('Cache warming error:', error);
+          // Silently ignore errors on public routes
+          console.debug('Cache warming skipped:', error);
         }
       });
     };
@@ -345,5 +365,5 @@ export function useCacheWarming() {
     const timeoutId = setTimeout(warmCache, 2000);
 
     return () => clearTimeout(timeoutId);
-  }, [queryClient]);
+  }, [queryClient, location.pathname]);
 }

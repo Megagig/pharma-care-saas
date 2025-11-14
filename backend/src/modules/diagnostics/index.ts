@@ -6,6 +6,7 @@
 // Import routes
 import diagnosticRoutes from './routes/diagnosticRoutes';
 import labRoutes from './routes/labRoutes';
+import labIntegrationRoutes from './routes/labIntegrationRoutes';
 import drugInteractionRoutes from './routes/drugInteractionRoutes';
 import followUpRoutes from './routes/followUp.routes';
 import adherenceRoutes from './routes/adherence.routes';
@@ -88,6 +89,7 @@ export { default as drugInteractionValidators } from './validators/drugInteracti
 export const routes = {
     diagnostics: diagnosticRoutes,
     lab: labRoutes,
+    labIntegration: labIntegrationRoutes,
     drugInteractions: drugInteractionRoutes,
     followUps: followUpRoutes,
     adherence: adherenceRoutes,
@@ -152,6 +154,7 @@ export const moduleConfig = {
     routes: {
         diagnostics: '/api/diagnostics',
         lab: '/api/lab',
+        labIntegration: '/api/lab-integration',
         drugInteractions: '/api/interactions',
         followUps: '/api/diagnostics/follow-ups',
         adherence: '/api/diagnostics/adherence',

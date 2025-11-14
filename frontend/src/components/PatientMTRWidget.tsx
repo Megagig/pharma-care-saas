@@ -86,12 +86,11 @@ export const PatientMTRWidget: React.FC<PatientMTRWidgetProps> = ({
 
     // Prevent multiple clicks
     if (createMTRMutation.isPending) {
-      console.log('MTR creation already in progress, ignoring click');
+
       return;
     }
 
     try {
-      console.log('Starting MTR for patient:', patientId);
 
       const result = await createMTRMutation.mutateAsync({
         patientId,
@@ -100,8 +99,6 @@ export const PatientMTRWidget: React.FC<PatientMTRWidgetProps> = ({
         patientConsent: true,
         confidentialityAgreed: true,
       });
-
-      console.log('MTR creation result:', result);
 
       // Check different possible response structures
       let newMTRId =
@@ -116,16 +113,11 @@ export const PatientMTRWidget: React.FC<PatientMTRWidgetProps> = ({
         throw new Error('Failed to create MTR session - no ID returned');
       }
 
-      console.log('Navigating to MTR:', newMTRId);
-
       if (onStartMTR) {
         onStartMTR(newMTRId);
       } else {
         // Navigate to the correct MTR route
-        console.log(
-          'Navigating to:',
-          `/pharmacy/medication-therapy/${newMTRId}`
-        );
+
         // Use setTimeout to ensure the navigation happens after the current event loop
         setTimeout(() => {
           navigate(`/pharmacy/medication-therapy/${newMTRId}`, {

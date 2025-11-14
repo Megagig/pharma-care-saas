@@ -12,6 +12,11 @@ export interface INotificationData {
     reminderId?: mongoose.Types.ObjectId;
     appointmentId?: mongoose.Types.ObjectId;
     followUpTaskId?: mongoose.Types.ObjectId;
+    requestId?: mongoose.Types.ObjectId;
+    diagnosticCaseId?: mongoose.Types.ObjectId;
+    labResultId?: mongoose.Types.ObjectId;
+    visitId?: mongoose.Types.ObjectId;
+    vitalsId?: mongoose.Types.ObjectId;
     medicationName?: string;
     dosage?: string;
     scheduledTime?: Date;
@@ -22,6 +27,11 @@ export interface INotificationData {
     waitTime?: number;
     escalationLevel?: number;
     actionUrl?: string;
+    approvedQuantity?: number;
+    denialReason?: string;
+    patientName?: string;
+    testName?: string;
+    resultStatus?: string;
     metadata?: Record<string, any>;
 }
 
@@ -52,7 +62,10 @@ export interface INotification extends Document {
     'medication_reminder' | 'missed_medication' | 'reminder_setup' | 'flagged_message' |
     'appointment_reminder' | 'appointment_confirmed' | 'appointment_rescheduled' |
     'appointment_cancelled' | 'followup_task_assigned' | 'followup_task_overdue' |
-    'medication_refill_due' | 'adherence_check_reminder';
+    'medication_refill_due' | 'adherence_check_reminder' |
+    'account_approved' | 'account_suspended' | 'account_reactivated' |
+    'refill_approved' | 'refill_denied' | 'refill_assigned' |
+    'lab_result_available' | 'lab_result_interpretation' | 'vitals_verified' | 'visit_summary_available';
     title: string;
     content: string;
     data: INotificationData;
@@ -155,6 +168,29 @@ const notificationDataSchema = new Schema({
         ref: 'FollowUpTask',
         index: true,
     },
+    requestId: {
+        type: Schema.Types.ObjectId,
+        index: true,
+    },
+    diagnosticCaseId: {
+        type: Schema.Types.ObjectId,
+        ref: 'DiagnosticCase',
+        index: true,
+    },
+    labResultId: {
+        type: Schema.Types.ObjectId,
+        ref: 'DiagnosticCase',
+        index: true,
+    },
+    visitId: {
+        type: Schema.Types.ObjectId,
+        ref: 'Visit',
+        index: true,
+    },
+    vitalsId: {
+        type: Schema.Types.ObjectId,
+        index: true,
+    },
     medicationName: {
         type: String,
     },
@@ -178,6 +214,15 @@ const notificationDataSchema = new Schema({
             },
             message: 'Invalid action URL format',
         },
+    },
+    testName: {
+        type: String,
+    },
+    resultStatus: {
+        type: String,
+    },
+    patientName: {
+        type: String,
     },
     metadata: {
         type: Schema.Types.Mixed,
@@ -247,7 +292,10 @@ const notificationSchema = new Schema({
             'medication_reminder', 'missed_medication', 'reminder_setup', 'flagged_message',
             'appointment_reminder', 'appointment_confirmed', 'appointment_rescheduled',
             'appointment_cancelled', 'followup_task_assigned', 'followup_task_overdue',
-            'medication_refill_due', 'adherence_check_reminder'
+            'medication_refill_due', 'adherence_check_reminder',
+            'account_approved', 'account_suspended', 'account_reactivated',
+            'refill_approved', 'refill_denied', 'refill_assigned',
+            'lab_result_available', 'lab_result_interpretation', 'vitals_verified', 'visit_summary_available'
         ],
         required: true,
         index: true,
@@ -497,7 +545,7 @@ notificationSchema.pre('save', function (this: INotification) {
     // Initialize delivery status for enabled channels
     if (this.isNew) {
         const enabledChannels: string[] = [];
-        
+
         if (this.deliveryChannels.inApp) enabledChannels.push('inApp');
         if (this.deliveryChannels.email) enabledChannels.push('email');
         if (this.deliveryChannels.sms) enabledChannels.push('sms');

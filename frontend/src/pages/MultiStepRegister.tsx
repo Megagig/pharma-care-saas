@@ -450,8 +450,6 @@ const MultiStepRegister = () => {
           payload.workplaceRole = joinForm.workplaceRole;
         }
 
-        console.log('Registration payload:', payload);
-
         await authService.registerWithWorkplace(payload);
       }
 

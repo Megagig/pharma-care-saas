@@ -47,23 +47,18 @@ const EditReferralDialog: React.FC<EditReferralDialogProps> = ({
   };
 
   const handleSave = async () => {
-    console.log('EditReferralDialog: handleSave called', {
-      hasChanges,
-      contentLength: content.length,
-      initialContentLength: initialContent.length,
-    });
 
     if (!hasChanges) {
-      console.log('EditReferralDialog: No changes detected, closing dialog');
+
       onClose();
       return;
     }
 
     try {
       setIsSaving(true);
-      console.log('EditReferralDialog: Calling onSave with content');
+
       await onSave(content);
-      console.log('EditReferralDialog: onSave completed successfully');
+
       setHasChanges(false);
       onClose();
     } catch (error) {

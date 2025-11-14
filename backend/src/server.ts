@@ -4,6 +4,7 @@ config();
 
 import { createServer } from 'http';
 import { Server as SocketIOServer } from 'socket.io';
+import mongoose from 'mongoose';
 import app from './app';
 import connectDB from './config/db';
 import { performanceCollector } from './utils/performanceMonitoring';
@@ -22,6 +23,8 @@ import { closeRedis } from './config/redis'; // CRITICAL: Use shared connection
 import './models/Medication';
 import './models/Conversation';
 import './models/Message';
+import './models/PricingPlan';  // ← CRITICAL: Register PricingPlan model for subscription populate
+import StartupValidationService from './services/StartupValidationService';
 
 const PORT: number = parseInt(process.env.PORT || '5000', 10);
 
@@ -35,12 +38,35 @@ async function initializeServer() {
     await connectDB();
     console.log('✅ Database connected successfully');
 
-    // Seed sample workspaces if none exist
-    try {
-      const seedWorkspaces = (await import('./scripts/seedWorkspaces')).default;
-      await seedWorkspaces();
-    } catch (error) {
-      console.error('⚠️ Error seeding workspaces:', error);
+    // Wait for MongoDB to be fully ready before running validations
+    await new Promise(resolve => setTimeout(resolve, 500));
+    
+    // Run startup validations (sync pricing plans, validate subscriptions)
+    if (mongoose.connection.readyState === 1) {
+      try {
+        await StartupValidationService.runStartupValidations();
+      } catch (error) {
+        console.error('⚠️ Startup validation failed:', error);
+        // Continue anyway - admin can fix via UI
+      }
+    } else {
+      console.log('⚠️ MongoDB not ready, skipping startup validations');
+    }
+
+    // Wait a moment for MongoDB Atlas connection to be fully ready
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    
+    // Verify MongoDB connection is ready
+    if (mongoose.connection.readyState !== 1) {
+      console.log('⚠️ MongoDB not fully connected, skipping workspace seeding');
+    } else {
+      // Seed sample workspaces if none exist
+      try {
+        const seedWorkspaces = (await import('./scripts/seedWorkspaces')).default;
+        await seedWorkspaces();
+      } catch (error) {
+        console.error('⚠️ Error seeding workspaces:', error);
+      }
     }
 
     // Start performance monitoring after DB is connected

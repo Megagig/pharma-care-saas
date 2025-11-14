@@ -382,9 +382,7 @@ const SupportHelpdesk: React.FC = () => {
         // Keep the original assignedTo ID for API calls
         assignedTo: ticket.assignedTo?._id || ticket.assignedTo,
       }));
-      
-      console.log('Loaded tickets:', mappedTickets.length, 'tickets');
-      
+
       setTickets(mappedTickets.length > 0 ? mappedTickets : mockTickets);
     } catch (error) {
       console.error('Error loading tickets:', error);
@@ -422,20 +420,11 @@ const SupportHelpdesk: React.FC = () => {
         ticketsByPriority: metricsData.ticketsByPriority || [],
         ticketsByCategory: metricsData.ticketsByCategory || []
       };
-      
-      console.log('Metrics loaded:', {
-        totalTickets: safeMetrics.totalTickets,
-        chartsData: {
-          status: safeMetrics.ticketsByStatus?.length || 0,
-          priority: safeMetrics.ticketsByPriority?.length || 0,
-          category: safeMetrics.ticketsByCategory?.length || 0
-        }
-      });
-      
+
       setMetrics(safeMetrics);
     } catch (error) {
       console.error('Error loading metrics:', error);
-      console.log('Using mock metrics as fallback');
+
       // Fallback to mock data
       setMetrics(mockMetrics);
     } finally {

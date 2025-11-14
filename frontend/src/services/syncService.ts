@@ -32,13 +32,13 @@ class SyncService {
 
     private handleOnline(): void {
         this.isOnline = true;
-        console.log('Connection restored, starting sync...');
+
         this.syncAll();
     }
 
     private handleOffline(): void {
         this.isOnline = false;
-        console.log('Connection lost, queuing changes for sync...');
+
     }
 
     private startPeriodicSync(): void {
@@ -112,7 +112,6 @@ class SyncService {
 
         try {
             const syncQueue = await offlineStorage.getSyncQueue();
-            console.log(`Starting sync of ${syncQueue.length} items...`);
 
             for (const item of syncQueue) {
                 try {
@@ -141,7 +140,6 @@ class SyncService {
                 result.success = false;
             }
 
-            console.log(`Sync completed: ${result.synced} synced, ${result.failed} failed`);
         } catch (error) {
             console.error('Sync process error:', error);
             result.success = false;
@@ -200,10 +198,10 @@ class SyncService {
             case 'update':
                 // Update the entire MTR with new medication data
                 // This would need to be implemented based on your MTR API structure
-                console.log('Medication sync not fully implemented - requires MTR context');
+
                 break;
             case 'delete':
-                console.log('Medication delete sync not fully implemented');
+
                 break;
         }
     }
@@ -231,7 +229,7 @@ class SyncService {
                 await mtrService.updatePlan(item.data.id, item.data);
                 break;
             case 'delete':
-                console.log('Therapy plan delete sync not implemented');
+
                 break;
         }
     }
@@ -245,7 +243,7 @@ class SyncService {
                 await mtrService.updateIntervention(item.data._id, item.data);
                 break;
             case 'delete':
-                console.log('Intervention delete sync not implemented');
+
                 break;
         }
     }
@@ -259,7 +257,7 @@ class SyncService {
                 await mtrService.updateFollowUp(item.data._id, item.data);
                 break;
             case 'delete':
-                console.log('Follow-up delete sync not implemented');
+
                 break;
         }
     }
@@ -278,7 +276,7 @@ class SyncService {
                 try {
                     await this.syncItem(item);
                     await offlineStorage.removeSyncQueueItem(item.id);
-                    console.log(`Retry successful for item ${item.id}`);
+
                 } catch (error) {
                     console.error(`Retry failed for item ${item.id}:`, error);
                     item.retryCount++;

@@ -57,7 +57,6 @@ import { activityService } from '../../services/activityService';
 import { roleBasedDashboardService } from '../../services/roleBasedDashboardService';
 import DashboardChart from './DashboardChart';
 import SuperAdminDashboard from './SuperAdminDashboard';
-import WorkspaceDebugger from '../../utils/debugWorkspace';
 import QuickActionCard from './QuickActionCard';
 import { useResponsive } from '../../hooks/useResponsive';
 import { useNavigate } from 'react-router-dom';
@@ -276,48 +275,28 @@ const SystemHealthCard: React.FC = () => {
   );
 };
 
-export const ModernDashboard: React.FC = () => {
+const ModernDashboardComponent: React.FC = () => {
+  // CRITICAL: ALL hooks must be called unconditionally at the top
+  // This follows the Rules of Hooks - hooks must be called in the same order every render
+  
   const theme = useTheme();
   const navigate = useNavigate();
   const { isMobile } = useResponsive();
-  const { user } = useAuth(); // Get user from AuthContext
+  const { user } = useAuth();
 
   // Check if user is super admin - pass user role from AuthContext
   const isSuperAdmin = roleBasedDashboardService.isSuperAdmin(user?.role as any);
 
-  // Debug logging for role detection
-  console.log('🔍 Dashboard Role Detection Debug:');
-  console.log('- isSuperAdmin:', isSuperAdmin);
-  console.log('- Current user from AuthContext:', user);
-  console.log('- User role:', user?.role);
-
-  // If super admin, render super admin dashboard instead
-  if (isSuperAdmin) {
-    console.log('✅ Rendering SuperAdminDashboard for super admin user');
-    return <SuperAdminDashboard />;
-  }
-
-  console.log('📊 Rendering regular dashboard for non-super admin user');
-
-  // Dashboard data hooks
+  // Dashboard data hooks - skip for super admins
   const {
     stats,
     workspaceInfo,
     loading: dashboardLoading,
     error: dashboardError,
     refresh: refreshDashboard,
-  } = useDashboardData();
+  } = useDashboardData(isSuperAdmin);
 
-  // Debug functionality for development
-  const handleDebugWorkspace = async () => {
-    if (process.env.NODE_ENV === 'development') {
-      await WorkspaceDebugger.debugCurrentWorkspace();
-      await WorkspaceDebugger.testDashboardEndpoints();
-      WorkspaceDebugger.getCurrentUserInfo();
-    }
-  };
-
-  // Chart data hooks - separate for better performance and real data
+  // Chart data hooks - skip for super admins
   const {
     clinicalNotesByType,
     mtrsByStatus,
@@ -328,21 +307,27 @@ export const ModernDashboard: React.FC = () => {
     loading: chartsLoading,
     error: chartsError,
     refresh: refreshCharts,
-  } = useDashboardCharts();
+  } = useDashboardCharts(isSuperAdmin);
 
   const {
     dashboardMetrics: clinicalMetrics,
     loading: clinicalLoading,
-  } = useClinicalInterventionDashboard('month');
+  } = useClinicalInterventionDashboard('month', isSuperAdmin);
 
   const {
     systemActivities,
     loading: activitiesLoading,
     error: activitiesError,
     refresh: refreshActivities,
-  } = useRecentActivities(10);
+  } = useRecentActivities(10, isSuperAdmin);
 
   const [refreshing, setRefreshing] = useState(false);
+
+  // If super admin, render super admin dashboard instead
+  // This conditional return comes AFTER all hooks are called
+  if (isSuperAdmin) {
+    return <SuperAdminDashboard />;
+  }
 
   // Handle refresh
   const handleRefresh = async () => {
@@ -459,21 +444,6 @@ export const ModernDashboard: React.FC = () => {
           </Box>
 
           <Box display="flex" gap={1}>
-            {/* Debug Panel for Development */}
-            {process.env.NODE_ENV === 'development' && (
-              <Tooltip title="Debug Workspace Data">
-                <IconButton
-                  onClick={handleDebugWorkspace}
-                  sx={{
-                    bgcolor: 'warning.light',
-                    color: 'warning.contrastText',
-                    '&:hover': { bgcolor: 'warning.main' }
-                  }}
-                >
-                  🔍
-                </IconButton>
-              </Tooltip>
-            )}
             <Tooltip title="Refresh Dashboard">
               <IconButton
                 onClick={handleRefresh}
@@ -1160,7 +1130,7 @@ export const ModernDashboard: React.FC = () => {
                         p: 2,
                         borderRadius: 2,
                         border: `1px solid ${theme.palette.divider}`,
-                        background: theme.palette.background.paper,
+                        background: theme.palette.background?.paper || theme.palette.common?.white || '#ffffff',
                       }}
                     >
                       <Typography variant="body2" sx={{ fontWeight: 'bold' }}>
@@ -1798,5 +1768,8 @@ export const ModernDashboard: React.FC = () => {
     </Box>
   );
 };
+
+// Memoized export to prevent unnecessary re-renders
+export const ModernDashboard = React.memo(ModernDashboardComponent);
 
 export default ModernDashboard;

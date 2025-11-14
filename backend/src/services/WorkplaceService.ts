@@ -38,7 +38,15 @@ export class WorkplaceService {
   async createWorkplace(data: CreateWorkplaceData): Promise<IWorkplace> {
     const workplace = new Workplace({
       ...data,
-      verificationStatus: 'unverified',
+      verificationStatus: 'verified', // Auto-verify for patient portal access
+      patientPortalEnabled: true, // Enable patient portal by default
+      patientPortalSettings: {
+        allowSelfRegistration: true,
+        requireEmailVerification: true,
+        requireAdminApproval: true,
+        operatingHours: 'Monday-Friday: 8:00 AM - 5:00 PM',
+        services: ['Prescription Refills', 'Medication Consultation', 'Health Screening'],
+      },
       teamMembers: [data.ownerId], // Owner is automatically added to team
     });
 

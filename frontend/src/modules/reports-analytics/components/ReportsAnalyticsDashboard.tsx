@@ -258,17 +258,17 @@ const ReportsAnalyticsDashboard: React.FC<ReportsAnalyticsDashboardProps> = () =
 
   // Clear any loading states when component mounts (only run once)
   useEffect(() => {
-    console.log('🧹 Clearing any persisted loading states on dashboard mount');
-    console.log('Current loading states:', loading);
-    console.log('Current active report:', activeReport);
+
+
+
     reportsStore.clearAllLoadingStates();
     
     // Test basic reports endpoint connectivity
     const testReportsEndpoint = async () => {
       try {
-        console.log('🔍 Testing reports endpoint connectivity...');
+
         const availableReports = await reportsService.getAvailableReports();
-        console.log('✅ Reports endpoint accessible:', availableReports);
+
       } catch (error) {
         console.error('❌ Reports endpoint test failed:', error);
       }
@@ -431,14 +431,12 @@ const ReportsAnalyticsDashboard: React.FC<ReportsAnalyticsDashboardProps> = () =
   // Store interaction functions
   const handleReportClick = useCallback(
     (reportType: string) => {
-      console.log('🎯 Report clicked:', reportType);
 
       try {
         const reportTypeEnum = reportType as ReportType;
 
         // Update stores directly using the store functions
         setActiveReportStore(reportTypeEnum);
-        console.log('✅ Active report set to:', reportTypeEnum);
 
         // Check if we already have data for this report
         const existingData = reportData[reportTypeEnum];
@@ -456,13 +454,10 @@ const ReportsAnalyticsDashboard: React.FC<ReportsAnalyticsDashboardProps> = () =
           },
         };
         addToHistory(reportTypeEnum, filters);
-        console.log('✅ Added to reports history');
 
         // Add to dashboard recents
         addToRecentlyViewed(reportTypeEnum, filters);
-        console.log('✅ Added to dashboard recents');
 
-        console.log('🎉 Report activation completed successfully');
       } catch (error) {
         console.error('❌ Error handling report click:', error);
       }
@@ -472,16 +467,13 @@ const ReportsAnalyticsDashboard: React.FC<ReportsAnalyticsDashboardProps> = () =
 
   const handleFavoriteToggle = useCallback(
     (reportType: string) => {
-      console.log('⭐ Favorite toggle clicked:', reportType);
 
       try {
         const reportTypeEnum = reportType as ReportType;
 
         // Update store directly
         toggleFavoriteStore(reportTypeEnum);
-        console.log('✅ Store favorite toggled');
 
-        console.log('🎉 Favorite toggle completed successfully');
       } catch (error) {
         console.error('❌ Error toggling favorite:', error);
       }
@@ -494,7 +486,7 @@ const ReportsAnalyticsDashboard: React.FC<ReportsAnalyticsDashboardProps> = () =
 
   // Handle global date range changes
   const handleDateRangeChange = useCallback((newDateRange: DateRange) => {
-    console.log('📅 Global date range changed:', newDateRange);
+
     setGlobalDateRange(newDateRange);
     
     // Update summary stats based on new date range
@@ -507,8 +499,7 @@ const ReportsAnalyticsDashboard: React.FC<ReportsAnalyticsDashboardProps> = () =
 
   // Handle date range application (when user clicks apply)
   const handleDateRangeApply = useCallback(async (dateRange: DateRange) => {
-    console.log('📅 Applying date range to all reports:', dateRange);
-    
+
     // Here you would typically refresh all active reports with the new date range
     // For now, we'll just update the global state
     setGlobalDateRange(dateRange);
@@ -528,7 +519,7 @@ const ReportsAnalyticsDashboard: React.FC<ReportsAnalyticsDashboardProps> = () =
       };
       
       setSummaryStats(mockStats);
-      console.log('✅ Summary stats updated for date range');
+
     } catch (error) {
       console.error('❌ Error updating summary stats:', error);
     }
@@ -536,8 +527,7 @@ const ReportsAnalyticsDashboard: React.FC<ReportsAnalyticsDashboardProps> = () =
 
   // Handle summary stat clicks
   const handleStatClick = useCallback((statType: string) => {
-    console.log('📊 Summary stat clicked:', statType);
-    
+
     // You could navigate to detailed views or filter reports based on the stat clicked
     switch (statType) {
       case 'reports':
@@ -551,18 +541,17 @@ const ReportsAnalyticsDashboard: React.FC<ReportsAnalyticsDashboardProps> = () =
         // Show expanded stats view on mobile
         break;
       default:
-        console.log('Stat click not handled:', statType);
+
     }
   }, [setSelectedCategoryStore]);
 
   // Handle report generation using real API
   const handleGenerateReport = useCallback(
     async (reportType: ReportType) => {
-      console.log('🚀 Generate report clicked for:', reportType);
 
       // Prevent multiple rapid clicks
       if (loading[reportType]) {
-        console.log('⏳ Report already generating, ignoring click');
+
         return;
       }
 
@@ -579,15 +568,12 @@ const ReportsAnalyticsDashboard: React.FC<ReportsAnalyticsDashboardProps> = () =
           },
         };
 
-        console.log('📊 Generating report with selected date range:', globalDateRange);
-
         // Use the store's generateReport method which calls the real API
         await reportsStore.generateReport(reportType, filters);
         
         // Show the report display after successful generation
         setShowReportDisplay(true);
-        
-        console.log('✅ Report generated successfully from API');
+
       } catch (error) {
         console.error('❌ Error generating report:', error);
       }
@@ -622,11 +608,10 @@ const ReportsAnalyticsDashboard: React.FC<ReportsAnalyticsDashboardProps> = () =
   // Handle search with store sync
   const handleSearchChange = useCallback(
     (value: string) => {
-      console.log('🔍 Search query changed:', value);
 
       // Update store directly
       setSearchQueryStore(value);
-      console.log('✅ Store search query updated');
+
     },
     [setSearchQueryStore]
   );
@@ -634,11 +619,10 @@ const ReportsAnalyticsDashboard: React.FC<ReportsAnalyticsDashboardProps> = () =
   // Handle category change with store sync
   const handleCategoryChange = useCallback(
     (category: string) => {
-      console.log('📂 Category changed:', category);
 
       // Update store directly
       setSelectedCategoryStore(category);
-      console.log('✅ Store category updated');
+
     },
     [setSelectedCategoryStore]
   );
@@ -743,7 +727,7 @@ const ReportsAnalyticsDashboard: React.FC<ReportsAnalyticsDashboardProps> = () =
                   variant="outlined"
                   size="small"
                   onClick={() => {
-                    console.log('🔧 Debug: Resetting store and clearing localStorage');
+
                     reportsStore.resetStore();
                     localStorage.removeItem('reports-store');
                     localStorage.removeItem('dashboard-store');

@@ -7,8 +7,9 @@ import {
   rescheduleAppointment,
   cancelAppointment,
   confirmAppointment,
+  getDashboardData,
 } from '../controllers/patientPortalController';
-import { patientAuth, patientAuthOptional } from '../middlewares/patientPortalAuth';
+import { patientPortalAuth } from '../middlewares/patientPortalAuth';
 import { generalRateLimiters, createRateLimiter } from '../middlewares/rateLimiting';
 import {
   validateRequest,
@@ -20,6 +21,11 @@ import {
   availableSlotsQuerySchema,
   myAppointmentsQuerySchema,
 } from '../validators/patientPortalValidators';
+import patientPortalProfileRoutes from './patientPortalProfileRoutes';
+import patientMedicationRoutes from './patientMedication.routes';
+import patientHealthRecordsRoutes from './patientHealthRecords.routes';
+import patientMessagingRoutes from './patientMessaging.routes';
+import patientBillingRoutes from './patientBilling.routes';
 
 const router = express.Router();
 
@@ -83,13 +89,25 @@ router.get(
 // ===============================
 
 /**
+ * GET /api/patient-portal/dashboard
+ * Get comprehensive dashboard data (stats, appointments, medications, messages, vitals)
+ * Requires authentication
+ */
+router.get(
+  '/dashboard',
+  patientPortalAuth,
+  generalRateLimiters.api,
+  getDashboardData
+);
+
+/**
  * POST /api/patient-portal/appointments
  * Book a new appointment
  * Requires authentication
  */
 router.post(
   '/appointments',
-  patientAuth,
+  patientPortalAuth,
   bookingRateLimit,
   validateRequest(bookAppointmentSchema, 'body'),
   bookAppointment
@@ -102,7 +120,7 @@ router.post(
  */
 router.get(
   '/appointments',
-  patientAuth,
+  patientPortalAuth,
   generalRateLimiters.api,
   validateRequest(myAppointmentsQuerySchema, 'query'),
   getMyAppointments
@@ -115,7 +133,7 @@ router.get(
  */
 router.post(
   '/appointments/:id/reschedule',
-  patientAuth,
+  patientPortalAuth,
   modificationRateLimit,
   validateRequest(appointmentParamsSchema, 'params'),
   validateRequest(rescheduleAppointmentSchema, 'body'),
@@ -129,7 +147,7 @@ router.post(
  */
 router.post(
   '/appointments/:id/cancel',
-  patientAuth,
+  patientPortalAuth,
   modificationRateLimit,
   validateRequest(appointmentParamsSchema, 'params'),
   validateRequest(cancelAppointmentSchema, 'body'),
@@ -144,11 +162,61 @@ router.post(
 router.post(
   '/appointments/:id/confirm',
   // Use optional auth middleware - allows both authenticated and token-based confirmation
-  patientAuthOptional,
+  // patientAuthOptional, // TODO: Implement optional auth middleware
   modificationRateLimit,
   validateRequest(appointmentParamsSchema, 'params'),
   validateRequest(confirmAppointmentSchema, 'body'),
   confirmAppointment
 );
+
+// ===============================
+// PROFILE MANAGEMENT ENDPOINTS
+// ===============================
+
+/**
+ * Mount patient profile management routes
+ * All routes under /api/patient-portal/profile/*
+ */
+router.use('/profile', patientPortalProfileRoutes);
+
+// ===============================
+// MEDICATION MANAGEMENT ENDPOINTS
+// ===============================
+
+/**
+ * Mount patient medication management routes
+ * All routes under /api/patient-portal/medications/*
+ */
+router.use('/medications', patientPortalAuth, patientMedicationRoutes);
+
+// ===============================
+// HEALTH RECORDS ENDPOINTS
+// ===============================
+
+/**
+ * Mount patient health records routes
+ * All routes under /api/patient-portal/health-records/*
+ */
+router.use('/health-records', patientPortalAuth, patientHealthRecordsRoutes);
+
+// ===============================
+// MESSAGING ENDPOINTS
+// ===============================
+
+/**
+ * Mount patient messaging routes
+ * All routes under /api/patient-portal/messages/*
+ */
+router.use('/messages', patientPortalAuth, patientMessagingRoutes);
+
+// ===============================
+// BILLING ENDPOINTS
+// ===============================
+
+/**
+ * Mount patient billing routes
+ * All routes under /api/patient-portal/billing/*
+ */
+router.use('/billing', patientPortalAuth, patientBillingRoutes);
 
 export default router;

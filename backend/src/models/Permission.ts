@@ -1,7 +1,7 @@
 import mongoose, { Document, Schema } from 'mongoose';
 
 export interface IPermission extends Document {
-    action: string; // Unique permission action (e.g., 'patient:read', 'medication:create')
+    action: string; // Unique permission action (e.g., 'patient:read', 'patients:view:all')
     displayName: string; // Human-readable name
     description: string;
     category: string; // Module/feature category (e.g., 'patient', 'medication', 'reports')
@@ -20,8 +20,8 @@ export interface IPermission extends Document {
     riskLevel: 'low' | 'medium' | 'high' | 'critical';
 
     // Audit fields
-    createdBy: mongoose.Types.ObjectId;
-    lastModifiedBy: mongoose.Types.ObjectId;
+    createdBy?: mongoose.Types.ObjectId;
+    lastModifiedBy?: mongoose.Types.ObjectId;
 
     createdAt: Date;
     updatedAt: Date;
@@ -36,8 +36,8 @@ const permissionSchema = new Schema<IPermission>(
             trim: true,
             lowercase: true,
             match: [
-                /^[a-z0-9_-]+:[a-z0-9_-]+$/,
-                'Permission action must follow format "resource:action" (e.g., "patient:read")',
+                /^[a-z0-9_-]+:[a-z0-9_-]+(:[a-z0-9_-]+)?$/,
+                'Permission action must follow format "resource:action" or "resource:action:scope" (e.g., "patient:read" or "patients:view:all")',
             ],
         },
         displayName: {
@@ -94,9 +94,9 @@ const permissionSchema = new Schema<IPermission>(
                 lowercase: true,
                 validate: {
                     validator: function (action: string) {
-                        return /^[a-z0-9_-]+:[a-z0-9_-]+$/.test(action);
+                        return /^[a-z0-9_-]+:[a-z0-9_-]+(:[a-z0-9_-]+)?$/.test(action);
                     },
-                    message: 'Dependency must follow format "resource:action"',
+                    message: 'Dependency must follow format "resource:action" or "resource:action:scope"',
                 },
             },
         ],
@@ -107,9 +107,9 @@ const permissionSchema = new Schema<IPermission>(
                 lowercase: true,
                 validate: {
                     validator: function (action: string) {
-                        return /^[a-z0-9_-]+:[a-z0-9_-]+$/.test(action);
+                        return /^[a-z0-9_-]+:[a-z0-9_-]+(:[a-z0-9_-]+)?$/.test(action);
                     },
-                    message: 'Conflict must follow format "resource:action"',
+                    message: 'Conflict must follow format "resource:action" or "resource:action:scope"',
                 },
             },
         ],
@@ -133,12 +133,12 @@ const permissionSchema = new Schema<IPermission>(
         createdBy: {
             type: Schema.Types.ObjectId,
             ref: 'User',
-            required: true,
+            required: false,
         },
         lastModifiedBy: {
             type: Schema.Types.ObjectId,
             ref: 'User',
-            required: true,
+            required: false,
         },
     },
     {

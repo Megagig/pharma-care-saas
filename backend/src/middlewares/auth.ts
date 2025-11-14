@@ -87,22 +87,8 @@ export const auth = async (
       return;
     }
 
-    // Debug token information with limited logging
-    if (process.env.NODE_ENV !== 'production') {
-      console.log('Auth middleware - checking token:', {
-        hasAccessToken: !!req.cookies.accessToken,
-        hasRefreshToken: !!req.cookies.refreshToken,
-        hasToken: !!req.cookies.token,
-        hasAuthHeader: !!req.header('Authorization'),
-        tokenExists: !!token,
-        url: req.url,
-        method: req.method,
-      });
-    }
-
     // Check for any token
     if (!token) {
-      console.log('Auth middleware - No token provided');
       res.status(401).json({
         message: 'Access denied. No token provided.',
         code: 'NO_TOKEN',
@@ -503,7 +489,7 @@ export const requireFeature = (featureKey: string) => {
       // Check tier access
       const hasTierAccess = featureFlag.allowedTiers.includes(subscription.tier);
       console.log(`🔧 Tier access check: user tier=${subscription.tier}, allowed=${JSON.stringify(featureFlag.allowedTiers)}, hasAccess=${hasTierAccess}`);
-      
+
       if (!hasTierAccess) {
         console.log(`🔧 Tier access check failed: user tier=${subscription.tier}, allowed=${featureFlag.allowedTiers}`);
         res.status(403).json({

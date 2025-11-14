@@ -72,7 +72,7 @@ const MTRSummary: React.FC = () => {
 
   const handleDownload = () => {
     // TODO: Implement PDF download functionality
-    console.log('Download MTR report');
+
   };
 
   if (loading.loadReview) {
@@ -449,7 +449,7 @@ const MTRSummary: React.FC = () => {
           patientId={selectedPatient?._id || ''}
           onAppointmentCreated={() => {
             // Optionally refresh MTR data or show success message
-            console.log('Appointment created for MTR session');
+
           }}
         />
       </Box>

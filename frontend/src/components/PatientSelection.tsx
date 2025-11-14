@@ -202,7 +202,7 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
   // Clear error when MTR review is successfully created
   useEffect(() => {
     if (currentReview?._id) {
-      console.log('MTR review detected, clearing selectPatient error:', currentReview._id);
+
       setError('selectPatient', null);
     }
   }, [currentReview?._id, setError]);
@@ -242,7 +242,7 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
       debounce((query: string) => {
         // setFilters((prev) => ({ ...prev, search: query }));
         // Filters functionality can be implemented later
-        console.log('Search query:', query);
+
       }, 300),
     []
   );
@@ -309,16 +309,61 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
   };
 
   // Handlers
+  const handleRefreshSearch = () => {
+    setSearchQuery('');
+  };
+
+  const handleNewPatientSubmit = async (data: NewPatientFormData) => {
+    try {
+      setLoading('createNewPatient', true);
+      setError('createNewPatient', null);
+
+      const newPatientData: CreatePatientData = {
+        firstName: data.firstName,
+        lastName: data.lastName,
+        otherNames: data.otherNames,
+        dob: data.dob?.toISOString(),
+        age: data.age,
+        gender: data.gender,
+        maritalStatus: data.maritalStatus,
+        phone: data.phone,
+        email: data.email,
+        address: data.address,
+        state: data.state,
+        lga: data.lga,
+        bloodGroup: data.bloodGroup,
+        genotype: data.genotype,
+        weightKg: data.weightKg,
+      };
+
+      const response = await createPatientMutation.mutateAsync(
+        newPatientData
+      );
+
+      // Close modal and reset form
+      setShowNewPatientModal(false);
+      resetNewPatientForm();
+
+      // Select the newly created patient - extract from response
+      const createdPatient = (response as any)?.data?.patient;
+      if (createdPatient) {
+        await handlePatientSelect(createdPatient);
+      }
+    } catch (error) {
+      console.error('Error creating patient:', error);
+      setError(
+        'createNewPatient',
+        error instanceof Error ? error.message : 'Failed to create patient'
+      );
+    } finally {
+      setLoading('createNewPatient', false);
+    }
+  };
+
   const handlePatientSelect = async (patient: Patient) => {
     try {
       setLoading('selectPatient', true);
       setError('selectPatient', null);
-
-      // Debug patient object
-      console.log('🔍 PatientSelection - Patient selected:', patient);
-      console.log('🔍 PatientSelection - Patient ID:', patient._id);
-      console.log('🔍 PatientSelection - Patient keys:', Object.keys(patient));
-      console.log('🔍 PatientSelection - Full patient:', JSON.stringify(patient, null, 2));
 
       // Add to recent patients
       const updatedRecent = [
@@ -326,8 +371,6 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
         ...recentPatients.filter((p) => p._id !== patient._id),
       ].slice(0, 5);
       setRecentPatients(updatedRecent);
-      // Note: localStorage removed for security - recent patients will not persist between sessions
-      // In production, this could be implemented server-side for better security
 
       // First, select the patient
       onPatientSelect(patient);
@@ -336,29 +379,18 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
       if (!currentReview) {
         // Try multiple ID fields - use mrn as fallback since backend doesn't return _id
         const patientId = patient._id || (patient as any).id || (patient as any).patientId || (patient as any).mrn;
-        console.log('Creating MTR review for patient ID:', patientId);
-        console.log('🔍 Patient mrn field:', (patient as any).mrn);
 
         // Force use mrn if no other ID is available
         const finalPatientId = patientId || (patient as any).mrn;
-        console.log('🔍 Final patient ID to use:', finalPatientId);
 
         if (!finalPatientId) {
-          console.error('❌ Cannot create MTR review - no patient ID found');
           setError('selectPatient', 'Patient ID is missing. Cannot create MTR review.');
           return;
         }
 
         try {
-          console.log('🚀 Calling createReview with patientId:', finalPatientId);
           await createReview(finalPatientId);
-
-          console.log('✅ createReview completed successfully');
-
-          // The MTR store will handle setting currentReview
-          // No need to verify here - trust the store
         } catch (createError) {
-          console.error('❌ Error creating MTR review:', createError);
           throw createError;
         }
       }
@@ -375,92 +407,10 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
     }
   };
 
-  const handleNewPatientSubmit = async (data: NewPatientFormData) => {
-    try {
-      setLoading('createNewPatient', true);
-      setError('createNewPatient', null);
-
-      const patientData: CreatePatientData = {
-        firstName: data.firstName,
-        lastName: data.lastName,
-        otherNames: data.otherNames || undefined,
-        dob: data.dob?.toISOString(),
-        age: data.age,
-        gender: data.gender,
-        maritalStatus: data.maritalStatus,
-        phone: data.phone || undefined,
-        email: data.email || undefined,
-        address: data.address || undefined,
-        state: data.state,
-        lga: data.lga || undefined,
-        bloodGroup: data.bloodGroup,
-        genotype: data.genotype,
-        weightKg: data.weightKg,
-      };
-
-      const result = await createPatientMutation.mutateAsync(patientData);
-      const newPatient = result?.data?.patient;
-
-      if (newPatient) {
-        await handlePatientSelect(newPatient);
-        setShowNewPatientModal(false);
-        resetNewPatientForm();
-      }
-    } catch (error) {
-      setError(
-        'createNewPatient',
-        error instanceof Error ? error.message : 'Failed to create patient'
-      );
-    } finally {
-      setLoading('createNewPatient', false);
-    }
-  };
-
-  const handleRefreshSearch = () => {
-    setSearchQuery('');
-    // setFilters({ search: '' });
-  };
-
-  // Enhanced debug logging
-  React.useEffect(() => {
-    if (searchQuery.length >= 2) {
-      console.log('Search Query Debug:', {
-        query: searchQuery,
-        isLoading: searchLoading,
-        error: searchError,
-        rawResults: searchResults,
-      });
-    }
-  }, [searchQuery, searchLoading, searchError, searchResults]);
-
-  // Get search results with better error handling
-  const patients = useMemo(() => {
-    // Debug the search results structure
-    if (searchResults) {
-      console.log('Processing search results:', {
-        hasData: !!searchResults.data,
-        hasResults: !!searchResults?.data?.results,
-        resultsLength: searchResults?.data?.results?.length || 0,
-        searchResultsKeys: Object.keys(searchResults || {}),
-        firstPatient: searchResults?.data?.results?.[0],
-      });
-    }
-
-    const results = searchResults?.data?.results || [];
-
-    // Debug each patient to see if they have IDs
-    results.forEach((patient: any, index: number) => {
-      console.log(`🔍 Patient ${index}:`, {
-        _id: patient._id,
-        id: patient.id,
-        firstName: patient.firstName,
-        lastName: patient.lastName,
-        keys: Object.keys(patient),
-      });
-    });
-
-    return results;
-  }, [searchResults]);
+  // Get patients from search results
+  const patients: Patient[] = Array.isArray(searchResults)
+    ? searchResults
+    : (searchResults?.data?.results as Patient[]) || [];
 
   const hasSearchResults = searchQuery.length >= 2 && patients.length > 0;
   const showNoResults =

@@ -86,7 +86,7 @@ export class WebVitalsMonitor {
       
       // Log to console in development
       if (import.meta.env.DEV) {
-        console.log(`Web Vitals - ${metric.name}:`, metric.value);
+
       }
     } catch (error) {
       console.warn('Failed to handle Web Vitals metric:', error);

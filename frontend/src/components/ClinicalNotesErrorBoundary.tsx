@@ -165,8 +165,6 @@ class ClinicalNotesErrorBoundary extends Component<Props, State> {
         // await supportService.submitErrorReport(reportData);
       }
 
-      console.log('Error report submitted:', reportData);
-
       this.setState({
         showReportDialog: false,
         reportDescription: '',

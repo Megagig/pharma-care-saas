@@ -593,12 +593,10 @@ export const initializePerformanceOptimization = (): void => {
     BundleOptimizer.optimizeImages();
 
     // Log initialization
-    console.log('Frontend performance optimization initialized');
 
     // Clean up metrics periodically
     setInterval(() => {
         const stats = PerformanceMonitor.getStats();
-        console.log('Performance stats:', stats);
 
         // Clear old metrics if too many
         if (stats.count > 5000) {

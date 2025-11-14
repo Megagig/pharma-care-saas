@@ -36,7 +36,7 @@ class ServiceWorkerManager {
     }
 
     if (process.env.NODE_ENV !== 'production') {
-      console.log('Service Worker registration skipped in development');
+
       return;
     }
 
@@ -62,19 +62,19 @@ class ServiceWorkerManager {
 
       // Handle different service worker states
       if (registration.installing) {
-        console.log('Service Worker installing...');
+
         this.trackInstalling(registration.installing);
       } else if (registration.waiting) {
-        console.log('Service Worker waiting...');
+
         this.showUpdateAvailable();
       } else if (registration.active) {
-        console.log('Service Worker active');
+
         this.config.onSuccess?.(registration);
       }
 
       // Listen for updates
       registration.addEventListener('updatefound', () => {
-        console.log('Service Worker update found');
+
         const newWorker = registration.installing;
         if (newWorker) {
           this.trackInstalling(newWorker);
@@ -83,7 +83,7 @@ class ServiceWorkerManager {
 
       // Listen for controller changes
       navigator.serviceWorker.addEventListener('controllerchange', () => {
-        console.log('Service Worker controller changed');
+
         window.location.reload();
       });
 
@@ -92,7 +92,6 @@ class ServiceWorkerManager {
         this.handleServiceWorkerMessage(event);
       });
 
-      console.log('Service Worker registered successfully');
     } catch (error) {
       console.error('Service Worker registration failed:', error);
     }
@@ -109,7 +108,7 @@ class ServiceWorkerManager {
     try {
       const registration = await navigator.serviceWorker.ready;
       const result = await registration.unregister();
-      console.log('Service Worker unregistered:', result);
+
       return result;
     } catch (error) {
       console.error('Service Worker unregistration failed:', error);
@@ -128,7 +127,7 @@ class ServiceWorkerManager {
 
     try {
       await this.registration.update();
-      console.log('Service Worker update triggered');
+
     } catch (error) {
       console.error('Service Worker update failed:', error);
     }
@@ -230,16 +229,15 @@ class ServiceWorkerManager {
    */
   private trackInstalling(worker: ServiceWorker): void {
     worker.addEventListener('statechange', () => {
-      console.log('Service Worker state changed:', worker.state);
 
       if (worker.state === 'installed') {
         if (navigator.serviceWorker.controller) {
           // New update available
-          console.log('New service worker installed, update available');
+
           this.showUpdateAvailable();
         } else {
           // First install
-          console.log('Service worker installed for the first time');
+
           this.config.onOfflineReady?.();
         }
       }
@@ -263,15 +261,15 @@ class ServiceWorkerManager {
 
     switch (type) {
       case 'CACHE_UPDATED':
-        console.log('Cache updated:', payload);
+
         break;
 
       case 'OFFLINE_FALLBACK':
-        console.log('Offline fallback served:', payload);
+
         break;
 
       default:
-        console.log('Unknown service worker message:', type, payload);
+
     }
   }
 }
@@ -285,19 +283,19 @@ export const serviceWorkerManager = new ServiceWorkerManager();
 export function registerSW(config: ServiceWorkerConfig = {}): void {
   serviceWorkerManager.register({
     onSuccess: (registration) => {
-      console.log('SW registered: ', registration);
+
       config.onSuccess?.(registration);
     },
     onNeedRefresh: () => {
-      console.log('SW needs refresh');
+
       config.onNeedRefresh?.();
     },
     onOfflineReady: () => {
-      console.log('SW offline ready');
+
       config.onOfflineReady?.();
     },
     onUpdate: (registration) => {
-      console.log('SW updated: ', registration);
+
       config.onUpdate?.(registration);
     },
   });

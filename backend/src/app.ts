@@ -40,6 +40,7 @@ import subAnalyticsRoutes from './routes/subscriptionManagement';
 import workspaceSubscriptionRoutes from './routes/subscriptionManagementRoutes';
 import webhookRoutes from './routes/webhookRoutes';
 import featureFlagRoutes from './routes/featureFlagRoutes';
+import pricingPlanRoutes from './routes/pricingPlanRoutes';
 import healthRoutes from './routes/healthRoutes';
 import mtrRoutes from './routes/mtrRoutes';
 import mtrNotificationRoutes from './routes/mtrNotificationRoutes';
@@ -56,8 +57,6 @@ import usageMonitoringRoutes from './routes/usageMonitoringRoutes';
 import locationRoutes from './routes/locationRoutes';
 import locationDataRoutes from './routes/locationDataRoutes';
 import legacyApiRoutes from './routes/legacyApiRoutes';
-import migrationDashboardRoutes from './routes/migrationDashboardRoutes';
-import deploymentRoutes from './routes/deploymentRoutes';
 import productionValidationRoutes from './routes/productionValidationRoutes';
 import continuousMonitoringRoutes from './routes/continuousMonitoringRoutes';
 import emailWebhookRoutes from './routes/emailWebhookRoutes';
@@ -85,10 +84,23 @@ import pricingManagementRoutes from './routes/pricingManagementRoutes';
 import appointmentAnalyticsRoutes from './routes/appointmentAnalyticsRoutes';
 import saasRoutes from './routes/saasRoutes';
 import workspaceTeamRoutes from './routes/workspaceTeamRoutes';
+import workspaceRBACRoutes from './routes/workspaceRBACRoutes';
+
 import dashboardRoutes from './routes/dashboardRoutes';
 import superAdminDashboardRoutes from './routes/superAdminDashboardRoutes';
 import superAdminAuditRoutes from './routes/superAdminAuditRoutes';
 import patientNotificationPreferencesRoutes from './routes/patientNotificationPreferencesRoutes';
+import healthBlogRoutes from './routes/healthBlog.routes';
+import healthBlogAdminRoutes from './routes/healthBlogAdmin.routes';
+import patientPortalAdminRoutes from './routes/patientPortalAdmin.routes';
+import superAdminPatientPortalRoutes from './routes/superAdminPatientPortal.routes';
+import pharmacistLabInterpretationRoutes from './routes/pharmacistLabInterpretation.routes';
+import pharmacistVitalsRoutes from './routes/pharmacistVitals.routes';
+import pharmacistVisitSummaryRoutes from './routes/pharmacistVisitSummary.routes';
+import workplaceHealthRecordsRoutes from './routes/workplaceHealthRecords.routes';
+import patientNotificationRoutes from './routes/patientNotification.routes';
+import appointmentHealthRecordsRoutes from './routes/appointmentHealthRecords.routes';
+import superAdminHealthRecordsRoutes from './routes/superAdminHealthRecords.routes';
 import SystemIntegrationService from './services/systemIntegrationService';
 
 const app: Application = express();
@@ -319,6 +331,36 @@ app.get('/api/debug/user-info', auth, async (req: any, res: Response) => {
   }
 });
 
+// Clear workspace cache endpoint (development only)
+app.post('/api/debug/clear-cache', auth, async (req: any, res: Response) => {
+  try {
+    if (process.env.NODE_ENV !== 'development') {
+      res.status(403).json({ message: 'Only available in development mode' });
+      return;
+    }
+
+    const { clearWorkspaceCache } = await import('./middlewares/workspaceContext');
+    const userId = req.user._id.toString();
+
+    // Clear the user's workspace cache
+    clearWorkspaceCache(userId);
+
+    res.json({
+      success: true,
+      message: 'Workspace cache cleared for your user',
+      userId,
+      action: 'Please make another request to reload fresh context',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      timestamp: new Date().toISOString(),
+    });
+  }
+});
+
 // System integration health endpoint
 app.get('/api/health/integration', async (req: Request, res: Response) => {
   try {
@@ -392,6 +434,9 @@ app.get('/api/health/cache', async (req: Request, res: Response) => {
 app.use('/api/public', publicApiRoutes);
 app.use('/api/public/drugs', publicDrugDetailsRoutes);
 
+// Public Blog routes (no authentication required)
+app.use('/api/public/blog', healthBlogRoutes);
+
 // Public Appointment routes (no authentication required)
 import publicAppointmentRoutes from './routes/publicAppointmentRoutes';
 app.use('/api/public/appointments', publicAppointmentRoutes);
@@ -417,14 +462,22 @@ app.use('/api/lighthouse', lighthouseRoutes);
 app.use('/api/performance-budgets', performanceBudgetRoutes);
 app.use('/api/performance-monitoring', performanceMonitoringRoutes);
 
-// Deployment monitoring routes (admin only)
-app.use('/api/deployment', deploymentRoutes);
-
 // Production validation routes (admin only)
 app.use('/api/production-validation', productionValidationRoutes);
 
 // Continuous monitoring routes (admin only)
 app.use('/api/continuous-monitoring', continuousMonitoringRoutes);
+
+// ========================================================================
+// PATIENT PORTAL ROUTES - MUST BE BEFORE OTHER /api ROUTES
+// These routes use patientPortalAuth middleware (NOT regular auth middleware)
+// ========================================================================
+import patientPortalRoutes from './routes/patientPortalRoutes';
+app.use('/api/patient-portal', patientPortalRoutes);
+
+// ========================================================================
+// REGULAR API ROUTES (use regular auth middleware)
+// ========================================================================
 
 // API routes
 app.use('/api/auth', authRoutes);
@@ -439,6 +492,15 @@ app.use('/api/super-admin/dashboard', superAdminDashboardRoutes);
 
 // Super Admin Audit Trail routes (Super Admin only)
 app.use('/api/super-admin/audit-trail', superAdminAuditRoutes);
+
+// Super Admin Blog Management routes (Super Admin only)
+app.use('/api/super-admin/blog', healthBlogAdminRoutes);
+
+// Super Admin Patient Portal Management routes (Super Admin only)
+app.use('/api/super-admin/patient-portal', superAdminPatientPortalRoutes);
+
+// Super Admin Health Records Management routes (Super Admin only)
+app.use('/api/super-admin/health-records', superAdminHealthRecordsRoutes);
 
 // Patient Management routes
 app.use('/api/patients', patientRoutes);
@@ -472,6 +534,32 @@ app.use('/api/manual-lab', manualLabRoutes);
 
 // AI Diagnostic routes
 app.use('/api/diagnostics', diagnosticRoutes);
+
+// AI Diagnostic Analysis routes (hybrid model system)
+import aiDiagnosticRoutes from './routes/aiDiagnosticRoutes';
+app.use('/api/ai-diagnostics', aiDiagnosticRoutes);
+
+// Lab Integration routes (AI-powered lab result interpretation & therapy management)
+import labIntegrationRoutes from './modules/diagnostics/routes/labIntegrationRoutes';
+app.use('/api/lab-integration', labIntegrationRoutes);
+
+// Laboratory Findings routes (Universal lab results management)
+import laboratoryRoutes from './routes/laboratoryRoutes';
+app.use('/api/laboratory', laboratoryRoutes);
+
+// Pharmacist Lab Interpretation routes
+app.use('/api/pharmacist/lab-results', pharmacistLabInterpretationRoutes);
+app.use('/api/pharmacist/vitals', pharmacistVitalsRoutes);
+app.use('/api/pharmacist/visit-summaries', pharmacistVisitSummaryRoutes);
+
+// Workplace Health Records Features routes
+app.use('/api/workplace/health-records-features', workplaceHealthRecordsRoutes);
+
+// Patient Portal Notification routes
+app.use('/api/patient-portal/notifications', patientNotificationRoutes);
+
+// Appointment Health Records routes
+app.use('/api/appointments', appointmentHealthRecordsRoutes);
 
 // Communication Hub routes (old - will be deprecated)
 app.use('/api/communication', communicationRoutes);
@@ -547,9 +635,8 @@ import followUpRoutes from './routes/followUpRoutes';
 import scheduleRoutes from './routes/scheduleRoutes';
 import queueMonitoringRoutes from './routes/queueMonitoringRoutes';
 import alertRoutes from './routes/alertRoutes';
-import patientPortalRoutes from './routes/patientPortalRoutes';
 
-// Appointment Analytics routes - MUST come before /api/appointments to avoid /:id matching
+// Appointment Analytics routes - mounted at /api level
 app.use('/api', appointmentAnalyticsRoutes);
 
 app.use('/api/appointments', appointmentRoutes);
@@ -557,7 +644,6 @@ app.use('/api/follow-ups', followUpRoutes);
 app.use('/api/schedules', scheduleRoutes);
 app.use('/api/queue-monitoring', queueMonitoringRoutes);
 app.use('/api/alerts', alertRoutes);
-app.use('/api/patient-portal', patientPortalRoutes);
 
 // Clinical interventions health check (no auth required)
 app.get('/api/clinical-interventions/health', (req, res) => {
@@ -601,11 +687,16 @@ app.use('/api/location-data', locationDataRoutes);
 // Workspace Team Management routes (Workspace owners only)
 app.use('/api/workspace/team', workspaceTeamRoutes);
 
+// Workspace RBAC Management routes (Workspace owners only)
+app.use('/api/workspace/rbac', workspaceRBACRoutes);
+
+
+
+// Workspace Admin - Patient Portal Management routes (Workspace admins only)
+app.use('/api/workspace-admin/patient-portal', patientPortalAdminRoutes);
+
 // Legacy API compatibility routes
 app.use('/api/legacy', legacyApiRoutes);
-
-// Migration dashboard routes (Super Admin only)
-app.use('/api/migration', migrationDashboardRoutes);
 
 // Email delivery and webhook routes
 app.use('/api/email', emailWebhookRoutes);
@@ -614,6 +705,10 @@ app.use('/api/email', emailWebhookRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/admin/dashboard', adminDashboardRoutes);
 app.use('/api/admin/saas', saasRoutes);
+
+// AI Usage Monitoring routes (Super Admin only)
+import aiUsageMonitoringRoutes from './routes/aiUsageMonitoringRoutes';
+app.use('/api/admin/ai-usage', aiUsageMonitoringRoutes);
 
 // Patient Engagement Rollout Management routes (Super Admin only)
 import rolloutRoutes from './routes/rolloutRoutes';
@@ -627,6 +722,7 @@ app.use('/api/subscription-management', subAnalyticsRoutes); // Using correct su
 app.use('/api/subscription', subscriptionManagementRoutes); // Old routes at /api/subscription
 app.use('/api/workspace-subscription', workspaceSubscriptionRoutes); // New workspace subscription routes
 app.use('/api/feature-flags', featureFlagRoutes);
+app.use('/api/admin/pricing-plans', pricingPlanRoutes); // Pricing plan management
 
 // Webhooks - no rate limiting and body parsing is raw for signature verification
 app.use(

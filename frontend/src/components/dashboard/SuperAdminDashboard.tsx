@@ -176,9 +176,9 @@ const SystemMetricCard: React.FC<SystemMetricCardProps> = ({
 // Helper function to transform backend data to chart format
 const transformTrendData = (trendData: Array<{ _id: { year: number; month: number }; count: number }>) => {
     if (!trendData || trendData.length === 0) return [];
-    
+
     const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
-    
+
     return trendData.map(item => ({
         name: `${monthNames[item._id.month - 1]} ${item._id.year}`,
         value: item.count
@@ -187,7 +187,7 @@ const transformTrendData = (trendData: Array<{ _id: { year: number; month: numbe
 
 const transformCategoryData = (categoryData: Array<{ _id: string; count: number }>) => {
     if (!categoryData || categoryData.length === 0) return [];
-    
+
     return categoryData.map(item => ({
         name: item._id || 'Unknown',
         value: item.count
@@ -195,6 +195,8 @@ const transformCategoryData = (categoryData: Array<{ _id: string; count: number 
 };
 
 const SuperAdminDashboard: React.FC = () => {
+    // CRITICAL: ALL hooks must be called unconditionally at the top
+    // This follows the Rules of Hooks - hooks must be called in the same order every render
     const theme = useTheme();
     const [activeTab, setActiveTab] = useState(0);
     const [data, setData] = useState<SuperAdminDashboardData | null>(null);
@@ -212,22 +214,15 @@ const SuperAdminDashboard: React.FC = () => {
     const fetchSuperAdminData = async () => {
         try {
             setLoading(true);
-            console.log('🔄 Starting to fetch super admin dashboard data...');
+
             const dashboardData = await roleBasedDashboardService.getSuperAdminDashboard();
-            console.log('✅ Super admin dashboard data received:', dashboardData);
-            console.log('📊 System Stats:', dashboardData.systemStats);
-            console.log('🏢 Workspaces count:', dashboardData.workspaces?.length || 0);
-            console.log('🏢 Workspaces data:', dashboardData.workspaces);
-            console.log('👥 User Activity:', dashboardData.userActivity);
-            console.log('💰 Subscriptions:', dashboardData.subscriptions);
-            console.log('📈 Trends:', dashboardData.trends);
-            
+
             // Ensure workspaces is always an array
             const safeData = {
                 ...dashboardData,
                 workspaces: dashboardData.workspaces || []
             };
-            
+
             setData(safeData);
             setError(null);
         } catch (err: any) {
@@ -268,7 +263,7 @@ const SuperAdminDashboard: React.FC = () => {
             console.warn('⚠️ SuperAdminDashboard: workspaces is not an array:', data?.workspaces);
             return [];
         }
-        
+
         return data.workspaces.filter(workspace =>
             workspace?.name?.toLowerCase().includes(searchTerm.toLowerCase()) &&
             (workspaceFilter === '' || workspace.subscriptionStatus === workspaceFilter)
@@ -278,16 +273,16 @@ const SuperAdminDashboard: React.FC = () => {
     const handleRoleChange = (role: 'super_admin' | 'workspace_user', workspaceId?: string) => {
         if (role === 'workspace_user' && workspaceId) {
             // Navigate to workspace-specific view
-            console.log('Switching to workspace view:', workspaceId);
+
             // You could trigger a different dashboard component here
         } else {
             // Stay in super admin view
-            console.log('Staying in super admin view');
+
         }
     };
 
     if (loading) {
-        console.log('🔄 SuperAdminDashboard: Showing loading state');
+
         return (
             <Box display="flex" justifyContent="center" alignItems="center" minHeight="400px">
                 <LinearProgress sx={{ width: '50%' }} />
@@ -296,7 +291,7 @@ const SuperAdminDashboard: React.FC = () => {
     }
 
     if (error) {
-        console.log('❌ SuperAdminDashboard: Showing error state:', error);
+
         return (
             <Card sx={{ p: 3, textAlign: 'center' }}>
                 <Typography color="error" variant="h6" gutterBottom>
@@ -310,7 +305,7 @@ const SuperAdminDashboard: React.FC = () => {
     }
 
     if (!data) {
-        console.log('⚠️ SuperAdminDashboard: No data available, showing empty state');
+
         return (
             <Card sx={{ p: 3, textAlign: 'center' }}>
                 <Typography variant="h6" gutterBottom>
@@ -322,14 +317,6 @@ const SuperAdminDashboard: React.FC = () => {
             </Card>
         );
     }
-
-    console.log('✅ SuperAdminDashboard: Rendering dashboard with data:', {
-        hasSystemStats: !!data.systemStats,
-        workspacesCount: data.workspaces?.length || 0,
-        hasUserActivity: !!data.userActivity,
-        hasSubscriptions: !!data.subscriptions,
-        hasTrends: !!data.trends
-    });
 
     return (
         <Box>
@@ -397,7 +384,7 @@ const SuperAdminDashboard: React.FC = () => {
                         <Box sx={{ minWidth: { xs: '100%', sm: '45%', md: '22%' }, flex: 1 }}>
                             <SystemMetricCard
                                 title="Total Patients"
-                                value={data?.systemStats.totalPatients || 0}
+                                value={data?.systemStats?.totalPatients || 0}
                                 icon={<LocalHospitalIcon />}
                                 color={theme.palette.primary.main}
                                 subtitle="Across all workspaces"
@@ -406,7 +393,7 @@ const SuperAdminDashboard: React.FC = () => {
                         <Box sx={{ minWidth: { xs: '100%', sm: '45%', md: '22%' }, flex: 1 }}>
                             <SystemMetricCard
                                 title="Total Workspaces"
-                                value={data?.systemStats.totalWorkspaces || 0}
+                                value={data?.systemStats?.totalWorkspaces || 0}
                                 icon={<BusinessIcon />}
                                 color={theme.palette.secondary.main}
                                 subtitle="Active organizations"
@@ -415,7 +402,7 @@ const SuperAdminDashboard: React.FC = () => {
                         <Box sx={{ minWidth: { xs: '100%', sm: '45%', md: '22%' }, flex: 1 }}>
                             <SystemMetricCard
                                 title="Total Users"
-                                value={data?.systemStats.totalUsers || 0}
+                                value={data?.systemStats?.totalUsers || 0}
                                 icon={<PeopleIcon />}
                                 color={theme.palette.info.main}
                                 subtitle="System-wide users"
@@ -424,7 +411,7 @@ const SuperAdminDashboard: React.FC = () => {
                         <Box sx={{ minWidth: { xs: '100%', sm: '45%', md: '22%' }, flex: 1 }}>
                             <SystemMetricCard
                                 title="MTR Sessions"
-                                value={data?.systemStats.totalMTRs || 0}
+                                value={data?.systemStats?.totalMTRs || 0}
                                 icon={<AssignmentIcon />}
                                 color={theme.palette.success.main}
                                 subtitle="Total MTR sessions"
@@ -433,7 +420,7 @@ const SuperAdminDashboard: React.FC = () => {
                         <Box sx={{ minWidth: { xs: '100%', sm: '45%', md: '22%' }, flex: 1 }}>
                             <SystemMetricCard
                                 title="Clinical Notes"
-                                value={data?.systemStats.totalClinicalNotes || 0}
+                                value={data?.systemStats?.totalClinicalNotes || 0}
                                 icon={<NoteAddIcon />}
                                 color={theme.palette.warning.main}
                                 subtitle="All clinical records"
@@ -442,7 +429,7 @@ const SuperAdminDashboard: React.FC = () => {
                         <Box sx={{ minWidth: { xs: '100%', sm: '45%', md: '22%' }, flex: 1 }}>
                             <SystemMetricCard
                                 title="Medications"
-                                value={data?.systemStats.totalMedications || 0}
+                                value={data?.systemStats?.totalMedications || 0}
                                 icon={<MedicationIcon />}
                                 color={theme.palette.error.main}
                                 subtitle="Medication records"
@@ -451,7 +438,7 @@ const SuperAdminDashboard: React.FC = () => {
                         <Box sx={{ minWidth: { xs: '100%', sm: '45%', md: '22%' }, flex: 1 }}>
                             <SystemMetricCard
                                 title="Active Subscriptions"
-                                value={data?.systemStats.activeSubscriptions || 0}
+                                value={data?.systemStats?.activeSubscriptions || 0}
                                 icon={<MonetizationOnIcon />}
                                 color={theme.palette.primary.dark}
                                 subtitle="Paid subscriptions"
@@ -469,7 +456,7 @@ const SuperAdminDashboard: React.FC = () => {
                                     Patients by Month
                                 </Typography>
                                 <SimpleChart
-                                    data={transformTrendData(data?.trends.patientsTrend || [])}
+                                    data={transformTrendData(data?.trends?.patientsTrend || [])}
                                     type="line"
                                     height={300}
                                 />
@@ -483,7 +470,7 @@ const SuperAdminDashboard: React.FC = () => {
                                     Clinical Notes by Type
                                 </Typography>
                                 <SimpleChart
-                                    data={transformCategoryData(data?.trends.clinicalNotesByType || [])}
+                                    data={transformCategoryData(data?.trends?.clinicalNotesByType || [])}
                                     type="pie"
                                     height={300}
                                 />
@@ -497,7 +484,7 @@ const SuperAdminDashboard: React.FC = () => {
                                     MTR Sessions by Status
                                 </Typography>
                                 <SimpleChart
-                                    data={transformCategoryData(data?.trends.mtrsByStatus || [])}
+                                    data={transformCategoryData(data?.trends?.mtrsByStatus || [])}
                                     type="bar"
                                     height={300}
                                 />
@@ -511,7 +498,7 @@ const SuperAdminDashboard: React.FC = () => {
                                     User Registration Trend
                                 </Typography>
                                 <SimpleChart
-                                    data={transformTrendData(data?.trends.usersTrend || [])}
+                                    data={transformTrendData(data?.trends?.usersTrend || [])}
                                     type="area"
                                     height={300}
                                 />
@@ -674,7 +661,7 @@ const SuperAdminDashboard: React.FC = () => {
                                     Users by System Role
                                 </Typography>
                                 <SimpleChart
-                                    data={transformCategoryData(data?.userActivity.usersByRole || [])}
+                                    data={transformCategoryData(data?.userActivity?.usersByRole || [])}
                                     type="pie"
                                     height={300}
                                 />
@@ -688,7 +675,7 @@ const SuperAdminDashboard: React.FC = () => {
                                     Users by Workplace Role
                                 </Typography>
                                 <SimpleChart
-                                    data={transformCategoryData(data?.userActivity.usersByWorkplaceRole || [])}
+                                    data={transformCategoryData(data?.userActivity?.usersByWorkplaceRole || [])}
                                     type="bar"
                                     height={300}
                                 />
@@ -702,7 +689,7 @@ const SuperAdminDashboard: React.FC = () => {
                                     Active Users (30 days)
                                 </Typography>
                                 <Typography variant="h3" color="primary" sx={{ fontWeight: 'bold' }}>
-                                    {data?.userActivity.activeUsers || 0}
+                                    {data?.userActivity?.activeUsers || 0}
                                 </Typography>
                             </CardContent>
                         </Card>
@@ -714,7 +701,7 @@ const SuperAdminDashboard: React.FC = () => {
                                     New Users (30 days)
                                 </Typography>
                                 <Typography variant="h3" color="success.main" sx={{ fontWeight: 'bold' }}>
-                                    {data?.userActivity.newUsers || 0}
+                                    {data?.userActivity?.newUsers || 0}
                                 </Typography>
                             </CardContent>
                         </Card>
@@ -732,7 +719,7 @@ const SuperAdminDashboard: React.FC = () => {
                                     Subscriptions by Status
                                 </Typography>
                                 <SimpleChart
-                                    data={transformCategoryData(data?.subscriptions.subscriptionsByStatus || [])}
+                                    data={transformCategoryData(data?.subscriptions?.subscriptionsByStatus || [])}
                                     type="pie"
                                     height={300}
                                 />
@@ -746,7 +733,7 @@ const SuperAdminDashboard: React.FC = () => {
                                     Subscriptions by Tier
                                 </Typography>
                                 <SimpleChart
-                                    data={transformCategoryData(data?.subscriptions.subscriptionsByTier || [])}
+                                    data={transformCategoryData(data?.subscriptions?.subscriptionsByTier || [])}
                                     type="bar"
                                     height={300}
                                 />
@@ -760,7 +747,7 @@ const SuperAdminDashboard: React.FC = () => {
                                     Monthly Revenue
                                 </Typography>
                                 <Typography variant="h3" color="primary" sx={{ fontWeight: 'bold' }}>
-                                    ₦{roleBasedDashboardService.formatNumber(data?.subscriptions.monthlyRevenue || 0)}
+                                    ₦{roleBasedDashboardService.formatNumber(data?.subscriptions?.monthlyRevenue || 0)}
                                 </Typography>
                             </CardContent>
                         </Card>
@@ -772,7 +759,7 @@ const SuperAdminDashboard: React.FC = () => {
                                     Total Revenue
                                 </Typography>
                                 <Typography variant="h3" color="success.main" sx={{ fontWeight: 'bold' }}>
-                                    ₦{roleBasedDashboardService.formatNumber(data?.subscriptions.totalRevenue || 0)}
+                                    ₦{roleBasedDashboardService.formatNumber(data?.subscriptions?.totalRevenue || 0)}
                                 </Typography>
                             </CardContent>
                         </Card>

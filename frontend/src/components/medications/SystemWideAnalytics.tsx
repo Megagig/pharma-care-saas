@@ -175,19 +175,32 @@ const SystemWideAnalytics: React.FC<SystemWideAnalyticsProps> = ({ onBack }) => 
 
   // All data now comes from real API calls - no mock data
 
-  // Enhanced Summary Cards Component
+  // Enhanced Summary Cards Component with Flexbox
   const SystemSummaryCards = () => (
-    <Grid container spacing={3} sx={{ mb: 4 }}>
-      <Grid item xs={12} sm={6} md={3}>
-        <Grow in timeout={500}>
-          <Card 
-            elevation={0} 
-            sx={{ 
+    <Box
+      sx={{
+        display: 'flex',
+        flexWrap: 'wrap',
+        gap: 3,
+        mb: 4,
+      }}
+    >
+      <Grow in timeout={500}>
+        <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' }, minWidth: 0 }}>
+          <Card
+            elevation={0}
+            sx={{
               background: colorSchemes.gradient.primary,
               color: 'white',
               borderRadius: 4,
               position: 'relative',
               overflow: 'hidden',
+              height: '100%',
+              transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+              '&:hover': {
+                transform: 'translateY(-8px)',
+                boxShadow: '0 12px 40px rgba(102, 126, 234, 0.4)',
+              }
             }}
           >
             <CardContent sx={{ p: 3 }}>
@@ -207,8 +220,8 @@ const SystemWideAnalytics: React.FC<SystemWideAnalyticsProps> = ({ onBack }) => 
               <LinearProgress
                 variant="determinate"
                 value={85}
-                sx={{ 
-                  height: 8, 
+                sx={{
+                  height: 8,
                   borderRadius: 4,
                   bgcolor: 'rgba(255,255,255,0.2)',
                   '& .MuiLinearProgress-bar': {
@@ -218,17 +231,23 @@ const SystemWideAnalytics: React.FC<SystemWideAnalyticsProps> = ({ onBack }) => 
               />
             </CardContent>
           </Card>
-        </Grow>
-      </Grid>
+        </Box>
+      </Grow>
 
-      <Grid item xs={12} sm={6} md={3}>
-        <Grow in timeout={700}>
-          <Card 
-            elevation={0} 
-            sx={{ 
+      <Grow in timeout={700}>
+        <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' }, minWidth: 0 }}>
+          <Card
+            elevation={0}
+            sx={{
               background: colorSchemes.gradient.success,
               color: 'white',
               borderRadius: 4,
+              height: '100%',
+              transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+              '&:hover': {
+                transform: 'translateY(-8px)',
+                boxShadow: '0 12px 40px rgba(79, 172, 254, 0.4)',
+              }
             }}
           >
             <CardContent sx={{ p: 3 }}>
@@ -253,17 +272,23 @@ const SystemWideAnalytics: React.FC<SystemWideAnalyticsProps> = ({ onBack }) => 
               </Box>
             </CardContent>
           </Card>
-        </Grow>
-      </Grid>
+        </Box>
+      </Grow>
 
-      <Grid item xs={12} sm={6} md={3}>
-        <Grow in timeout={900}>
-          <Card 
-            elevation={0} 
-            sx={{ 
+      <Grow in timeout={900}>
+        <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' }, minWidth: 0 }}>
+          <Card
+            elevation={0}
+            sx={{
               background: colorSchemes.gradient.warning,
               color: 'white',
               borderRadius: 4,
+              height: '100%',
+              transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+              '&:hover': {
+                transform: 'translateY(-8px)',
+                boxShadow: '0 12px 40px rgba(250, 112, 154, 0.4)',
+              }
             }}
           >
             <CardContent sx={{ p: 3 }}>
@@ -291,17 +316,23 @@ const SystemWideAnalytics: React.FC<SystemWideAnalyticsProps> = ({ onBack }) => 
               />
             </CardContent>
           </Card>
-        </Grow>
-      </Grid>
+        </Box>
+      </Grow>
 
-      <Grid item xs={12} sm={6} md={3}>
-        <Grow in timeout={1100}>
-          <Card 
-            elevation={0} 
-            sx={{ 
+      <Grow in timeout={1100}>
+        <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' }, minWidth: 0 }}>
+          <Card
+            elevation={0}
+            sx={{
               background: colorSchemes.gradient.error,
               color: 'white',
               borderRadius: 4,
+              height: '100%',
+              transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+              '&:hover': {
+                transform: 'translateY(-8px)',
+                boxShadow: '0 12px 40px rgba(255, 107, 107, 0.4)',
+              }
             }}
           >
             <CardContent sx={{ p: 3 }}>
@@ -334,9 +365,9 @@ const SystemWideAnalytics: React.FC<SystemWideAnalyticsProps> = ({ onBack }) => 
               </Box>
             </CardContent>
           </Card>
-        </Grow>
-      </Grid>
-    </Grid>
+        </Box>
+      </Grow>
+    </Box>
   );
 
   if (statsLoading) {
@@ -487,20 +518,32 @@ const SystemWideAnalytics: React.FC<SystemWideAnalyticsProps> = ({ onBack }) => 
         {/* System Overview Tab */}
         <TabPanel value={currentTab} index={0}>
           <Box sx={{ px: 4 }}>
-            <Grid container spacing={4}>
-              <Grid item xs={12} lg={8}>
-                <Card 
-                  elevation={0} 
-                  sx={{ 
-                    border: '1px solid', 
-                    borderColor: 'divider', 
+            <Box
+              sx={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 4,
+              }}
+            >
+              {/* Main Chart - 66% width on large screens */}
+              <Box sx={{ flex: { xs: '1 1 100%', lg: '1 1 calc(66.666% - 16px)' }, minWidth: 0 }}>
+                <Card
+                  elevation={0}
+                  sx={{
+                    border: '1px solid',
+                    borderColor: 'divider',
                     borderRadius: 3,
-                    background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)'
+                    background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)',
+                    height: '100%',
+                    transition: 'box-shadow 0.3s ease',
+                    '&:hover': {
+                      boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
+                    }
                   }}
                 >
                   <CardContent sx={{ p: 4 }}>
                     <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                      <ShowChartIcon sx={{ mr: 2, color: 'primary.main' }} />
+                      <ShowChartIcon sx={{ mr: 2, color: 'primary.main', fontSize: 28 }} />
                       <Typography variant="h6" fontWeight="bold">
                         System Growth Trends
                       </Typography>
@@ -538,22 +581,27 @@ const SystemWideAnalytics: React.FC<SystemWideAnalyticsProps> = ({ onBack }) => 
                     </ResponsiveContainer>
                   </CardContent>
                 </Card>
-              </Grid>
+              </Box>
 
-              <Grid item xs={12} lg={4}>
+              {/* Side Cards - 33% width on large screens */}
+              <Box sx={{ flex: { xs: '1 1 100%', lg: '1 1 calc(33.333% - 16px)' }, minWidth: 0 }}>
                 <Stack spacing={3}>
-                  <Card 
-                    elevation={0} 
-                    sx={{ 
-                      border: '1px solid', 
-                      borderColor: 'divider', 
+                  <Card
+                    elevation={0}
+                    sx={{
+                      border: '1px solid',
+                      borderColor: 'divider',
                       borderRadius: 3,
-                      background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)'
+                      background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)',
+                      transition: 'box-shadow 0.3s ease',
+                      '&:hover': {
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
+                      }
                     }}
                   >
                     <CardContent sx={{ p: 3 }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                        <PieChartIcon sx={{ mr: 2, color: 'success.main' }} />
+                        <PieChartIcon sx={{ mr: 2, color: 'success.main', fontSize: 28 }} />
                         <Typography variant="h6" fontWeight="bold">
                           Adherence by Category
                         </Typography>
@@ -571,9 +619,9 @@ const SystemWideAnalytics: React.FC<SystemWideAnalyticsProps> = ({ onBack }) => 
                             labelLine={false}
                           >
                             {[].map((entry, index) => (
-                              <Cell 
-                                key={`cell-${index}`} 
-                                fill={colorSchemes.success[index % colorSchemes.success.length]} 
+                              <Cell
+                                key={`cell-${index}`}
+                                fill={colorSchemes.success[index % colorSchemes.success.length]}
                               />
                             ))}
                           </Pie>
@@ -583,28 +631,37 @@ const SystemWideAnalytics: React.FC<SystemWideAnalyticsProps> = ({ onBack }) => 
                     </CardContent>
                   </Card>
 
-                  <Card 
-                    elevation={0} 
-                    sx={{ 
-                      border: '1px solid', 
-                      borderColor: 'divider', 
+                  <Card
+                    elevation={0}
+                    sx={{
+                      border: '1px solid',
+                      borderColor: 'divider',
                       borderRadius: 3,
-                      background: colorSchemes.gradient.warning
+                      background: colorSchemes.gradient.warning,
+                      transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                      '&:hover': {
+                        transform: 'translateY(-4px)',
+                        boxShadow: '0 12px 40px rgba(250, 112, 154, 0.3)',
+                      }
                     }}
                   >
                     <CardContent sx={{ p: 3, color: 'white' }}>
                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                        <WarningIcon sx={{ mr: 2 }} />
+                        <WarningIcon sx={{ mr: 2, fontSize: 28 }} />
                         <Typography variant="h6" fontWeight="bold">
                           System Alerts
                         </Typography>
                       </Box>
                       <Stack spacing={2}>
-                        <Box sx={{ 
-                          p: 2, 
-                          bgcolor: 'rgba(255,255,255,0.1)', 
+                        <Box sx={{
+                          p: 2,
+                          bgcolor: 'rgba(255,255,255,0.1)',
                           borderRadius: 2,
-                          border: '1px solid rgba(255,255,255,0.2)'
+                          border: '1px solid rgba(255,255,255,0.2)',
+                          transition: 'background-color 0.3s ease',
+                          '&:hover': {
+                            bgcolor: 'rgba(255,255,255,0.15)',
+                          }
                         }}>
                           <Typography variant="body2" fontWeight="medium">
                             Low Stock Alerts
@@ -613,11 +670,15 @@ const SystemWideAnalytics: React.FC<SystemWideAnalyticsProps> = ({ onBack }) => 
                             12
                           </Typography>
                         </Box>
-                        <Box sx={{ 
-                          p: 2, 
-                          bgcolor: 'rgba(255,255,255,0.1)', 
+                        <Box sx={{
+                          p: 2,
+                          bgcolor: 'rgba(255,255,255,0.1)',
                           borderRadius: 2,
-                          border: '1px solid rgba(255,255,255,0.2)'
+                          border: '1px solid rgba(255,255,255,0.2)',
+                          transition: 'background-color 0.3s ease',
+                          '&:hover': {
+                            bgcolor: 'rgba(255,255,255,0.15)',
+                          }
                         }}>
                           <Typography variant="body2" fontWeight="medium">
                             Interaction Warnings
@@ -630,31 +691,45 @@ const SystemWideAnalytics: React.FC<SystemWideAnalyticsProps> = ({ onBack }) => 
                     </CardContent>
                   </Card>
                 </Stack>
-              </Grid>
-            </Grid>
+              </Box>
+            </Box>
           </Box>
         </TabPanel>
 
         {/* Patient Analytics Tab */}
         <TabPanel value={currentTab} index={1}>
           <Box sx={{ px: 4 }}>
-            <Typography variant="h5" fontWeight="bold" sx={{ mb: 3 }}>
+            <Typography variant="h5" fontWeight="bold" sx={{ mb: 4, display: 'flex', alignItems: 'center' }}>
+              <GroupIcon sx={{ mr: 2, fontSize: 32, color: 'primary.main' }} />
               Patient Analytics & Demographics
             </Typography>
-            
-            <Grid container spacing={4}>
-              <Grid item xs={12} md={8}>
-                <Card 
-                  elevation={0} 
-                  sx={{ 
-                    border: '1px solid', 
-                    borderColor: 'divider', 
+
+            <Box
+              sx={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 4,
+              }}
+            >
+              {/* Patient List - 66% width on large screens */}
+              <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 calc(66.666% - 16px)' }, minWidth: 0 }}>
+                <Card
+                  elevation={0}
+                  sx={{
+                    border: '1px solid',
+                    borderColor: 'divider',
                     borderRadius: 3,
-                    background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)'
+                    background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)',
+                    height: '100%',
+                    transition: 'box-shadow 0.3s ease',
+                    '&:hover': {
+                      boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
+                    }
                   }}
                 >
                   <CardContent sx={{ p: 4 }}>
-                    <Typography variant="h6" fontWeight="bold" sx={{ mb: 3 }}>
+                    <Typography variant="h6" fontWeight="bold" sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
+                      <PersonIcon sx={{ mr: 1.5, color: 'primary.main' }} />
                       Recent Patients with Medications
                     </Typography>
                     {patientsLoading ? (
@@ -664,13 +739,24 @@ const SystemWideAnalytics: React.FC<SystemWideAnalyticsProps> = ({ onBack }) => 
                     ) : (
                       <List>
                         {(recentPatients || []).map((patient, index) => (
-                          <ListItem key={patient.id} sx={{ 
-                            mb: 1, 
-                            bgcolor: alpha(colorSchemes.primary[index % colorSchemes.primary.length], 0.05),
-                            borderRadius: 2
-                          }}>
+                          <ListItem
+                            key={patient.id}
+                            sx={{
+                              mb: 1.5,
+                              bgcolor: alpha(colorSchemes.primary[index % colorSchemes.primary.length], 0.05),
+                              borderRadius: 2,
+                              border: '1px solid',
+                              borderColor: alpha(colorSchemes.primary[index % colorSchemes.primary.length], 0.1),
+                              transition: 'all 0.3s ease',
+                              '&:hover': {
+                                bgcolor: alpha(colorSchemes.primary[index % colorSchemes.primary.length], 0.1),
+                                transform: 'translateX(8px)',
+                                boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                              }
+                            }}
+                          >
                             <ListItemAvatar>
-                              <Avatar sx={{ 
+                              <Avatar sx={{
                                 bgcolor: colorSchemes.primary[index % colorSchemes.primary.length],
                                 width: 48,
                                 height: 48
@@ -702,97 +788,171 @@ const SystemWideAnalytics: React.FC<SystemWideAnalyticsProps> = ({ onBack }) => 
                     )}
                   </CardContent>
                 </Card>
-              </Grid>
+              </Box>
 
-              <Grid item xs={12} md={4}>
-                <Card 
-                  elevation={0} 
-                  sx={{ 
-                    border: '1px solid', 
-                    borderColor: 'divider', 
+              {/* Statistics - 33% width on large screens */}
+              <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 calc(33.333% - 16px)' }, minWidth: 0 }}>
+                <Card
+                  elevation={0}
+                  sx={{
+                    border: '1px solid',
+                    borderColor: 'divider',
                     borderRadius: 3,
-                    background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)'
+                    background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)',
+                    height: '100%',
+                    transition: 'box-shadow 0.3s ease',
+                    '&:hover': {
+                      boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
+                    }
                   }}
                 >
                   <CardContent sx={{ p: 4 }}>
-                    <Typography variant="h6" fontWeight="bold" sx={{ mb: 3 }}>
+                    <Typography variant="h6" fontWeight="bold" sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
+                      <AssessmentIcon sx={{ mr: 1.5, color: 'primary.main' }} />
                       Patient Statistics
                     </Typography>
                     <Stack spacing={3}>
-                      <Box sx={{ textAlign: 'center', p: 2, bgcolor: alpha(theme.palette.primary.main, 0.1), borderRadius: 2 }}>
+                      <Box
+                        sx={{
+                          textAlign: 'center',
+                          p: 3,
+                          bgcolor: alpha(theme.palette.primary.main, 0.1),
+                          borderRadius: 3,
+                          border: '2px solid',
+                          borderColor: alpha(theme.palette.primary.main, 0.2),
+                          transition: 'all 0.3s ease',
+                          '&:hover': {
+                            transform: 'scale(1.05)',
+                            boxShadow: '0 8px 24px rgba(25, 118, 210, 0.2)',
+                          }
+                        }}
+                      >
                         <Typography variant="h3" color="primary.main" fontWeight="bold">
                           {(recentPatients || []).length.toLocaleString()}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2" color="text.secondary" fontWeight="medium">
                           Total Active Patients
                         </Typography>
                       </Box>
-                      <Box sx={{ textAlign: 'center', p: 2, bgcolor: alpha(theme.palette.success.main, 0.1), borderRadius: 2 }}>
+                      <Box
+                        sx={{
+                          textAlign: 'center',
+                          p: 3,
+                          bgcolor: alpha(theme.palette.success.main, 0.1),
+                          borderRadius: 3,
+                          border: '2px solid',
+                          borderColor: alpha(theme.palette.success.main, 0.2),
+                          transition: 'all 0.3s ease',
+                          '&:hover': {
+                            transform: 'scale(1.05)',
+                            boxShadow: '0 8px 24px rgba(46, 125, 50, 0.2)',
+                          }
+                        }}
+                      >
                         <Typography variant="h3" color="success.main" fontWeight="bold">
                           {Math.round((recentPatients || []).length * 0.73).toLocaleString()}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2" color="text.secondary" fontWeight="medium">
                           Adherent Patients (&gt;70%)
                         </Typography>
                       </Box>
-                      <Box sx={{ textAlign: 'center', p: 2, bgcolor: alpha(theme.palette.warning.main, 0.1), borderRadius: 2 }}>
+                      <Box
+                        sx={{
+                          textAlign: 'center',
+                          p: 3,
+                          bgcolor: alpha(theme.palette.warning.main, 0.1),
+                          borderRadius: 3,
+                          border: '2px solid',
+                          borderColor: alpha(theme.palette.warning.main, 0.2),
+                          transition: 'all 0.3s ease',
+                          '&:hover': {
+                            transform: 'scale(1.05)',
+                            boxShadow: '0 8px 24px rgba(237, 108, 2, 0.2)',
+                          }
+                        }}
+                      >
                         <Typography variant="h3" color="warning.main" fontWeight="bold">
                           {Math.round((recentPatients || []).length * 0.15).toLocaleString()}
                         </Typography>
-                        <Typography variant="body2" color="text.secondary">
+                        <Typography variant="body2" color="text.secondary" fontWeight="medium">
                           Need Attention (&lt;70%)
                         </Typography>
                       </Box>
                     </Stack>
                   </CardContent>
                 </Card>
-              </Grid>
-            </Grid>
+              </Box>
+            </Box>
           </Box>
         </TabPanel>
 
         {/* Medication Trends Tab */}
         <TabPanel value={currentTab} index={2}>
           <Box sx={{ px: 4 }}>
-            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4 }}>
-              <Typography variant="h5" fontWeight="bold">
+            <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, flexWrap: 'wrap', gap: 2 }}>
+              <Typography variant="h5" fontWeight="bold" sx={{ display: 'flex', alignItems: 'center' }}>
+                <TimelineIcon sx={{ mr: 2, fontSize: 32, color: 'primary.main' }} />
                 Medication Trends & Patterns
               </Typography>
               <ButtonGroup size="medium">
                 <Button
                   variant={period === '3months' ? 'contained' : 'outlined'}
                   onClick={() => handlePeriodChange('3months')}
+                  sx={{
+                    borderRadius: '8px 0 0 8px',
+                    fontWeight: period === '3months' ? 'bold' : 'normal'
+                  }}
                 >
                   3M
                 </Button>
                 <Button
                   variant={period === '6months' ? 'contained' : 'outlined'}
                   onClick={() => handlePeriodChange('6months')}
+                  sx={{
+                    fontWeight: period === '6months' ? 'bold' : 'normal'
+                  }}
                 >
                   6M
                 </Button>
                 <Button
                   variant={period === '1year' ? 'contained' : 'outlined'}
                   onClick={() => handlePeriodChange('1year')}
+                  sx={{
+                    borderRadius: '0 8px 8px 0',
+                    fontWeight: period === '1year' ? 'bold' : 'normal'
+                  }}
                 >
                   1Y
                 </Button>
               </ButtonGroup>
             </Box>
 
-            <Grid container spacing={4}>
-              <Grid item xs={12} lg={8}>
-                <Card 
-                  elevation={0} 
-                  sx={{ 
-                    border: '1px solid', 
-                    borderColor: 'divider', 
+            <Box
+              sx={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 4,
+              }}
+            >
+              {/* Main Chart - 66% width on large screens */}
+              <Box sx={{ flex: { xs: '1 1 100%', lg: '1 1 calc(66.666% - 16px)' }, minWidth: 0 }}>
+                <Card
+                  elevation={0}
+                  sx={{
+                    border: '1px solid',
+                    borderColor: 'divider',
                     borderRadius: 3,
-                    background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)'
+                    background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)',
+                    height: '100%',
+                    transition: 'box-shadow 0.3s ease',
+                    '&:hover': {
+                      boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
+                    }
                   }}
                 >
                   <CardContent sx={{ p: 4 }}>
-                    <Typography variant="h6" fontWeight="bold" sx={{ mb: 3 }}>
+                    <Typography variant="h6" fontWeight="bold" sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
+                      <ShowChartIcon sx={{ mr: 1.5, color: 'primary.main' }} />
                       System-Wide Adherence Trends
                     </Typography>
                     {trendsLoading ? (
@@ -834,32 +994,45 @@ const SystemWideAnalytics: React.FC<SystemWideAnalyticsProps> = ({ onBack }) => 
                     )}
                   </CardContent>
                 </Card>
-              </Grid>
+              </Box>
 
-              <Grid item xs={12} lg={4}>
-                <Card 
-                  elevation={0} 
-                  sx={{ 
-                    border: '1px solid', 
-                    borderColor: 'divider', 
+              {/* Top Medications - 33% width on large screens */}
+              <Box sx={{ flex: { xs: '1 1 100%', lg: '1 1 calc(33.333% - 16px)' }, minWidth: 0 }}>
+                <Card
+                  elevation={0}
+                  sx={{
+                    border: '1px solid',
+                    borderColor: 'divider',
                     borderRadius: 3,
-                    background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)'
+                    background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)',
+                    height: '100%',
+                    transition: 'box-shadow 0.3s ease',
+                    '&:hover': {
+                      boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
+                    }
                   }}
                 >
                   <CardContent sx={{ p: 4 }}>
-                    <Typography variant="h6" fontWeight="bold" sx={{ mb: 3 }}>
+                    <Typography variant="h6" fontWeight="bold" sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
+                      <MedicationIcon sx={{ mr: 1.5, color: 'success.main' }} />
                       Top Medications
                     </Typography>
                     <Stack spacing={2}>
                       {(recentPatients || []).slice(0, 4).map((patient, index) => (
-                        <Box 
+                        <Box
                           key={index}
-                          sx={{ 
-                            p: 2, 
-                            border: '1px solid', 
+                          sx={{
+                            p: 2,
+                            border: '1px solid',
                             borderColor: 'divider',
                             borderRadius: 2,
-                            background: alpha(colorSchemes.success[index % colorSchemes.success.length], 0.1)
+                            background: alpha(colorSchemes.success[index % colorSchemes.success.length], 0.1),
+                            transition: 'all 0.3s ease',
+                            '&:hover': {
+                              bgcolor: alpha(colorSchemes.success[index % colorSchemes.success.length], 0.15),
+                              transform: 'translateX(8px)',
+                              boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                            }
                           }}
                         >
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }}>
@@ -881,31 +1054,45 @@ const SystemWideAnalytics: React.FC<SystemWideAnalyticsProps> = ({ onBack }) => 
                     </Stack>
                   </CardContent>
                 </Card>
-              </Grid>
-            </Grid>
+              </Box>
+            </Box>
           </Box>
         </TabPanel>
 
         {/* Financial Performance Tab */}
         <TabPanel value={currentTab} index={3}>
           <Box sx={{ px: 4 }}>
-            <Typography variant="h5" fontWeight="bold" sx={{ mb: 4 }}>
+            <Typography variant="h5" fontWeight="bold" sx={{ mb: 4, display: 'flex', alignItems: 'center' }}>
+              <AccountBalanceIcon sx={{ mr: 2, fontSize: 32, color: 'success.main' }} />
               Financial Performance & Revenue Analysis
             </Typography>
-            
-            <Grid container spacing={4}>
-              <Grid item xs={12} md={8}>
-                <Card 
-                  elevation={0} 
-                  sx={{ 
-                    border: '1px solid', 
-                    borderColor: 'divider', 
+
+            <Box
+              sx={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: 4,
+              }}
+            >
+              {/* Revenue Chart - 66% width on large screens */}
+              <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 calc(66.666% - 16px)' }, minWidth: 0 }}>
+                <Card
+                  elevation={0}
+                  sx={{
+                    border: '1px solid',
+                    borderColor: 'divider',
                     borderRadius: 3,
-                    background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)'
+                    background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)',
+                    height: '100%',
+                    transition: 'box-shadow 0.3s ease',
+                    '&:hover': {
+                      boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
+                    }
                   }}
                 >
                   <CardContent sx={{ p: 4 }}>
-                    <Typography variant="h6" fontWeight="bold" sx={{ mb: 3 }}>
+                    <Typography variant="h6" fontWeight="bold" sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
+                      <TrendingUpIcon sx={{ mr: 1.5, color: 'success.main' }} />
                       Revenue Trends
                     </Typography>
                     <ResponsiveContainer width="100%" height={350}>
@@ -940,67 +1127,122 @@ const SystemWideAnalytics: React.FC<SystemWideAnalyticsProps> = ({ onBack }) => 
                     </ResponsiveContainer>
                   </CardContent>
                 </Card>
-              </Grid>
+              </Box>
 
-              <Grid item xs={12} md={4}>
+              {/* Side Cards - 33% width on large screens */}
+              <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 calc(33.333% - 16px)' }, minWidth: 0 }}>
                 <Stack spacing={3}>
-                  <Card 
-                    elevation={0} 
-                    sx={{ 
-                      border: '1px solid', 
-                      borderColor: 'divider', 
+                  <Card
+                    elevation={0}
+                    sx={{
+                      border: '1px solid',
+                      borderColor: 'divider',
                       borderRadius: 3,
-                      background: colorSchemes.gradient.success
+                      background: colorSchemes.gradient.success,
+                      transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                      '&:hover': {
+                        transform: 'translateY(-4px)',
+                        boxShadow: '0 12px 40px rgba(79, 172, 254, 0.3)',
+                      }
                     }}
                   >
                     <CardContent sx={{ p: 3, color: 'white', textAlign: 'center' }}>
+                      <Box sx={{ display: 'flex', justifyContent: 'center', mb: 2 }}>
+                        <Avatar sx={{ bgcolor: 'rgba(255,255,255,0.2)', width: 56, height: 56 }}>
+                          <AccountBalanceIcon sx={{ fontSize: 28 }} />
+                        </Avatar>
+                      </Box>
                       <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
                         Monthly Revenue
                       </Typography>
                       <Typography variant="h3" fontWeight="bold" sx={{ mb: 1 }}>
                         ₦{((dashboardStats?.activeMedications || 0) * 1000).toLocaleString()}
                       </Typography>
-                      <Typography variant="body2" sx={{ opacity: 0.9 }}>
-                        +12.5% from last month
-                      </Typography>
+                      <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <TrendingUpIcon sx={{ mr: 0.5, fontSize: 'small' }} />
+                        <Typography variant="body2" sx={{ opacity: 0.9 }}>
+                          +12.5% from last month
+                        </Typography>
+                      </Box>
                     </CardContent>
                   </Card>
 
-                  <Card 
-                    elevation={0} 
-                    sx={{ 
-                      border: '1px solid', 
-                      borderColor: 'divider', 
+                  <Card
+                    elevation={0}
+                    sx={{
+                      border: '1px solid',
+                      borderColor: 'divider',
                       borderRadius: 3,
-                      background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)'
+                      background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)',
+                      transition: 'box-shadow 0.3s ease',
+                      '&:hover': {
+                        boxShadow: '0 8px 32px rgba(0,0,0,0.08)',
+                      }
                     }}
                   >
                     <CardContent sx={{ p: 3 }}>
-                      <Typography variant="h6" fontWeight="bold" sx={{ mb: 3 }}>
+                      <Typography variant="h6" fontWeight="bold" sx={{ mb: 3, display: 'flex', alignItems: 'center' }}>
+                        <AssessmentIcon sx={{ mr: 1.5, color: 'primary.main' }} />
                         Key Metrics
                       </Typography>
-                      <Stack spacing={2}>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <Typography variant="body2" color="text.secondary">
+                      <Stack spacing={2.5}>
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            p: 2,
+                            bgcolor: alpha(theme.palette.primary.main, 0.05),
+                            borderRadius: 2,
+                            transition: 'background-color 0.3s ease',
+                            '&:hover': {
+                              bgcolor: alpha(theme.palette.primary.main, 0.1),
+                            }
+                          }}
+                        >
+                          <Typography variant="body2" color="text.secondary" fontWeight="medium">
                             Avg Revenue per Patient
                           </Typography>
-                          <Typography variant="body1" fontWeight="bold">
+                          <Typography variant="body1" fontWeight="bold" color="primary.main">
                             ₦1,965
                           </Typography>
                         </Box>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <Typography variant="body2" color="text.secondary">
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            p: 2,
+                            bgcolor: alpha(theme.palette.success.main, 0.05),
+                            borderRadius: 2,
+                            transition: 'background-color 0.3s ease',
+                            '&:hover': {
+                              bgcolor: alpha(theme.palette.success.main, 0.1),
+                            }
+                          }}
+                        >
+                          <Typography variant="body2" color="text.secondary" fontWeight="medium">
                             Profit Margin
                           </Typography>
                           <Typography variant="body1" fontWeight="bold" color="success.main">
                             28.5%
                           </Typography>
                         </Box>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between' }}>
-                          <Typography variant="body2" color="text.secondary">
+                        <Box
+                          sx={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            p: 2,
+                            bgcolor: alpha(theme.palette.warning.main, 0.05),
+                            borderRadius: 2,
+                            transition: 'background-color 0.3s ease',
+                            '&:hover': {
+                              bgcolor: alpha(theme.palette.warning.main, 0.1),
+                            }
+                          }}
+                        >
+                          <Typography variant="body2" color="text.secondary" fontWeight="medium">
                             Cost per Medication
                           </Typography>
-                          <Typography variant="body1" fontWeight="bold">
+                          <Typography variant="body1" fontWeight="bold" color="warning.main">
                             ₦630
                           </Typography>
                         </Box>
@@ -1008,8 +1250,8 @@ const SystemWideAnalytics: React.FC<SystemWideAnalyticsProps> = ({ onBack }) => 
                     </CardContent>
                   </Card>
                 </Stack>
-              </Grid>
-            </Grid>
+              </Box>
+            </Box>
           </Box>
         </TabPanel>
       </Paper>

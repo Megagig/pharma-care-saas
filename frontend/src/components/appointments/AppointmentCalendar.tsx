@@ -114,7 +114,7 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
   // Simple initialization - set to today once on mount
   useEffect(() => {
     const today = new Date();
-    console.log('🗓️ Calendar component mounted, setting to today:', today);
+
     setSelectedDate(today);
   }, []); // Run only once on mount
 
@@ -130,7 +130,7 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
       currentCalendarDate.setHours(0, 0, 0, 0);
       
       if (currentCalendarDate.getTime() !== selectedDateOnly.getTime()) {
-        console.log('🗓️ Syncing calendar date:', selectedDate);
+
         calendarApi.gotoDate(selectedDate);
       }
       
@@ -141,7 +141,7 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
                         'dayGridMonth';
       
       if (currentView !== targetView) {
-        console.log('🗓️ Syncing calendar view:', targetView);
+
         calendarApi.changeView(targetView);
       }
     }
@@ -166,9 +166,7 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
       pharmacistId,
       locationId,
     };
-    
-    console.log('🗓️ AppointmentCalendar API params:', params);
-    
+
     return params;
   }, [selectedView, selectedDate, pharmacistId, locationId]);
 
@@ -188,10 +186,9 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
 
   // Get appointments from calendar data
   const appointments = useMemo(() => {
-    console.log('📅 Calendar data received:', calendarData?.data?.appointments?.length || 0, 'appointments');
-    
+
     if (!calendarData?.data?.appointments) {
-      console.log('📅 No appointments in calendar data');
+
       return [];
     }
     return calendarData.data.appointments;
@@ -344,7 +341,7 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
   // Handle calendar date change (when user navigates) - Simplified to prevent loops
   const handleDatesSet = useCallback((dateInfo: any) => {
     // Only log the change, don't update state to prevent loops
-    console.log('Calendar date changed to:', dateInfo.start);
+
   }, []);
 
   // Mobile-specific configurations
@@ -542,7 +539,7 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
                     startIcon={<Today />}
                     onClick={() => {
                       const today = new Date();
-                      console.log('🗓️ Manual reset to today:', today);
+
                       setSelectedDate(today);
                       if (calendarRef.current) {
                         const calendarApi = calendarRef.current.getApi();
@@ -629,22 +626,22 @@ const AppointmentCalendar: React.FC<AppointmentCalendarProps> = ({
               onClose={() => setDetailsPanelOpen(false)}
               onEdit={(appointment) => {
                 // TODO: Implement edit functionality in future task
-                console.log('Edit appointment:', appointment);
+
                 setDetailsPanelOpen(false);
               }}
               onReschedule={(appointment) => {
                 // TODO: Implement reschedule functionality in future task
-                console.log('Reschedule appointment:', appointment);
+
                 setDetailsPanelOpen(false);
               }}
               onCancel={(appointment) => {
-                console.log('Appointment cancelled:', appointment);
+
                 setDetailsPanelOpen(false);
                 // Refresh calendar data
                 refetch();
               }}
               onComplete={(appointment) => {
-                console.log('Appointment completed:', appointment);
+
                 setDetailsPanelOpen(false);
                 // Refresh calendar data
                 refetch();

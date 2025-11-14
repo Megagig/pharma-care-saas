@@ -382,9 +382,8 @@ const ClinicalNoteForm: React.FC<ClinicalNoteFormProps> = ({
   // Handle form submission
   const onSubmit = async (data: ClinicalNoteFormData) => {
     try {
-      console.log('Form submission data:', data);
-      console.log('Patient ID:', data.patient);
-      console.log('Available patients:', patients);
+
+
 
       let result;
       if (noteId) {

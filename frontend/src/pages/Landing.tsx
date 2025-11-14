@@ -23,6 +23,10 @@ import {
   ListItemButton,
   ListItemText,
   Divider,
+  CardMedia,
+  Chip,
+  Skeleton,
+  Alert,
 } from '@mui/material';
 import MenuIcon from '@mui/icons-material/Menu';
 import CloseIcon from '@mui/icons-material/Close';
@@ -34,14 +38,20 @@ import ArrowForwardIcon from '@mui/icons-material/ArrowForward';
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import LocalPharmacyIcon from '@mui/icons-material/LocalPharmacy';
+import AccessTimeIcon from '@mui/icons-material/AccessTime';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 import Footer from '../components/Footer';
 import ThemeToggle from '../components/common/ThemeToggle';
+import { useLatestPosts } from '../hooks/useHealthBlog';
 
 const Landing = () => {
   const theme = useTheme();
   const [isVisible, setIsVisible] = useState<{ [key: string]: boolean }>({});
   const observerRefs = useRef<{ [key: string]: HTMLDivElement | null }>({});
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
+  // Fetch latest health articles
+  const { data: latestPostsData, isLoading: loadingPosts, error: postsError } = useLatestPosts({ limit: 6 });
 
   const toggleMobileMenu = () => {
     setMobileMenuOpen(!mobileMenuOpen);
@@ -229,9 +239,9 @@ const Landing = () => {
               gap: 3,
             }}
           >
-            <Button 
-              component={Link} 
-              to="/patient-access" 
+            <Button
+              component={Link}
+              to="/patient-access"
               color="inherit"
               startIcon={<LocalPharmacyIcon />}
               sx={{
@@ -478,9 +488,9 @@ const Landing = () => {
                   variant="outlined"
                   size="large"
                   startIcon={<LocalPharmacyIcon />}
-                  sx={{ 
-                    py: 1.5, 
-                    px: 4, 
+                  sx={{
+                    py: 1.5,
+                    px: 4,
                     borderRadius: 3,
                     borderColor: 'primary.main',
                     color: 'primary.main',
@@ -841,8 +851,8 @@ const Landing = () => {
       {/* Patient Portal Section */}
       <Box
         sx={{
-          bgcolor: theme.palette.mode === 'dark' 
-            ? 'rgba(25, 118, 210, 0.05)' 
+          bgcolor: theme.palette.mode === 'dark'
+            ? 'rgba(25, 118, 210, 0.05)'
             : 'rgba(25, 118, 210, 0.08)',
           py: { xs: 8, md: 12 },
         }}
@@ -880,7 +890,7 @@ const Landing = () => {
                 lineHeight: 1.6,
               }}
             >
-              Patients can easily access their pharmacy's portal to book appointments, 
+              Patients can easily access their pharmacy's portal to book appointments,
               manage prescriptions, and stay connected with their healthcare providers.
             </Typography>
           </Box>
@@ -1126,6 +1136,263 @@ const Landing = () => {
           ))}
         </Box>
       </Container>
+
+      {/* Latest Health Articles Section */}
+      <Box
+        sx={{
+          bgcolor:
+            theme.palette.mode === 'dark'
+              ? 'rgba(6, 182, 212, 0.05)'
+              : 'rgba(6, 182, 212, 0.08)',
+          py: { xs: 8, md: 12 },
+        }}
+      >
+        <Container maxWidth="lg">
+          <Box
+            ref={(el) => (observerRefs.current['articles-header'] = el as HTMLDivElement | null)}
+            sx={{
+              textAlign: 'center',
+              mb: 6,
+              opacity: isVisible['articles-header'] ? 1 : 0,
+              transform: isVisible['articles-header']
+                ? 'translateY(0)'
+                : 'translateY(30px)',
+              transition: 'all 0.6s ease-out',
+            }}
+          >
+            <Typography
+              variant="h3"
+              component="h2"
+              sx={{ fontWeight: 600, mb: 2 }}
+            >
+              Latest Health Articles
+            </Typography>
+            <Typography variant="h6" color="text.secondary">
+              Stay informed with our latest insights on health and wellness
+            </Typography>
+          </Box>
+
+          <Box
+            ref={(el) => (observerRefs.current['articles'] = el as HTMLDivElement | null)}
+            sx={{
+              opacity: isVisible['articles'] ? 1 : 0,
+              transform: isVisible['articles']
+                ? 'translateY(0)'
+                : 'translateY(30px)',
+              transition: 'all 0.6s ease-out 0.2s',
+            }}
+          >
+            {/* Loading State */}
+            {loadingPosts && (
+              <Box
+                sx={{
+                  display: 'flex',
+                  flexDirection: { xs: 'column', sm: 'row' },
+                  flexWrap: 'wrap',
+                  gap: 3,
+                }}
+              >
+                {[1, 2, 3, 4, 5, 6].map((index) => (
+                  <Box
+                    key={index}
+                    sx={{
+                      flex: {
+                        xs: '1 1 100%',
+                        sm: '1 1 calc(50% - 12px)',
+                        md: '1 1 calc(33.333% - 16px)',
+                      },
+                    }}
+                  >
+                    <Card sx={{ height: '100%' }}>
+                      <Skeleton variant="rectangular" height={200} />
+                      <CardContent>
+                        <Skeleton variant="text" height={32} />
+                        <Skeleton variant="text" />
+                        <Skeleton variant="text" />
+                        <Box sx={{ display: 'flex', gap: 1, mt: 2 }}>
+                          <Skeleton variant="rectangular" width={60} height={24} />
+                          <Skeleton variant="rectangular" width={60} height={24} />
+                        </Box>
+                      </CardContent>
+                    </Card>
+                  </Box>
+                ))}
+              </Box>
+            )}
+
+            {/* Error State */}
+            {postsError && (
+              <Alert severity="warning" sx={{ mb: 3 }}>
+                Unable to load health articles at the moment. Please try again later.
+              </Alert>
+            )}
+
+            {/* Success State - Display Articles */}
+            {!loadingPosts && !postsError && latestPostsData?.data?.posts && latestPostsData.data.posts.length > 0 && (
+              <>
+                <Box
+                  sx={{
+                    display: 'flex',
+                    flexDirection: { xs: 'column', sm: 'row' },
+                    flexWrap: 'wrap',
+                    gap: 3,
+                  }}
+                >
+                  {latestPostsData.data.posts.map((post: any) => (
+                    <Box
+                      key={post._id}
+                      sx={{
+                        flex: {
+                          xs: '1 1 100%',
+                          sm: '1 1 calc(50% - 12px)',
+                          md: '1 1 calc(33.333% - 16px)',
+                        },
+                      }}
+                    >
+                      <Card
+                        sx={{
+                          height: '100%',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                          '&:hover': {
+                            transform: 'translateY(-8px)',
+                            boxShadow: '0 12px 24px rgba(8, 145, 178, 0.15)',
+                          },
+                        }}
+                      >
+                        {/* Featured Image */}
+                        {post.featuredImage?.url && (
+                          <CardMedia
+                            component="img"
+                            height="200"
+                            image={post.featuredImage.url}
+                            alt={post.featuredImage.alt || post.title}
+                            sx={{ objectFit: 'cover' }}
+                          />
+                        )}
+
+                        <CardContent sx={{ flexGrow: 1, display: 'flex', flexDirection: 'column' }}>
+                          {/* Category Chip */}
+                          <Box sx={{ mb: 2 }}>
+                            <Chip
+                              label={post.category.replace('_', ' ').toUpperCase()}
+                              size="small"
+                              color="primary"
+                              sx={{ fontWeight: 600 }}
+                            />
+                          </Box>
+
+                          {/* Title */}
+                          <Typography
+                            variant="h6"
+                            component="h3"
+                            sx={{
+                              fontWeight: 600,
+                              mb: 1,
+                              display: '-webkit-box',
+                              WebkitLineClamp: 2,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}
+                          >
+                            {post.title}
+                          </Typography>
+
+                          {/* Excerpt */}
+                          <Typography
+                            variant="body2"
+                            color="text.secondary"
+                            sx={{
+                              mb: 2,
+                              flexGrow: 1,
+                              display: '-webkit-box',
+                              WebkitLineClamp: 3,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                            }}
+                          >
+                            {post.excerpt}
+                          </Typography>
+
+                          {/* Meta Information */}
+                          <Box
+                            sx={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              mb: 2,
+                              flexWrap: 'wrap',
+                              gap: 1,
+                            }}
+                          >
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <AccessTimeIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                              <Typography variant="caption" color="text.secondary">
+                                {post.readTime} min read
+                              </Typography>
+                            </Box>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                              <VisibilityIcon sx={{ fontSize: 16, color: 'text.secondary' }} />
+                              <Typography variant="caption" color="text.secondary">
+                                {post.viewCount || 0} views
+                              </Typography>
+                            </Box>
+                          </Box>
+
+                          {/* Read More Button */}
+                          <Button
+                            component={Link}
+                            to={`/blog/${post.slug}`}
+                            variant="outlined"
+                            fullWidth
+                            sx={{
+                              mt: 'auto',
+                              borderRadius: 2,
+                              textTransform: 'none',
+                              fontWeight: 600,
+                            }}
+                          >
+                            Read More
+                          </Button>
+                        </CardContent>
+                      </Card>
+                    </Box>
+                  ))}
+                </Box>
+
+                {/* View All Button */}
+                <Box sx={{ textAlign: 'center', mt: 6 }}>
+                  <Button
+                    component={Link}
+                    to="/blog"
+                    variant="contained"
+                    size="large"
+                    endIcon={<ArrowForwardIcon />}
+                    sx={{ py: 1.5, px: 4, borderRadius: 3 }}
+                  >
+                    View All Articles
+                  </Button>
+                </Box>
+              </>
+            )}
+
+            {/* No Articles State */}
+            {!loadingPosts && !postsError && (!latestPostsData?.data?.posts || latestPostsData.data.posts.length === 0) && (
+              <Box sx={{ textAlign: 'center', py: 8 }}>
+                <Typography variant="h6" color="text.secondary" gutterBottom>
+                  No articles available yet
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Check back soon for health and wellness insights
+                </Typography>
+              </Box>
+            )}
+          </Box>
+        </Container>
+      </Box>
 
       {/* CTA Section */}
       <Box sx={{ bgcolor: 'primary.main', py: { xs: 8, md: 12 } }}>

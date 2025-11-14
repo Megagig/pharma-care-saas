@@ -23,7 +23,7 @@ import {
   AccessTime as HoursIcon,
 } from '@mui/icons-material';
 import { useNavigate } from 'react-router-dom';
-import { apiClient } from '../services/apiClient';
+import publicApiClient from '../services/publicApiClient';
 
 interface Workspace {
   id: string;
@@ -47,7 +47,7 @@ interface Workspace {
 const PublicPatientPortal: React.FC = () => {
   const theme = useTheme();
   const navigate = useNavigate();
-  
+
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<Workspace[]>([]);
   const [loading, setLoading] = useState(false);
@@ -64,7 +64,7 @@ const PublicPatientPortal: React.FC = () => {
     setSearchResults([]);
 
     try {
-      const response = await apiClient.get('/public/workspaces/search', {
+      const response = await publicApiClient.get('/public/workspaces/search', {
         params: {
           query: searchQuery,
         },
@@ -74,7 +74,7 @@ const PublicPatientPortal: React.FC = () => {
 
       if (data.success) {
         setSearchResults(data.data.workspaces);
-        
+
         if (data.data.workspaces.length === 0) {
           setError('No pharmacy, clinic, or hospital found matching your search. Please try a different search term.');
         }
@@ -173,7 +173,7 @@ const PublicPatientPortal: React.FC = () => {
             <Typography variant="h5" sx={{ mb: 3, fontWeight: 600, textAlign: 'center' }}>
               Find Your Pharmacy
             </Typography>
-            
+
             <Box sx={{ display: 'flex', gap: 2, mb: 3 }}>
               <TextField
                 fullWidth
@@ -222,7 +222,7 @@ const PublicPatientPortal: React.FC = () => {
                 <Typography variant="h6" sx={{ mb: 3, fontWeight: 600 }}>
                   Found {searchResults.length} workspace{searchResults.length !== 1 ? 's' : ''}
                 </Typography>
-                
+
                 <Grid container spacing={3}>
                   {searchResults.map((workspace) => (
                     <Grid item xs={12} md={6} key={workspace.id}>
@@ -325,7 +325,7 @@ const PublicPatientPortal: React.FC = () => {
             <Typography variant="h5" sx={{ mb: 3, fontWeight: 600, textAlign: 'center' }}>
               What You Can Do in the Patient Portal
             </Typography>
-            
+
             <Grid container spacing={4}>
               <Grid item xs={12} md={4}>
                 <Box sx={{ textAlign: 'center' }}>
@@ -352,7 +352,7 @@ const PublicPatientPortal: React.FC = () => {
                   </Typography>
                 </Box>
               </Grid>
-              
+
               <Grid item xs={12} md={4}>
                 <Box sx={{ textAlign: 'center' }}>
                   <Box
@@ -378,7 +378,7 @@ const PublicPatientPortal: React.FC = () => {
                   </Typography>
                 </Box>
               </Grid>
-              
+
               <Grid item xs={12} md={4}>
                 <Box sx={{ textAlign: 'center' }}>
                   <Box

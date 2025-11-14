@@ -918,9 +918,17 @@ export class EngagementIntegrationService {
   }> {
     try {
       const [diagnosticCase, followUpTasks, appointments] = await Promise.all([
-        DiagnosticCase.findById(diagnosticCaseId),
-        FollowUpTask.find({ 'relatedRecords.diagnosticCaseId': diagnosticCaseId }),
-        Appointment.find({ 'relatedRecords.diagnosticCaseId': diagnosticCaseId }),
+        DiagnosticCase.findById(diagnosticCaseId).lean().maxTimeMS(5000),
+        FollowUpTask.find({ 'relatedRecords.diagnosticCaseId': diagnosticCaseId })
+          .lean()
+          .maxTimeMS(5000)
+          .sort({ createdAt: -1 })
+          .limit(50), // Limit results to prevent excessive data
+        Appointment.find({ 'relatedRecords.diagnosticCaseId': diagnosticCaseId })
+          .lean()
+          .maxTimeMS(5000)
+          .sort({ scheduledDate: -1 })
+          .limit(50), // Limit results to prevent excessive data
       ]);
 
       if (!diagnosticCase) {

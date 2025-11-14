@@ -3,10 +3,12 @@ import { body, validationResult } from 'express-validator';
 import jwt from 'jsonwebtoken';
 import mongoose from 'mongoose';
 import PatientUser from '../models/PatientUser';
+import Patient from '../models/Patient';
 import { Workplace } from '../models/Workplace';
 import { generalRateLimiters } from '../middlewares/rateLimiting';
 import { sendEmail } from '../utils/email';
 import { auth } from '../middlewares/auth';
+import { PatientSyncService } from '../services/patientSyncService';
 
 const router = express.Router();
 
@@ -339,7 +341,7 @@ router.post(
             phone: patientUser.phone,
             status: patientUser.status,
             emailVerified: patientUser.emailVerified,
-            workspaceId: patientUser.workplaceId,
+            workspaceId: (patientUser.workplaceId as any)?._id?.toString() || patientUser.workplaceId.toString(),
             workspaceName: (patientUser.workplaceId as any)?.name || 'Healthcare Workspace',
           },
         },
@@ -354,6 +356,265 @@ router.post(
     }
   }
 );
+
+/**
+ * @route POST /api/patient-portal/auth/refresh-token
+ * @desc Refresh patient access token using refresh token
+ * @access Public (requires refresh token cookie)
+ */
+router.post('/refresh-token', async (req, res) => {
+  try {
+    const refreshToken = req.cookies.patientRefreshToken;
+
+    if (!refreshToken) {
+      return res.status(401).json({
+        success: false,
+        message: 'Refresh token not provided',
+      });
+    }
+
+    // Verify refresh token
+    let decoded: any;
+    try {
+      decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET!);
+    } catch (error) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid or expired refresh token',
+      });
+    }
+
+    // Find patient user and verify refresh token exists
+    const patientUser = await PatientUser.findById(decoded.patientUserId);
+
+    if (!patientUser) {
+      return res.status(401).json({
+        success: false,
+        message: 'Patient user not found',
+      });
+    }
+
+    // Check if refresh token exists in user's tokens
+    const tokenExists = patientUser.refreshTokens.some(
+      (t: any) => t.token === refreshToken && new Date(t.expiresAt) > new Date()
+    );
+
+    if (!tokenExists) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid refresh token',
+      });
+    }
+
+    // Check account status
+    if (patientUser.status === 'suspended' || !patientUser.isActive) {
+      return res.status(403).json({
+        success: false,
+        message: 'Account is not active',
+      });
+    }
+
+    // Generate new access token
+    const newAccessToken = jwt.sign(
+      {
+        patientUserId: patientUser._id,
+        workspaceId: patientUser.workplaceId,
+        email: patientUser.email,
+        type: 'patient',
+      },
+      process.env.JWT_SECRET!,
+      { expiresIn: '7d' }
+    );
+
+    // Set new access token cookie
+    res.cookie('patientAccessToken', newAccessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    res.json({
+      success: true,
+      message: 'Token refreshed successfully',
+    });
+  } catch (error) {
+    console.error('Patient token refresh error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Token refresh failed',
+      error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined,
+    });
+  }
+});
+
+/**
+ * @route POST /api/patient-portal/auth/refresh-token
+ * @desc Refresh patient access token using refresh token
+ * @access Public (requires refresh token cookie)
+ */
+router.post('/refresh-token', async (req, res) => {
+  try {
+    const refreshToken = req.cookies.patientRefreshToken;
+
+    if (!refreshToken) {
+      return res.status(401).json({
+        success: false,
+        message: 'Refresh token not provided',
+      });
+    }
+
+    // Verify refresh token
+    let decoded: any;
+    try {
+      decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET!);
+    } catch (error) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid or expired refresh token',
+      });
+    }
+
+    // Find patient user and verify refresh token exists
+    const patientUser = await PatientUser.findById(decoded.patientUserId);
+
+    if (!patientUser) {
+      return res.status(401).json({
+        success: false,
+        message: 'Patient user not found',
+      });
+    }
+
+    // Check if refresh token exists in user's tokens
+    const tokenExists = patientUser.refreshTokens.some(
+      (t: any) => t.token === refreshToken && new Date(t.expiresAt) > new Date()
+    );
+
+    if (!tokenExists) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid refresh token',
+      });
+    }
+
+    // Check account status
+    if (patientUser.status === 'suspended' || !patientUser.isActive) {
+      return res.status(403).json({
+        success: false,
+        message: 'Account is not active',
+      });
+    }
+
+    // Generate new access token
+    const newAccessToken = jwt.sign(
+      {
+        patientUserId: patientUser._id,
+        workspaceId: patientUser.workplaceId,
+        email: patientUser.email,
+        type: 'patient',
+      },
+      process.env.JWT_SECRET!,
+      { expiresIn: '7d' }
+    );
+
+    // Set new access token cookie
+    res.cookie('patientAccessToken', newAccessToken, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === 'production',
+      sameSite: 'lax',
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
+
+    res.json({
+      success: true,
+      message: 'Token refreshed successfully',
+    });
+  } catch (error) {
+    console.error('Patient token refresh error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Token refresh failed',
+      error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined,
+    });
+  }
+});
+
+/**
+ * @route GET /api/patient-portal/auth/me
+ * @desc Get current authenticated patient user
+ * @access Private (requires patient access token)
+ */
+router.get('/me', async (req, res) => {
+  try {
+    const accessToken = req.cookies.patientAccessToken;
+
+    if (!accessToken) {
+      return res.status(401).json({
+        success: false,
+        message: 'Not authenticated',
+      });
+    }
+
+    // Verify access token
+    let decoded: any;
+    try {
+      decoded = jwt.verify(accessToken, process.env.JWT_SECRET!);
+    } catch (error) {
+      return res.status(401).json({
+        success: false,
+        message: 'Invalid or expired access token',
+      });
+    }
+
+    // Find patient user
+    const patientUser = await PatientUser.findById(decoded.patientUserId)
+      .populate('workplaceId', 'name type')
+      .select('-passwordHash -refreshTokens');
+
+    if (!patientUser) {
+      return res.status(404).json({
+        success: false,
+        message: 'Patient user not found',
+      });
+    }
+
+    // Check account status
+    if (patientUser.status === 'suspended' || !patientUser.isActive) {
+      return res.status(403).json({
+        success: false,
+        message: 'Account is not active',
+      });
+    }
+
+    res.json({
+      success: true,
+      data: {
+        patientUser: {
+          id: patientUser._id,
+          firstName: patientUser.firstName,
+          lastName: patientUser.lastName,
+          email: patientUser.email,
+          phone: patientUser.phone,
+          dateOfBirth: patientUser.dateOfBirth,
+          status: patientUser.status,
+          emailVerified: patientUser.emailVerified,
+          phoneVerified: patientUser.phoneVerified,
+          workspaceId: (patientUser.workplaceId as any)?._id?.toString() || patientUser.workplaceId.toString(),
+          workspaceName: (patientUser.workplaceId as any)?.name || 'Healthcare Workspace',
+          lastLoginAt: patientUser.lastLoginAt,
+        },
+      },
+      message: 'Patient user retrieved successfully',
+    });
+  } catch (error) {
+    console.error('Get patient user error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get patient user',
+      error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined,
+    });
+  }
+});
 
 /**
  * @route PATCH /api/patient-portal/auth/approve/:patientUserId
@@ -409,6 +670,16 @@ router.patch(
       if (approved) {
         patientUser.status = 'active';
         patientUser.isActive = true;
+
+        // Automatically create or link Patient record when approved
+        try {
+          const { patient, isNewRecord } = await PatientSyncService.createOrLinkPatientRecord(patientUserId);
+          console.log(`${isNewRecord ? 'Created new' : 'Linked existing'} Patient record ${patient._id} for approved PatientUser ${patientUserId}`);
+        } catch (syncError) {
+          console.error('Error creating/linking Patient record during approval:', syncError);
+          // Don't fail the approval process if Patient record creation fails
+          // The sync can be retried later
+        }
       } else {
         patientUser.status = 'inactive';
         patientUser.isActive = false;
@@ -422,7 +693,7 @@ router.patch(
         // Get workspace info for email
         const workspace = await Workplace.findById(patientUser.workplaceId);
         const workspaceName = workspace?.name || 'Healthcare Workspace';
-        
+
         await sendEmail({
           to: patientUser.email,
           subject: `Account ${approved ? 'Approved' : 'Update'} - ${workspaceName}`,
@@ -470,7 +741,7 @@ router.patch(
  * @access Private (Workspace Owner)
  */
 router.get(
-  '/patients/pending',
+  '/pending',
   auth, // Require authentication
   async (req, res) => {
     try {
@@ -526,7 +797,7 @@ router.post('/logout', async (req, res) => {
       secure: process.env.NODE_ENV === 'production',
       sameSite: 'lax',
     });
-    
+
     res.clearCookie('patientRefreshToken', {
       httpOnly: true,
       secure: process.env.NODE_ENV === 'production',
@@ -542,6 +813,95 @@ router.post('/logout', async (req, res) => {
     res.status(500).json({
       success: false,
       message: 'Logout failed',
+      error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined,
+    });
+  }
+});
+
+/**
+ * @route POST /api/patient-portal/auth/sync-patient-record/:patientUserId
+ * @desc Manually trigger Patient record creation/sync for testing
+ * @access Private (Admin only - for testing)
+ */
+router.post('/sync-patient-record/:patientUserId', async (req, res) => {
+  try {
+    const { patientUserId } = req.params;
+
+    const result = await PatientSyncService.createOrLinkPatientRecord(patientUserId);
+
+    res.json({
+      success: true,
+      message: `${result.isNewRecord ? 'Created new' : 'Linked existing'} Patient record successfully`,
+      data: {
+        patientId: result.patient._id,
+        mrn: result.patient.mrn,
+        isNewRecord: result.isNewRecord,
+      },
+    });
+  } catch (error) {
+    console.error('Manual patient sync error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to sync patient record',
+      error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined,
+    });
+  }
+});
+
+/**
+ * @route GET /api/patient-portal/auth/debug-sync
+ * @desc Debug endpoint to check sync status
+ * @access Private (Admin only - for testing)
+ */
+router.get('/debug-sync', async (req, res) => {
+  try {
+    const { workspaceId } = req.query;
+
+    // Build query filter
+    const filter = workspaceId ? { workplaceId: workspaceId as string } : {};
+
+    // Get PatientUsers for the workspace
+    const patientUsers = await PatientUser.find(filter)
+      .populate('workplaceId', 'name')
+      .select('_id firstName lastName email status isActive patientId workplaceId');
+
+    // Get Patients for the workspace
+    const patients = await Patient.find(filter)
+      .select('_id firstName lastName email mrn workplaceId createdBy');
+
+    const syncStatus = patientUsers.map(user => {
+      const linkedPatient = user.patientId ? patients.find(p => p._id.toString() === user.patientId.toString()) : null;
+
+      return {
+        patientUserId: user._id,
+        name: `${user.firstName} ${user.lastName}`,
+        email: user.email,
+        status: user.status,
+        isActive: user.isActive,
+        workspaceName: (user.workplaceId as any)?.name,
+        hasLinkedPatient: !!user.patientId,
+        linkedPatientId: user.patientId,
+        linkedPatientExists: !!linkedPatient,
+        linkedPatientMRN: linkedPatient?.mrn,
+        needsSync: user.status === 'active' && user.isActive && !user.patientId,
+      };
+    });
+
+    res.json({
+      success: true,
+      data: {
+        totalPatientUsers: patientUsers.length,
+        totalPatients: patients.length,
+        activePatientUsers: patientUsers.filter(u => u.status === 'active' && u.isActive).length,
+        unlinkedActiveUsers: patientUsers.filter(u => u.status === 'active' && u.isActive && !u.patientId).length,
+        syncStatus,
+      },
+    });
+  } catch (error) {
+    console.error('Debug sync error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to get sync status',
       error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined,
     });
   }

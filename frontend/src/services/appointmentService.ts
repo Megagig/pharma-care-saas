@@ -91,8 +91,6 @@ class AppointmentService {
         `/appointments?${searchParams.toString()}`
       );
 
-      console.log('AppointmentService.getAppointments response:', result);
-
       // Handle the backend response structure
       const response = {
         data: result.data || { results: [] },

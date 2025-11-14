@@ -7,10 +7,33 @@ import { engagementIntegrationApi } from '../services/api/engagementIntegrationA
 export const useDiagnosticEngagementData = (diagnosticCaseId: string) => {
   return useQuery({
     queryKey: ['diagnosticEngagementData', diagnosticCaseId],
-    queryFn: () => engagementIntegrationApi.getDiagnosticWithEngagementData(diagnosticCaseId),
+    queryFn: async () => {
+      if (!diagnosticCaseId) {
+        return null;
+      }
+      try {
+        const result = await engagementIntegrationApi.getDiagnosticWithEngagementData(diagnosticCaseId);
+        // Ensure we always return a valid structure
+        return result || {
+          diagnosticCase: null,
+          followUpTasks: [],
+          appointments: []
+        };
+      } catch (error) {
+        console.error('Failed to fetch diagnostic engagement data:', error);
+        // Return empty structure instead of throwing to prevent React Query errors
+        return {
+          diagnosticCase: null,
+          followUpTasks: [],
+          appointments: []
+        };
+      }
+    },
     enabled: !!diagnosticCaseId,
     staleTime: 5 * 60 * 1000, // 5 minutes
     refetchOnWindowFocus: false,
+    retry: 2, // Reduce retry attempts to avoid excessive API calls
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 30000), // Exponential backoff
   });
 };
 

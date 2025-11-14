@@ -215,8 +215,13 @@ export class RoleController {
                 query.isSystemRole = isSystemRole === 'true';
             }
 
+            // Modified logic: If workspaceId is provided, show both system roles and workspace-specific roles
             if (workspaceId) {
-                query.workspaceId = workspaceId;
+                // Show system roles (for cloning) + workspace-specific roles
+                query.$or = [
+                    { workspaceId: null, category: 'system' }, // System roles
+                    { workspaceId: workspaceId }, // Workspace-specific roles
+                ];
             }
 
             if (search) {
@@ -848,6 +853,178 @@ export class RoleController {
             res.status(500).json({
                 success: false,
                 message: 'Error fetching role permissions',
+                error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined,
+            });
+        }
+    }
+
+    /**
+     * Clone an existing role
+     * POST /api/admin/roles/:roleId/clone
+     */
+    async cloneRole(req: AuthRequest, res: Response): Promise<any> {
+        try {
+            const { roleId } = req.params;
+            const { newName, newDisplayName, newDescription, workspaceId } = req.body;
+
+            if (!roleId || !mongoose.Types.ObjectId.isValid(roleId)) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'Invalid role ID format',
+                });
+            }
+
+            if (!newName || !newDisplayName) {
+                return res.status(400).json({
+                    success: false,
+                    message: 'New name and display name are required',
+                });
+            }
+
+            // Get the source role
+            const sourceRole = await Role.findById(roleId);
+            if (!sourceRole) {
+                return res.status(404).json({
+                    success: false,
+                    message: 'Source role not found',
+                });
+            }
+
+            // Sanitize new role name
+            const sanitizedName = newName.toLowerCase().replace(/\s+/g, '_').replace(/[^a-z0-9_-]/g, '');
+
+            // Check if new role name already exists
+            const existingRole = await Role.findOne({ name: sanitizedName });
+            if (existingRole) {
+                return res.status(409).json({
+                    success: false,
+                    message: 'A role with this name already exists',
+                });
+            }
+
+            // Create the cloned role
+            const clonedRole = new Role({
+                name: sanitizedName,
+                displayName: newDisplayName,
+                description: newDescription || `Cloned from ${sourceRole.displayName}`,
+                category: 'custom', // Cloned roles are always custom
+                permissions: [...sourceRole.permissions], // Clone permissions
+                workspaceId: workspaceId || sourceRole.workspaceId,
+                hierarchyLevel: sourceRole.hierarchyLevel,
+                isActive: true,
+                isSystemRole: false, // Cloned roles are never system roles
+                isDefault: false,
+                createdBy: req.user!._id,
+                lastModifiedBy: req.user!._id,
+            });
+
+            await clonedRole.save();
+
+            // Clone role-permission mappings
+            const sourcePermissions = await RolePermission.find({
+                roleId: sourceRole._id,
+                isActive: true,
+            });
+
+            if (sourcePermissions.length > 0) {
+                const clonedPermissions = sourcePermissions.map(perm => ({
+                    roleId: clonedRole._id,
+                    permissionAction: perm.permissionAction,
+                    granted: perm.granted,
+                    grantedBy: req.user!._id,
+                    lastModifiedBy: req.user!._id,
+                    isActive: true,
+                }));
+
+                await RolePermission.insertMany(clonedPermissions);
+            }
+
+            // Populate the response
+            const populatedRole = await Role.findById(clonedRole._id)
+                .populate('createdBy', 'firstName lastName')
+                .populate('lastModifiedBy', 'firstName lastName');
+
+            logger.info('Role cloned successfully', {
+                sourceRoleId: sourceRole._id,
+                sourceRoleName: sourceRole.name,
+                clonedRoleId: clonedRole._id,
+                clonedRoleName: clonedRole.name,
+                clonedBy: req.user!._id,
+            });
+
+            res.status(201).json({
+                success: true,
+                message: 'Role cloned successfully',
+                data: {
+                    role: populatedRole,
+                    sourceRole: {
+                        id: sourceRole._id,
+                        name: sourceRole.name,
+                        displayName: sourceRole.displayName,
+                    },
+                },
+            });
+        } catch (error) {
+            logger.error('Error cloning role:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error cloning role',
+                error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined,
+            });
+        }
+    }
+
+    /**
+     * Get role statistics
+     * GET /api/admin/roles/statistics
+     */
+    async getRoleStatistics(req: AuthRequest, res: Response): Promise<any> {
+        try {
+            const { workspaceId } = req.query;
+
+            const filter: any = {};
+            if (workspaceId) {
+                filter.workspaceId = workspaceId;
+            }
+
+            const [totalRoles, activeRoles, systemRoles, customRoles, inactiveRoles] = await Promise.all([
+                Role.countDocuments(filter),
+                Role.countDocuments({ ...filter, isActive: true }),
+                Role.countDocuments({ ...filter, isSystemRole: true }),
+                Role.countDocuments({ ...filter, isSystemRole: false }),
+                Role.countDocuments({ ...filter, isActive: false }),
+            ]);
+
+            // Get roles by category
+            const categoryCounts = await Role.aggregate([
+                { $match: filter },
+                { $group: { _id: '$category', count: { $sum: 1 } } },
+            ]);
+
+            // Get hierarchy level distribution
+            const hierarchyDistribution = await Role.aggregate([
+                { $match: { ...filter, isActive: true } },
+                { $group: { _id: '$hierarchyLevel', count: { $sum: 1 } } },
+                { $sort: { _id: 1 } },
+            ]);
+
+            res.json({
+                success: true,
+                data: {
+                    total: totalRoles,
+                    active: activeRoles,
+                    inactive: inactiveRoles,
+                    system: systemRoles,
+                    custom: customRoles,
+                    byCategory: categoryCounts,
+                    hierarchyDistribution,
+                },
+            });
+        } catch (error) {
+            logger.error('Error fetching role statistics:', error);
+            res.status(500).json({
+                success: false,
+                message: 'Error fetching role statistics',
                 error: process.env.NODE_ENV === 'development' ? (error as Error).message : undefined,
             });
         }

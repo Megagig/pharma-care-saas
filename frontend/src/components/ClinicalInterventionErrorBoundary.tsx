@@ -378,8 +378,6 @@ class ClinicalInterventionErrorBoundary extends Component<Props, State> {
         userAgent: this.state.errorDetails?.userAgent,
       };
 
-      console.log('Error report would be sent:', reportData);
-
       this.setState({
         isReporting: false,
         reportSent: true,

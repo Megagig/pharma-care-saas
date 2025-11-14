@@ -142,7 +142,7 @@ export const ExportHistory: React.FC<ExportHistoryProps> = ({
 
   const handleRetry = (jobId: string) => {
     // TODO: Implement retry logic
-    console.log('Retry export:', jobId);
+
     handleMenuClose();
   };
 
@@ -207,7 +207,7 @@ export const ExportHistory: React.FC<ExportHistoryProps> = ({
             startIcon={<RefreshIcon />}
             onClick={() => {
               // TODO: Refresh export history
-              console.log('Refresh export history');
+
             }}
             size="small"
           >

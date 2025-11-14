@@ -40,10 +40,10 @@ export const useDrugSearch = (
   return useQuery<DrugSearchResult, Error>({
     queryKey: drugQueryKeys.search(name),
     queryFn: async () => {
-      console.log(`Making API call to search drugs with name: ${name}`);
+
       try {
         const result = await drugInfoApi.searchDrugs(name);
-        console.log('Drug search API result:', result);
+
         return result;
       } catch (err) {
         console.error('Drug search API error:', err);

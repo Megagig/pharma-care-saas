@@ -5,9 +5,36 @@ import { permissionController } from '../controllers/permissionController';
 
 const router = express.Router();
 
-// All permission management routes require authentication and super admin privileges
+// All permission management routes require authentication
 router.use(auth);
-router.use(requireSuperAdmin);
+
+// Allow both super admins and workspace owners to access permission management
+// Super admins get system-wide access, workspace owners get workspace-scoped access
+router.use((req, res, next) => {
+    const user = (req as any).user;
+    const isSuperAdmin = user?.role === 'super_admin';
+    const isWorkspaceOwner = user?.role === 'pharmacy_outlet';
+    
+    if (isSuperAdmin || isWorkspaceOwner) {
+        // For workspace owners, automatically apply workspace filtering
+        if (isWorkspaceOwner && user?.workplaceId) {
+            // Add workspace context to query parameters for GET requests
+            if (req.method === 'GET') {
+                req.query.workspaceId = user.workplaceId;
+            }
+            // Add workspace context to body for POST/PUT requests
+            if (req.method === 'POST' || req.method === 'PUT') {
+                req.body.workspaceId = user.workplaceId;
+            }
+        }
+        next();
+    } else {
+        res.status(403).json({
+            success: false,
+            message: 'Access denied. Only super admins and workspace owners can manage permissions.'
+        });
+    }
+});
 
 // Permission CRUD operations - Super admin has full access
 router.get('/', permissionController.getPermissions);

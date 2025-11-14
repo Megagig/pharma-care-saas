@@ -41,6 +41,7 @@ import { usePatientLabOrders } from '../hooks/useManualLabOrders';
 import { PatientMTRWidget } from './PatientMTRWidget';
 import PatientClinicalNotes from './PatientClinicalNotes';
 import PatientLabOrderWidget from './PatientLabOrderWidget';
+import PatientLabIntegrationWidget from './PatientLabIntegrationWidget';
 import PatientTimelineWidget from './PatientTimelineWidget';
 import PatientAppointmentAlerts from './PatientAppointmentAlerts';
 import { useFeatureFlags } from '../hooks/useFeatureFlags';
@@ -85,21 +86,21 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({
   // Extract real data from API response
   const overview = summaryData
     ? {
-        totalActiveMedications: summaryData.counts?.currentMedications || 0,
-        totalActiveDTPs: summaryData.counts?.hasActiveDTP ? 1 : 0, // Convert boolean to count
-        totalActiveConditions: summaryData.counts?.conditions || 0,
-        recentVisits: summaryData.counts?.visits || 0,
-        totalInterventions: summaryData.counts?.interventions || 0,
-        activeInterventions: summaryData.counts?.activeInterventions || 0,
-      }
+      totalActiveMedications: summaryData.counts?.currentMedications || 0,
+      totalActiveDTPs: summaryData.counts?.hasActiveDTP ? 1 : 0, // Convert boolean to count
+      totalActiveConditions: summaryData.counts?.conditions || 0,
+      recentVisits: summaryData.counts?.visits || 0,
+      totalInterventions: summaryData.counts?.interventions || 0,
+      activeInterventions: summaryData.counts?.activeInterventions || 0,
+    }
     : {
-        totalActiveMedications: 0,
-        totalActiveDTPs: 0,
-        totalActiveConditions: 0,
-        recentVisits: 0,
-        totalInterventions: 0,
-        activeInterventions: 0,
-      };
+      totalActiveMedications: 0,
+      totalActiveDTPs: 0,
+      totalActiveConditions: 0,
+      recentVisits: 0,
+      totalInterventions: 0,
+      activeInterventions: 0,
+    };
 
   if (patientLoading || summaryLoading) {
     return (
@@ -223,9 +224,8 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({
                 MRN: {patientData.mrn}
               </Typography>
               <Chip
-                label={`${getPatientAge(patientData)} • ${
-                  patientData.gender || 'Unknown'
-                }`}
+                label={`${getPatientAge(patientData)} • ${patientData.gender || 'Unknown'
+                  }`}
                 size="small"
                 variant="outlined"
               />
@@ -397,7 +397,7 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({
       </Box>
 
       {/* Appointment Alerts */}
-      <PatientAppointmentAlerts 
+      <PatientAppointmentAlerts
         patientId={patientId!}
         onCreateAppointment={() => navigate(`/appointments/create?patientId=${patientId}`)}
         onViewAppointment={(appointmentId) => navigate(`/appointments/${appointmentId}`)}
@@ -435,6 +435,23 @@ const PatientDashboard: React.FC<PatientDashboardProps> = ({
           onViewAllOrders={() => {
             // Navigate to full lab order history
             navigate(`/patients/${patientId}/lab-orders`);
+          }}
+        />
+      </Box>
+
+      {/* Lab Integration Widget */}
+      <Box sx={{ mb: 4 }}>
+        <PatientLabIntegrationWidget
+          patientId={patientId!}
+          maxCases={5}
+          onViewCase={(caseId) => {
+            navigate(`/pharmacy/lab-integration/${caseId}`);
+          }}
+          onViewAllCases={() => {
+            navigate(`/pharmacy/lab-integration?patientId=${patientId}`);
+          }}
+          onCreateCase={() => {
+            navigate(`/pharmacy/lab-integration/new?patientId=${patientId}`);
           }}
         />
       </Box>

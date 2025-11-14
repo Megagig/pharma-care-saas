@@ -207,7 +207,6 @@ export class ScheduleService {
             };
 
             // In a real implementation, this would make an HTTP request
-            console.log('Webhook delivery:', { url: recipient.address, payload });
 
             // Simulate network delay
             await new Promise(resolve => setTimeout(resolve, 1000));
@@ -245,12 +244,6 @@ export class ScheduleService {
     ): Promise<ScheduleDeliveryResult> {
         try {
             // In a real implementation, this would upload to FTP/SFTP
-            console.log('FTP delivery:', {
-                type: recipient.type,
-                address: recipient.address,
-                path: recipient.options?.path,
-                filename: exportResult.filename
-            });
 
             // Simulate upload delay
             await new Promise(resolve => setTimeout(resolve, 2000));

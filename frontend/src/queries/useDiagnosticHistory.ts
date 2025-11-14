@@ -5,6 +5,7 @@ import diagnosticHistoryService, {
   DiagnosticAnalytics,
   DiagnosticReferral,
 } from '../services/diagnosticHistoryService';
+import { apiClient } from '../services/apiClient';
 import { useNotifications } from '../components/common/NotificationSystem';
 
 // Query Keys
@@ -238,21 +239,18 @@ export const useRecentDiagnosticActivity = (
 };
 
 /**
- * Hook to get diagnostic dashboard stats
+ * Hook to get diagnostic dashboard data (uses dashboard endpoint instead of analytics)
  */
 export const useDiagnosticDashboardStats = () => {
-  const thirtyDaysAgo = new Date();
-  thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
-  
-  return useDiagnosticAnalytics(
-    {
-      dateFrom: thirtyDaysAgo.toISOString().split('T')[0],
-      dateTo: new Date().toISOString().split('T')[0],
+  return useQuery({
+    queryKey: ['diagnostics', 'dashboard'],
+    queryFn: async () => {
+      const response = await apiClient.get('/diagnostics/dashboard');
+      return response.data.data;
     },
-    {
-      enabled: true,
-    }
-  );
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    enabled: true,
+  });
 };
 
 /**
@@ -327,11 +325,11 @@ export const useSendReferralElectronically = () => {
   
   return useMutation({
     mutationFn: ({ caseId, data }: { caseId: string; data: any }) => {
-      console.log('useSendReferralElectronically: Starting mutation', { caseId, data });
+
       return diagnosticHistoryService.sendReferralElectronically(caseId, data);
     },
     onSuccess: (result, variables) => {
-      console.log('useSendReferralElectronically: Mutation successful', { result, caseId: variables.caseId });
+
       queryClient.invalidateQueries({ queryKey: diagnosticHistoryKeys.all });
       showSuccess(
         `Referral sent successfully to ${variables.data.physicianEmail}. Tracking ID: ${result.data?.trackingId || 'N/A'}`,
@@ -376,11 +374,11 @@ export const useUpdateReferralDocument = () => {
   
   return useMutation({
     mutationFn: ({ caseId, content }: { caseId: string; content: string }) => {
-      console.log('useUpdateReferralDocument: Starting mutation', { caseId, contentLength: content.length });
+
       return diagnosticHistoryService.updateReferralDocument(caseId, content);
     },
     onSuccess: (data, variables) => {
-      console.log('useUpdateReferralDocument: Mutation successful', { data, caseId: variables.caseId });
+
       queryClient.invalidateQueries({ queryKey: diagnosticHistoryKeys.all });
       showSuccess('Referral document updated successfully.', 'Document Updated');
     },

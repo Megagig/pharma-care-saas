@@ -12,7 +12,7 @@ interface DashboardChartsData {
     error: string | null;
 }
 
-export const useDashboardCharts = () => {
+export const useDashboardCharts = (skip: boolean = false) => {
     const [data, setData] = useState<DashboardChartsData>({
         clinicalNotesByType: [],
         mtrsByStatus: [],
@@ -30,18 +30,7 @@ export const useDashboardCharts = () => {
         try {
             setData(prev => ({ ...prev, loading: true, error: null }));
 
-            console.log('Fetching real chart data from API...');
-
             const analytics = await dashboardService.getDashboardAnalytics();
-
-            console.log('Chart data received:', {
-                clinicalNotesByType: analytics.clinicalNotesByType.length,
-                mtrsByStatus: analytics.mtrsByStatus.length,
-                patientsByMonth: analytics.patientsByMonth.length,
-                medicationsByStatus: analytics.medicationsByStatus.length,
-                patientAgeDistribution: analytics.patientAgeDistribution.length,
-                monthlyActivity: analytics.monthlyActivity.length,
-            });
 
             setData({
                 clinicalNotesByType: analytics.clinicalNotesByType,
@@ -69,8 +58,14 @@ export const useDashboardCharts = () => {
     };
 
     useEffect(() => {
+        // Skip fetching if skip flag is true (e.g., for super admins)
+        if (skip) {
+            setData(prev => ({ ...prev, loading: false }));
+            return;
+        }
+
         fetchChartData();
-    }, [refreshKey]);
+    }, [refreshKey, skip]);
 
     return {
         ...data,

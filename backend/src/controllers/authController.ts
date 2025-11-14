@@ -10,6 +10,7 @@ import crypto from 'crypto';
 import { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import { auditOperations } from '../middlewares/auditLogging';
+import { AuthRequest as AuthRequestType } from '../types/auth';
 
 const generateAccessToken = (userId: string): string => {
   return jwt.sign({ userId }, process.env.JWT_SECRET!, { expiresIn: '1h' }); // Increased to 1 hour
@@ -806,11 +807,7 @@ export const logoutAll = async (req: Request, res: Response): Promise<void> => {
   }
 };
 
-interface AuthRequest extends Request {
-  user?: any;
-}
-
-export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
+export const getMe = async (req: AuthRequestType, res: Response): Promise<void> => {
   try {
     const user = await User.findById(req.user._id)
       .populate('currentPlanId')
@@ -842,6 +839,11 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
       );
     }
 
+    // Include workspace permissions from workspaceContext if available
+    // This is the authoritative source for what features the user has access to
+    const permissions = req.workspaceContext?.permissions || [];
+    const tier = subscriptionData?.tier || req.workspaceContext?.subscription?.tier || null;
+
     res.json({
       success: true,
       user: {
@@ -863,6 +865,9 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
         hasSubscription: !!subscriptionData,
         lastLoginAt: user.lastLoginAt,
         themePreference: user.themePreference,
+        // Add workspace permissions and tier for frontend feature checking
+        permissions,
+        tier,
       },
     });
   } catch (error: any) {
@@ -871,7 +876,7 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
 };
 
 export const updateProfile = async (
-  req: AuthRequest,
+  req: AuthRequestType,
   res: Response
 ): Promise<void> => {
   try {
@@ -889,7 +894,8 @@ export const updateProfile = async (
       return;
     }
 
-    const user = await User.findByIdAndUpdate(req.user.userId, req.body, {
+    const userId = req.user._id || req.user.id;
+    const user = await User.findByIdAndUpdate(userId, req.body, {
       new: true,
       runValidators: true,
     }).select('-passwordHash');
@@ -918,7 +924,7 @@ export const updateProfile = async (
 };
 
 export const updateThemePreference = async (
-  req: AuthRequest,
+  req: AuthRequestType,
   res: Response
 ): Promise<void> => {
   try {
@@ -932,8 +938,9 @@ export const updateThemePreference = async (
       return;
     }
 
+    const userId = req.user._id || req.user.id;
     const user = await User.findByIdAndUpdate(
-      req.user.userId,
+      userId,
       { themePreference },
       {
         new: true,

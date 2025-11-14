@@ -336,7 +336,12 @@ const NotificationItem: React.FC<NotificationItemProps> = ({
       }}
     >
       {notification.title && <AlertTitle>{notification.title}</AlertTitle>}
-      {notification.message}
+      {typeof notification.message === 'string' 
+        ? notification.message 
+        : typeof notification.message === 'object' && notification.message !== null
+        ? JSON.stringify(notification.message)
+        : String(notification.message || '')
+      }
     </Alert>
   );
 };

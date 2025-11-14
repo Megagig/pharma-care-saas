@@ -399,7 +399,6 @@ export const useErrorAwareOperation = () => {
         {
           maxAttempts: 3,
           onRetry: (attempt, error) => {
-            console.log(`Retrying ${operationName} (attempt ${attempt}):`, error.message);
           },
         }
       );

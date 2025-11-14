@@ -38,7 +38,7 @@ class OfflineStorageManager {
 
       request.onsuccess = () => {
         this.db = request.result;
-        console.log('IndexedDB initialized successfully');
+
         resolve();
       };
 
@@ -58,7 +58,6 @@ class OfflineStorageManager {
           db.createObjectStore('formDrafts', { keyPath: 'id' });
         }
 
-        console.log('IndexedDB object stores created');
       };
     });
   }
@@ -96,7 +95,7 @@ class OfflineStorageManager {
       const request = store.add(offlineIntervention);
 
       request.onsuccess = () => {
-        console.log('Offline intervention stored:', id);
+
         resolve(id);
       };
 
@@ -131,7 +130,7 @@ class OfflineStorageManager {
       const request = store.delete(id);
 
       request.onsuccess = () => {
-        console.log('Offline intervention removed:', id);
+
         resolve();
       };
 
@@ -155,7 +154,7 @@ class OfflineStorageManager {
       const request = store.put(cacheEntry);
 
       request.onsuccess = () => {
-        console.log('Data cached:', key);
+
         resolve();
       };
 
@@ -186,7 +185,7 @@ class OfflineStorageManager {
         // Check if data is still fresh
         const age = Date.now() - result.timestamp;
         if (age > maxAge) {
-          console.log('Cached data expired:', key);
+
           resolve(null);
           return;
         }
@@ -214,7 +213,7 @@ class OfflineStorageManager {
       const request = store.put(draft);
 
       request.onsuccess = () => {
-        console.log('Form draft saved:', formId);
+
         resolve();
       };
 
@@ -250,7 +249,7 @@ class OfflineStorageManager {
       const request = store.delete(formId);
 
       request.onsuccess = () => {
-        console.log('Form draft removed:', formId);
+
         resolve();
       };
 
@@ -277,7 +276,7 @@ class OfflineStorageManager {
         request.onsuccess = () => {
           completed++;
           if (completed === total) {
-            console.log('All offline data cleared');
+
             resolve();
           }
         };
@@ -432,11 +431,10 @@ export const offlineUtils = {
 
     try {
       const registration = await navigator.serviceWorker.register('/sw.js');
-      console.log('Service Worker registered successfully');
 
       // Listen for updates
       registration.addEventListener('updatefound', () => {
-        console.log('Service Worker update found');
+
       });
 
       return registration;
@@ -459,7 +457,7 @@ export const offlineUtils = {
     try {
       const registration = await navigator.serviceWorker.ready;
       await registration.sync.register(tag);
-      console.log('Background sync registered:', tag);
+
     } catch (error) {
       console.error('Background sync registration failed:', error);
     }
@@ -470,7 +468,7 @@ export const offlineUtils = {
     message: string = 'You are currently offline. Data will sync when connection is restored.'
   ): void {
     // This would integrate with your notification system
-    console.log('Offline notification:', message);
+
   },
 
   // Cache essential data for offline use
@@ -502,7 +500,6 @@ export const offlineUtils = {
 
       await offlineStorage.cacheData('intervention_strategies', strategies);
 
-      console.log('Essential data cached for offline use');
     } catch (error) {
       console.error('Failed to cache essential data:', error);
     }

@@ -29,6 +29,10 @@ export interface IPayment extends Document {
       amount?: number;
       quantity?: number;
     }>;
+    metadata?: {
+      invoiceId?: string;
+      [key: string]: any;
+    };
   };
   billingAddress: {
     street?: string;
@@ -114,6 +118,10 @@ const paymentSchema = new Schema(
           quantity: { type: Number, default: 1 },
         },
       ],
+      metadata: {
+        type: Schema.Types.Mixed,
+        default: {},
+      },
     },
     billingAddress: {
       street: String,

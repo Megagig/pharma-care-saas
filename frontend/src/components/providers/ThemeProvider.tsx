@@ -29,13 +29,11 @@ const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     
     // Log initialization performance in development
     if (import.meta.env.DEV) {
-      console.log(`Theme system initialized in ${initDuration.toFixed(2)}ms`);
       
       // Log performance report after a short delay
       setTimeout(() => {
         const report = getPerformanceReport();
-        console.log('Theme Performance Report:', report);
-        
+
         if (!isPerformanceOptimal()) {
           console.warn('Theme performance is not optimal. Average toggle time should be <16ms');
         }
@@ -75,13 +73,6 @@ const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
         const report = getPerformanceReport();
         
         if (report.totalToggles > 0) {
-          console.log('Theme Performance Update:', {
-            averageToggleTime: `${report.averageTime.toFixed(2)}ms`,
-            lastToggleTime: report.lastTime ? `${report.lastTime.toFixed(2)}ms` : 'N/A',
-            totalToggles: report.totalToggles,
-            optimalPerformance: report.optimalPerformance,
-            slowToggles: report.slowToggles
-          });
           
           if (report.slowToggles > 0) {
             console.warn(`${report.slowToggles} theme toggles exceeded 16ms target`);

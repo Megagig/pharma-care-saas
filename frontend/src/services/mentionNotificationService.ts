@@ -64,7 +64,6 @@ class MentionNotificationService {
             // The backend will handle real-time notifications via Socket.IO
             // when the notifications are created above
 
-            console.log(`Mention notifications sent to ${mentionedUserIds.length} users`);
         } catch (error) {
             console.error('Failed to send mention notifications:', error);
             throw error;

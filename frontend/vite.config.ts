@@ -27,7 +27,17 @@ export default defineConfig({
         changeOrigin: true,
         secure: false,
         ws: true,
-        rewrite: (path) => path,
+        configure: (proxy, _options) => {
+          proxy.on('error', (err, _req, _res) => {
+            console.log('proxy error', err);
+          });
+          proxy.on('proxyReq', (_proxyReq, req, _res) => {
+            console.log('Sending Request to the Target:', req.method, req.url);
+          });
+          proxy.on('proxyRes', (proxyRes, req, _res) => {
+            console.log('Received Response from the Target:', proxyRes.statusCode, req.url);
+          });
+        },
       },
     },
   },
@@ -167,17 +177,20 @@ export default defineConfig({
       'react-hook-form',
       'zod',
       'web-vitals',
+      // Date pickers and adapters
+      '@mui/x-date-pickers',
+      '@mui/x-date-pickers/AdapterDayjs',
+      '@mui/x-date-pickers/LocalizationProvider',
+      '@mui/x-date-pickers/DatePicker',
     ],
     exclude: [
       // Large libraries that benefit from dynamic imports
       'lucide-react',
       'recharts',
-      '@mui/material',
-      '@mui/icons-material',
       'framer-motion',
     ],
     // Force optimization of problematic dependencies
-    force: process.env.NODE_ENV === 'development',
+    force: true,
   },
   // Enable experimental features for better performance
   experimental: {

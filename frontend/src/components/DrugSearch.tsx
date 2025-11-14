@@ -50,43 +50,30 @@ const DrugSearch: React.FC<DrugSearchProps> = ({ onDrugSelect }) => {
     }
 
     // Debug: Log search results
-    console.log('Search term:', debouncedSearchTerm);
-    console.log('Search results:', searchResults);
-    console.log('Search results type:', typeof searchResults);
+
+
+
     if (searchResults && typeof searchResults === 'object') {
-      console.log('Search results keys:', Object.keys(searchResults));
 
       // Check for success property
       if ('success' in searchResults) {
-        console.log('Success value:', searchResults.success);
+
       }
 
       // Check for data property
       if ('data' in searchResults && searchResults.data) {
-        console.log('Data property exists:', typeof searchResults.data);
-        console.log('Data keys:', Object.keys(searchResults.data));
+
 
         // Check for drugGroup
         if (searchResults.data.drugGroup) {
-          console.log('DrugGroup exists:', typeof searchResults.data.drugGroup);
-          console.log(
-            'DrugGroup keys:',
-            Object.keys(searchResults.data.drugGroup)
-          );
-
           // Check for conceptGroup
           if (searchResults.data.drugGroup.conceptGroup) {
-            console.log(
-              'ConceptGroup exists:',
-              Array.isArray(searchResults.data.drugGroup.conceptGroup)
-                ? `Array with ${searchResults.data.drugGroup.conceptGroup.length} items`
-                : typeof searchResults.data.drugGroup.conceptGroup
-            );
+            // Concept group exists
           }
         }
       }
     }
-    console.log('Is loading:', isLoading);
+
   }, [error, searchResults, isLoading, debouncedSearchTerm, setSearchError]);
 
   // Extract drug concepts from search results

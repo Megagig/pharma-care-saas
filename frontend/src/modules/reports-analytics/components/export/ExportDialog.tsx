@@ -181,7 +181,7 @@ export const ExportDialog: React.FC<ExportDialogProps> = ({
       }, 500);
 
       // TODO: Implement actual export API call
-      console.log('Starting export with config:', config);
+
     } catch (error) {
       console.error('Export failed:', error);
       setIsExporting(false);

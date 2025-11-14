@@ -77,6 +77,7 @@ import InvitationManagement from './InvitationManagement';
 import LocationManagement from './LocationManagement';
 import AdvancedSubscriptionAnalytics from '../subscription/AdvancedSubscriptionAnalytics';
 import EnhancedAnalytics from './EnhancedAnalytics';
+import AIUsageMonitoring from './AIUsageMonitoring';
 
 interface License {
   userId: string;
@@ -650,6 +651,11 @@ const AdminDashboard: React.FC = () => {
             label="System Settings"
             iconPosition="start"
           />
+          <Tab
+            icon={<AnalyticsIcon />}
+            label="AI Usage Monitoring"
+            iconPosition="start"
+          />
         </Tabs>
       </Box>
 
@@ -974,6 +980,9 @@ const AdminDashboard: React.FC = () => {
           </Alert>
         </Box>
       )}
+
+      {/* AI Usage Monitoring Tab */}
+      {activeTab === 9 && <AIUsageMonitoring />}
 
       {/* Edit User Dialog */}
       <Dialog

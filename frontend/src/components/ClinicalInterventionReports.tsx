@@ -219,17 +219,15 @@ const ClinicalInterventionReports: React.FC = () => {
           filters.pharmacist !== 'all' ? filters.pharmacist : undefined,
       };
 
-      console.log('🔍 REPORTS: Calling generateOutcomeReport with filters:', apiFilters);
       const response = await clinicalInterventionService.generateOutcomeReport(
         apiFilters
       );
-      console.log('🔍 REPORTS: Received response:', response);
 
       if (response.success && response.data) {
-        console.log('🔍 REPORTS: Setting report data:', response.data);
+
         setReportData(response.data);
       } else {
-        console.log('🔍 REPORTS: No data received, using mock data');
+
         // If no data is available, create a mock structure to show the UI
         const mockReportData: OutcomeReport = {
           summary: {
@@ -345,7 +343,6 @@ const ClinicalInterventionReports: React.FC = () => {
   const handleExport = async () => {
     try {
       // Mock export functionality - replace with actual API call
-      console.log(`Exporting report as ${exportFormat}`);
 
       // Create mock file download
       const filename = `clinical-interventions-report-${format(
@@ -2710,7 +2707,7 @@ const ClinicalInterventionReports: React.FC = () => {
                       fullWidth
                       onClick={() => {
                         // Clear filters logic would go here
-                        console.log('Clear audit filters');
+
                       }}
                       sx={{ height: '40px' }}
                     >
@@ -2768,7 +2765,7 @@ const ClinicalInterventionReports: React.FC = () => {
                     startIcon={<GetAppIcon />}
                     onClick={() => {
                       // Export audit trail logic would go here
-                      console.log('Export audit trail');
+
                     }}
                     sx={{
                       borderRadius: 2,
@@ -2954,7 +2951,7 @@ const ClinicalInterventionReports: React.FC = () => {
                       variant="outlined"
                       onClick={() => {
                         // Clear filters logic would go here
-                        console.log('Clear audit filters');
+
                       }}
                       sx={{
                         borderRadius: 2,

@@ -44,7 +44,6 @@ const Contact: React.FC = () => {
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Log form data for debugging (remove in production)
-    console.log('Contact form submitted:', data);
 
     toast.success("Message sent successfully! We'll get back to you soon.");
     reset();

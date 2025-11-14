@@ -211,25 +211,6 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
   const subscriptionStatus = useSubscriptionStatus();
   const location = useLocation();
 
-  console.log('🛡️ ProtectedRoute check:', {
-    path: location.pathname,
-    user: user?.email,
-    role: user?.role,
-    loading,
-    requiredFeature,
-    requiresActiveSubscription,
-    requiresLicense,
-    subscriptionStatus: {
-      status: subscriptionStatus.status,
-      isActive: subscriptionStatus.isActive,
-      loading: subscriptionStatus.loading,
-      tier: subscriptionStatus.tier,
-      daysRemaining: subscriptionStatus.daysRemaining,
-      accessLevel: subscriptionStatus.accessLevel
-    },
-    hasFeatureResult: requiredFeature ? hasFeature(requiredFeature) : 'N/A'
-  });
-
   // Show loading spinner while checking authentication
   if (loading) {
     return <LoadingSpinner />;
@@ -237,7 +218,7 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({
 
   // Redirect to login if not authenticated
   if (!user) {
-    console.log('🚫 NO USER - Redirecting to login from:', location.pathname);
+
     return <Navigate to={fallbackPath} state={{ from: location }} replace />;
   }
 

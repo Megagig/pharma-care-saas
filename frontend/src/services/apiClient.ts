@@ -77,7 +77,8 @@ apiClient.interceptors.response.use(
       !originalRequest._retry &&
       !originalRequest.url?.includes('/auth/login') &&
       !originalRequest.url?.includes('/auth/refresh-token') &&
-      !originalRequest.url?.includes('/patient-portal') // Don't auto-refresh for patient portal endpoints
+      !originalRequest.url?.includes('/patient-portal') && // Don't auto-refresh for patient portal endpoints
+      !originalRequest.url?.includes('/public/') // Don't auto-refresh for public endpoints
     ) {
       if (!isRefreshing) {
         // Set flag to indicate we're refreshing

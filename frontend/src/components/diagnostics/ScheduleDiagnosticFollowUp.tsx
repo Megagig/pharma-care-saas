@@ -191,7 +191,11 @@ const ScheduleDiagnosticFollowUp: React.FC<ScheduleDiagnosticFollowUpProps> = ({
                 </Typography>
                 <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
                   <Typography variant="body2" gutterBottom>
-                    <strong>Confidence Score:</strong> {Math.round(diagnosticCase.aiAnalysis.confidenceScore * 100)}%
+                    <strong>Confidence Score:</strong> {
+                      diagnosticCase.aiAnalysis?.confidenceScore 
+                        ? `${Math.round(diagnosticCase.aiAnalysis.confidenceScore * 100)}%`
+                        : 'N/A'
+                    }
                   </Typography>
                   
                   {diagnosticCase.aiAnalysis.differentialDiagnoses && diagnosticCase.aiAnalysis.differentialDiagnoses.length > 0 && (

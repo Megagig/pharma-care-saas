@@ -2,6 +2,8 @@ import { Types } from 'mongoose';
 import logger from '../../../utils/logger';
 import DiagnosticRequest, { IDiagnosticRequest, IInputSnapshot } from '../models/DiagnosticRequest';
 import DiagnosticResult, { IDiagnosticResult } from '../models/DiagnosticResult';
+import DiagnosticCase from '../../../models/DiagnosticCase';
+
 import Patient from '../../../models/Patient';
 import User from '../../../models/User';
 import openRouterService, { DiagnosticInput, DiagnosticResponse } from '../../../services/openRouterService';
@@ -85,7 +87,7 @@ export class DiagnosticService {
                 throw new Error('Patient consent is required for AI diagnostic processing');
             }
 
-            // Check for existing active requests for this patient
+            // Check for existing active requests for this patient to prevent abuse
             const existingRequest = await DiagnosticRequest.findOne({
                 patientId: data.patientId,
                 workplaceId: data.workplaceId,
@@ -94,7 +96,7 @@ export class DiagnosticService {
             });
 
             if (existingRequest) {
-                throw new Error('An active diagnostic request already exists for this patient');
+                throw new Error('ACTIVE_REQUEST_EXISTS');
             }
 
             // Create diagnostic request
@@ -122,9 +124,11 @@ export class DiagnosticService {
                     userRole: pharmacist.role,
                 },
                 {
-                    action: 'diagnostic_request_created',
+                    action: 'DIAGNOSTIC_CASE_CREATED',
                     resourceType: 'DiagnosticRequest',
                     resourceId: savedRequest._id,
+                    complianceCategory: 'patient_care',
+                    riskLevel: data.priority === 'urgent' ? 'high' : 'low',
                     details: {
                         patientId: data.patientId,
                         priority: data.priority,
@@ -144,6 +148,12 @@ export class DiagnosticService {
             return savedRequest;
         } catch (error) {
             logger.error('Failed to create diagnostic request:', error);
+
+            // Re-throw specific errors without wrapping
+            if (error instanceof Error && error.message === 'ACTIVE_REQUEST_EXISTS') {
+                throw error;
+            }
+
             throw new Error(`Failed to create diagnostic request: ${error}`);
         }
     }
@@ -264,9 +274,11 @@ export class DiagnosticService {
                     workspaceId: request.workplaceId.toString(),
                 },
                 {
-                    action: 'diagnostic_analysis_completed',
+                    action: 'DIAGNOSTIC_ANALYSIS_REQUESTED',
                     resourceType: 'DiagnosticResult',
                     resourceId: diagnosticResult._id,
+                    complianceCategory: 'patient_care',
+                    riskLevel: diagnosticResult.redFlags.length > 0 ? 'high' : 'low',
                     details: {
                         requestId,
                         processingTime,
@@ -313,9 +325,11 @@ export class DiagnosticService {
                         userRole: userRole,
                     },
                     {
-                        action: 'diagnostic_analysis_failed',
+                        action: 'DIAGNOSTIC_ANALYSIS_REQUESTED',
                         resourceType: 'DiagnosticRequest',
                         resourceId: new Types.ObjectId(requestId),
+                        complianceCategory: 'patient_care',
+                        riskLevel: 'high',
                         details: {
                             error: error instanceof Error ? error.message : 'Unknown error',
                             processingTime,
@@ -509,7 +523,11 @@ export class DiagnosticService {
                     modelVersion: 'v3.1',
                     confidenceScore: aiAnalysis.analysis.confidenceScore / 100,
                     processingTime: aiAnalysis.processingTime,
-                    tokenUsage: aiAnalysis.usage,
+                    tokenUsage: {
+                        promptTokens: aiAnalysis.usage.prompt_tokens,
+                        completionTokens: aiAnalysis.usage.completion_tokens,
+                        totalTokens: aiAnalysis.usage.total_tokens,
+                    },
                     requestId: aiAnalysis.requestId,
                 },
                 rawResponse: JSON.stringify(aiAnalysis.analysis),
@@ -684,20 +702,72 @@ export class DiagnosticService {
     }
 
     /**
-     * Get diagnostic request by ID
+     * Get diagnostic request by ID (supports both ObjectId and legacy DX-* caseId)
      */
     async getDiagnosticRequest(requestId: string, workplaceId: string): Promise<IDiagnosticRequest | null> {
         try {
-            const request = await DiagnosticRequest.findOne({
-                _id: requestId,
-                workplaceId: new Types.ObjectId(workplaceId),
-                isDeleted: false,
-            })
-                .populate('patientId', 'firstName lastName dateOfBirth gender')
-                .populate('pharmacistId', 'firstName lastName')
-                .lean();
+            const isMongoId = /^[0-9a-fA-F]{24}$/.test(requestId);
+            const isLegacyCaseId = /^DX-[A-Z0-9]+-[A-Z0-9]+$/i.test(requestId);
+            const workplaceObjectId = new Types.ObjectId(workplaceId);
 
-            return request as IDiagnosticRequest | null;
+            if (isMongoId) {
+                const request = await DiagnosticRequest.findOne({
+                    _id: requestId,
+                    workplaceId: workplaceObjectId,
+                    isDeleted: false,
+                })
+                    .populate('patientId', 'firstName lastName dateOfBirth gender')
+                    .populate('pharmacistId', 'firstName lastName')
+                    .lean()
+                    .maxTimeMS(10000); // Add 10 second timeout to prevent hanging queries
+
+                return request as IDiagnosticRequest | null;
+            }
+
+            if (isLegacyCaseId) {
+                // Backward compatibility: fetch legacy diagnostic case by caseId
+                const legacyCase = await DiagnosticCase.findOne({
+                    caseId: requestId.toUpperCase(),
+                    workplaceId: workplaceObjectId,
+                })
+                    .populate('patientId', 'firstName lastName dateOfBirth gender')
+                    .populate('pharmacistId', 'firstName lastName')
+                    .lean()
+                    .maxTimeMS(10000);
+
+                if (!legacyCase) return null;
+
+                // Adapt legacy case shape to resemble IDiagnosticRequest minimal fields
+                const requestLike: any = {
+                    _id: legacyCase._id,
+                    patientId: legacyCase.patientId,
+                    pharmacistId: legacyCase.pharmacistId,
+                    workplaceId: legacyCase.workplaceId,
+                    inputSnapshot: {
+                        symptoms: legacyCase.symptoms || { subjective: [], objective: [], duration: '', severity: 'mild', onset: 'acute' },
+                        vitals: legacyCase.vitalSigns || {},
+                        currentMedications: legacyCase.currentMedications || [],
+                        allergies: [],
+                        medicalHistory: [],
+                        labResultIds: [],
+                    } as IInputSnapshot,
+                    priority: 'routine',
+                    consentObtained: true,
+                    promptVersion: 'legacy',
+                    status: legacyCase.aiAnalysis ? 'completed' : 'processing',
+                    processingStartedAt: legacyCase.createdAt,
+                    processingCompletedAt: legacyCase.aiAnalysis ? legacyCase.updatedAt : undefined,
+                    createdAt: legacyCase.createdAt,
+                    updatedAt: legacyCase.updatedAt,
+                    createdBy: legacyCase.pharmacistId,
+                    retryCount: 0,
+                };
+
+                return requestLike as IDiagnosticRequest;
+            }
+
+            // Unknown ID format
+            return null;
         } catch (error) {
             logger.error('Failed to get diagnostic request:', error);
             throw new Error(`Failed to get diagnostic request: ${error}`);
@@ -705,17 +775,127 @@ export class DiagnosticService {
     }
 
     /**
-     * Get diagnostic result by request ID
+     * Get diagnostic result by request ID (supports both ObjectId and legacy DX-* caseId)
      */
     async getDiagnosticResult(requestId: string, workplaceId: string): Promise<IDiagnosticResult | null> {
         try {
-            const result = await DiagnosticResult.findOne({
-                requestId: new Types.ObjectId(requestId),
-                workplaceId: new Types.ObjectId(workplaceId),
-                isDeleted: false,
-            }).lean();
+            const isMongoId = /^[0-9a-fA-F]{24}$/.test(requestId);
+            const isLegacyCaseId = /^DX-[A-Z0-9]+-[A-Z0-9]+$/i.test(requestId);
+            const workplaceObjectId = new Types.ObjectId(workplaceId);
 
-            return result as IDiagnosticResult | null;
+            if (isMongoId) {
+                const result = await DiagnosticResult.findOne({
+                    requestId: new Types.ObjectId(requestId),
+                    workplaceId: workplaceObjectId,
+                    isDeleted: false,
+                })
+                    .lean()
+                    .maxTimeMS(10000); // Add 10 second timeout to prevent hanging queries
+
+                return result as IDiagnosticResult | null;
+            }
+
+            if (isLegacyCaseId) {
+                const legacyCase = await DiagnosticCase.findOne({
+                    caseId: requestId.toUpperCase(),
+                    workplaceId: workplaceObjectId,
+                }).lean().maxTimeMS(10000);
+
+                if (!legacyCase || !legacyCase.aiAnalysis) {
+                    return null;
+                }
+
+                const ai = legacyCase.aiAnalysis;
+
+                // Map legacy analysis to DiagnosticResult-like shape for the frontend
+                const diagnoses = (ai.differentialDiagnoses || []).map((d: any) => ({
+                    condition: d.condition || 'Unknown',
+                    probability: typeof d.probability === 'number' && d.probability > 1 ? d.probability / 100 : (d.probability || 0),
+                    reasoning: d.reasoning || 'No reasoning provided',
+                    severity: d.severity || 'medium',
+                    icdCode: undefined,
+                    snomedCode: undefined,
+                    confidence: d.severity || 'medium',
+                    evidenceLevel: 'probable',
+                }));
+
+                const suggestedTests = (ai.recommendedTests || []).map((t: any) => ({
+                    testName: t.testName || 'Unknown test',
+                    priority: t.priority || 'routine',
+                    reasoning: t.reasoning || 'No reasoning provided',
+                    loincCode: undefined,
+                    expectedCost: undefined,
+                    turnaroundTime: undefined,
+                    clinicalSignificance: 'Recommended based on presenting symptoms',
+                }));
+
+                const medicationSuggestions = (ai.therapeuticOptions || []).map((m: any) => ({
+                    drugName: m.medication || 'Unknown',
+                    dosage: m.dosage || '',
+                    frequency: m.frequency || '',
+                    duration: m.duration || '',
+                    reasoning: m.reasoning || 'No reasoning provided',
+                    safetyNotes: m.safetyNotes || [],
+                    rxcui: undefined,
+                    contraindications: [],
+                    monitoringParameters: [],
+                    alternativeOptions: [],
+                }));
+
+                const redFlags = (ai.redFlags || []).map((r: any) => ({
+                    flag: r.flag || 'Risk factor',
+                    severity: r.severity || 'medium',
+                    action: r.action || 'Monitor',
+                    timeframe: undefined,
+                    clinicalRationale: r.action || 'See action',
+                }));
+
+                const highestSeverity = redFlags.reduce((acc: any, cur: any) => {
+                    const order: any = { low: 1, medium: 2, high: 3, critical: 4 };
+                    return order[cur.severity] > order[acc] ? cur.severity : acc;
+                }, 'medium');
+
+                const resultLike: any = {
+                    _id: legacyCase._id, // not used by frontend for retrieval
+                    requestId: legacyCase._id,
+                    workplaceId: legacyCase.workplaceId,
+                    diagnoses,
+                    suggestedTests,
+                    medicationSuggestions,
+                    redFlags,
+                    referralRecommendation: ai.referralRecommendation || undefined,
+                    differentialDiagnosis: diagnoses.map((d: any) => d.condition),
+                    clinicalImpression: 'AI-assisted diagnostic impression',
+                    riskAssessment: {
+                        overallRisk: highestSeverity,
+                        riskFactors: redFlags.map((r: any) => r.flag),
+                        mitigatingFactors: [],
+                    },
+                    aiMetadata: {
+                        modelId: 'legacy',
+                        modelVersion: 'legacy',
+                        confidenceScore: ai.confidenceScore || 0,
+                        processingTime: ai.processingTime || 0,
+                        tokenUsage: { promptTokens: 0, completionTokens: 0, totalTokens: 0 },
+                        requestId: requestId,
+                    },
+                    rawResponse: JSON.stringify({ source: 'legacy', caseId: legacyCase.caseId }),
+                    disclaimer: ai.disclaimer || 'This AI-generated diagnostic analysis is for informational purposes only.',
+                    validationScore: undefined,
+                    qualityFlags: [],
+                    pharmacistReview: undefined,
+                    followUpRequired: false,
+                    followUpDate: undefined,
+                    followUpInstructions: [],
+                    createdAt: legacyCase.createdAt,
+                    updatedAt: legacyCase.updatedAt,
+                    isDeleted: false,
+                };
+
+                return resultLike as IDiagnosticResult;
+            }
+
+            return null;
         } catch (error) {
             logger.error('Failed to get diagnostic result:', error);
             throw new Error(`Failed to get diagnostic result: ${error}`);
@@ -838,9 +1018,11 @@ export class DiagnosticService {
                     workspaceId: workplaceId,
                 },
                 {
-                    action: 'diagnostic_request_cancelled',
+                    action: 'DIAGNOSTIC_CASE_DELETED',
                     resourceType: 'DiagnosticRequest',
                     resourceId: new Types.ObjectId(requestId),
+                    complianceCategory: 'patient_care',
+                    riskLevel: 'low',
                     details: {
                         reason: reason || 'Cancelled by user',
                         originalStatus: request.status,

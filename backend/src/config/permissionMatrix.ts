@@ -212,6 +212,193 @@ export const PERMISSION_MATRIX: PermissionMatrix = {
     },
 
     // ========================================
+    // AI DIAGNOSTICS & THERAPEUTICS
+    // ========================================
+    'diagnostic:read': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['ai_diagnostics'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'diagnostic:create': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['ai_diagnostics'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'diagnostic:process': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['ai_diagnostics'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'diagnostic:review': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['ai_diagnostics'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'diagnostic:approve': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['ai_diagnostics'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: false,
+    },
+    'diagnostic:intervention': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['ai_diagnostics', 'clinicalInterventions'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: false,
+    },
+    'diagnostic:cancel': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['ai_diagnostics'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'diagnostic:retry': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['ai_diagnostics'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'diagnostic:analytics': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['ai_diagnostics', 'advancedReports'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+
+    // ========================================
+    // LAB INTEGRATION (AI-Powered Lab Result Interpretation & Therapy Management)
+    // ========================================
+    'lab_integration:create': {
+        workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet'],
+        systemRoles: ['pharmacy_team'],
+        features: ['lab_integration'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'lab_integration:read': {
+        workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet'],
+        systemRoles: ['pharmacy_team', 'intern_pharmacist'],
+        features: ['lab_integration'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'lab_integration:approve': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['lab_integration'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: false,
+    },
+    'lab_integration:escalate': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['lab_integration'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: false,
+    },
+    'lab_integration:trends': {
+        workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet'],
+        systemRoles: ['pharmacy_team'],
+        features: ['lab_integration', 'advancedReports'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+
+    // ========================================
+    // LABORATORY FINDINGS (Universal Lab Results Management)
+    // ========================================
+    'lab_results:read': {
+        workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet', 'intern_pharmacist'],
+        systemRoles: ['pharmacy_team', 'lab_technician'],
+        features: ['laboratory_findings'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'lab_results:create': {
+        workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet'],
+        systemRoles: ['pharmacy_team', 'lab_technician'],
+        features: ['laboratory_findings'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'lab_results:update': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        systemRoles: ['lab_technician'],
+        features: ['laboratory_findings'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'lab_results:delete': {
+        workplaceRoles: ['Owner'],
+        systemRoles: ['super_admin'],
+        features: ['laboratory_findings'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: false,
+    },
+    'lab_results:signoff': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['laboratory_findings'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'lab_results:upload': {
+        workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet'],
+        systemRoles: ['pharmacy_team', 'lab_technician'],
+        features: ['laboratory_findings'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'lab_templates:read': {
+        workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet', 'intern_pharmacist'],
+        systemRoles: ['pharmacy_team', 'lab_technician'],
+        features: ['laboratory_findings'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'lab_templates:create': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['laboratory_findings'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'lab_templates:update': {
+        workplaceRoles: ['Owner', 'Pharmacist'],
+        features: ['laboratory_findings'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
+    'lab_templates:delete': {
+        workplaceRoles: ['Owner'],
+        features: ['laboratory_findings'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: false,
+    },
+
+    // ========================================
     // APPOINTMENT MANAGEMENT
     // ========================================
     'appointment.create': {
@@ -816,13 +1003,15 @@ export const ROLE_HIERARCHY: Record<UserRole, UserRole[]> = {
         'pharmacy_team',
         'pharmacist',
         'intern_pharmacist',
+        'lab_technician',
         'owner',
     ],
     pharmacy_outlet: ['pharmacy_outlet', 'pharmacy_team', 'pharmacist'],
     pharmacy_team: ['pharmacy_team', 'pharmacist'],
     pharmacist: ['pharmacist'],
     intern_pharmacist: ['intern_pharmacist'],
-    owner: ['owner', 'pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'intern_pharmacist'],
+    lab_technician: ['lab_technician'],
+    owner: ['owner', 'pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'intern_pharmacist', 'lab_technician'],
 };
 
 /**
@@ -830,13 +1019,14 @@ export const ROLE_HIERARCHY: Record<UserRole, UserRole[]> = {
  * Higher roles inherit permissions from lower roles
  */
 export const WORKPLACE_ROLE_HIERARCHY: Record<WorkplaceRole, WorkplaceRole[]> = {
-    Owner: ['Owner', 'Pharmacist', 'Staff', 'Technician', 'Cashier', 'Assistant'],
-    pharmacy_outlet: ['pharmacy_outlet', 'Owner', 'Pharmacist', 'Staff', 'Technician', 'Cashier', 'Assistant'],
-    Pharmacist: ['Pharmacist', 'Technician', 'Assistant'],
+    Owner: ['Owner', 'Pharmacist', 'Staff', 'Technician', 'Cashier', 'Assistant', 'intern_pharmacist'],
+    pharmacy_outlet: ['pharmacy_outlet', 'Owner', 'Pharmacist', 'Staff', 'Technician', 'Cashier', 'Assistant', 'intern_pharmacist'],
+    Pharmacist: ['Pharmacist', 'Technician', 'Assistant', 'intern_pharmacist'],
     Staff: ['Staff', 'Technician', 'Assistant'],
     Technician: ['Technician', 'Assistant'],
     Cashier: ['Cashier', 'Assistant'],
     Assistant: ['Assistant'],
+    intern_pharmacist: ['intern_pharmacist'],
 };
 
 /**
@@ -882,6 +1072,9 @@ export const TIER_FEATURES: Record<SubscriptionTier, string[]> = {
         'apiAccess',
         'auditLogs',
         'integrations',
+        'ai_diagnostics',
+        'lab_integration',
+        'laboratory_findings',
         'clinicalInterventions',
     ],
     pharmily: [
@@ -899,6 +1092,9 @@ export const TIER_FEATURES: Record<SubscriptionTier, string[]> = {
         'adrReporting',
         'scheduledReports',
         'dataBackup',
+        'ai_diagnostics',
+        'lab_integration',
+        'laboratory_findings',
         'clinicalInterventions',
     ],
     network: [
@@ -920,6 +1116,9 @@ export const TIER_FEATURES: Record<SubscriptionTier, string[]> = {
         'multiLocationDashboard',
         'teamManagement',
         'multiUserSupport',
+        'ai_diagnostics',
+        'lab_integration',
+        'laboratory_findings',
         'clinicalInterventions',
     ],
     enterprise: [
@@ -944,6 +1143,9 @@ export const TIER_FEATURES: Record<SubscriptionTier, string[]> = {
         'customIntegrations',
         'prioritySupport',
         'dedicatedManager',
+        'ai_diagnostics',
+        'lab_integration',
+        'laboratory_findings',
         'clinicalInterventions',
     ],
 };

@@ -13,7 +13,6 @@ import {
   Link,
   Tabs,
   Tab,
-  Divider,
 } from '@mui/material';
 import ArrowBackIcon from '@mui/icons-material/ArrowBack';
 import RefreshIcon from '@mui/icons-material/Refresh';
@@ -48,7 +47,7 @@ const CaseResultsPage: React.FC = () => {
     data: engagementData,
     isLoading: engagementLoading,
     refetch: refetchEngagement,
-  } = useDiagnosticEngagementData(diagnosticCase?._id || '');
+  } = useDiagnosticEngagementData(diagnosticCase?.id || '');
 
   const pollForAnalysis = useCallback(async () => {
     if (!caseId) return;
@@ -97,6 +96,7 @@ const CaseResultsPage: React.FC = () => {
       setError(null);
 
       const caseData = await aiDiagnosticService.getCase(caseId);
+
       setDiagnosticCase(caseData);
 
       // If case is completed and has analysis, load it
@@ -107,8 +107,10 @@ const CaseResultsPage: React.FC = () => {
         pollForAnalysis();
       }
     } catch (err) {
-      console.error('Failed to load case:', err);
-      setError('Failed to load diagnostic case. Please try again.');
+      console.error('❌ Failed to load case:', err);
+      const errorMessage = err instanceof Error ? err.message : 'Failed to load diagnostic case. Please try again.';
+      setError(errorMessage);
+      // Don't crash the component, just show the error
     } finally {
       setLoading(false);
       isLoadingRef.current = false;
@@ -117,12 +119,12 @@ const CaseResultsPage: React.FC = () => {
 
   const handleRefresh = () => {
     loadCase();
-    if (diagnosticCase?._id) {
+    if (diagnosticCase?.id) {
       refetchEngagement();
     }
   };
 
-  const handleTabChange = (event: React.SyntheticEvent, newValue: number) => {
+  const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);
   };
 
@@ -233,7 +235,7 @@ const CaseResultsPage: React.FC = () => {
               </Typography>
               {diagnosticCase.status === 'completed' && (
                 <ScheduleDiagnosticFollowUp
-                  diagnosticCase={diagnosticCase}
+                  diagnosticCase={diagnosticCase as any}
                   onFollowUpCreated={handleFollowUpCreated}
                 />
               )}
@@ -250,13 +252,13 @@ const CaseResultsPage: React.FC = () => {
                   Patient
                 </Typography>
                 <Typography variant="body2">
-                  {typeof diagnosticCase.patientId === 'object' &&
-                  diagnosticCase.patientId &&
-                  'firstName' in diagnosticCase.patientId
-                    ? `${diagnosticCase.patientId.firstName || ''} ${
-                        diagnosticCase.patientId.lastName || ''
-                      }`.trim()
-                    : diagnosticCase.patientId}
+                  {(() => {
+                    const { patientId } = diagnosticCase;
+                    if (typeof patientId === 'object' && patientId && 'firstName' in patientId) {
+                      return `${patientId.firstName || ''} ${patientId.lastName || ''}`.trim();
+                    }
+                    return String(patientId);
+                  })()}
                 </Typography>
               </Box>
               <Box>

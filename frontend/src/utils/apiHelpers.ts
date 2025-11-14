@@ -66,7 +66,33 @@ export const apiHelpers = {
     });
 
     if (!response.ok) {
-      throw new Error(`HTTP error! status: ${response.status}`);
+      // Try to parse error response
+      const contentType = response.headers.get('content-type');
+      let errorMessage = `HTTP error! status: ${response.status}`;
+
+      try {
+        if (contentType?.includes('application/json')) {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorData.error?.message || errorMessage;
+        } else {
+          const textResponse = await response.text();
+          console.error('❌ Non-JSON error response:', textResponse.substring(0, 500));
+          errorMessage = `Server error (${response.status})`;
+        }
+      } catch (e) {
+        console.error('❌ Could not parse error response');
+      }
+
+      throw new Error(errorMessage);
+    }
+
+    // Parse successful response
+    const contentType = response.headers.get('content-type');
+    if (!contentType?.includes('application/json')) {
+      const textResponse = await response.text();
+      console.error('❌ Expected JSON but got:', contentType);
+      console.error('Response preview:', textResponse.substring(0, 500));
+      throw new Error('Server returned non-JSON response');
     }
 
     return response.json();

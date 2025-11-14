@@ -3,7 +3,6 @@ import {
   Box,
   Typography,
   Paper,
-  Grid,
   Card,
   CardContent,
   Button,
@@ -196,19 +195,26 @@ const ModernSystemAnalytics: React.FC<ModernSystemAnalyticsProps> = ({
     }
   };
 
-  // Enhanced Summary Cards Component
+  // Enhanced Summary Cards Component with Flexbox
   const SystemSummaryCards = () => (
-    <Grid container spacing={3} sx={{ mb: 4 }}>
-      <Grid item xs={12} sm={6} md={3}>
+    <Box sx={{
+      display: 'flex',
+      flexWrap: 'wrap',
+      gap: 3,
+      mb: 4,
+      width: '100%'
+    }}>
+      <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' }, minWidth: 0 }}>
         <Grow in timeout={500}>
-          <Card 
-            elevation={0} 
-            sx={{ 
+          <Card
+            elevation={0}
+            sx={{
               background: colorSchemes.gradient.primary,
               color: 'white',
               borderRadius: 4,
               position: 'relative',
               overflow: 'hidden',
+              height: '100%',
             }}
           >
             <CardContent sx={{ p: 3 }}>
@@ -228,8 +234,8 @@ const ModernSystemAnalytics: React.FC<ModernSystemAnalyticsProps> = ({
               <LinearProgress
                 variant="determinate"
                 value={summaryData?.activeCount ? Math.min((summaryData.activeCount / 10) * 100, 100) : 0}
-                sx={{ 
-                  height: 8, 
+                sx={{
+                  height: 8,
                   borderRadius: 4,
                   bgcolor: 'rgba(255,255,255,0.2)',
                   '& .MuiLinearProgress-bar': {
@@ -240,16 +246,17 @@ const ModernSystemAnalytics: React.FC<ModernSystemAnalyticsProps> = ({
             </CardContent>
           </Card>
         </Grow>
-      </Grid>
+      </Box>
 
-      <Grid item xs={12} sm={6} md={3}>
+      <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' }, minWidth: 0 }}>
         <Grow in timeout={700}>
-          <Card 
-            elevation={0} 
-            sx={{ 
+          <Card
+            elevation={0}
+            sx={{
               background: colorSchemes.gradient.success,
               color: 'white',
               borderRadius: 4,
+              height: '100%',
             }}
           >
             <CardContent sx={{ p: 3 }}>
@@ -275,16 +282,17 @@ const ModernSystemAnalytics: React.FC<ModernSystemAnalyticsProps> = ({
             </CardContent>
           </Card>
         </Grow>
-      </Grid>
+      </Box>
 
-      <Grid item xs={12} sm={6} md={3}>
+      <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' }, minWidth: 0 }}>
         <Grow in timeout={900}>
-          <Card 
-            elevation={0} 
-            sx={{ 
+          <Card
+            elevation={0}
+            sx={{
               background: colorSchemes.gradient.warning,
               color: 'white',
               borderRadius: 4,
+              height: '100%',
             }}
           >
             <CardContent sx={{ p: 3 }}>
@@ -313,16 +321,17 @@ const ModernSystemAnalytics: React.FC<ModernSystemAnalyticsProps> = ({
             </CardContent>
           </Card>
         </Grow>
-      </Grid>
+      </Box>
 
-      <Grid item xs={12} sm={6} md={3}>
+      <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' }, minWidth: 0 }}>
         <Grow in timeout={1100}>
-          <Card 
-            elevation={0} 
-            sx={{ 
+          <Card
+            elevation={0}
+            sx={{
               background: colorSchemes.gradient.error,
               color: 'white',
               borderRadius: 4,
+              height: '100%',
             }}
           >
             <CardContent sx={{ p: 3 }}>
@@ -356,13 +365,13 @@ const ModernSystemAnalytics: React.FC<ModernSystemAnalyticsProps> = ({
             </CardContent>
           </Card>
         </Grow>
-      </Grid>
-    </Grid>
+      </Box>
+    </Box>
   );
 
   // Determine the title based on patientId
-  const analyticsTitle = patientId === 'system' 
-    ? 'System-wide Medication Analytics' 
+  const analyticsTitle = patientId === 'system'
+    ? 'System-wide Medication Analytics'
     : 'Patient Medication Analytics';
 
   if (summaryLoading) {
@@ -396,11 +405,11 @@ const ModernSystemAnalytics: React.FC<ModernSystemAnalyticsProps> = ({
         <Box sx={{ mb: 4 }}>
           <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }}>
             <Box sx={{ display: 'flex', alignItems: 'center' }}>
-              <Avatar 
-                sx={{ 
-                  bgcolor: theme.palette.primary.main, 
-                  mr: 2, 
-                  width: 56, 
+              <Avatar
+                sx={{
+                  bgcolor: theme.palette.primary.main,
+                  mr: 2,
+                  width: 56,
                   height: 56,
                   background: colorSchemes.gradient.primary
                 }}
@@ -418,9 +427,9 @@ const ModernSystemAnalytics: React.FC<ModernSystemAnalyticsProps> = ({
             </Box>
             <Stack direction="row" spacing={1}>
               <Tooltip title="Refresh All Data">
-                <IconButton 
+                <IconButton
                   onClick={() => refetchAdherence()}
-                  sx={{ 
+                  sx={{
                     bgcolor: alpha(theme.palette.primary.main, 0.1),
                     '&:hover': { bgcolor: alpha(theme.palette.primary.main, 0.2) }
                   }}
@@ -429,8 +438,8 @@ const ModernSystemAnalytics: React.FC<ModernSystemAnalyticsProps> = ({
                 </IconButton>
               </Tooltip>
               <Tooltip title="Export Analytics Report">
-                <IconButton 
-                  sx={{ 
+                <IconButton
+                  sx={{
                     bgcolor: alpha(theme.palette.success.main, 0.1),
                     '&:hover': { bgcolor: alpha(theme.palette.success.main, 0.2) }
                   }}
@@ -447,18 +456,18 @@ const ModernSystemAnalytics: React.FC<ModernSystemAnalyticsProps> = ({
       <SystemSummaryCards />
 
       {/* Enhanced Analytics Tabs */}
-      <Paper 
-        elevation={0} 
-        sx={{ 
-          border: '1px solid', 
-          borderColor: 'divider', 
+      <Paper
+        elevation={0}
+        sx={{
+          border: '1px solid',
+          borderColor: 'divider',
           borderRadius: 4,
           overflow: 'hidden',
           background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)'
         }}
       >
-        <Box sx={{ 
-          borderBottom: 1, 
+        <Box sx={{
+          borderBottom: 1,
           borderColor: 'divider',
           background: 'linear-gradient(90deg, #667eea 0%, #764ba2 100%)',
         }}>
@@ -467,7 +476,7 @@ const ModernSystemAnalytics: React.FC<ModernSystemAnalyticsProps> = ({
             onChange={handleTabChange}
             variant="scrollable"
             scrollButtons="auto"
-            sx={{ 
+            sx={{
               px: 3,
               '& .MuiTab-root': {
                 color: 'rgba(255,255,255,0.7)',
@@ -485,24 +494,24 @@ const ModernSystemAnalytics: React.FC<ModernSystemAnalyticsProps> = ({
               }
             }}
           >
-            <Tab 
-              label="Adherence Trends" 
-              icon={<TimelineIcon />} 
+            <Tab
+              label="Adherence Trends"
+              icon={<TimelineIcon />}
               iconPosition="start"
             />
-            <Tab 
-              label="Prescription Patterns" 
-              icon={<BarChartIcon />} 
+            <Tab
+              label="Prescription Patterns"
+              icon={<BarChartIcon />}
               iconPosition="start"
             />
-            <Tab 
-              label="Drug Interactions" 
-              icon={<SecurityIcon />} 
+            <Tab
+              label="Drug Interactions"
+              icon={<SecurityIcon />}
               iconPosition="start"
             />
-            <Tab 
-              label="Financial Analytics" 
-              icon={<AccountBalanceIcon />} 
+            <Tab
+              label="Financial Analytics"
+              icon={<AccountBalanceIcon />}
               iconPosition="start"
             />
           </Tabs>
@@ -544,15 +553,20 @@ const ModernSystemAnalytics: React.FC<ModernSystemAnalyticsProps> = ({
                 Failed to load adherence data. Please try again.
               </Alert>
             ) : (
-              <Grid container spacing={4}>
-                <Grid item xs={12} lg={8}>
-                  <Card 
-                    elevation={0} 
-                    sx={{ 
-                      border: '1px solid', 
-                      borderColor: 'divider', 
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 4, width: '100%' }}>
+                <Box sx={{ flex: { xs: '1 1 100%', lg: '1 1 calc(66.666% - 16px)' }, minWidth: 0 }}>
+                  <Card
+                    elevation={0}
+                    sx={{
+                      border: '1px solid',
+                      borderColor: 'divider',
                       borderRadius: 3,
-                      background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)'
+                      background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)',
+                      transition: 'box-shadow 0.3s ease',
+                      height: '100%',
+                      '&:hover': {
+                        boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+                      }
                     }}
                   >
                     <CardContent sx={{ p: 4 }}>
@@ -571,14 +585,14 @@ const ModernSystemAnalytics: React.FC<ModernSystemAnalyticsProps> = ({
                             </linearGradient>
                           </defs>
                           <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                          <XAxis 
-                            dataKey="month" 
-                            stroke="#666" 
+                          <XAxis
+                            dataKey="month"
+                            stroke="#666"
                             fontSize={12}
                             tickLine={false}
                           />
-                          <YAxis 
-                            stroke="#666" 
+                          <YAxis
+                            stroke="#666"
                             fontSize={12}
                             tickLine={false}
                             axisLine={false}
@@ -606,15 +620,15 @@ const ModernSystemAnalytics: React.FC<ModernSystemAnalyticsProps> = ({
                       </ResponsiveContainer>
                     </CardContent>
                   </Card>
-                </Grid>
+                </Box>
 
-                <Grid item xs={12} lg={4}>
+                <Box sx={{ flex: { xs: '1 1 100%', lg: '1 1 calc(33.333% - 16px)' }, minWidth: 0 }}>
                   <Stack spacing={3}>
-                    <Card 
-                      elevation={0} 
-                      sx={{ 
-                        border: '1px solid', 
-                        borderColor: 'divider', 
+                    <Card
+                      elevation={0}
+                      sx={{
+                        border: '1px solid',
+                        borderColor: 'divider',
                         borderRadius: 3,
                         background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)'
                       }}
@@ -656,10 +670,10 @@ const ModernSystemAnalytics: React.FC<ModernSystemAnalyticsProps> = ({
                             {(adherenceData?.averageAdherence || 0) >= 90
                               ? 'Excellent Adherence'
                               : (adherenceData?.averageAdherence || 0) >= 80
-                              ? 'Good Adherence'
-                              : (adherenceData?.averageAdherence || 0) >= 70
-                              ? 'Fair Adherence'
-                              : 'Needs Improvement'}
+                                ? 'Good Adherence'
+                                : (adherenceData?.averageAdherence || 0) >= 70
+                                  ? 'Fair Adherence'
+                                  : 'Needs Improvement'}
                           </Typography>
                           <Box sx={{ display: 'flex', alignItems: 'center', mt: 1 }}>
                             {renderTrendIcon(adherenceData?.trendDirection || 'stable')}
@@ -671,11 +685,11 @@ const ModernSystemAnalytics: React.FC<ModernSystemAnalyticsProps> = ({
                       </CardContent>
                     </Card>
 
-                    <Card 
-                      elevation={0} 
-                      sx={{ 
-                        border: '1px solid', 
-                        borderColor: 'divider', 
+                    <Card
+                      elevation={0}
+                      sx={{
+                        border: '1px solid',
+                        borderColor: 'divider',
                         borderRadius: 3,
                         background: colorSchemes.gradient.success
                       }}
@@ -695,9 +709,9 @@ const ModernSystemAnalytics: React.FC<ModernSystemAnalyticsProps> = ({
                             Saved through adherence
                           </Typography>
                           <Divider sx={{ my: 2, bgcolor: 'rgba(255,255,255,0.2)' }} />
-                          <Box sx={{ 
-                            p: 2, 
-                            bgcolor: 'rgba(255,255,255,0.1)', 
+                          <Box sx={{
+                            p: 2,
+                            bgcolor: 'rgba(255,255,255,0.1)',
                             borderRadius: 2,
                             border: '1px solid rgba(255,255,255,0.2)'
                           }}>
@@ -712,8 +726,8 @@ const ModernSystemAnalytics: React.FC<ModernSystemAnalyticsProps> = ({
                       </CardContent>
                     </Card>
                   </Stack>
-                </Grid>
-              </Grid>
+                </Box>
+              </Box>
             )}
           </Box>
         </TabPanel>
@@ -739,15 +753,20 @@ const ModernSystemAnalytics: React.FC<ModernSystemAnalyticsProps> = ({
                 Failed to load prescription data. Please try again.
               </Alert>
             ) : (
-              <Grid container spacing={4}>
-                <Grid item xs={12} md={6}>
-                  <Card 
-                    elevation={0} 
-                    sx={{ 
-                      border: '1px solid', 
-                      borderColor: 'divider', 
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 4, width: '100%' }}>
+                <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 calc(50% - 16px)' }, minWidth: 0 }}>
+                  <Card
+                    elevation={0}
+                    sx={{
+                      border: '1px solid',
+                      borderColor: 'divider',
                       borderRadius: 3,
-                      background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)'
+                      background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)',
+                      transition: 'box-shadow 0.3s ease',
+                      height: '100%',
+                      '&:hover': {
+                        boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+                      }
                     }}
                   >
                     <CardContent sx={{ p: 4 }}>
@@ -770,13 +789,13 @@ const ModernSystemAnalytics: React.FC<ModernSystemAnalyticsProps> = ({
                             labelLine={false}
                           >
                             {(prescriptionData?.medicationsByCategory || []).map((entry, index) => (
-                              <Cell 
-                                key={`cell-${index}`} 
-                                fill={colorSchemes.primary[index % colorSchemes.primary.length]} 
+                              <Cell
+                                key={`cell-${index}`}
+                                fill={colorSchemes.primary[index % colorSchemes.primary.length]}
                               />
                             ))}
                           </Pie>
-                          <RechartsTooltip 
+                          <RechartsTooltip
                             contentStyle={{
                               backgroundColor: '#fff',
                               border: 'none',
@@ -788,16 +807,21 @@ const ModernSystemAnalytics: React.FC<ModernSystemAnalyticsProps> = ({
                       </ResponsiveContainer>
                     </CardContent>
                   </Card>
-                </Grid>
+                </Box>
 
-                <Grid item xs={12} md={6}>
-                  <Card 
-                    elevation={0} 
-                    sx={{ 
-                      border: '1px solid', 
-                      borderColor: 'divider', 
+                <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 calc(50% - 16px)' }, minWidth: 0 }}>
+                  <Card
+                    elevation={0}
+                    sx={{
+                      border: '1px solid',
+                      borderColor: 'divider',
                       borderRadius: 3,
-                      background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)'
+                      background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)',
+                      transition: 'box-shadow 0.3s ease',
+                      height: '100%',
+                      '&:hover': {
+                        boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+                      }
                     }}
                   >
                     <CardContent sx={{ p: 4 }}>
@@ -816,19 +840,19 @@ const ModernSystemAnalytics: React.FC<ModernSystemAnalyticsProps> = ({
                             </linearGradient>
                           </defs>
                           <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                          <XAxis 
-                            dataKey="month" 
-                            stroke="#666" 
+                          <XAxis
+                            dataKey="month"
+                            stroke="#666"
                             fontSize={12}
                             tickLine={false}
                           />
-                          <YAxis 
-                            stroke="#666" 
+                          <YAxis
+                            stroke="#666"
                             fontSize={12}
                             tickLine={false}
                             axisLine={false}
                           />
-                          <RechartsTooltip 
+                          <RechartsTooltip
                             contentStyle={{
                               backgroundColor: '#fff',
                               border: 'none',
@@ -836,25 +860,29 @@ const ModernSystemAnalytics: React.FC<ModernSystemAnalyticsProps> = ({
                               boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
                             }}
                           />
-                          <Bar 
-                            dataKey="count" 
-                            fill="url(#barGradient)" 
+                          <Bar
+                            dataKey="count"
+                            fill="url(#barGradient)"
                             radius={[8, 8, 0, 0]}
                           />
                         </BarChart>
                       </ResponsiveContainer>
                     </CardContent>
                   </Card>
-                </Grid>
+                </Box>
 
-                <Grid item xs={12}>
-                  <Card 
-                    elevation={0} 
-                    sx={{ 
-                      border: '1px solid', 
-                      borderColor: 'divider', 
+                <Box sx={{ flex: '1 1 100%', minWidth: 0 }}>
+                  <Card
+                    elevation={0}
+                    sx={{
+                      border: '1px solid',
+                      borderColor: 'divider',
                       borderRadius: 3,
-                      background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)'
+                      background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)',
+                      transition: 'box-shadow 0.3s ease',
+                      '&:hover': {
+                        boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+                      }
                     }}
                   >
                     <CardContent sx={{ p: 4 }}>
@@ -864,22 +892,27 @@ const ModernSystemAnalytics: React.FC<ModernSystemAnalyticsProps> = ({
                           Top Prescribers
                         </Typography>
                       </Box>
-                      <Grid container spacing={2}>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, width: '100%' }}>
                         {(prescriptionData?.topPrescribers || []).map((prescriber, index) => (
-                          <Grid item xs={12} sm={6} md={4} key={index}>
-                            <Card 
+                          <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 8px)', md: '1 1 calc(33.333% - 11px)' }, minWidth: 0 }} key={index}>
+                            <Card
                               elevation={0}
-                              sx={{ 
-                                p: 2, 
-                                border: '1px solid', 
+                              sx={{
+                                p: 2,
+                                border: '1px solid',
                                 borderColor: 'divider',
                                 borderRadius: 2,
-                                background: alpha(colorSchemes.primary[index % colorSchemes.primary.length], 0.1)
+                                background: alpha(colorSchemes.primary[index % colorSchemes.primary.length], 0.1),
+                                transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                                '&:hover': {
+                                  transform: 'translateY(-4px)',
+                                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                }
                               }}
                             >
                               <Box sx={{ display: 'flex', alignItems: 'center' }}>
-                                <Avatar 
-                                  sx={{ 
+                                <Avatar
+                                  sx={{
                                     bgcolor: colorSchemes.primary[index % colorSchemes.primary.length],
                                     mr: 2,
                                     width: 48,
@@ -904,13 +937,13 @@ const ModernSystemAnalytics: React.FC<ModernSystemAnalyticsProps> = ({
                                 />
                               </Box>
                             </Card>
-                          </Grid>
+                          </Box>
                         ))}
-                      </Grid>
+                      </Box>
                     </CardContent>
                   </Card>
-                </Grid>
-              </Grid>
+                </Box>
+              </Box>
             )}
           </Box>
         </TabPanel>
@@ -936,15 +969,20 @@ const ModernSystemAnalytics: React.FC<ModernSystemAnalyticsProps> = ({
                 Failed to load interaction data. Please try again.
               </Alert>
             ) : (
-              <Grid container spacing={4}>
-                <Grid item xs={12} md={6}>
-                  <Card 
-                    elevation={0} 
-                    sx={{ 
-                      border: '1px solid', 
-                      borderColor: 'divider', 
+              <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 4, width: '100%' }}>
+                <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 calc(50% - 16px)' }, minWidth: 0 }}>
+                  <Card
+                    elevation={0}
+                    sx={{
+                      border: '1px solid',
+                      borderColor: 'divider',
                       borderRadius: 3,
-                      background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)'
+                      background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)',
+                      transition: 'box-shadow 0.3s ease',
+                      height: '100%',
+                      '&:hover': {
+                        boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+                      }
                     }}
                   >
                     <CardContent sx={{ p: 4 }}>
@@ -972,13 +1010,13 @@ const ModernSystemAnalytics: React.FC<ModernSystemAnalyticsProps> = ({
                                   entry.severity === 'Severe'
                                     ? colorSchemes.error[0]
                                     : entry.severity === 'Moderate'
-                                    ? colorSchemes.warning[0]
-                                    : colorSchemes.success[0]
+                                      ? colorSchemes.warning[0]
+                                      : colorSchemes.success[0]
                                 }
                               />
                             ))}
                           </Pie>
-                          <RechartsTooltip 
+                          <RechartsTooltip
                             contentStyle={{
                               backgroundColor: '#fff',
                               border: 'none',
@@ -990,16 +1028,21 @@ const ModernSystemAnalytics: React.FC<ModernSystemAnalyticsProps> = ({
                       </ResponsiveContainer>
                     </CardContent>
                   </Card>
-                </Grid>
+                </Box>
 
-                <Grid item xs={12} md={6}>
-                  <Card 
-                    elevation={0} 
-                    sx={{ 
-                      border: '1px solid', 
-                      borderColor: 'divider', 
+                <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 calc(50% - 16px)' }, minWidth: 0 }}>
+                  <Card
+                    elevation={0}
+                    sx={{
+                      border: '1px solid',
+                      borderColor: 'divider',
                       borderRadius: 3,
-                      background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)'
+                      background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)',
+                      transition: 'box-shadow 0.3s ease',
+                      height: '100%',
+                      '&:hover': {
+                        boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+                      }
                     }}
                   >
                     <CardContent sx={{ p: 4 }}>
@@ -1012,19 +1055,19 @@ const ModernSystemAnalytics: React.FC<ModernSystemAnalyticsProps> = ({
                       <ResponsiveContainer width="100%" height={350}>
                         <LineChart data={interactionData?.interactionTrends || []}>
                           <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                          <XAxis 
-                            dataKey="month" 
-                            stroke="#666" 
+                          <XAxis
+                            dataKey="month"
+                            stroke="#666"
                             fontSize={12}
                             tickLine={false}
                           />
-                          <YAxis 
-                            stroke="#666" 
+                          <YAxis
+                            stroke="#666"
                             fontSize={12}
                             tickLine={false}
                             axisLine={false}
                           />
-                          <RechartsTooltip 
+                          <RechartsTooltip
                             contentStyle={{
                               backgroundColor: '#fff',
                               border: 'none',
@@ -1044,16 +1087,20 @@ const ModernSystemAnalytics: React.FC<ModernSystemAnalyticsProps> = ({
                       </ResponsiveContainer>
                     </CardContent>
                   </Card>
-                </Grid>
+                </Box>
 
-                <Grid item xs={12}>
-                  <Card 
-                    elevation={0} 
-                    sx={{ 
-                      border: '1px solid', 
-                      borderColor: 'divider', 
+                <Box sx={{ flex: '1 1 100%', minWidth: 0 }}>
+                  <Card
+                    elevation={0}
+                    sx={{
+                      border: '1px solid',
+                      borderColor: 'divider',
                       borderRadius: 3,
-                      background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)'
+                      background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)',
+                      transition: 'box-shadow 0.3s ease',
+                      '&:hover': {
+                        boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+                      }
                     }}
                   >
                     <CardContent sx={{ p: 4 }}>
@@ -1063,35 +1110,40 @@ const ModernSystemAnalytics: React.FC<ModernSystemAnalyticsProps> = ({
                           Common Interactions
                         </Typography>
                       </Box>
-                      <Grid container spacing={2}>
+                      <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 2, width: '100%' }}>
                         {(interactionData?.commonInteractions || []).map((interaction, index) => (
-                          <Grid item xs={12} md={6} key={index}>
-                            <Card 
+                          <Box sx={{ flex: { xs: '1 1 100%', md: '1 1 calc(50% - 8px)' }, minWidth: 0 }} key={index}>
+                            <Card
                               elevation={0}
-                              sx={{ 
-                                p: 3, 
-                                border: '1px solid', 
+                              sx={{
+                                p: 3,
+                                border: '1px solid',
                                 borderColor: 'divider',
                                 borderRadius: 2,
                                 background: alpha(
                                   interaction.severityLevel === 'severe'
                                     ? theme.palette.error.main
                                     : interaction.severityLevel === 'moderate'
-                                    ? theme.palette.warning.main
-                                    : theme.palette.success.main,
+                                      ? theme.palette.warning.main
+                                      : theme.palette.success.main,
                                   0.1
-                                )
+                                ),
+                                transition: 'transform 0.2s ease, box-shadow 0.2s ease',
+                                '&:hover': {
+                                  transform: 'translateY(-4px)',
+                                  boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
+                                }
                               }}
                             >
                               <Box sx={{ display: 'flex', alignItems: 'flex-start' }}>
-                                <Avatar 
-                                  sx={{ 
-                                    bgcolor: 
+                                <Avatar
+                                  sx={{
+                                    bgcolor:
                                       interaction.severityLevel === 'severe'
                                         ? 'error.main'
                                         : interaction.severityLevel === 'moderate'
-                                        ? 'warning.main'
-                                        : 'success.main',
+                                          ? 'warning.main'
+                                          : 'success.main',
                                     mr: 2,
                                     width: 48,
                                     height: 48
@@ -1113,8 +1165,8 @@ const ModernSystemAnalytics: React.FC<ModernSystemAnalyticsProps> = ({
                                         interaction.severityLevel === 'severe'
                                           ? 'error'
                                           : interaction.severityLevel === 'moderate'
-                                          ? 'warning'
-                                          : 'success'
+                                            ? 'warning'
+                                            : 'success'
                                       }
                                       size="small"
                                       sx={{ fontWeight: 'bold' }}
@@ -1126,13 +1178,13 @@ const ModernSystemAnalytics: React.FC<ModernSystemAnalyticsProps> = ({
                                 </Box>
                               </Box>
                             </Card>
-                          </Grid>
+                          </Box>
                         ))}
-                      </Grid>
+                      </Box>
                     </CardContent>
                   </Card>
-                </Grid>
-              </Grid>
+                </Box>
+              </Box>
             )}
           </Box>
         </TabPanel>
@@ -1158,218 +1210,248 @@ const ModernSystemAnalytics: React.FC<ModernSystemAnalyticsProps> = ({
                 Failed to load cost data. Please try again.
               </Alert>
             ) : (
-              <Grid container spacing={4}>
+              <>
                 {/* Financial Summary Cards */}
-                <Grid item xs={12} md={3}>
-                  <Card 
-                    elevation={0} 
-                    sx={{ 
-                      border: '1px solid', 
-                      borderColor: 'divider', 
-                      borderRadius: 3,
-                      background: colorSchemes.gradient.success,
-                      color: 'white'
-                    }}
-                  >
-                    <CardContent sx={{ p: 3, textAlign: 'center' }}>
-                      <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
-                        Total Revenue
-                      </Typography>
-                      <Typography variant="h3" fontWeight="bold">
-                        {costData?.formattedTotalRevenue || '₦0.00'}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-                <Grid item xs={12} md={3}>
-                  <Card 
-                    elevation={0} 
-                    sx={{ 
-                      border: '1px solid', 
-                      borderColor: 'divider', 
-                      borderRadius: 3,
-                      background: colorSchemes.gradient.error,
-                      color: 'white'
-                    }}
-                  >
-                    <CardContent sx={{ p: 3, textAlign: 'center' }}>
-                      <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
-                        Total Cost
-                      </Typography>
-                      <Typography variant="h3" fontWeight="bold">
-                        {costData?.formattedTotalCost || '₦0.00'}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-                <Grid item xs={12} md={3}>
-                  <Card 
-                    elevation={0} 
-                    sx={{ 
-                      border: '1px solid', 
-                      borderColor: 'divider', 
-                      borderRadius: 3,
-                      background: colorSchemes.gradient.primary,
-                      color: 'white'
-                    }}
-                  >
-                    <CardContent sx={{ p: 3, textAlign: 'center' }}>
-                      <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
-                        Net Profit
-                      </Typography>
-                      <Typography variant="h3" fontWeight="bold">
-                        {costData?.formattedTotalProfit || '₦0.00'}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
-                <Grid item xs={12} md={3}>
-                  <Card 
-                    elevation={0} 
-                    sx={{ 
-                      border: '1px solid', 
-                      borderColor: 'divider', 
-                      borderRadius: 3,
-                      background: colorSchemes.gradient.warning,
-                      color: 'white'
-                    }}
-                  >
-                    <CardContent sx={{ p: 3, textAlign: 'center' }}>
-                      <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
-                        Profit Margin
-                      </Typography>
-                      <Typography variant="h3" fontWeight="bold">
-                        {costData?.formattedProfitMargin || '0%'}
-                      </Typography>
-                    </CardContent>
-                  </Card>
-                </Grid>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 3, mb: 4, width: '100%' }}>
+                  <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' }, minWidth: 0 }}>
+                    <Card
+                      elevation={0}
+                      sx={{
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        borderRadius: 3,
+                        background: colorSchemes.gradient.success,
+                        color: 'white',
+                        transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                        '&:hover': {
+                          transform: 'translateY(-8px)',
+                          boxShadow: '0 12px 40px rgba(46, 125, 50, 0.4)',
+                        }
+                      }}
+                    >
+                      <CardContent sx={{ p: 3, textAlign: 'center' }}>
+                        <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
+                          Total Revenue
+                        </Typography>
+                        <Typography variant="h3" fontWeight="bold">
+                          {costData?.formattedTotalRevenue || '₦0.00'}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Box>
+                  <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' }, minWidth: 0 }}>
+                    <Card
+                      elevation={0}
+                      sx={{
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        borderRadius: 3,
+                        background: colorSchemes.gradient.error,
+                        color: 'white',
+                        transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                        '&:hover': {
+                          transform: 'translateY(-8px)',
+                          boxShadow: '0 12px 40px rgba(244, 67, 54, 0.4)',
+                        }
+                      }}
+                    >
+                      <CardContent sx={{ p: 3, textAlign: 'center' }}>
+                        <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
+                          Total Cost
+                        </Typography>
+                        <Typography variant="h3" fontWeight="bold">
+                          {costData?.formattedTotalCost || '₦0.00'}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Box>
+                  <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' }, minWidth: 0 }}>
+                    <Card
+                      elevation={0}
+                      sx={{
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        borderRadius: 3,
+                        background: colorSchemes.gradient.primary,
+                        color: 'white',
+                        transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                        '&:hover': {
+                          transform: 'translateY(-8px)',
+                          boxShadow: '0 12px 40px rgba(102, 126, 234, 0.4)',
+                        }
+                      }}
+                    >
+                      <CardContent sx={{ p: 3, textAlign: 'center' }}>
+                        <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
+                          Net Profit
+                        </Typography>
+                        <Typography variant="h3" fontWeight="bold">
+                          {costData?.formattedTotalProfit || '₦0.00'}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Box>
+                  <Box sx={{ flex: { xs: '1 1 100%', sm: '1 1 calc(50% - 12px)', md: '1 1 calc(25% - 18px)' }, minWidth: 0 }}>
+                    <Card
+                      elevation={0}
+                      sx={{
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        borderRadius: 3,
+                        background: colorSchemes.gradient.warning,
+                        color: 'white',
+                        transition: 'transform 0.3s ease, box-shadow 0.3s ease',
+                        '&:hover': {
+                          transform: 'translateY(-8px)',
+                          boxShadow: '0 12px 40px rgba(255, 152, 0, 0.4)',
+                        }
+                      }}
+                    >
+                      <CardContent sx={{ p: 3, textAlign: 'center' }}>
+                        <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
+                          Profit Margin
+                        </Typography>
+                        <Typography variant="h3" fontWeight="bold">
+                          {costData?.formattedProfitMargin || '0%'}
+                        </Typography>
+                      </CardContent>
+                    </Card>
+                  </Box>
+                </Box>
 
                 {/* Financial Charts */}
-                <Grid item xs={12} lg={8}>
-                  <Card 
-                    elevation={0} 
-                    sx={{ 
-                      border: '1px solid', 
-                      borderColor: 'divider', 
-                      borderRadius: 3,
-                      background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)'
-                    }}
-                  >
-                    <CardContent sx={{ p: 4 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                        <ShowChartIcon sx={{ mr: 2, color: 'success.main' }} />
-                        <Typography variant="h6" fontWeight="bold">
-                          Monthly Revenue vs Cost
-                        </Typography>
-                      </Box>
-                      <ResponsiveContainer width="100%" height={400}>
-                        <ComposedChart data={costData?.monthlyFinancials || []}>
-                          <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                          <XAxis 
-                            dataKey="month" 
-                            stroke="#666" 
-                            fontSize={12}
-                            tickLine={false}
-                          />
-                          <YAxis 
-                            stroke="#666" 
-                            fontSize={12}
-                            tickLine={false}
-                            axisLine={false}
-                          />
-                          <RechartsTooltip
-                            formatter={(value: any) => [`₦${value.toLocaleString()}`, '']}
-                            contentStyle={{
-                              backgroundColor: '#fff',
-                              border: 'none',
-                              borderRadius: '12px',
-                              boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-                            }}
-                          />
-                          <Legend />
-                          <Line
-                            type="monotone"
-                            dataKey="revenue"
-                            stroke="#4caf50"
-                            strokeWidth={4}
-                            name="Revenue"
-                            dot={{ fill: '#4caf50', strokeWidth: 2, r: 6 }}
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="cost"
-                            stroke="#f44336"
-                            strokeWidth={4}
-                            name="Cost"
-                            dot={{ fill: '#f44336', strokeWidth: 2, r: 6 }}
-                          />
-                          <Line
-                            type="monotone"
-                            dataKey="profit"
-                            stroke="#2196f3"
-                            strokeWidth={4}
-                            name="Profit"
-                            dot={{ fill: '#2196f3', strokeWidth: 2, r: 6 }}
-                          />
-                        </ComposedChart>
-                      </ResponsiveContainer>
-                    </CardContent>
-                  </Card>
-                </Grid>
+                <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 4, width: '100%' }}>
+                  <Box sx={{ flex: { xs: '1 1 100%', lg: '1 1 calc(66.666% - 16px)' }, minWidth: 0 }}>
+                    <Card
+                      elevation={0}
+                      sx={{
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        borderRadius: 3,
+                        background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)',
+                        transition: 'box-shadow 0.3s ease',
+                        height: '100%',
+                        '&:hover': {
+                          boxShadow: '0 8px 30px rgba(0,0,0,0.12)',
+                        }
+                      }}
+                    >
+                      <CardContent sx={{ p: 4 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                          <ShowChartIcon sx={{ mr: 2, color: 'success.main' }} />
+                          <Typography variant="h6" fontWeight="bold">
+                            Monthly Revenue vs Cost
+                          </Typography>
+                        </Box>
+                        <ResponsiveContainer width="100%" height={400}>
+                          <ComposedChart data={costData?.monthlyFinancials || []}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                            <XAxis
+                              dataKey="month"
+                              stroke="#666"
+                              fontSize={12}
+                              tickLine={false}
+                            />
+                            <YAxis
+                              stroke="#666"
+                              fontSize={12}
+                              tickLine={false}
+                              axisLine={false}
+                            />
+                            <RechartsTooltip
+                              formatter={(value: any) => [`₦${value.toLocaleString()}`, '']}
+                              contentStyle={{
+                                backgroundColor: '#fff',
+                                border: 'none',
+                                borderRadius: '12px',
+                                boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+                              }}
+                            />
+                            <Legend />
+                            <Line
+                              type="monotone"
+                              dataKey="revenue"
+                              stroke="#4caf50"
+                              strokeWidth={4}
+                              name="Revenue"
+                              dot={{ fill: '#4caf50', strokeWidth: 2, r: 6 }}
+                            />
+                            <Line
+                              type="monotone"
+                              dataKey="cost"
+                              stroke="#f44336"
+                              strokeWidth={4}
+                              name="Cost"
+                              dot={{ fill: '#f44336', strokeWidth: 2, r: 6 }}
+                            />
+                            <Line
+                              type="monotone"
+                              dataKey="profit"
+                              stroke="#2196f3"
+                              strokeWidth={4}
+                              name="Profit"
+                              dot={{ fill: '#2196f3', strokeWidth: 2, r: 6 }}
+                            />
+                          </ComposedChart>
+                        </ResponsiveContainer>
+                      </CardContent>
+                    </Card>
+                  </Box>
 
-                <Grid item xs={12} lg={4}>
-                  <Card 
-                    elevation={0} 
-                    sx={{ 
-                      border: '1px solid', 
-                      borderColor: 'divider', 
-                      borderRadius: 3,
-                      background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)'
-                    }}
-                  >
-                    <CardContent sx={{ p: 4 }}>
-                      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-                        <StarIcon sx={{ mr: 2, color: 'warning.main' }} />
-                        <Typography variant="h6" fontWeight="bold">
-                          Top Profitable Medications
-                        </Typography>
-                      </Box>
-                      <ResponsiveContainer width="100%" height={400}>
-                        <BarChart 
-                          data={costData?.topProfitableMedications || []}
-                          layout="horizontal"
-                        >
-                          <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
-                          <XAxis type="number" stroke="#666" fontSize={12} tickLine={false} />
-                          <YAxis 
-                            type="category" 
-                            dataKey="medicationName" 
-                            stroke="#666" 
-                            fontSize={12}
-                            tickLine={false}
-                            width={100}
-                          />
-                          <RechartsTooltip
-                            formatter={(value: any) => [`₦${value.toLocaleString()}`, 'Profit']}
-                            contentStyle={{
-                              backgroundColor: '#fff',
-                              border: 'none',
-                              borderRadius: '12px',
-                              boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
-                            }}
-                          />
-                          <Bar 
-                            dataKey="profit" 
-                            fill="#4caf50" 
-                            radius={[0, 4, 4, 0]}
-                          />
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </CardContent>
-                  </Card>
-                </Grid>
-              </Grid>
+                  <Box sx={{ flex: { xs: '1 1 100%', lg: '1 1 calc(33.333% - 16px)' }, minWidth: 0 }}>
+                    <Card
+                      elevation={0}
+                      sx={{
+                        border: '1px solid',
+                        borderColor: 'divider',
+                        borderRadius: 3,
+                        background: 'linear-gradient(145deg, #ffffff 0%, #f8f9fa 100%)',
+                        height: '100%'
+                      }}
+                    >
+                      <CardContent sx={{ p: 4 }}>
+                        <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
+                          <StarIcon sx={{ mr: 2, color: 'warning.main' }} />
+                          <Typography variant="h6" fontWeight="bold">
+                            Top Profitable Medications
+                          </Typography>
+                        </Box>
+                        <ResponsiveContainer width="100%" height={400}>
+                          <BarChart
+                            data={costData?.topProfitableMedications || []}
+                            layout="horizontal"
+                          >
+                            <CartesianGrid strokeDasharray="3 3" stroke="#e0e0e0" />
+                            <XAxis type="number" stroke="#666" fontSize={12} tickLine={false} />
+                            <YAxis
+                              type="category"
+                              dataKey="medicationName"
+                              stroke="#666"
+                              fontSize={12}
+                              tickLine={false}
+                              width={100}
+                            />
+                            <RechartsTooltip
+                              formatter={(value: any) => [`₦${value.toLocaleString()}`, 'Profit']}
+                              contentStyle={{
+                                backgroundColor: '#fff',
+                                border: 'none',
+                                borderRadius: '12px',
+                                boxShadow: '0 8px 32px rgba(0,0,0,0.1)',
+                              }}
+                            />
+                            <Bar
+                              dataKey="profit"
+                              fill="#4caf50"
+                              radius={[0, 4, 4, 0]}
+                            />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </CardContent>
+                    </Card>
+                  </Box>
+                </Box>
+              </>
             )}
           </Box>
         </TabPanel>

@@ -43,10 +43,13 @@ export interface IUser extends Document {
   licenseNumber?: string;
   licenseDocument?: {
     fileName: string;
-    filePath: string;
+    filePath?: string; // Local file path (backup)
+    cloudinaryUrl?: string; // Cloudinary URL (primary)
+    cloudinaryPublicId?: string; // Cloudinary public ID for deletion
     uploadedAt: Date;
     fileSize: number;
     mimeType: string;
+    uploadMethod: 'cloudinary' | 'local' | 'both'; // Track which method was used
   };
   licenseStatus: 'not_required' | 'pending' | 'approved' | 'rejected';
   licenseVerifiedAt?: Date;
@@ -277,10 +280,17 @@ const userSchema = new Schema(
     },
     licenseDocument: {
       fileName: String,
-      filePath: String,
+      filePath: String, // Local file path (backup)
+      cloudinaryUrl: String, // Cloudinary URL (primary)
+      cloudinaryPublicId: String, // Cloudinary public ID for deletion
       uploadedAt: Date,
       fileSize: Number,
       mimeType: String,
+      uploadMethod: {
+        type: String,
+        enum: ['cloudinary', 'local', 'both'],
+        default: 'local'
+      }
     },
     licenseStatus: {
       type: String,
@@ -875,10 +885,15 @@ userSchema.index({ 'cachedPermissions.workspaceId': 1 });
 // Set license requirements based on role
 userSchema.pre<IUser>('save', function (next) {
   if (this.isNew || this.isModified('role')) {
-    if (this.role === 'pharmacist' || this.role === 'intern_pharmacist') {
-      this.licenseStatus =
-        this.licenseStatus === 'not_required' ? 'pending' : this.licenseStatus;
+    if (this.role === 'pharmacist' || this.role === 'intern_pharmacist' || this.role === 'owner') {
+      // Only change status if it's currently not_required and no license data exists
+      if (this.licenseStatus === 'not_required' && !this.licenseNumber && !this.licenseDocument) {
+        // Keep as not_required - let the upload process set it to pending
+        this.licenseStatus = 'not_required';
+      }
+      // If user already has license data, preserve the current status
     } else {
+      // For roles that don't require license, always set to not_required
       this.licenseStatus = 'not_required';
     }
   }

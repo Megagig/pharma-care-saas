@@ -156,62 +156,57 @@ const BillingSubscriptions: React.FC = () => {
   const [selectedSubscription, setSelectedSubscription] = useState<Subscription | null>(null);
 
   const fetchData = useCallback(async () => {
-    console.log('🔍 [Billing] Starting data fetch...');
+
     setLoading(true);
     setError(null);
 
     try {
-      console.log('📊 [Billing] Fetching analytics...');
+
       const analyticsRes = await billingService.getBillingAnalytics();
-      console.log('Analytics response:', analyticsRes);
+
       if (analyticsRes.success) {
         setAnalytics(analyticsRes.data);
-        console.log('✅ [Billing] Analytics loaded:', analyticsRes.data);
+
       } else {
         console.warn('⚠️ [Billing] Analytics failed:', analyticsRes.message);
       }
 
-      console.log('📈 [Billing] Fetching revenue trends...');
       const trendsRes = await billingService.getRevenueTrends(timePeriod);
-      console.log('Trends response:', trendsRes);
+
       if (trendsRes.success) {
         setRevenueTrends(trendsRes.data);
-        console.log('✅ [Billing] Trends loaded:', trendsRes.data.length, 'data points');
+
       } else {
         console.warn('⚠️ [Billing] Trends failed:', trendsRes.message);
       }
 
-      console.log('📄 [Billing] Fetching invoices...');
       const invoicesRes = await billingService.getInvoices(1, 100);
-      console.log('Invoices response:', invoicesRes);
+
       if (invoicesRes.success) {
         setInvoices(invoicesRes.data.invoices || []);
-        console.log('✅ [Billing] Invoices loaded:', invoicesRes.data.invoices?.length || 0);
+
       } else {
         console.warn('⚠️ [Billing] Invoices failed:', invoicesRes.message);
       }
 
-      console.log('📋 [Billing] Fetching subscriptions...');
       const subscriptionsRes = await billingService.getSubscriptions(1, 100);
-      console.log('Subscriptions response:', subscriptionsRes);
+
       if (subscriptionsRes.success) {
         setSubscriptions(subscriptionsRes.data.subscriptions || []);
-        console.log('✅ [Billing] Subscriptions loaded:', subscriptionsRes.data.subscriptions?.length || 0);
+
       } else {
         console.warn('⚠️ [Billing] Subscriptions failed:', subscriptionsRes.message);
       }
 
-      console.log('💳 [Billing] Fetching payment methods...');
       const paymentMethodsRes = await billingService.getAllPaymentMethods();
-      console.log('Payment methods response:', paymentMethodsRes);
+
       if (paymentMethodsRes.success) {
         setPaymentMethods(paymentMethodsRes.data || []);
-        console.log('✅ [Billing] Payment methods loaded:', paymentMethodsRes.data?.length || 0);
+
       } else {
         console.warn('⚠️ [Billing] Payment methods failed:', paymentMethodsRes.message);
       }
 
-      console.log('✅ [Billing] All data fetched successfully');
     } catch (err) {
       console.error('❌ [Billing] Error fetching data:', err);
       setError(err instanceof Error ? err.message : 'Failed to fetch billing data');

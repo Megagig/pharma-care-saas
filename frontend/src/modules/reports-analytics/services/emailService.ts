@@ -126,7 +126,6 @@ Pharmacy Care Platform
         };
 
         // Simulate email sending (replace with actual email service)
-        console.log('Sending email:', emailData);
 
         // Simulate network delay
         await new Promise(resolve => setTimeout(resolve, 1000));
@@ -171,7 +170,7 @@ Pharmacy Care Platform
                 };
 
                 // Simulate email sending
-                console.log('Sending error notification:', emailData);
+
                 await new Promise(resolve => setTimeout(resolve, 500));
 
                 results.push({
@@ -365,7 +364,7 @@ Pharmacy Care Platform
     static async testEmailConfiguration(): Promise<{ success: boolean; error?: string }> {
         try {
             // In a real implementation, this would test the email service configuration
-            console.log('Testing email configuration...');
+
             await new Promise(resolve => setTimeout(resolve, 1000));
 
             return { success: true };

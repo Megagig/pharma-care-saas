@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 import { Workplace } from '../models/Workplace';
 import { generalRateLimiters } from '../middlewares/rateLimiting';
 import PatientPortalService from '../services/PatientPortalService';
+import { PublicWorkspaceController } from '../controllers/publicWorkspaceController';
 
 const router = express.Router();
 
@@ -102,17 +103,17 @@ router.get(
         });
       }
 
-      const { 
-        workplaceId, 
-        date, 
-        type, 
-        duration = '30', 
-        pharmacistId, 
-        locationId 
+      const {
+        workplaceId,
+        date,
+        type,
+        duration = '30',
+        pharmacistId,
+        locationId
       } = req.query;
 
       const targetDate = new Date(date as string);
-      
+
       const availableSlots = await PatientPortalService.getAvailableSlots(
         new mongoose.Types.ObjectId(workplaceId as string),
         targetDate,
@@ -146,8 +147,36 @@ router.get(
  * @desc Search for workspaces by name, location, or type (public endpoint)
  * @access Public
  */
+router.get('/search', generalRateLimiters.api, PublicWorkspaceController.searchWorkspaces);
+
+/**
+ * @route GET /api/public/workspaces/:workspaceId/info
+ * @desc Get public workspace information
+ * @access Public
+ */
+router.get('/:workspaceId/info', generalRateLimiters.api, PublicWorkspaceController.getWorkspaceInfo);
+
+/**
+ * @route GET /api/public/workspaces/states
+ * @desc Get all Nigerian states
+ * @access Public
+ */
+router.get('/states', generalRateLimiters.api, PublicWorkspaceController.getAvailableStates);
+
+/**
+ * @route GET /api/public/workspaces/lgas/:state
+ * @desc Get LGAs for a specific state
+ * @access Public
+ */
+router.get('/lgas/:state', generalRateLimiters.api, PublicWorkspaceController.getLGAsByState);
+
+/**
+ * @route GET /api/public/workspaces/search-old
+ * @desc Old search endpoint (deprecated, kept for backward compatibility)
+ * @access Public
+ */
 router.get(
-  '/search',
+  '/search-old',
   generalRateLimiters.api, // Use existing rate limiter
   [
     query('query')

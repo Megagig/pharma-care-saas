@@ -6,8 +6,6 @@ const API_BASE_URL = import.meta.env.MODE === 'development'
   ? 'http://localhost:5000/api' 
   : '/api';
 
-console.log('🔧 AuthService API_BASE_URL:', API_BASE_URL, 'MODE:', import.meta.env.MODE);
-
 // Define subscription plan type
 export interface SubscriptionPlan {
   _id: string;
@@ -219,7 +217,7 @@ class AuthService {
 
   private async performRefresh(): Promise<boolean> {
     try {
-      console.log('Attempting to refresh access token...');
+
       const response = await axios.post(
         `${API_BASE_URL}/auth/refresh-token`,
         {},
@@ -229,11 +227,11 @@ class AuthService {
       );
 
       if (response.status === 200) {
-        console.log('Token refresh successful');
+
         // New access token is automatically set as httpOnly cookie by server
         return true;
       } else {
-        console.log('Token refresh returned non-200 status:', response.status);
+
         // Refresh failed, we'll need to redirect to login
         return false;
       }

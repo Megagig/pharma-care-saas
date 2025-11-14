@@ -47,6 +47,65 @@ export interface IPatient extends Document {
   // Virtual fields
   name?: string; // Full name (virtual)
 
+  // Enhanced patient portal fields
+  allergies: Array<{
+    _id?: mongoose.Types.ObjectId;
+    allergen: string;
+    reaction: string;
+    severity: 'mild' | 'moderate' | 'severe';
+    recordedDate: Date;
+    recordedBy?: mongoose.Types.ObjectId;
+    notes?: string;
+  }>;
+
+  chronicConditions: Array<{
+    _id?: mongoose.Types.ObjectId;
+    condition: string;
+    diagnosedDate: Date;
+    managementPlan?: string;
+    status: 'active' | 'managed' | 'resolved';
+    recordedBy?: mongoose.Types.ObjectId;
+    notes?: string;
+  }>;
+
+  // Enhanced emergency contacts with priority
+  enhancedEmergencyContacts: Array<{
+    _id?: mongoose.Types.ObjectId;
+    name: string;
+    relationship: string;
+    phone: string;
+    email?: string;
+    isPrimary: boolean;
+    priority: number; // 1 = highest priority
+  }>;
+
+  // Insurance information
+  insuranceInfo: {
+    provider?: string;
+    policyNumber?: string;
+    expiryDate?: Date;
+    coverageDetails?: string;
+    copayAmount?: number;
+    isActive?: boolean;
+  };
+
+  // Patient-logged vitals history
+  patientLoggedVitals: Array<{
+    _id?: mongoose.Types.ObjectId;
+    recordedDate: Date;
+    appointmentId?: mongoose.Types.ObjectId; // Link to appointment if logged during consultation
+    bloodPressure?: { systolic: number; diastolic: number };
+    heartRate?: number;
+    temperature?: number;
+    weight?: number;
+    glucose?: number;
+    oxygenSaturation?: number;
+    notes?: string;
+    source: 'patient_portal';
+    verifiedBy?: mongoose.Types.ObjectId;
+    isVerified?: boolean;
+  }>;
+
   // Clinical snapshots (latest vitals cached for list speed)
   latestVitals?: IPatientVitals;
 
@@ -138,6 +197,26 @@ export interface IPatient extends Document {
   updateInterventionFlags(): Promise<void>;
   getDiagnosticHistoryCount(): Promise<number>;
   getLatestDiagnosticHistory(): Promise<any>;
+
+  // New methods for patient portal fields
+  addAllergy(allergyData: any, recordedBy?: mongoose.Types.ObjectId): void;
+  removeAllergy(allergyId: string): boolean;
+  updateAllergy(allergyId: string, updates: any): boolean;
+  addChronicCondition(conditionData: any, recordedBy?: mongoose.Types.ObjectId): void;
+  removeChronicCondition(conditionId: string): boolean;
+  updateChronicCondition(conditionId: string, updates: any): boolean;
+  addEmergencyContact(contactData: any): void;
+  removeEmergencyContact(contactId: string): boolean;
+  updateEmergencyContact(contactId: string, updates: any): boolean;
+  setPrimaryEmergencyContact(contactId: string): boolean;
+  updateInsuranceInfo(insuranceData: any): void;
+  logVitals(vitalsData: any): void;
+  getVitalsHistory(limit?: number): any[];
+  getLatestVitals(): any;
+  verifyVitals(vitalsId: string, verifiedBy: mongoose.Types.ObjectId): boolean;
+  unverifyVitals(vitalsId: string): boolean;
+  getUnverifiedVitals(): any[];
+  getVerifiedVitals(limit?: number): any[];
 }
 
 const patientSchema = new Schema(
@@ -246,6 +325,246 @@ const patientSchema = new Schema(
       min: [0, 'Weight cannot be negative'],
       max: [1000, 'Weight seems unrealistic'],
     },
+
+    // Enhanced patient portal fields
+    allergies: [
+      {
+        allergen: {
+          type: String,
+          required: [true, 'Allergen name is required'],
+          trim: true,
+          maxlength: [100, 'Allergen name cannot exceed 100 characters'],
+        },
+        reaction: {
+          type: String,
+          required: [true, 'Reaction description is required'],
+          trim: true,
+          maxlength: [500, 'Reaction description cannot exceed 500 characters'],
+        },
+        severity: {
+          type: String,
+          enum: {
+            values: ['mild', 'moderate', 'severe'],
+            message: 'Severity must be mild, moderate, or severe',
+          },
+          required: [true, 'Severity level is required'],
+        },
+        recordedDate: {
+          type: Date,
+          required: [true, 'Recorded date is required'],
+          default: Date.now,
+        },
+        recordedBy: {
+          type: Schema.Types.ObjectId,
+          ref: 'User',
+        },
+        notes: {
+          type: String,
+          trim: true,
+          maxlength: [1000, 'Notes cannot exceed 1000 characters'],
+        },
+      },
+    ],
+
+    chronicConditions: [
+      {
+        condition: {
+          type: String,
+          required: [true, 'Condition name is required'],
+          trim: true,
+          maxlength: [200, 'Condition name cannot exceed 200 characters'],
+        },
+        diagnosedDate: {
+          type: Date,
+          required: [true, 'Diagnosed date is required'],
+          validate: {
+            validator: function (value: Date) {
+              return value <= new Date();
+            },
+            message: 'Diagnosed date cannot be in the future',
+          },
+        },
+        managementPlan: {
+          type: String,
+          trim: true,
+          maxlength: [2000, 'Management plan cannot exceed 2000 characters'],
+        },
+        status: {
+          type: String,
+          enum: {
+            values: ['active', 'managed', 'resolved'],
+            message: 'Status must be active, managed, or resolved',
+          },
+          default: 'active',
+          required: true,
+        },
+        recordedBy: {
+          type: Schema.Types.ObjectId,
+          ref: 'User',
+        },
+        notes: {
+          type: String,
+          trim: true,
+          maxlength: [1000, 'Notes cannot exceed 1000 characters'],
+        },
+      },
+    ],
+
+    enhancedEmergencyContacts: [
+      {
+        name: {
+          type: String,
+          required: [true, 'Emergency contact name is required'],
+          trim: true,
+          maxlength: [100, 'Name cannot exceed 100 characters'],
+        },
+        relationship: {
+          type: String,
+          required: [true, 'Relationship is required'],
+          trim: true,
+          maxlength: [50, 'Relationship cannot exceed 50 characters'],
+        },
+        phone: {
+          type: String,
+          required: [true, 'Phone number is required'],
+          validate: {
+            validator: function (phone: string) {
+              return /^\+234[0-9]{10}$/.test(phone);
+            },
+            message: 'Phone must be in Nigerian format (+234XXXXXXXXXX)',
+          },
+        },
+        email: {
+          type: String,
+          lowercase: true,
+          validate: {
+            validator: function (email: string) {
+              if (!email) return true; // Optional field
+              return /^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/.test(email);
+            },
+            message: 'Please enter a valid email',
+          },
+        },
+        isPrimary: {
+          type: Boolean,
+          default: false,
+        },
+        priority: {
+          type: Number,
+          required: [true, 'Priority is required'],
+          min: [1, 'Priority must be at least 1'],
+          max: [10, 'Priority cannot exceed 10'],
+        },
+      },
+    ],
+
+    insuranceInfo: {
+      provider: {
+        type: String,
+        trim: true,
+        maxlength: [100, 'Insurance provider name cannot exceed 100 characters'],
+      },
+      policyNumber: {
+        type: String,
+        trim: true,
+        maxlength: [50, 'Policy number cannot exceed 50 characters'],
+      },
+      expiryDate: {
+        type: Date,
+        validate: {
+          validator: function (value: Date) {
+            if (!value) return true; // Optional field
+            return value > new Date();
+          },
+          message: 'Insurance expiry date must be in the future',
+        },
+      },
+      coverageDetails: {
+        type: String,
+        trim: true,
+        maxlength: [1000, 'Coverage details cannot exceed 1000 characters'],
+      },
+      copayAmount: {
+        type: Number,
+        min: [0, 'Copay amount cannot be negative'],
+        max: [1000000, 'Copay amount seems unrealistic'],
+      },
+      isActive: {
+        type: Boolean,
+        default: true,
+      },
+    },
+
+    patientLoggedVitals: [
+      {
+        recordedDate: {
+          type: Date,
+          required: [true, 'Recorded date is required'],
+          default: Date.now,
+        },
+        appointmentId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: 'Appointment',
+          required: false,
+        },
+        bloodPressure: {
+          systolic: {
+            type: Number,
+            min: [50, 'Systolic BP too low'],
+            max: [300, 'Systolic BP too high'],
+          },
+          diastolic: {
+            type: Number,
+            min: [30, 'Diastolic BP too low'],
+            max: [200, 'Diastolic BP too high'],
+          },
+        },
+        heartRate: {
+          type: Number,
+          min: [30, 'Heart rate too low'],
+          max: [250, 'Heart rate too high'],
+        },
+        temperature: {
+          type: Number,
+          min: [30, 'Temperature too low'],
+          max: [45, 'Temperature too high'],
+        },
+        weight: {
+          type: Number,
+          min: [0, 'Weight cannot be negative'],
+          max: [1000, 'Weight seems unrealistic'],
+        },
+        glucose: {
+          type: Number,
+          min: [20, 'Glucose level too low'],
+          max: [800, 'Glucose level too high'],
+        },
+        oxygenSaturation: {
+          type: Number,
+          min: [50, 'Oxygen saturation too low'],
+          max: [100, 'Oxygen saturation cannot exceed 100%'],
+        },
+        notes: {
+          type: String,
+          trim: true,
+          maxlength: [500, 'Notes cannot exceed 500 characters'],
+        },
+        source: {
+          type: String,
+          enum: ['patient_portal'],
+          default: 'patient_portal',
+          required: true,
+        },
+        verifiedBy: {
+          type: Schema.Types.ObjectId,
+          ref: 'User',
+        },
+        isVerified: {
+          type: Boolean,
+          default: false,
+        },
+      },
+    ],
 
     // Clinical snapshots
     latestVitals: {
@@ -462,6 +781,17 @@ patientSchema.index(
 patientSchema.index({ hasActiveDTP: 1 });
 patientSchema.index({ createdAt: -1 });
 
+// Indexes for new patient portal fields
+patientSchema.index({ 'allergies.allergen': 1 });
+patientSchema.index({ 'allergies.severity': 1 });
+patientSchema.index({ 'chronicConditions.condition': 1 });
+patientSchema.index({ 'chronicConditions.status': 1 });
+patientSchema.index({ 'enhancedEmergencyContacts.isPrimary': 1 });
+patientSchema.index({ 'insuranceInfo.provider': 1 });
+patientSchema.index({ 'insuranceInfo.isActive': 1 });
+patientSchema.index({ 'patientLoggedVitals.recordedDate': -1 });
+patientSchema.index({ 'patientLoggedVitals.isVerified': 1 });
+
 // Virtual for full name
 patientSchema.virtual('name').get(function (this: IPatient) {
   const parts = [this.firstName, this.otherNames, this.lastName].filter(Boolean);
@@ -518,7 +848,7 @@ patientSchema.virtual('lastAppointmentDate').get(async function (this: IPatient)
     })
       .sort({ scheduledDate: -1 })
       .select('scheduledDate');
-    
+
     return lastAppointment?.scheduledDate;
   } catch (error) {
     return undefined;
@@ -610,6 +940,250 @@ patientSchema.methods.getLatestDiagnosticHistory = async function (
     .sort({ createdAt: -1 });
 };
 
+// New methods for patient portal fields
+patientSchema.methods.addAllergy = function (
+  this: IPatient,
+  allergyData: any,
+  recordedBy?: mongoose.Types.ObjectId
+): void {
+  const allergy = {
+    ...allergyData,
+    recordedDate: new Date(),
+    recordedBy,
+  };
+  this.allergies.push(allergy);
+};
+
+patientSchema.methods.removeAllergy = function (
+  this: IPatient,
+  allergyId: string
+): boolean {
+  const initialLength = this.allergies.length;
+  this.allergies = this.allergies.filter(
+    allergy => allergy._id?.toString() !== allergyId
+  );
+  return this.allergies.length < initialLength;
+};
+
+patientSchema.methods.updateAllergy = function (
+  this: IPatient,
+  allergyId: string,
+  updates: any
+): boolean {
+  const allergy = this.allergies.find(
+    allergy => allergy._id?.toString() === allergyId
+  );
+  if (allergy) {
+    Object.assign(allergy, updates);
+    return true;
+  }
+  return false;
+};
+
+patientSchema.methods.addChronicCondition = function (
+  this: IPatient,
+  conditionData: any,
+  recordedBy?: mongoose.Types.ObjectId
+): void {
+  const condition = {
+    ...conditionData,
+    recordedBy,
+  };
+  this.chronicConditions.push(condition);
+};
+
+patientSchema.methods.removeChronicCondition = function (
+  this: IPatient,
+  conditionId: string
+): boolean {
+  const initialLength = this.chronicConditions.length;
+  this.chronicConditions = this.chronicConditions.filter(
+    condition => condition._id?.toString() !== conditionId
+  );
+  return this.chronicConditions.length < initialLength;
+};
+
+patientSchema.methods.updateChronicCondition = function (
+  this: IPatient,
+  conditionId: string,
+  updates: any
+): boolean {
+  const condition = this.chronicConditions.find(
+    condition => condition._id?.toString() === conditionId
+  );
+  if (condition) {
+    Object.assign(condition, updates);
+    return true;
+  }
+  return false;
+};
+
+patientSchema.methods.addEmergencyContact = function (
+  this: IPatient,
+  contactData: any
+): void {
+  // If this is set as primary, unset other primary contacts
+  if (contactData.isPrimary) {
+    this.enhancedEmergencyContacts.forEach(contact => {
+      contact.isPrimary = false;
+    });
+  }
+
+  this.enhancedEmergencyContacts.push(contactData);
+
+  // Sort by priority
+  this.enhancedEmergencyContacts.sort((a, b) => a.priority - b.priority);
+};
+
+patientSchema.methods.removeEmergencyContact = function (
+  this: IPatient,
+  contactId: string
+): boolean {
+  const initialLength = this.enhancedEmergencyContacts.length;
+  this.enhancedEmergencyContacts = this.enhancedEmergencyContacts.filter(
+    contact => contact._id?.toString() !== contactId
+  );
+  return this.enhancedEmergencyContacts.length < initialLength;
+};
+
+patientSchema.methods.updateEmergencyContact = function (
+  this: IPatient,
+  contactId: string,
+  updates: any
+): boolean {
+  const contact = this.enhancedEmergencyContacts.find(
+    contact => contact._id?.toString() === contactId
+  );
+  if (contact) {
+    // If setting as primary, unset other primary contacts
+    if (updates.isPrimary) {
+      this.enhancedEmergencyContacts.forEach(c => {
+        if (c._id?.toString() !== contactId) {
+          c.isPrimary = false;
+        }
+      });
+    }
+
+    Object.assign(contact, updates);
+
+    // Re-sort by priority if priority changed
+    if (updates.priority !== undefined) {
+      this.enhancedEmergencyContacts.sort((a, b) => a.priority - b.priority);
+    }
+
+    return true;
+  }
+  return false;
+};
+
+patientSchema.methods.setPrimaryEmergencyContact = function (
+  this: IPatient,
+  contactId: string
+): boolean {
+  let found = false;
+  this.enhancedEmergencyContacts.forEach(contact => {
+    if (contact._id?.toString() === contactId) {
+      contact.isPrimary = true;
+      found = true;
+    } else {
+      contact.isPrimary = false;
+    }
+  });
+  return found;
+};
+
+patientSchema.methods.updateInsuranceInfo = function (
+  this: IPatient,
+  insuranceData: any
+): void {
+  this.insuranceInfo = { ...this.insuranceInfo, ...insuranceData };
+};
+
+patientSchema.methods.logVitals = function (
+  this: IPatient,
+  vitalsData: any
+): void {
+  const vitals = {
+    ...vitalsData,
+    recordedDate: new Date(),
+    source: 'patient_portal',
+    isVerified: false,
+  };
+  this.patientLoggedVitals.push(vitals);
+
+  // Keep only last 100 vitals entries to prevent unlimited growth
+  if (this.patientLoggedVitals.length > 100) {
+    this.patientLoggedVitals = this.patientLoggedVitals
+      .sort((a, b) => b.recordedDate.getTime() - a.recordedDate.getTime())
+      .slice(0, 100);
+  }
+};
+
+patientSchema.methods.getVitalsHistory = function (
+  this: IPatient,
+  limit: number = 20
+): any[] {
+  return this.patientLoggedVitals
+    .sort((a, b) => b.recordedDate.getTime() - a.recordedDate.getTime())
+    .slice(0, limit);
+};
+
+patientSchema.methods.getLatestVitals = function (this: IPatient): any {
+  if (this.patientLoggedVitals.length === 0) return null;
+
+  return this.patientLoggedVitals
+    .sort((a, b) => b.recordedDate.getTime() - a.recordedDate.getTime())[0];
+};
+
+patientSchema.methods.verifyVitals = function (
+  this: IPatient,
+  vitalsId: string,
+  verifiedBy: mongoose.Types.ObjectId
+): boolean {
+  const vitals = this.patientLoggedVitals.find(
+    vitals => vitals._id?.toString() === vitalsId
+  );
+  if (vitals) {
+    vitals.isVerified = true;
+    vitals.verifiedBy = verifiedBy;
+    return true;
+  }
+  return false;
+};
+
+patientSchema.methods.unverifyVitals = function (
+  this: IPatient,
+  vitalsId: string
+): boolean {
+  const vitals = this.patientLoggedVitals.find(
+    vitals => vitals._id?.toString() === vitalsId
+  );
+  if (vitals) {
+    vitals.isVerified = false;
+    vitals.verifiedBy = undefined;
+    return true;
+  }
+  return false;
+};
+
+patientSchema.methods.getUnverifiedVitals = function (
+  this: IPatient
+): any[] {
+  return this.patientLoggedVitals
+    .filter(vitals => !vitals.isVerified)
+    .sort((a, b) => b.recordedDate.getTime() - a.recordedDate.getTime());
+};
+
+patientSchema.methods.getVerifiedVitals = function (
+  this: IPatient,
+  limit: number = 20
+): any[] {
+  return this.patientLoggedVitals
+    .filter(vitals => vitals.isVerified)
+    .sort((a, b) => b.recordedDate.getTime() - a.recordedDate.getTime())
+    .slice(0, limit);
+};
+
 // Pre-save middleware to validate and set computed fields
 patientSchema.pre('save', function (this: IPatient) {
   // Ensure either dob or age is provided
@@ -620,6 +1194,36 @@ patientSchema.pre('save', function (this: IPatient) {
   // Set computed age if dob is provided
   if (this.dob) {
     this.age = this.getAge();
+  }
+
+  // Validate emergency contacts - ensure only one primary contact
+  const primaryContacts = this.enhancedEmergencyContacts.filter(contact => contact.isPrimary);
+  if (primaryContacts.length > 1) {
+    throw new Error('Only one emergency contact can be set as primary');
+  }
+
+  // Validate emergency contact priorities are unique
+  const priorities = this.enhancedEmergencyContacts.map(contact => contact.priority);
+  const uniquePriorities = new Set(priorities);
+  if (priorities.length !== uniquePriorities.size) {
+    throw new Error('Emergency contact priorities must be unique');
+  }
+
+  // Validate chronic conditions - ensure diagnosed dates are not in future
+  for (const condition of this.chronicConditions) {
+    if (condition.diagnosedDate > new Date()) {
+      throw new Error('Chronic condition diagnosed date cannot be in the future');
+    }
+  }
+
+  // Validate vitals data ranges
+  for (const vitals of this.patientLoggedVitals) {
+    if (vitals.bloodPressure) {
+      const { systolic, diastolic } = vitals.bloodPressure;
+      if (systolic && diastolic && systolic <= diastolic) {
+        throw new Error('Systolic blood pressure must be higher than diastolic');
+      }
+    }
   }
 });
 
@@ -645,7 +1249,12 @@ patientSchema.statics.generateNextMRN = async function (
   return generateMRN(workplaceCode, sequence);
 };
 
-const Patient = mongoose.model<IPatient>('Patient', patientSchema);
+// Interface for static methods
+interface IPatientModel extends mongoose.Model<IPatient> {
+  generateNextMRN(workplaceId: mongoose.Types.ObjectId, workplaceCode: string): Promise<string>;
+}
+
+const Patient = mongoose.model<IPatient, IPatientModel>('Patient', patientSchema);
 
 export { Patient };
 export default Patient;
