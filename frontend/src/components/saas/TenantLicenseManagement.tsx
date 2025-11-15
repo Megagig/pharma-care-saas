@@ -39,7 +39,7 @@ import { format, isValid, parseISO } from 'date-fns';
 // Helper function to safely format dates
 const safeFormatDate = (dateValue: string | Date | undefined | null, formatStr: string = 'MMM dd, yyyy'): string => {
   if (!dateValue) return 'N/A';
-  
+
   try {
     const date = typeof dateValue === 'string' ? parseISO(dateValue) : dateValue;
     if (!isValid(date)) return 'Invalid Date';
@@ -115,9 +115,9 @@ const TenantLicenseManagement: React.FC = () => {
         setSuccess('License approved successfully');
         setActionDialog(null);
         setSelectedLicense(null);
-        
+
         // Optimistically remove the approved license from the list
-        setLicenses((prevLicenses) => 
+        setLicenses((prevLicenses) =>
           prevLicenses.filter((license) => license.userId !== selectedLicense.userId)
         );
       }
@@ -146,9 +146,9 @@ const TenantLicenseManagement: React.FC = () => {
         setActionDialog(null);
         setSelectedLicense(null);
         setRejectionReason('');
-        
+
         // Optimistically remove the rejected license from the list
-        setLicenses((prevLicenses) => 
+        setLicenses((prevLicenses) =>
           prevLicenses.filter((license) => license.userId !== selectedLicense.userId)
         );
       }

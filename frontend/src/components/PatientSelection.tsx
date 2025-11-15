@@ -318,19 +318,41 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
       setLoading('createNewPatient', true);
       setError('createNewPatient', null);
 
+      // Format phone number to Nigerian E.164 format if provided
+      let formattedPhone: string | undefined;
+      if (data.phone) {
+        const phone = data.phone.trim();
+        if (phone) {
+          // Remove any non-digit characters
+          const digits = phone.replace(/\D/g, '');
+          // If starts with 0, replace with +234
+          if (digits.startsWith('0') && digits.length === 11) {
+            formattedPhone = '+234' + digits.substring(1);
+          } else if (digits.startsWith('234') && digits.length === 13) {
+            formattedPhone = '+' + digits;
+          } else if (digits.length === 10) {
+            formattedPhone = '+234' + digits;
+          } else if (phone.startsWith('+234')) {
+            formattedPhone = phone;
+          } else {
+            formattedPhone = phone; // Keep original if we can't format it
+          }
+        }
+      }
+
       const newPatientData: CreatePatientData = {
         firstName: data.firstName,
         lastName: data.lastName,
-        otherNames: data.otherNames,
+        otherNames: data.otherNames || undefined,
         dob: data.dob?.toISOString(),
         age: data.age,
         gender: data.gender,
         maritalStatus: data.maritalStatus,
-        phone: data.phone,
-        email: data.email,
-        address: data.address,
+        phone: formattedPhone,
+        email: data.email || undefined,
+        address: data.address || undefined,
         state: data.state,
-        lga: data.lga,
+        lga: data.lga || undefined,
         bloodGroup: data.bloodGroup,
         genotype: data.genotype,
         weightKg: data.weightKg,
