@@ -88,10 +88,10 @@ const WorkspaceTab: React.FC = () => {
 
             // Try to get workplaceId from various sources
             const workplaceId = user?.workplaceId || (user as any)?.pharmacyId || (user as any)?._id;
-            
+
             // Always try to fetch workspace info
             let workspaceSet = false;
-            
+
             // Method 1: Try dashboard endpoint
             try {
                 const workspaceResponse = await apiClient.get('/dashboard/workspace-info');
@@ -279,7 +279,7 @@ const WorkspaceTab: React.FC = () => {
                                             const firstName = memberUser?.firstName || 'Unknown';
                                             const lastName = memberUser?.lastName || 'User';
                                             const email = memberUser?.email || 'N/A';
-                                            
+
                                             return (
                                                 <TableRow key={member._id}>
                                                     <TableCell>
