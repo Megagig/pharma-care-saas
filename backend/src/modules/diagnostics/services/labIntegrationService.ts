@@ -1,4 +1,5 @@
 import { Types } from 'mongoose';
+import axios from 'axios';
 import logger from '../../../utils/logger';
 import LabIntegration, {
     ILabIntegration,
@@ -359,53 +360,71 @@ export class LabIntegrationService {
     private async generateAIInterpretation(input: AIInterpretationInput): Promise<IAIInterpretation> {
         const startTime = Date.now();
 
-        // Build structured prompt for lab interpretation
-        const prompt = this.buildLabInterpretationPrompt(input);
-
         try {
-            // Build a comprehensive prompt for AI interpretation
+            // Build comprehensive lab-specific prompt
             const prompt = this.buildLabInterpretationPrompt(input);
 
-            // Call OpenRouter service using diagnostic analysis method
-            // We'll use a simplified input format for lab interpretation
-            const diagnosticInput = {
-                patientData: input.patientData,
-                symptoms: {
-                    subjective: [`Lab results analysis for ${input.labResults.map(r => r.testName).join(', ')}`],
-                    objective: input.labResults.map(r => `${r.testName}: ${r.testValue} ${r.unit || ''} (Ref: ${r.referenceRange || 'N/A'})`),
-                    duration: 'current',
-                    severity: input.labResults.some(r => r.isCritical) ? 'severe' as const : 'moderate' as const,
-                    onset: 'acute' as const
-                },
-                vitalSigns: {},
-                medications: input.patientData.currentMedications.map(m => m.name),
-                labResults: input.labResults.map(r => ({
-                    testName: r.testName,
-                    value: r.testValue,
-                    referenceRange: r.referenceRange || 'N/A',
-                    abnormal: r.interpretation !== 'Normal'
-                })),
-                allergies: input.patientData.allergies,
-                chronicConditions: input.patientData.conditions
-            };
+            // Call OpenRouter API directly with optimized prompt
+            const baseURL = process.env.OPENROUTER_BASE_URL || 'https://openrouter.ai/api/v1';
+            const apiKey = process.env.OPENROUTER_API_KEY || '';
 
-            const aiResult = await openRouterService.generateDiagnosticAnalysis(diagnosticInput);
+            const response = await axios.post(
+                `${baseURL}/chat/completions`,
+                {
+                    messages: [
+                        {
+                            role: 'system',
+                            content: 'You are an expert clinical pharmacist and laboratory medicine specialist. Provide detailed, evidence-based interpretations with specific clinical recommendations.'
+                        },
+                        {
+                            role: 'user',
+                            content: prompt
+                        }
+                    ],
+                    model: 'deepseek/deepseek-chat-v3.1', // Paid version (uses credits, no rate limits)
+                    temperature: 0.3, // Lower temperature for more consistent medical advice
+                    max_tokens: 4000 // Allow comprehensive responses
+                },
+                {
+                    headers: {
+                        'Authorization': `Bearer ${apiKey}`,
+                        'Content-Type': 'application/json',
+                        'HTTP-Referer': process.env.FRONTEND_URL || 'http://localhost:5173',
+                        'X-Title': 'PharmaCare SaaS - Lab Integration AI'
+                    },
+                    timeout: 180000 // 3 minutes
+                }
+            );
+
             const processingTime = Date.now() - startTime;
 
-            // Parse and structure the AI response
-            const interpretation = this.parseAIResponse(aiResult);
+            // Parse the JSON response from AI
+            let aiResult;
+            try {
+                // Extract JSON from response (handle markdown code blocks if present)
+                const content = response.data.choices[0]?.message?.content || '{}';
+                const jsonMatch = content.match(/```json\s*([\s\S]*?)```/) || content.match(/```\s*([\s\S]*?)```/);
+                const jsonStr = jsonMatch ? jsonMatch[1].trim() : content.trim();
+                aiResult = JSON.parse(jsonStr);
+            } catch (parseError) {
+                logger.error('Failed to parse AI JSON response', {
+                    error: parseError instanceof Error ? parseError.message : 'Unknown error',
+                    rawResponse: response.data.choices[0]?.message?.content?.substring(0, 500)
+                });
+                throw new Error('AI returned invalid JSON format');
+            }
 
             return {
-                interpretation: interpretation.interpretation,
-                clinicalSignificance: interpretation.clinicalSignificance,
-                confidence: interpretation.confidence,
-                differentialDiagnosis: interpretation.differentialDiagnosis,
-                therapeuticImplications: interpretation.therapeuticImplications,
-                monitoringRecommendations: interpretation.monitoringRecommendations,
-                redFlags: interpretation.redFlags,
+                interpretation: aiResult.interpretation || 'Lab results analyzed',
+                clinicalSignificance: aiResult.clinicalSignificance || 'moderate',
+                confidence: aiResult.confidence || 70,
+                differentialDiagnosis: aiResult.differentialDiagnosis || [],
+                therapeuticImplications: aiResult.therapeuticImplications || [],
+                monitoringRecommendations: aiResult.monitoringRecommendations || [],
+                redFlags: aiResult.redFlags || [],
                 processingTime,
-                modelUsed: 'deepseek/deepseek-chat-v3.1:free',
-                promptVersion: '1.0'
+                modelUsed: 'deepseek/deepseek-chat-v3.1',
+                promptVersion: '2.0'
             };
         } catch (error) {
             logger.error('OpenRouter AI call failed', {
@@ -420,68 +439,136 @@ export class LabIntegrationService {
      */
     private buildLabInterpretationPrompt(input: AIInterpretationInput): string {
         const labResultsText = input.labResults.map(result =>
-            `${result.testName} (${result.testCode || 'N/A'}): ${result.testValue} ${result.unit || ''} [Reference: ${result.referenceRange || 'N/A'}] - ${result.interpretation}`
+            `• ${result.testName}: ${result.testValue} ${result.unit || ''} (Reference Range: ${result.referenceRange || 'N/A'})`
         ).join('\n');
 
         const medicationsText = input.patientData.currentMedications.map(med =>
-            `${med.name} ${med.dose || ''} ${med.frequency || ''}`
+            `• ${med.name} ${med.dose || ''} ${med.frequency || ''}`
         ).join('\n');
 
-        return `You are a clinical pharmacist AI assistant analyzing laboratory results to provide therapeutic recommendations.
+        return `You are an expert clinical pharmacist providing detailed, structured laboratory interpretation with clinical reasoning.
 
-PATIENT CONTEXT:
-- Age: ${input.patientData.age || 'Unknown'}
-- Gender: ${input.patientData.gender || 'Unknown'}
-- Weight: ${input.patientData.weight ? `${input.patientData.weight} kg` : 'Unknown'}
-- Allergies: ${input.patientData.allergies.length > 0 ? input.patientData.allergies.join(', ') : 'None documented'}
-- Chronic Conditions: ${input.patientData.conditions.length > 0 ? input.patientData.conditions.join(', ') : 'None documented'}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+PATIENT PROFILE
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+• Age: ${input.patientData.age || 'Unknown'} years
+• Gender: ${input.patientData.gender || 'Unknown'}
+• Weight: ${input.patientData.weight ? `${input.patientData.weight} kg` : 'Unknown'}
+• Allergies: ${input.patientData.allergies.length > 0 ? input.patientData.allergies.join(', ') : 'None documented'}
+• Chronic Conditions: ${input.patientData.conditions.length > 0 ? input.patientData.conditions.join(', ') : 'None documented'}
 
-CURRENT MEDICATIONS:
-${medicationsText || 'None documented'}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CURRENT MEDICATIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${medicationsText || '• None documented'}
 
-LABORATORY RESULTS:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+LABORATORY RESULTS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 ${labResultsText}
 
-CLINICAL CONTEXT:
-${input.clinicalContext?.indication ? `Indication: ${input.clinicalContext.indication}` : ''}
-${input.clinicalContext?.clinicalQuestion ? `Clinical Question: ${input.clinicalContext.clinicalQuestion}` : ''}
-${input.clinicalContext?.targetRange ? `Target: ${input.clinicalContext.targetRange.parameter} - ${input.clinicalContext.targetRange.target} (Goal: ${input.clinicalContext.targetRange.goal})` : ''}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+CLINICAL CONTEXT
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+${input.clinicalContext?.indication ? `• Indication: ${input.clinicalContext.indication}` : ''}
+${input.clinicalContext?.clinicalQuestion ? `• Clinical Question: ${input.clinicalContext.clinicalQuestion}` : ''}
+${input.clinicalContext?.targetRange ? `• Therapeutic Target: ${input.clinicalContext.targetRange.parameter} - ${input.clinicalContext.targetRange.target} (Goal: ${input.clinicalContext.targetRange.goal})` : ''}
 
-Please provide a comprehensive analysis in JSON format with the following structure:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+INSTRUCTIONS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Provide a COMPREHENSIVE, DETAILED clinical interpretation following this EXACT structure:
+
+**INTERPRETATION FORMAT:**
+
+✅ **SECTION 1: DETAILED LAB RESULT ANALYSIS**
+For EACH abnormal lab result:
+- State the result value and reference range
+- Explain WHAT it means clinically
+- Explain WHY it's elevated/low (pathophysiology)
+- State clinical significance (critical/high/moderate/low)
+
+✅ **SECTION 2: OVERALL HORMONAL/METABOLIC PATTERN**
+- Describe the overall pattern observed
+- Explain the relationship between different results
+- Calculate and interpret important ratios (e.g., LH:FSH ratio for hormones)
+
+✅ **SECTION 3: DIFFERENTIAL DIAGNOSIS (Ranked by Likelihood)**
+For EACH diagnosis:
+1. Diagnosis name
+2. Why this diagnosis fits (supporting evidence)
+3. Typical findings in this condition
+4. Probability/confidence level
+5. What additional tests would confirm/exclude it
+
+✅ **SECTION 4: RECOMMENDED ADDITIONAL TESTS**
+List specific tests needed with rationale for each
+
+✅ **SECTION 5: TREATMENT APPROACH**
+Provide detailed, step-by-step management:
+- First-line interventions
+- Medication names, doses, frequencies, durations
+- Non-pharmacologic interventions
+- Monitoring parameters and timelines
+- When to escalate care
+
+✅ **SECTION 6: CRITICAL WARNINGS & RED FLAGS**
+Highlight:
+- Complications to watch for
+- Time-sensitive interventions
+- When to refer to specialist
+
+**OUTPUT FORMAT (MUST BE VALID JSON):**
 {
-  "interpretation": "Detailed clinical interpretation of the lab results",
+  "interpretation": "[Multi-paragraph detailed clinical interpretation covering all sections above. Use clear headings: INDIVIDUAL RESULT ANALYSIS, OVERALL PATTERN, CLINICAL CORRELATION, etc. Make this comprehensive and educational - at least 300-500 words]",
   "clinicalSignificance": "critical|significant|moderate|minimal|normal",
-  "confidence": 0-100,
-  "differentialDiagnosis": ["possible diagnosis 1", "possible diagnosis 2"],
-  "therapeuticImplications": ["implication 1", "implication 2"],
-  "monitoringRecommendations": ["recommendation 1", "recommendation 2"],
+  "confidence": [0-100 - base this on result clarity and clinical correlation],
+  "differentialDiagnosis": [
+    "[DIAGNOSIS 1] - [One-line supporting evidence]",
+    "[DIAGNOSIS 2] - [One-line supporting evidence]",
+    "[DIAGNOSIS 3] - [One-line supporting evidence]"
+  ],
+  "therapeuticImplications": [
+    "[Specific therapeutic action 1 with medication name, dose, frequency]",
+    "[Specific therapeutic action 2]",
+    "[Specific therapeutic action 3]",
+    "[Additional tests needed]",
+    "[Lifestyle/non-pharm interventions]"
+  ],
+  "monitoringRecommendations": [
+    "[Specific parameter to monitor] - [Frequency] - [Rationale]",
+    "[Follow-up timing and what to reassess]",
+    "[Warning signs patient should watch for]"
+  ],
   "redFlags": [
     {
-      "flag": "description of red flag",
+      "flag": "[Specific clinical concern or risk]",
       "severity": "critical|high|medium|low",
-      "action": "recommended action"
+      "action": "[Specific action to take immediately]"
     }
   ],
   "therapyRecommendations": [
     {
-      "medicationName": "medication name",
-      "action": "start|stop|adjust_dose|monitor|continue",
-      "currentDose": "current dose if applicable",
-      "recommendedDose": "recommended dose if applicable",
-      "rationale": "clinical rationale for recommendation",
+      "medicationName": "[Generic medication name]",
+      "action": "start|adjust_dose|monitor|stop",
+      "currentDose": "[if applicable]",
+      "recommendedDose": "[Specific dose with unit] [frequency] for [duration]",
+      "rationale": "[Why this medication is needed - relate to specific lab finding]",
       "priority": "critical|high|medium|low",
       "evidenceLevel": "strong|moderate|weak"
     }
   ]
 }
 
-Focus on:
-1. Clinical interpretation of abnormal values
-2. Drug-lab interactions with current medications
-3. Dose adjustments needed based on lab values (e.g., renal/hepatic function)
-4. Therapeutic drug monitoring implications
-5. Safety concerns and contraindications
-6. Monitoring parameters and follow-up timing`;
+**CRITICAL REQUIREMENTS:**
+1. Be SPECIFIC - use exact medication names, doses, frequencies
+2. Be COMPREHENSIVE - cover all abnormal results
+3. Be EDUCATIONAL - explain the "why" behind findings
+4. Be ACTIONABLE - provide clear next steps
+5. Use clinical reasoning similar to an experienced endocrinologist/pharmacist
+6. For hormonal panels: ALWAYS calculate and interpret ratios (LH:FSH, etc.)
+7. Consider patient demographics (age, gender) in interpretation`;
     }
 
     /**

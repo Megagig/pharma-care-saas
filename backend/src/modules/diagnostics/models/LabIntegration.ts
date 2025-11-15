@@ -51,7 +51,7 @@ export interface IAIInterpretation {
     modelUsed: string;
     promptVersion?: string;
     interpretedAt?: Date;
-    
+
     // Patient-Friendly Interpretation
     patientExplanation?: string; // AI-generated patient-friendly explanation
     patientExplanationApproved?: boolean; // Pharmacist approval status
@@ -133,7 +133,7 @@ export interface ILabIntegration extends Document {
     aiInterpretation?: IAIInterpretation;
     aiProcessingStatus: 'pending' | 'processing' | 'completed' | 'failed' | 'skipped';
     aiProcessingError?: string;
-    
+
     // Patient-Friendly Interpretation
     patientInterpretation?: {
         explanation: string; // Patient-friendly explanation of lab results
@@ -626,7 +626,7 @@ const labIntegrationSchema = new Schema({
         modifiedBy: {
             type: Schema.Types.ObjectId,
             ref: 'User',
-            required: true
+            required: false
         }
     },
 

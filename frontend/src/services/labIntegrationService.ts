@@ -114,20 +114,18 @@ export interface CreateLabIntegrationRequest {
   patientId: string;
   labResultIds: string[];
   source: 'manual_entry' | 'pdf_upload' | 'image_upload' | 'fhir_import' | 'lis_integration';
-  sourceMetadata?: {
-    labName?: string;
-    reportId?: string;
-    uploadedFileName?: string;
-  };
-  priority?: 'routine' | 'urgent' | 'critical';
-  patientConsent?: {
-    consentGiven: boolean;
-    consentDate: Date;
-    consentMethod: string;
-  };
-  symptoms?: string;
-  medicalHistory?: string;
+  urgency?: 'stat' | 'urgent' | 'routine';
   notes?: string;
+  indication?: string;
+  clinicalQuestion?: string;
+  labName?: string;
+  reportId?: string;
+  receivedAt?: Date;
+  targetRange?: {
+    parameter: string;
+    target: string;
+    goal: string;
+  };
 }
 
 export interface ApproveRecommendationsRequest {
@@ -161,11 +159,22 @@ class LabIntegrationService {
    * Create a new lab integration case
    */
   async createLabIntegration(data: CreateLabIntegrationRequest): Promise<LabIntegration> {
-    const response = await apiClient.post<{ success: boolean; data: LabIntegration }>(
-      this.baseUrl,
-      data
-    );
-    return response.data.data;
+    console.log('Creating lab integration with data:', data);
+    try {
+      const response = await apiClient.post<{ success: boolean; data: LabIntegration }>(
+        this.baseUrl,
+        data
+      );
+      return response.data.data;
+    } catch (error: any) {
+      console.error('Lab integration creation failed:', {
+        status: error.response?.status,
+        statusText: error.response?.statusText,
+        errorData: error.response?.data,
+        requestData: data
+      });
+      throw error;
+    }
   }
 
   /**

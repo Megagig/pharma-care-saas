@@ -29,7 +29,7 @@ interface RetryConfig {
 }
 
 enum ModelTier {
-  PRIMARY = 'deepseek/deepseek-chat-v3.1:free',
+  PRIMARY = 'deepseek/deepseek-chat-v3.1',
   FALLBACK = 'deepseek/deepseek-chat-v3.1',
   CRITICAL = 'google/gemma-2-9b-it'
 }
