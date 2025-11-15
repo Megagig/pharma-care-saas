@@ -86,21 +86,70 @@ const WorkspaceTab: React.FC = () => {
         try {
             setLoading(true);
 
-            // Fetch workspace info
-            const workspaceResponse = await apiClient.get('/workspace/info');
-            if (workspaceResponse.data.success) {
-                setWorkspace(workspaceResponse.data.data);
+            // Try to get workplaceId from various sources
+            const workplaceId = user?.workplaceId || (user as any)?.pharmacyId || (user as any)?._id;
+            
+            // Always try to fetch workspace info
+            let workspaceSet = false;
+            
+            // Method 1: Try dashboard endpoint
+            try {
+                const workspaceResponse = await apiClient.get('/dashboard/workspace-info');
+                if (workspaceResponse.data.success && workspaceResponse.data.data) {
+                    const workplaceData = workspaceResponse.data.data;
+                    setWorkspace({
+                        _id: workplaceData._id || workplaceId,
+                        name: workplaceData.name || workplaceData.workplaceName || 'My Workspace',
+                        type: workplaceData.type || 'Pharmacy',
+                        ownerId: workplaceData.ownerId || '',
+                        createdAt: workplaceData.createdAt || new Date().toISOString(),
+                        members: []
+                    });
+                    workspaceSet = true;
+                }
+            } catch (error) {
+                console.warn('Could not fetch workspace info from dashboard:', error);
+            }
+
+            // Method 2: If dashboard failed, create fallback workspace from user data
+            if (!workspaceSet) {
+                const userName = `${user?.firstName || 'User'}'s Workspace`;
+                setWorkspace({
+                    _id: workplaceId,
+                    name: userName,
+                    type: 'Pharmacy',
+                    ownerId: (user as any)?._id || '',
+                    createdAt: (user as any)?.createdAt || new Date().toISOString(),
+                    members: []
+                });
             }
 
             // Fetch team members (if owner or super admin)
             if (isOwner || isSuperAdmin) {
-                const teamResponse = await apiClient.get('/workspace/team');
-                if (teamResponse.data.success) {
-                    setTeamMembers(teamResponse.data.data || []);
+                try {
+                    const teamResponse = await apiClient.get('/workspace/team/members');
+                    if (teamResponse.data.success) {
+                        const members = teamResponse.data.data?.members || teamResponse.data.members || [];
+                        setTeamMembers(members);
+                    }
+                } catch (error) {
+                    console.warn('Could not fetch team members:', error);
+                    // Not critical, continue without team data
                 }
             }
         } catch (error) {
             console.error('Error fetching workspace data:', error);
+            // Even on error, set a basic workspace so user sees something
+            if (!workspace) {
+                setWorkspace({
+                    _id: (user as any)?._id || 'unknown',
+                    name: `${user?.firstName || 'User'}'s Workspace`,
+                    type: 'Pharmacy',
+                    ownerId: (user as any)?._id || '',
+                    createdAt: new Date().toISOString(),
+                    members: []
+                });
+            }
         } finally {
             setLoading(false);
         }
@@ -224,37 +273,46 @@ const WorkspaceTab: React.FC = () => {
                                         </TableRow>
                                     </TableHead>
                                     <TableBody>
-                                        {teamMembers.map((member) => (
-                                            <TableRow key={member._id}>
-                                                <TableCell>
-                                                    <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
-                                                        <Avatar sx={{ width: 32, height: 32 }}>
-                                                            {member.userId.firstName[0]}
-                                                            {member.userId.lastName[0]}
-                                                        </Avatar>
-                                                        <Typography variant="body2">
-                                                            {member.userId.firstName} {member.userId.lastName}
-                                                        </Typography>
-                                                    </Box>
-                                                </TableCell>
-                                                <TableCell>{member.userId.email}</TableCell>
-                                                <TableCell>
-                                                    <Chip
-                                                        label={member.role.replace('_', ' ').toUpperCase()}
-                                                        size="small"
-                                                        variant="outlined"
-                                                    />
-                                                </TableCell>
-                                                <TableCell>{format(new Date(member.joinedAt), 'PP')}</TableCell>
-                                                <TableCell>
-                                                    <Chip
-                                                        label={member.status.toUpperCase()}
-                                                        color={member.status === 'active' ? 'success' : 'default'}
-                                                        size="small"
-                                                    />
-                                                </TableCell>
-                                            </TableRow>
-                                        ))}
+                                        {teamMembers.map((member) => {
+                                            // Handle both populated and non-populated userId
+                                            const memberUser = member.userId || member;
+                                            const firstName = memberUser?.firstName || 'Unknown';
+                                            const lastName = memberUser?.lastName || 'User';
+                                            const email = memberUser?.email || 'N/A';
+                                            
+                                            return (
+                                                <TableRow key={member._id}>
+                                                    <TableCell>
+                                                        <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                                            <Avatar sx={{ width: 32, height: 32 }}>
+                                                                {firstName[0]}{lastName[0]}
+                                                            </Avatar>
+                                                            <Typography variant="body2">
+                                                                {firstName} {lastName}
+                                                            </Typography>
+                                                        </Box>
+                                                    </TableCell>
+                                                    <TableCell>{email}</TableCell>
+                                                    <TableCell>
+                                                        <Chip
+                                                            label={(member.role || 'Member').replace('_', ' ').toUpperCase()}
+                                                            size="small"
+                                                            variant="outlined"
+                                                        />
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        {member.joinedAt ? format(new Date(member.joinedAt), 'PP') : 'N/A'}
+                                                    </TableCell>
+                                                    <TableCell>
+                                                        <Chip
+                                                            label={(member.status || 'Unknown').toUpperCase()}
+                                                            color={member.status === 'active' ? 'success' : 'default'}
+                                                            size="small"
+                                                        />
+                                                    </TableCell>
+                                                </TableRow>
+                                            );
+                                        })}
                                     </TableBody>
                                 </Table>
                             </TableContainer>

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
     Box,
     Grid,
@@ -15,6 +15,8 @@ import {
     ListItemText,
     Alert,
     Button,
+    IconButton,
+    Tooltip,
 } from '@mui/material';
 import {
     Person as PersonIcon,
@@ -28,17 +30,65 @@ import {
     CheckCircle as CheckCircleIcon,
     Warning as WarningIcon,
     Info as InfoIcon,
+    CameraAlt as CameraIcon,
 } from '@mui/icons-material';
 import { useAuth } from '../../hooks/useAuth';
 import { useSubscriptionStatus } from '../../hooks/useSubscription';
 import { getAvatarUrl } from '../../utils/avatarUtils';
 import { useNavigate } from 'react-router-dom';
-import { format } from 'date-fns';
+import { format, differenceInDays } from 'date-fns';
+import { apiClient } from '../../services/apiClient';
 
 const OverviewTab: React.FC = () => {
     const { user } = useAuth();
     const subscriptionStatus = useSubscriptionStatus();
     const navigate = useNavigate();
+    const [workspaceStats, setWorkspaceStats] = useState<any>(null);
+    const [loading, setLoading] = useState(true);
+
+    // Fetch workspace stats and counts
+    useEffect(() => {
+        const fetchWorkspaceStats = async () => {
+            try {
+                setLoading(true);
+                // Use the correct endpoint that exists
+                const response = await apiClient.get('/workspace/team/stats');
+                if (response.data.success) {
+                    setWorkspaceStats(response.data.data || response.data);
+                }
+            } catch (error) {
+                console.warn('Could not fetch workspace stats:', error);
+                // Not critical - continue without stats
+                setWorkspaceStats(null);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        if (user) {
+            fetchWorkspaceStats();
+        } else {
+            setLoading(false);
+        }
+    }, [user]);
+
+    // Calculate days remaining until renewal
+    const calculateDaysRemaining = (): number | null => {
+        if (subscriptionStatus.endDate) {
+            try {
+                const endDate = new Date(subscriptionStatus.endDate);
+                const today = new Date();
+                const days = differenceInDays(endDate, today);
+                return days >= 0 ? days : 0;
+            } catch (error) {
+                console.error('Error calculating days remaining:', error);
+                return null;
+            }
+        }
+        return null;
+    };
+
+    const daysRemaining = calculateDaysRemaining();
 
     if (!user) {
         return (
@@ -88,13 +138,34 @@ const OverviewTab: React.FC = () => {
                         {/* Avatar and Basic Info */}
                         <Grid item xs={12} md={4}>
                             <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-                                <Avatar
-                                    src={getAvatarUrl(user.avatar)}
-                                    sx={{ width: 120, height: 120, fontSize: '3rem' }}
-                                >
-                                    {user.firstName?.[0]}
-                                    {user.lastName?.[0]}
-                                </Avatar>
+                                <Box sx={{ position: 'relative' }}>
+                                    <Avatar
+                                        src={getAvatarUrl((user as any).avatar)}
+                                        sx={{ width: 120, height: 120, fontSize: '3rem' }}
+                                    >
+                                        {user.firstName?.[0]}
+                                        {user.lastName?.[0]}
+                                    </Avatar>
+                                    <Tooltip title="Change profile picture in Personal Settings tab">
+                                        <IconButton
+                                            onClick={() => navigate('/settings')}
+                                            sx={{
+                                                position: 'absolute',
+                                                bottom: 0,
+                                                right: 0,
+                                                bgcolor: 'primary.main',
+                                                color: 'white',
+                                                width: 36,
+                                                height: 36,
+                                                '&:hover': {
+                                                    bgcolor: 'primary.dark',
+                                                },
+                                            }}
+                                        >
+                                            <CameraIcon fontSize="small" />
+                                        </IconButton>
+                                    </Tooltip>
+                                </Box>
                                 <Box sx={{ textAlign: 'center' }}>
                                     <Typography variant="h5" gutterBottom>
                                         {user.firstName} {user.lastName}
@@ -105,9 +176,9 @@ const OverviewTab: React.FC = () => {
                                         size="small"
                                         sx={{ mb: 1 }}
                                     />
-                                    {user.professionalTitle && (
+                                    {(user as any).professionalTitle && (
                                         <Typography variant="body2" color="text.secondary">
-                                            {user.professionalTitle}
+                                            {(user as any).professionalTitle}
                                         </Typography>
                                     )}
                                 </Box>
@@ -263,8 +334,11 @@ const OverviewTab: React.FC = () => {
                                 <Typography variant="body2" color="text.secondary" gutterBottom>
                                     {subscriptionStatus.isTrialActive ? 'Trial Days Left' : 'Days Until Renewal'}
                                 </Typography>
-                                <Typography variant="h6" color={subscriptionStatus.daysRemaining && subscriptionStatus.daysRemaining < 7 ? 'error' : 'success'}>
-                                    {subscriptionStatus.daysRemaining || 'N/A'}
+                                <Typography
+                                    variant="h6"
+                                    color={(daysRemaining !== null && daysRemaining < 7) ? 'error' : 'success'}
+                                >
+                                    {daysRemaining !== null ? daysRemaining : 'N/A'}
                                 </Typography>
                             </Box>
                         </Grid>
@@ -299,7 +373,7 @@ const OverviewTab: React.FC = () => {
                     </Card>
                 </Grid>
 
-                {/* Team Members - Placeholder */}
+                {/* Team Members */}
                 <Grid item xs={12} sm={6} md={3}>
                     <Card>
                         <CardContent>
@@ -310,7 +384,7 @@ const OverviewTab: React.FC = () => {
                                         Team Members
                                     </Typography>
                                     <Typography variant="h6">
-                                        {user.teamMembers?.length || 0}
+                                        {loading ? '...' : (workspaceStats?.teamMembersCount || 0)}
                                     </Typography>
                                 </Box>
                             </Box>
@@ -318,7 +392,7 @@ const OverviewTab: React.FC = () => {
                     </Card>
                 </Grid>
 
-                {/* Features Enabled - Placeholder */}
+                {/* Features Enabled */}
                 <Grid item xs={12} sm={6} md={3}>
                     <Card>
                         <CardContent>
@@ -329,7 +403,7 @@ const OverviewTab: React.FC = () => {
                                         Features Enabled
                                     </Typography>
                                     <Typography variant="h6">
-                                        {user.features?.length || 0}
+                                        {loading ? '...' : (workspaceStats?.featuresCount || (user as any).features?.length || 0)}
                                     </Typography>
                                 </Box>
                             </Box>
@@ -337,7 +411,7 @@ const OverviewTab: React.FC = () => {
                     </Card>
                 </Grid>
 
-                {/* Permissions - Placeholder */}
+                {/* Permissions */}
                 <Grid item xs={12} sm={6} md={3}>
                     <Card>
                         <CardContent>
@@ -348,7 +422,7 @@ const OverviewTab: React.FC = () => {
                                         Permissions
                                     </Typography>
                                     <Typography variant="h6">
-                                        {user.permissions?.length || 0}
+                                        {loading ? '...' : (workspaceStats?.permissionsCount || user.permissions?.length || 0)}
                                     </Typography>
                                 </Box>
                             </Box>

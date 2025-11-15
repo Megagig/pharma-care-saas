@@ -8,10 +8,6 @@ import {
     Button,
     Chip,
     Divider,
-    List,
-    ListItem,
-    ListItemIcon,
-    ListItemText,
     Alert,
     LinearProgress,
     Table,
@@ -23,38 +19,50 @@ import {
     Paper,
     Collapse,
     IconButton,
+    Skeleton,
 } from '@mui/material';
-import {
-    CheckCircle as CheckCircleIcon,
-    Lock as LockIcon,
-    TrendingUp as TrendingUpIcon,
-    Info as InfoIcon,
-    ExpandMore as ExpandMoreIcon,
-    ExpandLess as ExpandLessIcon,
-} from '@mui/icons-material';
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+import LockIcon from '@mui/icons-material/Lock';
+import TrendingUpIcon from '@mui/icons-material/TrendingUp';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import { useAuth } from '../../hooks/useAuth';
 import { useRBAC } from '../../hooks/useRBAC';
 import { useSubscriptionStatus } from '../../hooks/useSubscription';
 import { apiClient } from '../../services/apiClient';
 import { useNavigate } from 'react-router-dom';
-import LoadingSpinner from '../LoadingSpinner';
 
-interface FeatureInfo {
-    key: string;
+interface Plan {
+    _id: string;
+    name: string;
+    tier: string;
+    priceNGN: number;
+    billingInterval: 'monthly' | 'yearly';
+    features: string[];
+    featuresDetails?: PricingFeature[];
+}
+
+interface PricingFeature {
+    featureId: string;
     name: string;
     description: string;
     category: string;
-    tier: string;
-    enabled: boolean;
-    usageCount?: number;
-    usageLimit?: number;
 }
 
-interface TierComparison {
-    tier: string;
-    name: string;
-    price: number;
+interface SubscriptionData {
     features: string[];
+    limits: {
+        patients: number | null;
+        users: number | null;
+        locations: number | null;
+        storage: number | null;
+        apiCalls: number | null;
+    };
+    usageMetrics: Array<{
+        feature: string;
+        count: number;
+        lastUpdated: Date;
+    }>;
 }
 
 const FeaturesTab: React.FC = () => {
@@ -63,8 +71,10 @@ const FeaturesTab: React.FC = () => {
     const subscriptionStatus = useSubscriptionStatus();
     const navigate = useNavigate();
     const [loading, setLoading] = useState(true);
-    const [features, setFeatures] = useState<FeatureInfo[]>([]);
-    const [tierComparison, setTierComparison] = useState<TierComparison[]>([]);
+    const [allPlans, setAllPlans] = useState<Plan[]>([]);
+    const [currentPlanFeatures, setCurrentPlanFeatures] = useState<string[]>([]);
+    const [availableFeatures, setAvailableFeatures] = useState<PricingFeature[]>([]);
+    const [usageData, setUsageData] = useState<any>(null);
     const [showComparison, setShowComparison] = useState(false);
 
     useEffect(() => {
@@ -75,16 +85,28 @@ const FeaturesTab: React.FC = () => {
         try {
             setLoading(true);
 
-            // Fetch all features with user's access status
-            const featuresResponse = await apiClient.get('/features/available');
-            if (featuresResponse.data.success) {
-                setFeatures(featuresResponse.data.data || []);
+            // Fetch all pricing plans with features
+            const plansResponse = await apiClient.get('/pricing/plans');
+            if (plansResponse.data.success) {
+                setAllPlans(plansResponse.data.data.plans || []);
+                setAvailableFeatures(plansResponse.data.data.features || []);
             }
 
-            // Fetch tier comparison data
-            const tiersResponse = await apiClient.get('/pricing/tiers-comparison');
-            if (tiersResponse.data.success) {
-                setTierComparison(tiersResponse.data.data || []);
+            // Fetch current subscription data - use the correct endpoint
+            try {
+                const subResponse = await apiClient.get('/subscriptions/');
+                if (subResponse.data.success && subResponse.data.data) {
+                    const subscription = subResponse.data.data;
+                    setCurrentPlanFeatures(subscription.features || []);
+
+                    // Set usage data if available
+                    if (subscription.usageMetrics) {
+                        setUsageData({ usageMetrics: subscription.usageMetrics });
+                    }
+                }
+            } catch (subError) {
+                console.warn('Could not fetch subscription data:', subError);
+                // Continue without subscription data - user might be on free tier
             }
         } catch (error) {
             console.error('Error fetching features data:', error);
@@ -94,14 +116,27 @@ const FeaturesTab: React.FC = () => {
     };
 
     const groupFeaturesByCategory = () => {
-        const grouped: { [key: string]: FeatureInfo[] } = {};
-        features.forEach(feature => {
+        const grouped: { [key: string]: PricingFeature[] } = {};
+        availableFeatures.forEach(feature => {
             if (!grouped[feature.category]) {
                 grouped[feature.category] = [];
             }
             grouped[feature.category].push(feature);
         });
         return grouped;
+    };
+
+    const isFeatureEnabled = (featureId: string): boolean => {
+        return currentPlanFeatures.includes(featureId);
+    };
+
+    const getCurrentPlan = (): Plan | undefined => {
+        return allPlans.find(plan => plan.tier === subscriptionStatus.tier);
+    };
+
+    const getFeatureUsage = (featureId: string) => {
+        if (!usageData?.usageMetrics) return null;
+        return usageData.usageMetrics.find((m: any) => m.feature === featureId);
     };
 
     const getUsagePercentage = (used: number, limit: number | null) => {
@@ -116,116 +151,197 @@ const FeaturesTab: React.FC = () => {
     };
 
     if (loading) {
-        return <LoadingSpinner />;
+        return (
+            <Box>
+                <Box sx={{ display: 'flex', gap: 3, mb: 3, flexWrap: 'wrap' }}>
+                    {[1, 2, 3].map((i) => (
+                        <Box key={i} sx={{ flex: '1 1 300px' }}>
+                            <Skeleton variant="rectangular" height={120} sx={{ borderRadius: 2 }} />
+                        </Box>
+                    ))}
+                </Box>
+                <Skeleton variant="rectangular" height={400} sx={{ borderRadius: 2 }} />
+            </Box>
+        );
     }
 
     const groupedFeatures = groupFeaturesByCategory();
-    const enabledFeatures = features.filter(f => f.enabled);
-    const lockedFeatures = features.filter(f => !f.enabled);
+    const enabledFeatures = availableFeatures.filter(f => isFeatureEnabled(f.featureId));
+    const lockedFeatures = availableFeatures.filter(f => !isFeatureEnabled(f.featureId));
+    const currentPlan = getCurrentPlan();
+
+    // Show message if no enabled features found
+    const hasEnabledFeatures = enabledFeatures.length > 0;
 
     return (
         <Box>
             {/* Summary Cards */}
-            <Grid container spacing={3} sx={{ mb: 3 }}>
-                <Grid item xs={12} sm={4}>
-                    <Card>
-                        <CardContent>
-                            <Typography variant="body2" color="text.secondary" gutterBottom>
-                                Enabled Features
-                            </Typography>
-                            <Typography variant="h3" color="success.main">
-                                {enabledFeatures.length}
-                            </Typography>
-                        </CardContent>
-                    </Card>
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                    <Card>
-                        <CardContent>
-                            <Typography variant="body2" color="text.secondary" gutterBottom>
-                                Locked Features
-                            </Typography>
-                            <Typography variant="h3" color="warning.main">
-                                {lockedFeatures.length}
-                            </Typography>
-                        </CardContent>
-                    </Card>
-                </Grid>
-                <Grid item xs={12} sm={4}>
-                    <Card>
-                        <CardContent>
-                            <Typography variant="body2" color="text.secondary" gutterBottom>
-                                Current Tier
-                            </Typography>
-                            <Chip
-                                label={subscriptionStatus.tier?.toUpperCase() || 'FREE'}
-                                color="primary"
-                                sx={{ fontSize: '1rem', height: 40 }}
-                            />
-                        </CardContent>
-                    </Card>
-                </Grid>
-            </Grid>
+            <Box sx={{ display: 'flex', gap: 3, mb: 3, flexWrap: 'wrap' }}>
+                <Card sx={{ flex: '1 1 300px', minWidth: 250 }}>
+                    <CardContent>
+                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                            Enabled Features
+                        </Typography>
+                        <Typography variant="h3" color="success.main" sx={{ mb: 1 }}>
+                            {enabledFeatures.length}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                            Active in your plan
+                        </Typography>
+                    </CardContent>
+                </Card>
+                <Card sx={{ flex: '1 1 300px', minWidth: 250 }}>
+                    <CardContent>
+                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                            Locked Features
+                        </Typography>
+                        <Typography variant="h3" color="warning.main" sx={{ mb: 1 }}>
+                            {lockedFeatures.length}
+                        </Typography>
+                        <Typography variant="caption" color="text.secondary">
+                            Available with upgrade
+                        </Typography>
+                    </CardContent>
+                </Card>
+                <Card sx={{ flex: '1 1 300px', minWidth: 250 }}>
+                    <CardContent>
+                        <Typography variant="body2" color="text.secondary" gutterBottom>
+                            Current Plan
+                        </Typography>
+                        <Typography variant="h6" sx={{ mb: 1 }}>
+                            {currentPlan?.name || 'Free Trial'}
+                        </Typography>
+                        <Chip
+                            label={subscriptionStatus.tier?.replace('_', ' ').toUpperCase() || 'FREE'}
+                            color="primary"
+                            size="small"
+                        />
+                    </CardContent>
+                </Card>
+            </Box>
 
             {/* Enabled Features by Category */}
             <Card sx={{ mb: 3 }}>
                 <CardContent>
-                    <Typography variant="h6" gutterBottom>
+                    <Typography variant="h6" gutterBottom sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                        <CheckCircleIcon color="success" />
                         Your Enabled Features
                     </Typography>
-                    <Divider sx={{ mb: 2 }} />
+                    <Divider sx={{ mb: 3 }} />
 
-                    {Object.entries(groupedFeatures).map(([category, categoryFeatures]) => {
-                        const enabledInCategory = categoryFeatures.filter(f => f.enabled);
-                        if (enabledInCategory.length === 0) return null;
+                    {!hasEnabledFeatures ? (
+                        <Alert severity="info" sx={{ borderRadius: 2 }}>
+                            No features are currently enabled. Contact support or upgrade your plan to access premium features.
+                        </Alert>
+                    ) : (
+                        Object.entries(groupedFeatures).map(([category, categoryFeatures]) => {
+                            const enabledInCategory = categoryFeatures.filter(f => isFeatureEnabled(f.featureId));
+                            if (enabledInCategory.length === 0) return null;
 
-                        return (
-                            <Box key={category} sx={{ mb: 3 }}>
-                                <Typography variant="subtitle1" color="primary" gutterBottom>
-                                    {category}
-                                </Typography>
-                                <Grid container spacing={2}>
-                                    {enabledInCategory.map((feature) => (
-                                        <Grid item xs={12} sm={6} md={4} key={feature.key}>
-                                            <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-                                                <CheckCircleIcon color="success" fontSize="small" sx={{ mt: 0.5 }} />
-                                                <Box sx={{ flex: 1 }}>
-                                                    <Typography variant="body2" fontWeight={500}>
-                                                        {feature.name}
-                                                    </Typography>
-                                                    <Typography variant="caption" color="text.secondary">
-                                                        {feature.description}
-                                                    </Typography>
+                            return (
+                                <Box key={category} sx={{ mb: 4 }}>
+                                    <Typography
+                                        variant="subtitle1"
+                                        color="primary"
+                                        gutterBottom
+                                        sx={{
+                                            fontWeight: 600,
+                                            textTransform: 'capitalize',
+                                            mb: 2
+                                        }}
+                                    >
+                                        {category}
+                                    </Typography>
+                                    <Box sx={{
+                                        display: 'flex',
+                                        flexWrap: 'wrap',
+                                        gap: 2,
+                                        mb: 2
+                                    }}>
+                                        {enabledInCategory.map((feature) => {
+                                            const usage = getFeatureUsage(feature.featureId);
+                                            return (
+                                                <Card
+                                                    key={feature.featureId}
+                                                    variant="outlined"
+                                                    sx={{
+                                                        flex: '1 1 calc(33.333% - 16px)',
+                                                        minWidth: 280,
+                                                        p: 2,
+                                                        borderRadius: 2,
+                                                        transition: 'all 0.2s',
+                                                        '&:hover': {
+                                                            boxShadow: 2,
+                                                            borderColor: 'success.main'
+                                                        }
+                                                    }}
+                                                >
+                                                    <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1.5 }}>
+                                                        <CheckCircleIcon
+                                                            color="success"
+                                                            sx={{ mt: 0.3, fontSize: 20 }}
+                                                        />
+                                                        <Box sx={{ flex: 1 }}>
+                                                            <Typography
+                                                                variant="body2"
+                                                                fontWeight={600}
+                                                                sx={{ mb: 0.5 }}
+                                                            >
+                                                                {feature.name}
+                                                            </Typography>
+                                                            <Typography
+                                                                variant="caption"
+                                                                color="text.secondary"
+                                                                sx={{ display: 'block', mb: usage ? 1.5 : 0 }}
+                                                            >
+                                                                {feature.description}
+                                                            </Typography>
 
-                                                    {/* Usage tracking if available */}
-                                                    {feature.usageCount !== undefined && (
-                                                        <Box sx={{ mt: 1 }}>
-                                                            <Box sx={{ display: 'flex', justifyContent: 'space-between', mb: 0.5 }}>
-                                                                <Typography variant="caption" color="text.secondary">
-                                                                    Usage
-                                                                </Typography>
-                                                                <Typography variant="caption" color="text.secondary">
-                                                                    {feature.usageCount} / {feature.usageLimit || '∞'}
-                                                                </Typography>
-                                                            </Box>
-                                                            {feature.usageLimit && (
-                                                                <LinearProgress
-                                                                    variant="determinate"
-                                                                    value={getUsagePercentage(feature.usageCount, feature.usageLimit)}
-                                                                    color={getUsageColor(getUsagePercentage(feature.usageCount, feature.usageLimit))}
-                                                                    sx={{ height: 4, borderRadius: 2 }}
-                                                                />
+                                                            {/* Usage tracking if available */}
+                                                            {usage && (
+                                                                <Box sx={{ mt: 1.5 }}>
+                                                                    <Box sx={{
+                                                                        display: 'flex',
+                                                                        justifyContent: 'space-between',
+                                                                        mb: 0.5,
+                                                                        alignItems: 'center'
+                                                                    }}>
+                                                                        <Typography
+                                                                            variant="caption"
+                                                                            color="text.secondary"
+                                                                            fontWeight={500}
+                                                                        >
+                                                                            Usage
+                                                                        </Typography>
+                                                                        <Chip
+                                                                            label={`${usage.count} used`}
+                                                                            size="small"
+                                                                            color="success"
+                                                                            sx={{ height: 20, fontSize: '0.7rem' }}
+                                                                        />
+                                                                    </Box>
+                                                                    <LinearProgress
+                                                                        variant="determinate"
+                                                                        value={Math.min((usage.count / 100) * 100, 100)}
+                                                                        color="success"
+                                                                        sx={{
+                                                                            height: 6,
+                                                                            borderRadius: 1,
+                                                                            bgcolor: 'action.hover'
+                                                                        }}
+                                                                    />
+                                                                </Box>
                                                             )}
                                                         </Box>
-                                                    )}
-                                                </Box>
-                                            </Box>
-                                        </Grid>
-                                    ))}
-                                </Grid>
-                            </Box>
-                        );
-                    })}
+                                                    </Box>
+                                                </Card>
+                                            );
+                                        })}
+                                    </Box>
+                                </Box>
+                            );
+                        })
+                    )}
                 </CardContent>
             </Card>
 
@@ -233,66 +349,137 @@ const FeaturesTab: React.FC = () => {
             {lockedFeatures.length > 0 && (
                 <Card sx={{ mb: 3 }}>
                     <CardContent>
-                        <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
-                            <Typography variant="h6">
+                        <Box sx={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center',
+                            mb: 2,
+                            flexWrap: 'wrap',
+                            gap: 2
+                        }}>
+                            <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                                <LockIcon color="warning" />
                                 Unlock More Features
                             </Typography>
                             <Button
                                 variant="contained"
                                 startIcon={<TrendingUpIcon />}
                                 onClick={() => navigate('/subscriptions')}
+                                sx={{
+                                    borderRadius: 2,
+                                    textTransform: 'none',
+                                    px: 3
+                                }}
                             >
                                 Upgrade Now
                             </Button>
                         </Box>
-                        <Divider sx={{ mb: 2 }} />
+                        <Divider sx={{ mb: 3 }} />
 
-                        <Alert severity="info" sx={{ mb: 2 }}>
+                        <Alert
+                            severity="info"
+                            sx={{
+                                mb: 3,
+                                borderRadius: 2,
+                                '& .MuiAlert-icon': {
+                                    fontSize: 24
+                                }
+                            }}
+                        >
                             Upgrade your plan to unlock these premium features and grow your pharmacy practice.
                         </Alert>
 
                         {Object.entries(groupedFeatures).map(([category, categoryFeatures]) => {
-                            const lockedInCategory = categoryFeatures.filter(f => !f.enabled);
+                            const lockedInCategory = categoryFeatures.filter(f => !isFeatureEnabled(f.featureId));
                             if (lockedInCategory.length === 0) return null;
 
                             return (
-                                <Box key={category} sx={{ mb: 3 }}>
-                                    <Typography variant="subtitle1" color="text.secondary" gutterBottom>
+                                <Box key={category} sx={{ mb: 4 }}>
+                                    <Typography
+                                        variant="subtitle1"
+                                        color="text.secondary"
+                                        gutterBottom
+                                        sx={{
+                                            fontWeight: 600,
+                                            textTransform: 'capitalize',
+                                            mb: 2
+                                        }}
+                                    >
                                         {category}
                                     </Typography>
-                                    <Grid container spacing={2}>
-                                        {lockedInCategory.map((feature) => (
-                                            <Grid item xs={12} sm={6} md={4} key={feature.key}>
-                                                <Box
+                                    <Box sx={{
+                                        display: 'flex',
+                                        flexWrap: 'wrap',
+                                        gap: 2
+                                    }}>
+                                        {lockedInCategory.map((feature) => {
+                                            // Find which plan has this feature
+                                            const planWithFeature = allPlans.find(p => p.features?.includes(feature.featureId));
+                                            return (
+                                                <Card
+                                                    key={feature.featureId}
+                                                    variant="outlined"
                                                     sx={{
-                                                        display: 'flex',
-                                                        alignItems: 'flex-start',
-                                                        gap: 1,
-                                                        opacity: 0.7,
-                                                        p: 1,
-                                                        borderRadius: 1,
+                                                        flex: '1 1 calc(33.333% - 16px)',
+                                                        minWidth: 280,
+                                                        p: 2,
+                                                        borderRadius: 2,
                                                         bgcolor: 'action.hover',
+                                                        borderColor: 'divider',
+                                                        transition: 'all 0.2s',
+                                                        position: 'relative',
+                                                        overflow: 'visible',
+                                                        '&:hover': {
+                                                            boxShadow: 2,
+                                                            borderColor: 'warning.main',
+                                                            bgcolor: 'background.paper'
+                                                        }
                                                     }}
                                                 >
-                                                    <LockIcon color="action" fontSize="small" sx={{ mt: 0.5 }} />
-                                                    <Box sx={{ flex: 1 }}>
-                                                        <Typography variant="body2" fontWeight={500}>
-                                                            {feature.name}
-                                                        </Typography>
-                                                        <Typography variant="caption" color="text.secondary">
-                                                            {feature.description}
-                                                        </Typography>
+                                                    {planWithFeature && (
                                                         <Chip
-                                                            label={`${feature.tier.toUpperCase()} Plan`}
+                                                            label={planWithFeature.name}
                                                             size="small"
                                                             color="warning"
-                                                            sx={{ mt: 0.5 }}
+                                                            sx={{
+                                                                position: 'absolute',
+                                                                top: -10,
+                                                                right: 12,
+                                                                fontWeight: 600,
+                                                                fontSize: '0.7rem'
+                                                            }}
                                                         />
+                                                    )}
+                                                    <Box sx={{
+                                                        display: 'flex',
+                                                        alignItems: 'flex-start',
+                                                        gap: 1.5
+                                                    }}>
+                                                        <LockIcon
+                                                            color="action"
+                                                            sx={{ mt: 0.3, fontSize: 20, opacity: 0.5 }}
+                                                        />
+                                                        <Box sx={{ flex: 1 }}>
+                                                            <Typography
+                                                                variant="body2"
+                                                                fontWeight={600}
+                                                                sx={{ mb: 0.5, color: 'text.primary' }}
+                                                            >
+                                                                {feature.name}
+                                                            </Typography>
+                                                            <Typography
+                                                                variant="caption"
+                                                                color="text.secondary"
+                                                                sx={{ display: 'block', lineHeight: 1.4 }}
+                                                            >
+                                                                {feature.description}
+                                                            </Typography>
+                                                        </Box>
                                                     </Box>
-                                                </Box>
-                                            </Grid>
-                                        ))}
-                                    </Grid>
+                                                </Card>
+                                            );
+                                        })}
+                                    </Box>
                                 </Box>
                             );
                         })}
@@ -314,18 +501,18 @@ const FeaturesTab: React.FC = () => {
 
                     <Collapse in={showComparison}>
                         <Divider sx={{ mb: 2 }} />
-                        {tierComparison.length > 0 ? (
+                        {allPlans.length > 0 ? (
                             <TableContainer component={Paper} variant="outlined">
                                 <Table size="small">
                                     <TableHead>
                                         <TableRow>
                                             <TableCell>Feature</TableCell>
-                                            {tierComparison.map((tier) => (
-                                                <TableCell key={tier.tier} align="center">
+                                            {allPlans.slice(0, 4).map((plan) => (
+                                                <TableCell key={plan._id} align="center">
                                                     <Box>
-                                                        <Typography variant="subtitle2">{tier.name}</Typography>
+                                                        <Typography variant="subtitle2">{plan.name}</Typography>
                                                         <Typography variant="caption" color="text.secondary">
-                                                            ₦{tier.price.toLocaleString()}/mo
+                                                            ₦{(plan.priceNGN || 0).toLocaleString()}/{plan.billingInterval === 'monthly' ? 'mo' : 'yr'}
                                                         </Typography>
                                                     </Box>
                                                 </TableCell>
@@ -334,12 +521,14 @@ const FeaturesTab: React.FC = () => {
                                     </TableHead>
                                     <TableBody>
                                         {/* Generate comparison rows based on features */}
-                                        {features.slice(0, 10).map((feature) => (
-                                            <TableRow key={feature.key}>
-                                                <TableCell>{feature.name}</TableCell>
-                                                {tierComparison.map((tier) => (
-                                                    <TableCell key={tier.tier} align="center">
-                                                        {tier.features.includes(feature.key) ? (
+                                        {availableFeatures.slice(0, 15).map((feature) => (
+                                            <TableRow key={feature.featureId}>
+                                                <TableCell>
+                                                    <Typography variant="body2">{feature.name}</Typography>
+                                                </TableCell>
+                                                {allPlans.slice(0, 4).map((plan) => (
+                                                    <TableCell key={plan._id} align="center">
+                                                        {plan.features?.includes(feature.featureId) ? (
                                                             <CheckCircleIcon color="success" fontSize="small" />
                                                         ) : (
                                                             <LockIcon color="disabled" fontSize="small" />
@@ -353,7 +542,7 @@ const FeaturesTab: React.FC = () => {
                             </TableContainer>
                         ) : (
                             <Alert severity="info">
-                                Plan comparison data is not available. Visit the{' '}
+                                Plan comparison data is loading. Visit the{' '}
                                 <Button onClick={() => navigate('/subscriptions')} sx={{ textTransform: 'none' }}>
                                     subscriptions page
                                 </Button>
