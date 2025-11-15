@@ -7,7 +7,17 @@ import { apiClient } from './apiClient';
 export interface LabIntegration {
   _id: string;
   workplaceId: string;
-  patientId: string;
+  patientId: string | {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    otherNames?: string;
+    mrn?: string;
+    age?: number;
+    gender?: string;
+    phone?: string;
+    email?: string;
+  };
   pharmacistId: string;
   labResultIds: string[];
   source: 'manual_entry' | 'pdf_upload' | 'image_upload' | 'fhir_import' | 'lis_integration';
@@ -71,7 +81,12 @@ export interface SafetyCheck {
 }
 
 export interface PharmacistReview {
-  reviewedBy: string;
+  reviewedBy: string | {
+    _id: string;
+    firstName: string;
+    lastName: string;
+    email: string;
+  };
   reviewedAt: Date;
   decision: 'approved' | 'rejected' | 'modified' | 'escalated';
   clinicalNotes: string;
@@ -223,6 +238,16 @@ class LabIntegrationService {
   async getCasesRequiringEscalation(): Promise<LabIntegration[]> {
     const response = await apiClient.get<{ success: boolean; data: LabIntegration[] }>(
       `${this.baseUrl}/escalation-required`
+    );
+    return response.data.data;
+  }
+
+  /**
+   * Get approved lab integration cases
+   */
+  async getApprovedCases(): Promise<LabIntegration[]> {
+    const response = await apiClient.get<{ success: boolean; data: LabIntegration[] }>(
+      `${this.baseUrl}/approved`
     );
     return response.data.data;
   }

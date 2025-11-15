@@ -38,6 +38,7 @@ import {
   usePendingReviews,
   useCriticalCases,
   useCasesRequiringEscalation,
+  useApprovedCases,
   useLabIntegrationStats,
   useLabIntegrationStatusColor,
   useHasCriticalFindings,
@@ -67,12 +68,18 @@ const LabResultIntegration: React.FC = () => {
     refetch: refetchEscalation,
   } = useCasesRequiringEscalation();
 
+  const {
+    data: approvedCases,
+    isLoading: approvedLoading,
+    refetch: refetchApproved,
+  } = useApprovedCases();
+
   const stats = useLabIntegrationStats();
 
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      await Promise.all([refetchPending(), refetchCritical(), refetchEscalation()]);
+      await Promise.all([refetchPending(), refetchCritical(), refetchEscalation(), refetchApproved()]);
     } catch (error) {
       console.error('Failed to refresh:', error);
     } finally {
@@ -86,6 +93,14 @@ const LabResultIntegration: React.FC = () => {
 
   const handleNewCase = () => {
     navigate('/pharmacy/lab-integration/new');
+  };
+
+  const getPatientName = (patientId: LabIntegration['patientId']) => {
+    if (typeof patientId === 'string') {
+      return `Patient ID: ${patientId.substring(0, 8)}...`;
+    }
+    const fullName = `${patientId.firstName} ${patientId.lastName}`;
+    return patientId.otherNames ? `${patientId.firstName} ${patientId.otherNames} ${patientId.lastName}` : fullName;
   };
 
   const getStatusColor = (status: LabIntegration['status']) => {
@@ -417,6 +432,91 @@ const LabResultIntegration: React.FC = () => {
                   </List>
                 ) : (
                   <Alert severity="info">No pending reviews</Alert>
+                )}
+              </CardContent>
+            </Card>
+          </Grid>
+
+          {/* Approved Cases */}
+          <Grid item xs={12} md={6}>
+            <Card>
+              <CardContent>
+                <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 2 }}>
+                  <Typography variant="h6" sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                    <CheckCircleIcon color="success" />
+                    Approved Cases
+                  </Typography>
+                  <Chip label={stats.approvedCount} color="success" size="small" />
+                </Box>
+                <Divider sx={{ mb: 2 }} />
+                {approvedLoading ? (
+                  <Box>
+                    {[1, 2, 3].map((i) => (
+                      <Skeleton key={i} height={80} sx={{ mb: 1 }} />
+                    ))}
+                  </Box>
+                ) : approvedCases && approvedCases.length > 0 ? (
+                  <>
+                    <List>
+                      {approvedCases.slice(0, 5).map((case_) => (
+                        <ListItem
+                          key={case_._id}
+                          sx={{
+                            border: '1px solid',
+                            borderColor: 'divider',
+                            borderRadius: 1,
+                            mb: 1,
+                            cursor: 'pointer',
+                            '&:hover': { bgcolor: 'action.hover' },
+                          }}
+                          onClick={() => handleViewCase(case_._id)}
+                        >
+                          <ListItemAvatar>
+                            <Avatar sx={{ bgcolor: 'success.main' }}>
+                              <CheckCircleIcon />
+                            </Avatar>
+                          </ListItemAvatar>
+                          <ListItemText
+                            primary={getPatientName(case_.patientId)}
+                            secondary={
+                              <Box>
+                                <Typography variant="caption" display="block">
+                                  {format(new Date(case_.createdAt), 'MMM dd, yyyy HH:mm')}
+                                </Typography>
+                                <Box sx={{ display: 'flex', gap: 1, mt: 0.5 }}>
+                                  <Chip
+                                    label={case_.status.replace(/_/g, ' ')}
+                                    size="small"
+                                    color={getStatusColor(case_.status) as any}
+                                  />
+                                </Box>
+                              </Box>
+                            }
+                          />
+                          <Box sx={{ display: 'flex', gap: 0.5 }}>
+                            <Tooltip title="View Details">
+                              <IconButton size="small">
+                                <VisibilityIcon />
+                              </IconButton>
+                            </Tooltip>
+                          </Box>
+                        </ListItem>
+                      ))}
+                    </List>
+                    {approvedCases.length > 5 && (
+                      <Box sx={{ mt: 2, textAlign: 'center' }}>
+                        <Button
+                          variant="outlined"
+                          color="success"
+                          onClick={() => navigate('/pharmacy/lab-integration/approved')}
+                        >
+                          View All ({approvedCases.length})
+                        </Button>
+                      </Box>
+                    )}
+                  </>
+                ) : (
+                  <Alert severity="info">No approved cases yet</Alert>
                 )}
               </CardContent>
             </Card>

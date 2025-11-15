@@ -22,6 +22,7 @@ export const LAB_INTEGRATION_KEYS = {
   pendingReviews: () => [...LAB_INTEGRATION_KEYS.all, 'pendingReviews'] as const,
   criticalCases: () => [...LAB_INTEGRATION_KEYS.all, 'criticalCases'] as const,
   escalationRequired: () => [...LAB_INTEGRATION_KEYS.all, 'escalationRequired'] as const,
+  approvedCases: () => [...LAB_INTEGRATION_KEYS.all, 'approvedCases'] as const,
   trends: (patientId: string, testCode: string) =>
     [...LAB_INTEGRATION_KEYS.all, 'trends', patientId, testCode] as const,
 };
@@ -97,6 +98,18 @@ export const useCasesRequiringEscalation = (enabled: boolean = true) => {
   return useQuery({
     queryKey: LAB_INTEGRATION_KEYS.escalationRequired(),
     queryFn: () => labIntegrationService.getCasesRequiringEscalation(),
+    enabled,
+    staleTime: 30000,
+  });
+};
+
+/**
+ * Get approved cases
+ */
+export const useApprovedCases = (enabled: boolean = true) => {
+  return useQuery({
+    queryKey: LAB_INTEGRATION_KEYS.approvedCases(),
+    queryFn: () => labIntegrationService.getApprovedCases(),
     enabled,
     staleTime: 30000,
   });
@@ -184,6 +197,7 @@ export const useApproveRecommendations = () => {
       queryClient.invalidateQueries({ queryKey: LAB_INTEGRATION_KEYS.patient(data.patientId) });
       queryClient.invalidateQueries({ queryKey: LAB_INTEGRATION_KEYS.pendingReviews() });
       queryClient.invalidateQueries({ queryKey: LAB_INTEGRATION_KEYS.criticalCases() });
+      queryClient.invalidateQueries({ queryKey: LAB_INTEGRATION_KEYS.approvedCases() });
 
       const decision = data.pharmacistReview?.decision;
       const message =
@@ -242,11 +256,13 @@ export const useLabIntegrationStats = () => {
   const { data: pendingReviews } = usePendingReviews();
   const { data: criticalCases } = useCriticalCases();
   const { data: escalationRequired } = useCasesRequiringEscalation();
+  const { data: approvedCases } = useApprovedCases();
 
   return {
     pendingCount: pendingReviews?.length || 0,
     criticalCount: criticalCases?.length || 0,
     escalationCount: escalationRequired?.length || 0,
+    approvedCount: approvedCases?.length || 0,
     totalActionRequired: (pendingReviews?.length || 0) + (criticalCases?.length || 0),
   };
 };

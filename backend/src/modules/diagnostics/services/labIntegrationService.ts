@@ -1308,6 +1308,13 @@ Highlight:
     }
 
     /**
+     * Get approved cases for a workplace
+     */
+    async getApprovedCases(workplaceId: string): Promise<ILabIntegration[]> {
+        return await LabIntegration.findApprovedCases(new Types.ObjectId(workplaceId));
+    }
+
+    /**
      * Generate patient-friendly explanation of lab results
      */
     private async generatePatientExplanation(

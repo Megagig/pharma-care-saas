@@ -283,6 +283,40 @@ export const getCasesRequiringEscalation = async (
 };
 
 /**
+ * Get approved cases
+ */
+export const getApprovedCases = async (
+    req: AuthRequest,
+    res: Response,
+    next: NextFunction
+): Promise<void> => {
+    try {
+        const workplaceId = req.user?.workplaceId;
+
+        if (!workplaceId) {
+            res.status(401).json({
+                success: false,
+                message: 'Unauthorized: Workplace not found'
+            });
+            return;
+        }
+
+        const labIntegrations = await labIntegrationService.getApprovedCases(workplaceId.toString());
+
+        res.status(200).json({
+            success: true,
+            data: labIntegrations
+        });
+    } catch (error) {
+        logger.error('Failed to get approved cases', {
+            error: error instanceof Error ? error.message : 'Unknown error',
+            workplaceId: req.user?.workplaceId
+        });
+        next(error);
+    }
+};
+
+/**
  * Approve therapy recommendations
  */
 export const approveRecommendations = async (

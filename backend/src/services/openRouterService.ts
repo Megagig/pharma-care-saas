@@ -162,7 +162,7 @@ class OpenRouterService {
     this.timeout = 180000; // 3 minutes timeout
     this.monthlyBudgetLimit = parseFloat(process.env.OPENROUTER_MONTHLY_BUDGET || '15'); // $15 default
     this.usageFilePath = path.join(process.cwd(), 'data', 'openrouter-usage.json');
-    
+
     this.retryConfig = {
       maxRetries: 3,
       baseDelay: 1000, // 1 second
@@ -229,10 +229,10 @@ class OpenRouterService {
     try {
       // Check budget before processing
       const canUsePaidModels = await this.checkBudgetLimit();
-      
+
       // Analyze case complexity
       const complexity = this.analyzeCaseComplexity(input);
-      
+
       // Select appropriate model based on complexity and budget
       const selectedModel = this.selectModel(complexity, canUsePaidModels);
       const modelConfig = this.models.get(selectedModel)!;
@@ -292,9 +292,9 @@ class OpenRouterService {
             metadata: {
               patientId: context.patientId,
               caseId: context.caseId,
-              complexity: complexity.isCritical ? 'critical' : 
-                         complexity.score >= 30 ? 'high' : 
-                         complexity.score >= 15 ? 'medium' : 'low',
+              complexity: complexity.isCritical ? 'critical' :
+                complexity.score >= 30 ? 'high' :
+                  complexity.score >= 15 ? 'medium' : 'low',
               requestId: response.data.id,
               complexityScore: complexity.score,
               factors: complexity.factors,
@@ -526,7 +526,7 @@ class OpenRouterService {
     for (let i = 0; i < modelsToTry.length; i++) {
       const modelTier = modelsToTry[i];
       const modelConfig = this.models.get(modelTier)!;
-      
+
       try {
         const requestWithModel = {
           ...request,
@@ -1049,7 +1049,7 @@ Your response must be valid JSON in this exact format:
 
     const inputCost = usage.prompt_tokens * modelConfig.costPerInputToken;
     const outputCost = usage.completion_tokens * modelConfig.costPerOutputToken;
-    
+
     return inputCost + outputCost;
   }
 
@@ -1126,7 +1126,7 @@ Your response must be valid JSON in this exact format:
   private async checkBudgetLimit(): Promise<boolean> {
     try {
       const currentMonth = new Date().toISOString().slice(0, 7);
-      
+
       try {
         const data = await fs.readFile(this.usageFilePath, 'utf-8');
         const usageData: UsageTracking = JSON.parse(data);

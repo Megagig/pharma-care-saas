@@ -908,6 +908,23 @@ labIntegrationSchema.statics.findRequiringEscalation = function (workplaceId: mo
     }).sort({ receivedAt: 1 });
 };
 
+labIntegrationSchema.statics.findApprovedCases = function (workplaceId: mongoose.Types.ObjectId) {
+    return this.find({
+        workplaceId,
+        status: { $in: ['approved', 'implemented', 'completed'] },
+        isDeleted: false
+    })
+        .populate({
+            path: 'patientId',
+            select: 'firstName lastName otherNames mrn age gender phone email'
+        })
+        .populate({
+            path: 'pharmacistReview.reviewedBy',
+            select: 'firstName lastName email'
+        })
+        .sort({ updatedAt: -1 });
+};
+
 // Pre-save middleware
 labIntegrationSchema.pre('save', function (this: ILabIntegration, next) {
     // Auto-set critical safety issues flag
@@ -934,6 +951,7 @@ interface ILabIntegrationModel extends mongoose.Model<ILabIntegration> {
     findPendingReviews(workplaceId: mongoose.Types.ObjectId): mongoose.Query<ILabIntegration[], ILabIntegration>;
     findCriticalCases(workplaceId: mongoose.Types.ObjectId): mongoose.Query<ILabIntegration[], ILabIntegration>;
     findRequiringEscalation(workplaceId: mongoose.Types.ObjectId): mongoose.Query<ILabIntegration[], ILabIntegration>;
+    findApprovedCases(workplaceId: mongoose.Types.ObjectId): mongoose.Query<ILabIntegration[], ILabIntegration>;
 }
 
 const LabIntegration = mongoose.model<ILabIntegration, ILabIntegrationModel>('LabIntegration', labIntegrationSchema);

@@ -97,6 +97,7 @@ import {
   LazyLabIntegrationCaseDetail,
   LazyLabIntegrationNewCase,
   LazyLabIntegrationReviewQueue,
+  LazyApprovedLabIntegrations,
   LazyLaboratoryDashboard,
   LazyLabResultForm,
   LazyLabResultDetail,
@@ -1461,6 +1462,23 @@ function App(): JSX.Element {
                                   <AppLayout>
                                     <LazyWrapper fallback={PageSkeleton}>
                                       <LazyLabIntegrationReviewQueue />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
+                              }
+                            />
+
+                            {/* Lab Integration - Approved Cases */}
+                            <Route
+                              path="/pharmacy/lab-integration/approved"
+                              element={
+                                <ProtectedRoute
+                                  requiredRole={['pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'owner', 'super_admin']}
+                                  requiresActiveSubscription
+                                >
+                                  <AppLayout>
+                                    <LazyWrapper fallback={PageSkeleton}>
+                                      <LazyApprovedLabIntegrations />
                                     </LazyWrapper>
                                   </AppLayout>
                                 </ProtectedRoute>

@@ -295,13 +295,21 @@ export const PERMISSION_MATRIX: PermissionMatrix = {
         requiresActiveSubscription: true,
         allowTrialAccess: true,
     },
+    'lab_integration:update': {
+        workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet'],
+        systemRoles: ['pharmacist', 'pharmacy_team', 'pharmacy_outlet'],
+        features: ['lab_integration'],
+        planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
+        requiresActiveSubscription: true,
+        allowTrialAccess: true,
+    },
     'lab_integration:approve': {
         workplaceRoles: ['Owner', 'Pharmacist'],
         systemRoles: ['pharmacist', 'pharmacy_outlet'],
         features: ['lab_integration'],
         planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
         requiresActiveSubscription: true,
-        allowTrialAccess: false,
+        allowTrialAccess: true,
     },
     'lab_integration:escalate': {
         workplaceRoles: ['Owner', 'Pharmacist'],
@@ -309,7 +317,7 @@ export const PERMISSION_MATRIX: PermissionMatrix = {
         features: ['lab_integration'],
         planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
         requiresActiveSubscription: true,
-        allowTrialAccess: false,
+        allowTrialAccess: true,
     },
     'lab_integration:trends': {
         workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet'],

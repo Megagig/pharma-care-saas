@@ -56,6 +56,17 @@ router.get(
 );
 
 /**
+ * @route   GET /api/lab-integration/approved
+ * @desc    Get all approved lab integration cases
+ * @access  Pharmacist, Pharmacy Team, Pharmacy Outlet, Owner, Super Admin
+ */
+router.get(
+    '/approved',
+    requirePermission('lab_integration:read'),
+    labIntegrationController.getApprovedCases
+);
+
+/**
  * @route   GET /api/lab-integration/patient/:patientId
  * @desc    Get all lab integrations for a specific patient
  * @access  Pharmacist, Pharmacy Team, Pharmacy Outlet, Owner, Super Admin
