@@ -102,8 +102,9 @@ const CaseResultsPage: React.FC = () => {
       // If case is completed and has analysis, load it
       if (caseData.status === 'completed' && caseData.aiAnalysis) {
         setAnalysis(caseData.aiAnalysis);
-      } else if (caseData.status === 'analyzing') {
-        // Start polling for analysis
+        // Analysis already exists, no need to poll
+      } else if (caseData.status === 'analyzing' && !caseData.aiAnalysis) {
+        // Only start polling if status is analyzing AND no analysis exists yet
         pollForAnalysis();
       }
     } catch (err) {

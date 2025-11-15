@@ -41,6 +41,7 @@ import WarningIcon from '@mui/icons-material/Warning';
 import PersonAddIcon from '@mui/icons-material/PersonAdd';
 import { usePatients, useDeletePatient } from '../queries/usePatients';
 import { useRBAC } from '../hooks/useRBAC';
+import { getNigerianStates } from '../utils/nigeriaLocationData';
 import type {
   Patient,
   PatientSearchParams,
@@ -48,47 +49,6 @@ import type {
   BloodGroup,
   Genotype,
 } from '../types/patientManagement';
-
-// Nigerian States for filtering
-const NIGERIAN_STATES: NigerianState[] = [
-  'Abia',
-  'Adamawa',
-  'Akwa Ibom',
-  'Anambra',
-  'Bauchi',
-  'Bayelsa',
-  'Benue',
-  'Borno',
-  'Cross River',
-  'Delta',
-  'Ebonyi',
-  'Edo',
-  'Ekiti',
-  'Enugu',
-  'FCT',
-  'Gombe',
-  'Imo',
-  'Jigawa',
-  'Kaduna',
-  'Kano',
-  'Katsina',
-  'Kebbi',
-  'Kogi',
-  'Kwara',
-  'Lagos',
-  'Nasarawa',
-  'Niger',
-  'Ogun',
-  'Ondo',
-  'Osun',
-  'Oyo',
-  'Plateau',
-  'Rivers',
-  'Sokoto',
-  'Taraba',
-  'Yobe',
-  'Zamfara',
-];
 
 const BLOOD_GROUPS: BloodGroup[] = [
   'A+',
@@ -103,6 +63,8 @@ const BLOOD_GROUPS: BloodGroup[] = [
 const GENOTYPES: Genotype[] = ['AA', 'AS', 'SS', 'AC', 'SC', 'CC'];
 
 const Patients = () => {
+  // Get Nigerian states from the library
+  const NIGERIAN_STATES = getNigerianStates();
 
   const navigate = useNavigate();
   const [urlParams] = useSearchParams();

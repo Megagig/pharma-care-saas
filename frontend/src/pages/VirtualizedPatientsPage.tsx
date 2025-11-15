@@ -35,6 +35,7 @@ import { VirtualizedDataTable } from '../components/virtualized/VirtualizedDataT
 import { MobileOptimizedVirtualList } from '../components/virtualized/MobileOptimizedVirtualList';
 import { useVirtualizedPatients } from '../hooks/useVirtualizedList';
 import { useRBAC } from '../hooks/useRBAC';
+import { getNigerianStates } from '../utils/nigeriaLocationData';
 import type {
   Patient,
   PatientSearchParams,
@@ -44,15 +45,6 @@ import type {
 } from '../types/patientManagement';
 import type { ColumnDef } from '@tanstack/react-table';
 
-// Nigerian States for filtering
-const NIGERIAN_STATES: NigerianState[] = [
-  'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue',
-  'Borno', 'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'FCT',
-  'Gombe', 'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi',
-  'Kwara', 'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo',
-  'Plateau', 'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara',
-];
-
 const BLOOD_GROUPS: BloodGroup[] = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
 const GENOTYPES: Genotype[] = ['AA', 'AS', 'SS', 'AC', 'SC', 'CC'];
 
@@ -60,6 +52,9 @@ const GENOTYPES: Genotype[] = ['AA', 'AS', 'SS', 'AC', 'SC', 'CC'];
 type ViewMode = 'list' | 'table' | 'mobile';
 
 const VirtualizedPatientsPage: React.FC = () => {
+  // Get Nigerian states from the library
+  const NIGERIAN_STATES = getNigerianStates();
+
   const navigate = useNavigate();
   const [urlParams] = useSearchParams();
   const isForMedications = urlParams.get('for') === 'medications';

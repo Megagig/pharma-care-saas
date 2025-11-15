@@ -212,7 +212,11 @@ class PermissionService {
         }
 
         const planFeatures = context.permissions || [];
-        const hasRequiredFeatures = permission.features.every(feature =>
+
+        // Check if user has wildcard permission (all features)
+        const hasWildcard = planFeatures.includes('*');
+
+        const hasRequiredFeatures = hasWildcard || permission.features.every(feature =>
             planFeatures.includes(feature)
         );
 
@@ -251,7 +255,13 @@ class PermissionService {
             return { allowed: true };
         }
 
-        const currentTier = context.plan?.tier;
+        const currentTier = context.plan?.tier || context.subscription?.tier;
+
+        // Allow free_trial tier if trial access is enabled for this permission
+        if (currentTier === 'free_trial' && permission.allowTrialAccess) {
+            return { allowed: true };
+        }
+
         if (!currentTier || !permission.planTiers.includes(currentTier)) {
             return {
                 allowed: false,

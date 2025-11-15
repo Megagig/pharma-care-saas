@@ -280,10 +280,14 @@ const LabIntegrationNewCase: React.FC = () => {
         patientId,
         labResultIds,
         source,
-        priority,
-        notes: notes || undefined,
-        symptoms: symptoms || undefined,
-        medicalHistory: medicalHistory || undefined,
+        // Map priority to urgency as backend expects
+        urgency: priority === 'critical' ? 'stat' : priority === 'urgent' ? 'urgent' : 'routine',
+        // Store symptoms and medicalHistory in notes field
+        notes: [
+          notes,
+          symptoms ? `Symptoms: ${symptoms}` : '',
+          medicalHistory ? `Medical History: ${medicalHistory}` : ''
+        ].filter(Boolean).join('\n\n') || undefined,
       });
 
       toast.success('Lab integration case created successfully');

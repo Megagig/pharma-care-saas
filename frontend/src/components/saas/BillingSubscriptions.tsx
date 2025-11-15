@@ -124,25 +124,26 @@ interface PaymentMethod {
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884D8', '#82ca9d'];
 
 const BillingSubscriptions: React.FC = () => {
+  // CRITICAL: ALL hooks must be called unconditionally at the top (Rules of Hooks)
   const theme = useTheme();
   const [activeTab, setActiveTab] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  
+
   // Data states
   const [analytics, setAnalytics] = useState<BillingAnalytics | null>(null);
   const [revenueTrends, setRevenueTrends] = useState<RevenueTrend[]>([]);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [subscriptions, setSubscriptions] = useState<Subscription[]>([]);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
-  
+
   // Filter states
   const [invoiceSearch, setInvoiceSearch] = useState('');
   const [invoiceStatus, setInvoiceStatus] = useState('');
   const [subscriptionSearch, setSubscriptionSearch] = useState('');
   const [subscriptionStatus, setSubscriptionStatus] = useState('');
   const [timePeriod, setTimePeriod] = useState<'7d' | '30d' | '90d' | '365d'>('30d');
-  
+
   // Pagination states
   const [invoicePage, setInvoicePage] = useState(0);
   const [invoiceRowsPerPage, setInvoiceRowsPerPage] = useState(10);
@@ -298,7 +299,7 @@ const BillingSubscriptions: React.FC = () => {
 
   // Filter data
   const filteredInvoices = invoices.filter(inv => {
-    const matchesSearch = !invoiceSearch || 
+    const matchesSearch = !invoiceSearch ||
       inv.invoiceNumber.toLowerCase().includes(invoiceSearch.toLowerCase()) ||
       inv.customerName.toLowerCase().includes(invoiceSearch.toLowerCase()) ||
       inv.customerEmail.toLowerCase().includes(invoiceSearch.toLowerCase());
@@ -550,11 +551,11 @@ const BillingSubscriptions: React.FC = () => {
                                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                               ))}
                             </Pie>
-                            <RechartsTooltip 
+                            <RechartsTooltip
                               formatter={(value: any, name: string) => [`${value} subscriptions`, name]}
                             />
-                            <Legend 
-                              verticalAlign="bottom" 
+                            <Legend
+                              verticalAlign="bottom"
                               height={36}
                               iconType="circle"
                               wrapperStyle={{ fontSize: '12px' }}
@@ -588,23 +589,23 @@ const BillingSubscriptions: React.FC = () => {
                     {analytics && (
                       <>
                         <ResponsiveContainer width="100%" height={400}>
-                          <BarChart 
+                          <BarChart
                             data={analytics.revenueByPlan}
                             margin={{ top: 20, right: 30, left: 20, bottom: 60 }}
                           >
                             <CartesianGrid strokeDasharray="3 3" stroke={alpha(theme.palette.divider, 0.5)} />
-                            <XAxis 
-                              dataKey="planName" 
+                            <XAxis
+                              dataKey="planName"
                               angle={-45}
                               textAnchor="end"
                               height={80}
                               tick={{ fontSize: 12 }}
                             />
-                            <YAxis 
+                            <YAxis
                               tickFormatter={(value) => formatCompactNumber(value)}
                               tick={{ fontSize: 12 }}
                             />
-                            <RechartsTooltip 
+                            <RechartsTooltip
                               formatter={(value: any) => [formatCurrency(value), 'Revenue']}
                               contentStyle={{
                                 backgroundColor: theme.palette.background.paper,
@@ -613,8 +614,8 @@ const BillingSubscriptions: React.FC = () => {
                               }}
                             />
                             <Legend />
-                            <Bar 
-                              dataKey="revenue" 
+                            <Bar
+                              dataKey="revenue"
                               fill={theme.palette.primary.main}
                               radius={[8, 8, 0, 0]}
                               name="Revenue"
@@ -629,9 +630,9 @@ const BillingSubscriptions: React.FC = () => {
                           <Grid container spacing={2}>
                             {analytics.revenueByPlan.map((plan) => (
                               <Grid item xs={12} sm={6} key={plan.planName}>
-                                <Box 
-                                  sx={{ 
-                                    p: 2, 
+                                <Box
+                                  sx={{
+                                    p: 2,
                                     borderRadius: 2,
                                     border: 1,
                                     borderColor: 'divider',

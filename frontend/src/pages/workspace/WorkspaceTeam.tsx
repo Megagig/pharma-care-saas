@@ -1,7 +1,7 @@
 /**
  * Workspace Team Management Page
  * Main page for managing workspace team members, invites, and audit logs
- * Only accessible to pharmacy_outlet (workspace owner) users
+ * Accessible to pharmacist and pharmacy_outlet (workspace owner) users
  */
 
 import React, { useState } from 'react';
@@ -331,17 +331,16 @@ const WorkspaceTeam: React.FC = () => {
     setSnackbar({ ...snackbar, open: false });
   };
 
-  // Access control - only pharmacy_outlet users can access
-  if (!hasRole('pharmacy_outlet')) {
+  // Access control - pharmacists and pharmacy_outlet users can access
+  if (!hasRole('pharmacist') && !hasRole('pharmacy_outlet')) {
     return (
       <Container maxWidth="lg" sx={{ mt: 4, mb: 8 }}>
         <Alert severity="error" sx={{ mt: 4 }}>
           <Typography variant="h5" gutterBottom>
-            Access Denied
+            Insufficient Role Permissions
           </Typography>
           <Typography variant="body1">
-            This page is restricted to workspace owners only. You need
-            pharmacy_outlet role to access team management.
+            This page requires pharmacy_outlet role(s). Your current role is {user?.role}.
           </Typography>
         </Alert>
       </Container>

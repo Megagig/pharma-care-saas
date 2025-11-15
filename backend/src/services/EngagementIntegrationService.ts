@@ -666,8 +666,8 @@ export class EngagementIntegrationService {
         }
       } else if (followUpTask.outcome?.status === 'unsuccessful') {
         // Keep current status but add notes about unsuccessful follow-up
-        intervention.implementationNotes = 
-          (intervention.implementationNotes || '') + 
+        intervention.implementationNotes =
+          (intervention.implementationNotes || '') +
           `\n\nFollow-up completed on ${followUpTask.completedAt?.toDateString()}: ${followUpTask.outcome.notes}`;
       }
 
@@ -749,9 +749,9 @@ export class EngagementIntegrationService {
   private generateInterventionFollowUpDescription(intervention: IClinicalIntervention): string {
     const baseDescription = `Follow-up for clinical intervention ${intervention.interventionNumber}`;
     const issueDescription = intervention.issueDescription;
-    
+
     let description = `${baseDescription}\n\nOriginal Issue: ${issueDescription}`;
-    
+
     if (intervention.strategies && intervention.strategies.length > 0) {
       description += '\n\nImplemented Strategies:';
       intervention.strategies.forEach((strategy, index) => {
@@ -803,7 +803,7 @@ export class EngagementIntegrationService {
     };
 
     const specificObjectives = categoryObjectives[intervention.category] || [];
-    
+
     return [...baseObjectives, ...specificObjectives];
   }
 
@@ -954,7 +954,7 @@ export class EngagementIntegrationService {
    */
   private calculateDiagnosticFollowUpPriority(diagnosticCase: IDiagnosticCase): IFollowUpTask['priority'] {
     const aiAnalysis = diagnosticCase.aiAnalysis;
-    
+
     if (!aiAnalysis) {
       return 'medium';
     }
@@ -972,14 +972,14 @@ export class EngagementIntegrationService {
     }
 
     // Check for immediate referral recommendation
-    if (aiAnalysis.referralRecommendation?.recommended && 
-        aiAnalysis.referralRecommendation.urgency === 'immediate') {
+    if (aiAnalysis.referralRecommendation?.recommended &&
+      aiAnalysis.referralRecommendation.urgency === 'immediate') {
       return 'critical';
     }
 
     // Check for within 24h referral recommendation
-    if (aiAnalysis.referralRecommendation?.recommended && 
-        aiAnalysis.referralRecommendation.urgency === 'within_24h') {
+    if (aiAnalysis.referralRecommendation?.recommended &&
+      aiAnalysis.referralRecommendation.urgency === 'within_24h') {
       return 'urgent';
     }
 
@@ -1013,7 +1013,7 @@ export class EngagementIntegrationService {
    * Calculate follow-up due date based on diagnostic case priority and analysis
    */
   private calculateDiagnosticFollowUpDueDate(
-    diagnosticCase: IDiagnosticCase, 
+    diagnosticCase: IDiagnosticCase,
     priority: IFollowUpTask['priority']
   ): Date {
     const dueDate = new Date();
@@ -1021,7 +1021,7 @@ export class EngagementIntegrationService {
 
     // Check for immediate referral or critical red flags
     if (aiAnalysis?.referralRecommendation?.urgency === 'immediate' ||
-        aiAnalysis?.redFlags?.some(flag => flag.severity === 'critical')) {
+      aiAnalysis?.redFlags?.some(flag => flag.severity === 'critical')) {
       dueDate.setHours(dueDate.getHours() + 2); // 2 hours for critical cases
       return dueDate;
     }
@@ -1043,7 +1043,7 @@ export class EngagementIntegrationService {
 
     const daysToAdd = dueDateMapping[priority] || 7;
     dueDate.setDate(dueDate.getDate() + daysToAdd);
-    
+
     return dueDate;
   }
 
@@ -1052,11 +1052,11 @@ export class EngagementIntegrationService {
    */
   private generateDiagnosticFollowUpTitle(diagnosticCase: IDiagnosticCase): string {
     const topDiagnosis = diagnosticCase.aiAnalysis?.differentialDiagnoses?.[0];
-    
+
     if (topDiagnosis) {
       return `Diagnostic Follow-up: ${topDiagnosis.condition}`;
     }
-    
+
     return `Diagnostic Case Follow-up - ${diagnosticCase.caseId}`;
   }
 
@@ -1066,9 +1066,9 @@ export class EngagementIntegrationService {
   private generateDiagnosticFollowUpDescription(diagnosticCase: IDiagnosticCase): string {
     const aiAnalysis = diagnosticCase.aiAnalysis;
     const topDiagnosis = aiAnalysis?.differentialDiagnoses?.[0];
-    
+
     let description = `Follow-up for diagnostic case ${diagnosticCase.caseId}\n\n`;
-    
+
     if (topDiagnosis) {
       description += `Primary Diagnosis: ${topDiagnosis.condition} (${Math.round(topDiagnosis.probability * 100)}% confidence)\n`;
       description += `Reasoning: ${topDiagnosis.reasoning}\n\n`;
@@ -1526,7 +1526,7 @@ export class EngagementIntegrationService {
         ...metrics,
         lastUpdated: new Date(),
       };
-      
+
       await Patient.findByIdAndUpdate(
         patientId,
         {
@@ -1593,7 +1593,7 @@ export class EngagementIntegrationService {
 
     const daysToAdd = dueDateMapping[priority] || 7;
     dueDate.setDate(dueDate.getDate() + daysToAdd);
-    
+
     return dueDate;
   }
 
@@ -1607,7 +1607,7 @@ export class EngagementIntegrationService {
 
   private generateLabResultFollowUpDescription(labResult: ILabResult): string {
     let description = `Follow-up for ${labResult.testName} lab result\n\n`;
-    
+
     description += `Test Details:\n`;
     description += `- Test: ${labResult.testName} (${labResult.testCode})\n`;
     description += `- Result: ${labResult.value} ${labResult.unit || ''}\n`;
@@ -1680,7 +1680,7 @@ export class EngagementIntegrationService {
     const drugName = medication.drugName.toLowerCase();
     const genericName = medication.genericName?.toLowerCase() || '';
 
-    return highRiskDrugs.some(drug => 
+    return highRiskDrugs.some(drug =>
       drugName.includes(drug) || genericName.includes(drug)
     );
   }
@@ -1734,7 +1734,7 @@ export class EngagementIntegrationService {
 
     const daysToAdd = dueDateMapping[priority] || 14;
     dueDate.setDate(dueDate.getDate() + daysToAdd);
-    
+
     return dueDate;
   }
 
@@ -1744,7 +1744,7 @@ export class EngagementIntegrationService {
 
   private generateMedicationFollowUpDescription(medication: IMedication): string {
     let description = `Follow-up for newly started high-risk medication\n\n`;
-    
+
     description += `Medication Details:\n`;
     description += `- Drug: ${medication.drugName}\n`;
     if (medication.genericName) {

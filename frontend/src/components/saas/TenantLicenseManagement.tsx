@@ -34,7 +34,21 @@ import SchoolIcon from '@mui/icons-material/School';
 import CalendarIcon from '@mui/icons-material/CalendarToday';
 import BadgeIcon from '@mui/icons-material/Badge';
 import { apiClient } from '../../services/apiClient';
-import { format } from 'date-fns';
+import { format, isValid, parseISO } from 'date-fns';
+
+// Helper function to safely format dates
+const safeFormatDate = (dateValue: string | Date | undefined | null, formatStr: string = 'MMM dd, yyyy'): string => {
+  if (!dateValue) return 'N/A';
+
+  try {
+    const date = typeof dateValue === 'string' ? parseISO(dateValue) : dateValue;
+    if (!isValid(date)) return 'Invalid Date';
+    return format(date, formatStr);
+  } catch (error) {
+    console.error('Date formatting error:', error, 'Value:', dateValue);
+    return 'Invalid Date';
+  }
+};
 
 interface LicenseInfo {
   userId: string;
@@ -60,6 +74,7 @@ interface LicenseInfo {
 const TenantLicenseManagement: React.FC = () => {
   const [licenses, setLicenses] = useState<LicenseInfo[]>([]);
   const [loading, setLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [selectedLicense, setSelectedLicense] = useState<LicenseInfo | null>(null);
@@ -90,7 +105,7 @@ const TenantLicenseManagement: React.FC = () => {
     if (!selectedLicense) return;
 
     try {
-      setLoading(true);
+      setActionLoading(true);
       const response = await apiClient.post(
         `/admin/licenses/${selectedLicense.userId}/approve`,
         {}
@@ -100,12 +115,16 @@ const TenantLicenseManagement: React.FC = () => {
         setSuccess('License approved successfully');
         setActionDialog(null);
         setSelectedLicense(null);
-        loadPendingLicenses();
+
+        // Optimistically remove the approved license from the list
+        setLicenses((prevLicenses) =>
+          prevLicenses.filter((license) => license.userId !== selectedLicense.userId)
+        );
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to approve license');
     } finally {
-      setLoading(false);
+      setActionLoading(false);
     }
   };
 
@@ -116,7 +135,7 @@ const TenantLicenseManagement: React.FC = () => {
     }
 
     try {
-      setLoading(true);
+      setActionLoading(true);
       const response = await apiClient.post(
         `/admin/licenses/${selectedLicense.userId}/reject`,
         { reason: rejectionReason }
@@ -127,12 +146,16 @@ const TenantLicenseManagement: React.FC = () => {
         setActionDialog(null);
         setSelectedLicense(null);
         setRejectionReason('');
-        loadPendingLicenses();
+
+        // Optimistically remove the rejected license from the list
+        setLicenses((prevLicenses) =>
+          prevLicenses.filter((license) => license.userId !== selectedLicense.userId)
+        );
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to reject license');
     } finally {
-      setLoading(false);
+      setActionLoading(false);
     }
   };
 
@@ -240,9 +263,7 @@ const TenantLicenseManagement: React.FC = () => {
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2">
-                      {license.expirationDate
-                        ? format(new Date(license.expirationDate), 'MMM dd, yyyy')
-                        : 'N/A'}
+                      {safeFormatDate(license.expirationDate, 'MMM dd, yyyy')}
                     </Typography>
                   </TableCell>
                   <TableCell>
@@ -256,7 +277,7 @@ const TenantLicenseManagement: React.FC = () => {
                     {license.documentInfo && (
                       <Box>
                         <Typography variant="caption" display="block">
-                          {format(new Date(license.documentInfo.uploadedAt), 'MMM dd, yyyy')}
+                          {safeFormatDate(license.documentInfo.uploadedAt, 'MMM dd, yyyy')}
                         </Typography>
                         <Typography variant="caption" color="textSecondary">
                           {formatFileSize(license.documentInfo.fileSize)}
@@ -348,7 +369,7 @@ const TenantLicenseManagement: React.FC = () => {
                       Expiration Date
                     </Typography>
                     <Typography variant="body1">
-                      {format(new Date(selectedLicense.expirationDate), 'MMMM dd, yyyy')}
+                      {safeFormatDate(selectedLicense.expirationDate, 'MMMM dd, yyyy')}
                     </Typography>
                   </Box>
                 )}
@@ -357,15 +378,15 @@ const TenantLicenseManagement: React.FC = () => {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setActionDialog(null)} disabled={loading}>
+          <Button onClick={() => setActionDialog(null)} disabled={actionLoading}>
             Cancel
           </Button>
           <Button
             onClick={handleApprove}
             variant="contained"
             color="success"
-            disabled={loading}
-            startIcon={loading ? <CircularProgress size={16} /> : <ApproveIcon />}
+            disabled={actionLoading}
+            startIcon={actionLoading ? <CircularProgress size={16} /> : <ApproveIcon />}
           >
             Approve License
           </Button>
@@ -405,15 +426,15 @@ const TenantLicenseManagement: React.FC = () => {
           <Button onClick={() => {
             setActionDialog(null);
             setRejectionReason('');
-          }} disabled={loading}>
+          }} disabled={actionLoading}>
             Cancel
           </Button>
           <Button
             onClick={handleReject}
             variant="contained"
             color="error"
-            disabled={loading || !rejectionReason.trim()}
-            startIcon={loading ? <CircularProgress size={16} /> : <RejectIcon />}
+            disabled={actionLoading || !rejectionReason.trim()}
+            startIcon={actionLoading ? <CircularProgress size={16} /> : <RejectIcon />}
           >
             Reject License
           </Button>
@@ -480,7 +501,7 @@ const TenantLicenseManagement: React.FC = () => {
                           Expiration Date
                         </Typography>
                         <Typography variant="body2" fontWeight="medium">
-                          {format(new Date(selectedLicense.expirationDate), 'MMMM dd, yyyy')}
+                          {safeFormatDate(selectedLicense.expirationDate, 'MMMM dd, yyyy')}
                         </Typography>
                       </Box>
                     </Box>

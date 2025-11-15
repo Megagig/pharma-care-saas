@@ -739,7 +739,7 @@ export const testAIConnection = async (
         connected: isConnected,
         service: 'OpenRouter API',
         models: {
-          primary: 'deepseek/deepseek-chat-v3.1:free',
+          primary: 'deepseek/deepseek-chat-v3.1',
           fallback: 'deepseek/deepseek-chat-v3.1',
           critical: 'google/gemma-2-9b-it'
         },

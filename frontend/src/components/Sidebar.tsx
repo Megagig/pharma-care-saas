@@ -88,9 +88,35 @@ const Sidebar = () => {
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const { hasFeature, hasRole, requiresLicense, getLicenseStatus } = useRBAC();
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const subscriptionStatus = useSubscriptionStatus();
   const labStats = useLabIntegrationStats();
+
+  // Force re-render when user data or subscription status changes
+  const [dataReady, setDataReady] = React.useState(false);
+
+  React.useEffect(() => {
+    // Mark data as ready once auth is loaded and we have user data
+    if (!authLoading && user) {
+      // Wait for permissions to be available
+      // Check if user has permissions array or subscription status loaded
+      const hasPermissions = user.permissions && user.permissions.length > 0;
+      const hasSubscription = user.subscription !== undefined;
+
+      // Only mark as ready if we have either permissions or subscription data
+      if (hasPermissions || hasSubscription || user.role === 'super_admin') {
+        setDataReady(true);
+      } else {
+        // If no permissions yet, wait a bit longer and then mark as ready anyway
+        const timer = setTimeout(() => {
+          setDataReady(true);
+        }, 500);
+        return () => clearTimeout(timer);
+      }
+    } else if (!authLoading && !user) {
+      setDataReady(true); // Also ready if no user (logged out state)
+    }
+  }, [authLoading, user, subscriptionStatus.loading, user?.permissions, user?.subscription]);
 
   // Auto-close sidebar on mobile when route changes - using useCallback for stable reference
   const handleMobileClose = React.useCallback(() => {
@@ -105,7 +131,8 @@ const Sidebar = () => {
 
   const drawerWidth = sidebarOpen ? 280 : 56;
 
-  const navItems = [
+  // Memoize navigation items with proper dependencies to ensure they update when data changes
+  const navItems = React.useMemo(() => [
     {
       name: 'Dashboard',
       path: '/dashboard',
@@ -155,9 +182,9 @@ const Sidebar = () => {
       icon: CreditCardIcon,
       show: true, // Always show for subscription management
     },
-  ];
+  ], [hasFeature, hasRole, subscriptionStatus?.isActive, requiresLicense, getLicenseStatus, dataReady, user?.subscription?.status, user?.permissions]);
 
-  const pharmacyModules = [
+  const pharmacyModules = React.useMemo(() => [
     {
       name: 'Medication Therapy Review',
       path: '/pharmacy/medication-therapy',
@@ -216,9 +243,9 @@ const Sidebar = () => {
       show: true,
       badge: null, // Ensure no badge blocking
     },
-  ];
+  ], [hasFeature, hasRole, subscriptionStatus?.isActive, labStats.pendingCount, dataReady, user?.subscription?.status, user?.permissions]);
 
-  const engagementModules = [
+  const engagementModules = React.useMemo(() => [
     {
       name: 'Patient Engagement',
       path: '/patient-engagement',
@@ -255,9 +282,9 @@ const Sidebar = () => {
       icon: EventNoteIcon,
       show: hasFeature('patient_engagement'),
     },
-  ];
+  ], [hasFeature, dataReady, user?.subscription?.status, user?.permissions]);
 
-  const adminItems = [
+  const adminItems = React.useMemo(() => [
     {
       name: 'Admin Panel',
       path: '/admin',
@@ -354,27 +381,21 @@ const Sidebar = () => {
       icon: SupervisorAccountIcon,
       show: hasRole('super_admin'),
     },
-  ];
+  ], [hasRole, dataReady, user?.role]);
 
-  // Debug: Check Team Members visibility
-  React.useEffect(() => {
-    const shouldShow = hasRole('pharmacy_outlet');
-
-  }, [user?.role, hasRole, user]);
-
-  const settingsItems = [
+  const settingsItems = React.useMemo(() => [
     {
       name: 'Team Members',
       path: '/workspace/team',
       icon: SupervisorAccountIcon,
-      // Show for workspace owners (pharmacy_outlet role)
-      show: hasRole('pharmacy_outlet'),
+      // Show for pharmacists and workspace owners
+      show: hasRole('pharmacist') || hasRole('pharmacy_outlet'),
     },
     {
       name: 'Roles & Permission',
       path: '/workspace/rbac-management',
       icon: SecurityIcon,
-      show: hasRole('pharmacy_outlet'),
+      show: hasRole('pharmacist') || hasRole('pharmacy_outlet'),
     },
     // {
     //   name: 'Laboratory Findings',
@@ -407,7 +428,7 @@ const Sidebar = () => {
       icon: HelpIcon,
       show: true,
     },
-  ];
+  ], [hasRole, requiresLicense, getLicenseStatus, dataReady, user?.role, user?.licenseStatus]);
 
   const renderNavItems = (items: typeof navItems) => (
     <List>
@@ -517,6 +538,58 @@ const Sidebar = () => {
         })}
     </List>
   );
+
+  // Show loading state while data is not ready
+  if (!dataReady) {
+    return (
+      <Drawer
+        variant="permanent"
+        sx={{
+          width: drawerWidth,
+          flexShrink: 0,
+          whiteSpace: 'nowrap',
+          position: 'relative',
+          '& .MuiDrawer-paper': {
+            width: drawerWidth,
+            boxSizing: 'border-box',
+            position: 'fixed',
+            height: '100vh',
+            backgroundColor: theme.palette.background.paper,
+            background:
+              theme.palette.mode === 'dark'
+                ? 'linear-gradient(180deg, #1e293b 0%, #1a2332 100%)'
+                : 'linear-gradient(180deg, rgba(245,247,250,1) 0%, rgba(255,255,255,1) 100%)',
+            borderRight: `1px solid ${theme.palette.mode === 'dark'
+              ? '#334155'
+              : 'rgba(200, 210, 225, 0.5)'
+              }`,
+            transition: theme.transitions.create(
+              ['width', 'margin', 'background', 'border-color'],
+              {
+                easing: theme.transitions.easing.sharp,
+                duration: theme.transitions.duration.standard,
+              }
+            ),
+            overflowX: 'hidden',
+            boxShadow:
+              theme.palette.mode === 'dark'
+                ? '0 0 20px rgba(0, 0, 0, 0.3)'
+                : '0 0 20px rgba(0, 0, 0, 0.08)',
+            zIndex: theme.zIndex.drawer,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+          },
+        }}
+      >
+        <Box sx={{ textAlign: 'center', p: 3 }}>
+          <Typography variant="body2" color="text.secondary">
+            Loading sidebar...
+          </Typography>
+        </Box>
+      </Drawer>
+    );
+  }
 
   return (
     <Drawer

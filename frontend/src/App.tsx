@@ -97,6 +97,7 @@ import {
   LazyLabIntegrationCaseDetail,
   LazyLabIntegrationNewCase,
   LazyLabIntegrationReviewQueue,
+  LazyApprovedLabIntegrations,
   LazyLaboratoryDashboard,
   LazyLabResultForm,
   LazyLabResultDetail,
@@ -120,6 +121,7 @@ import {
 
 // Additional lazy imports
 const LazyScheduleManagement = lazy(() => import('./pages/ScheduleManagement'));
+const LazyProfile = lazy(() => import('./pages/Profile'));
 
 import { LazyWrapper, useRoutePreloading } from './components/LazyWrapper';
 import { useRoutePrefetching, useBackgroundSync, useCacheWarming } from './hooks/useRoutePrefetching';
@@ -1044,12 +1046,12 @@ function App(): JSX.Element {
                               }
                             />
 
-                            {/* Workspace Team Management - Only for pharmacy_outlet users */}
+                            {/* Workspace Team Management - For pharmacy_outlet and pharmacist users */}
                             <Route
                               path="/workspace/team"
                               element={
                                 <ProtectedRoute
-                                  requiredRole="pharmacy_outlet"
+                                  requiredRole={['pharmacy_outlet', 'pharmacist']}
                                   requiresActiveSubscription
                                 >
                                   <AppLayout>
@@ -1061,12 +1063,12 @@ function App(): JSX.Element {
                               }
                             />
 
-                            {/* Workspace RBAC Management - Only for pharmacy_outlet users */}
+                            {/* Workspace RBAC Management - For pharmacy_outlet and pharmacist users */}
                             <Route
                               path="/workspace/rbac-management"
                               element={
                                 <ProtectedRoute
-                                  requiredRole="pharmacy_outlet"
+                                  requiredRole={['pharmacy_outlet', 'pharmacist']}
                                   requiresActiveSubscription
                                 >
                                   <AppLayout>
@@ -1467,6 +1469,23 @@ function App(): JSX.Element {
                               }
                             />
 
+                            {/* Lab Integration - Approved Cases */}
+                            <Route
+                              path="/pharmacy/lab-integration/approved"
+                              element={
+                                <ProtectedRoute
+                                  requiredRole={['pharmacist', 'pharmacy_team', 'pharmacy_outlet', 'owner', 'super_admin']}
+                                  requiresActiveSubscription
+                                >
+                                  <AppLayout>
+                                    <LazyWrapper fallback={PageSkeleton}>
+                                      <LazyApprovedLabIntegrations />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
+                              }
+                            />
+
                             {/* Payment Simulation (Dev Only) */}
                             <Route
                               path="/payment-simulation"
@@ -1526,6 +1545,19 @@ function App(): JSX.Element {
                                 <AppLayout>
                                   <SaasSettings />
                                 </AppLayout>
+                              }
+                            />
+                            {/* Profile Page */}
+                            <Route
+                              path="/profile"
+                              element={
+                                <ProtectedRoute>
+                                  <AppLayout>
+                                    <LazyWrapper fallback={PageSkeleton}>
+                                      <LazyProfile />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
                               }
                             />
                             {/* Settings Page */}

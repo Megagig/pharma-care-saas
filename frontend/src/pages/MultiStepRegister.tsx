@@ -39,47 +39,7 @@ import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import toast from 'react-hot-toast';
 import { authService, WorkplaceResponse } from '../services/authService';
 import ThemeToggle from '../components/common/ThemeToggle';
-
-// Nigerian states for dropdown
-const nigerianStates = [
-  'Abia',
-  'Adamawa',
-  'Akwa Ibom',
-  'Anambra',
-  'Bauchi',
-  'Bayelsa',
-  'Benue',
-  'Borno',
-  'Cross River',
-  'Delta',
-  'Ebonyi',
-  'Edo',
-  'Ekiti',
-  'Enugu',
-  'FCT',
-  'Gombe',
-  'Imo',
-  'Jigawa',
-  'Kaduna',
-  'Kano',
-  'Katsina',
-  'Kebbi',
-  'Kogi',
-  'Kwara',
-  'Lagos',
-  'Nasarawa',
-  'Niger',
-  'Ogun',
-  'Ondo',
-  'Osun',
-  'Oyo',
-  'Plateau',
-  'Rivers',
-  'Sokoto',
-  'Taraba',
-  'Yobe',
-  'Zamfara',
-];
+import { getNigerianStates, getLGAsForState } from '../utils/nigeriaLocationData';
 
 // Workplace types
 const workplaceTypes = [
@@ -196,7 +156,11 @@ const MultiStepRegister = () => {
   const [loadingInvite, setLoadingInvite] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [availableLGAs, setAvailableLGAs] = useState<string[]>([]);
   const navigate = useNavigate();
+
+  // Get Nigerian states from the library
+  const nigerianStates = getNigerianStates();
 
   // Form data states
   const [userForm, setUserForm] = useState<UserFormData>({
@@ -224,6 +188,16 @@ const MultiStepRegister = () => {
   });
 
   const [agreeToTerms, setAgreeToTerms] = useState(false);
+
+  // Update available LGAs when state changes
+  useEffect(() => {
+    if (workplaceForm.state) {
+      const lgas = getLGAsForState(workplaceForm.state);
+      setAvailableLGAs(lgas);
+    } else {
+      setAvailableLGAs([]);
+    }
+  }, [workplaceForm.state]);
 
   // Fetch workspace info when invite token is present
   useEffect(() => {
@@ -771,17 +745,19 @@ const MultiStepRegister = () => {
                 />
 
                 <Stack direction={{ xs: 'column', sm: 'row' }} spacing={2}>
-                  <FormControl fullWidth>
-                    <InputLabel>State (Optional)</InputLabel>
+                  <FormControl fullWidth required>
+                    <InputLabel>State *</InputLabel>
                     <Select
                       value={workplaceForm.state}
-                      onChange={(e) =>
+                      onChange={(e) => {
+                        const newState = e.target.value;
                         setWorkplaceForm((prev) => ({
                           ...prev,
-                          state: e.target.value,
-                        }))
-                      }
-                      label="State (Optional)"
+                          state: newState,
+                          lga: '', // Clear LGA when state changes
+                        }));
+                      }}
+                      label="State *"
                     >
                       {nigerianStates.map((state) => (
                         <MenuItem key={state} value={state}>
@@ -790,13 +766,31 @@ const MultiStepRegister = () => {
                       ))}
                     </Select>
                   </FormControl>
-                  <TextField
-                    fullWidth
-                    label="LGA (Optional)"
-                    name="lga"
-                    value={workplaceForm.lga}
-                    onChange={handleWorkplaceFormChange}
-                  />
+                  <FormControl fullWidth disabled={!workplaceForm.state}>
+                    <InputLabel>LGA (Optional)</InputLabel>
+                    <Select
+                      value={workplaceForm.lga}
+                      onChange={(e) =>
+                        setWorkplaceForm((prev) => ({
+                          ...prev,
+                          lga: e.target.value,
+                        }))
+                      }
+                      label="LGA (Optional)"
+                    >
+                      {Array.isArray(availableLGAs) && availableLGAs.length > 0 ? (
+                        availableLGAs.map((lga) => (
+                          <MenuItem key={lga} value={lga}>
+                            {lga}
+                          </MenuItem>
+                        ))
+                      ) : (
+                        <MenuItem disabled value="">
+                          {workplaceForm.state ? 'Loading LGAs...' : 'Select a state first'}
+                        </MenuItem>
+                      )}
+                    </Select>
+                  </FormControl>
                 </Stack>
               </Stack>
             )}
