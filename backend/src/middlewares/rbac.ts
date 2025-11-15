@@ -666,7 +666,11 @@ export const requireFeature = (...features: string[]) => {
         }
 
         const userFeatures = req.workspaceContext.permissions || [];
-        const hasRequiredFeatures = features.every(feature =>
+
+        // Check if user has wildcard permission (all features)
+        const hasWildcard = userFeatures.includes('*');
+
+        const hasRequiredFeatures = hasWildcard || features.every(feature =>
             userFeatures.includes(feature)
         );
 

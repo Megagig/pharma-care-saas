@@ -281,7 +281,7 @@ export const PERMISSION_MATRIX: PermissionMatrix = {
     // ========================================
     'lab_integration:create': {
         workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet'],
-        systemRoles: ['pharmacy_team'],
+        systemRoles: ['pharmacist', 'pharmacy_team', 'pharmacy_outlet'],
         features: ['lab_integration'],
         planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
         requiresActiveSubscription: true,
@@ -289,7 +289,7 @@ export const PERMISSION_MATRIX: PermissionMatrix = {
     },
     'lab_integration:read': {
         workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet'],
-        systemRoles: ['pharmacy_team', 'intern_pharmacist'],
+        systemRoles: ['pharmacist', 'pharmacy_team', 'intern_pharmacist', 'pharmacy_outlet'],
         features: ['lab_integration'],
         planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
         requiresActiveSubscription: true,
@@ -297,6 +297,7 @@ export const PERMISSION_MATRIX: PermissionMatrix = {
     },
     'lab_integration:approve': {
         workplaceRoles: ['Owner', 'Pharmacist'],
+        systemRoles: ['pharmacist', 'pharmacy_outlet'],
         features: ['lab_integration'],
         planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
         requiresActiveSubscription: true,
@@ -304,6 +305,7 @@ export const PERMISSION_MATRIX: PermissionMatrix = {
     },
     'lab_integration:escalate': {
         workplaceRoles: ['Owner', 'Pharmacist'],
+        systemRoles: ['pharmacist', 'pharmacy_outlet'],
         features: ['lab_integration'],
         planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
         requiresActiveSubscription: true,
@@ -311,7 +313,7 @@ export const PERMISSION_MATRIX: PermissionMatrix = {
     },
     'lab_integration:trends': {
         workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet'],
-        systemRoles: ['pharmacy_team'],
+        systemRoles: ['pharmacist', 'pharmacy_team', 'pharmacy_outlet'],
         features: ['lab_integration', 'advancedReports'],
         planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
         requiresActiveSubscription: true,
@@ -323,7 +325,7 @@ export const PERMISSION_MATRIX: PermissionMatrix = {
     // ========================================
     'lab_results:read': {
         workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet', 'intern_pharmacist'],
-        systemRoles: ['pharmacy_team', 'lab_technician'],
+        systemRoles: ['pharmacist', 'pharmacy_team', 'lab_technician', 'intern_pharmacist'],
         features: ['laboratory_findings'],
         planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
         requiresActiveSubscription: true,
@@ -331,7 +333,7 @@ export const PERMISSION_MATRIX: PermissionMatrix = {
     },
     'lab_results:create': {
         workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet'],
-        systemRoles: ['pharmacy_team', 'lab_technician'],
+        systemRoles: ['pharmacist', 'pharmacy_team', 'lab_technician', 'pharmacy_outlet'],
         features: ['laboratory_findings'],
         planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
         requiresActiveSubscription: true,
@@ -339,7 +341,7 @@ export const PERMISSION_MATRIX: PermissionMatrix = {
     },
     'lab_results:update': {
         workplaceRoles: ['Owner', 'Pharmacist'],
-        systemRoles: ['lab_technician'],
+        systemRoles: ['pharmacist', 'lab_technician', 'pharmacy_outlet'],
         features: ['laboratory_findings'],
         planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
         requiresActiveSubscription: true,
@@ -355,6 +357,7 @@ export const PERMISSION_MATRIX: PermissionMatrix = {
     },
     'lab_results:signoff': {
         workplaceRoles: ['Owner', 'Pharmacist'],
+        systemRoles: ['pharmacist', 'pharmacy_outlet'],
         features: ['laboratory_findings'],
         planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
         requiresActiveSubscription: true,
@@ -362,7 +365,7 @@ export const PERMISSION_MATRIX: PermissionMatrix = {
     },
     'lab_results:upload': {
         workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet'],
-        systemRoles: ['pharmacy_team', 'lab_technician'],
+        systemRoles: ['pharmacist', 'pharmacy_team', 'lab_technician', 'pharmacy_outlet'],
         features: ['laboratory_findings'],
         planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
         requiresActiveSubscription: true,
@@ -370,7 +373,7 @@ export const PERMISSION_MATRIX: PermissionMatrix = {
     },
     'lab_templates:read': {
         workplaceRoles: ['Owner', 'Pharmacist', 'pharmacy_outlet', 'intern_pharmacist'],
-        systemRoles: ['pharmacy_team', 'lab_technician'],
+        systemRoles: ['pharmacist', 'pharmacy_team', 'lab_technician', 'intern_pharmacist', 'pharmacy_outlet'],
         features: ['laboratory_findings'],
         planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
         requiresActiveSubscription: true,
@@ -378,6 +381,7 @@ export const PERMISSION_MATRIX: PermissionMatrix = {
     },
     'lab_templates:create': {
         workplaceRoles: ['Owner', 'Pharmacist'],
+        systemRoles: ['pharmacist', 'pharmacy_outlet'],
         features: ['laboratory_findings'],
         planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
         requiresActiveSubscription: true,
@@ -385,6 +389,7 @@ export const PERMISSION_MATRIX: PermissionMatrix = {
     },
     'lab_templates:update': {
         workplaceRoles: ['Owner', 'Pharmacist'],
+        systemRoles: ['pharmacist', 'pharmacy_outlet'],
         features: ['laboratory_findings'],
         planTiers: ['pro', 'pharmily', 'network', 'enterprise'],
         requiresActiveSubscription: true,
