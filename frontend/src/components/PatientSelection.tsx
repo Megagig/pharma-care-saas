@@ -75,48 +75,9 @@ import type {
   Gender,
   MaritalStatus,
 } from '../types/patientManagement';
+import { getNigerianStates, getLGAsForState } from '../utils/nigeriaLocationData';
 
 // Constants
-const NIGERIAN_STATES: NigerianState[] = [
-  'Abia',
-  'Adamawa',
-  'Akwa Ibom',
-  'Anambra',
-  'Bauchi',
-  'Bayelsa',
-  'Benue',
-  'Borno',
-  'Cross River',
-  'Delta',
-  'Ebonyi',
-  'Edo',
-  'Ekiti',
-  'Enugu',
-  'FCT',
-  'Gombe',
-  'Imo',
-  'Jigawa',
-  'Kaduna',
-  'Kano',
-  'Katsina',
-  'Kebbi',
-  'Kogi',
-  'Kwara',
-  'Lagos',
-  'Nasarawa',
-  'Niger',
-  'Ogun',
-  'Ondo',
-  'Osun',
-  'Oyo',
-  'Plateau',
-  'Rivers',
-  'Sokoto',
-  'Taraba',
-  'Yobe',
-  'Zamfara',
-];
-
 const BLOOD_GROUPS: BloodGroup[] = [
   'A+',
   'A-',
@@ -185,6 +146,10 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
   const [showNewPatientModal, setShowNewPatientModal] = useState(false);
   const [recentPatients, setRecentPatients] = useState<Patient[]>([]);
   const [showRecentPatients, setShowRecentPatients] = useState(true);
+  const [availableLGAs, setAvailableLGAs] = useState<string[]>([]);
+
+  // Get Nigerian states from the library
+  const NIGERIAN_STATES = getNigerianStates();
 
   // Store
   const { loading, errors, setLoading, setError, currentReview, createReview } =
@@ -235,6 +200,23 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
 
   const watchedDob = watchNewPatient('dob');
   const watchedAge = watchNewPatient('age');
+  const watchedState = watchNewPatient('state');
+
+  // Update available LGAs when state changes
+  useEffect(() => {
+    if (watchedState) {
+      const lgas = getLGAsForState(watchedState as string);
+      setAvailableLGAs(lgas);
+      // Clear LGA if it's not in the new list
+      const currentLga = watchNewPatient('lga');
+      if (currentLga && !lgas.includes(currentLga as string)) {
+        setNewPatientValue('lga', '');
+      }
+    } else {
+      setAvailableLGAs([]);
+      setNewPatientValue('lga', '');
+    }
+  }, [watchedState, watchNewPatient, setNewPatientValue]);
 
   // Debounced search
   const debouncedSearchFn = useMemo(
@@ -343,19 +325,19 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
       const newPatientData: CreatePatientData = {
         firstName: data.firstName,
         lastName: data.lastName,
-        otherNames: data.otherNames || undefined,
+        otherNames: data.otherNames && data.otherNames.trim() !== '' ? data.otherNames : undefined,
         dob: data.dob?.toISOString(),
         age: data.age,
         gender: data.gender,
         maritalStatus: data.maritalStatus,
         phone: formattedPhone,
-        email: data.email || undefined,
-        address: data.address || undefined,
-        state: data.state,
-        lga: data.lga || undefined,
+        email: data.email && data.email.trim() !== '' ? data.email : undefined,
+        address: data.address && data.address.trim() !== '' ? data.address : undefined,
+        state: data.state && typeof data.state === 'string' && data.state.trim() !== '' ? data.state : undefined,
+        lga: data.lga && typeof data.lga === 'string' && data.lga.trim() !== '' ? data.lga : undefined,
         bloodGroup: data.bloodGroup,
         genotype: data.genotype,
-        weightKg: data.weightKg,
+        weightKg: data.weightKg ? Number(data.weightKg) : undefined,
       };
 
       const response = await createPatientMutation.mutateAsync(
@@ -1267,11 +1249,27 @@ const PatientSelection: React.FC<PatientSelectionProps> = ({
                       name="lga"
                       control={newPatientControl}
                       render={({ field }) => (
-                        <TextField
+                        <Autocomplete
                           {...field}
-                          fullWidth
-                          label="Local Government Area"
-                          helperText="LGA within the selected state"
+                          options={availableLGAs}
+                          value={field.value || null}
+                          onChange={(_, value) => field.onChange(value || '')}
+                          disabled={!watchedState || availableLGAs.length === 0}
+                          freeSolo
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              label="Local Government Area"
+                              helperText={
+                                !watchedState
+                                  ? 'Select a state first'
+                                  : availableLGAs.length === 0
+                                    ? 'No LGAs available'
+                                    : 'Select or type LGA name'
+                              }
+                              error={!!newPatientErrors.lga}
+                            />
+                          )}
                         />
                       )}
                     />

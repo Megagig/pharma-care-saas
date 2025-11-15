@@ -48,45 +48,7 @@ import type {
 } from '../types/patientManagement';
 
 // Nigerian States
-const NIGERIAN_STATES: NigerianState[] = [
-  'Abia',
-  'Adamawa',
-  'Akwa Ibom',
-  'Anambra',
-  'Bauchi',
-  'Bayelsa',
-  'Benue',
-  'Borno',
-  'Cross River',
-  'Delta',
-  'Ebonyi',
-  'Edo',
-  'Ekiti',
-  'Enugu',
-  'FCT',
-  'Gombe',
-  'Imo',
-  'Jigawa',
-  'Kaduna',
-  'Kano',
-  'Katsina',
-  'Kebbi',
-  'Kogi',
-  'Kwara',
-  'Lagos',
-  'Nasarawa',
-  'Niger',
-  'Ogun',
-  'Ondo',
-  'Osun',
-  'Oyo',
-  'Plateau',
-  'Rivers',
-  'Sokoto',
-  'Taraba',
-  'Yobe',
-  'Zamfara',
-];
+import { getNigerianStates, getLGAsForState } from '../utils/nigeriaLocationData';
 
 // Medical constants
 const BLOOD_GROUPS: BloodGroup[] = [
@@ -145,6 +107,10 @@ const PatientForm = () => {
 
   const [activeStep, setActiveStep] = useState(0);
   const [submissionError, setSubmissionError] = useState<string | null>(null);
+  const [availableLGAs, setAvailableLGAs] = useState<string[]>([]);
+
+  // Get Nigerian states from the library
+  const NIGERIAN_STATES = getNigerianStates();
 
   // React Query hooks
   const { data: patientResponse, isLoading: patientLoading } = usePatient(
@@ -157,8 +123,8 @@ const PatientForm = () => {
     'patient' in (patientResponse || {})
       ? (patientResponse as { patient: Patient }).patient
       : 'data' in (patientResponse || {})
-      ? (patientResponse as { data: { patient: Patient } }).data?.patient
-      : undefined;
+        ? (patientResponse as { data: { patient: Patient } }).data?.patient
+        : undefined;
 
   // Form setup
   const {
@@ -191,6 +157,22 @@ const PatientForm = () => {
   const watchedState = watch('state');
   const watchedDob = watch('dob');
   const watchedAge = watch('age');
+
+  // Update available LGAs when state changes
+  useEffect(() => {
+    if (watchedState) {
+      const lgas = getLGAsForState(watchedState as string);
+      setAvailableLGAs(lgas);
+      // Clear LGA if it's not in the new list
+      const currentLga = watch('lga');
+      if (currentLga && !lgas.includes(currentLga as string)) {
+        setValue('lga', '');
+      }
+    } else {
+      setAvailableLGAs([]);
+      setValue('lga', '');
+    }
+  }, [watchedState, watch, setValue]);
 
   // Load patient data for editing
   useEffect(() => {
@@ -739,11 +721,26 @@ const PatientForm = () => {
                       name="lga"
                       control={control}
                       render={({ field }) => (
-                        <TextField
-                          {...field}
-                          label="Local Government Area"
-                          helperText="LGA within the selected state"
-                          disabled={!watchedState}
+                        <Autocomplete
+                          options={availableLGAs}
+                          value={field.value || null}
+                          onChange={(_, value) => field.onChange(value || '')}
+                          disabled={!watchedState || availableLGAs.length === 0}
+                          freeSolo
+                          renderInput={(params) => (
+                            <TextField
+                              {...params}
+                              label="Local Government Area"
+                              helperText={
+                                !watchedState
+                                  ? 'Select a state first'
+                                  : availableLGAs.length === 0
+                                    ? 'No LGAs available'
+                                    : 'Select or type LGA name'
+                              }
+                              error={!!errors.lga}
+                            />
+                          )}
                         />
                       )}
                     />
@@ -934,8 +931,8 @@ const PatientForm = () => {
                       {isSubmitting
                         ? 'Saving...'
                         : isEditMode
-                        ? 'Update Patient'
-                        : 'Create Patient'}
+                          ? 'Update Patient'
+                          : 'Create Patient'}
                     </Button>
                   )}
                 </Box>
