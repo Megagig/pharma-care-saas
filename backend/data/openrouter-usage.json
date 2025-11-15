@@ -1,13 +1,13 @@
 {
   "month": "2025-11",
-  "totalCost": 0.005481,
-  "requestCount": 7,
+  "totalCost": 0.006442,
+  "requestCount": 8,
   "modelUsage": {
     "deepseek/deepseek-chat-v3.1": {
-      "requests": 7,
-      "inputTokens": 5109,
-      "outputTokens": 5574,
-      "cost": 0.005481
+      "requests": 8,
+      "inputTokens": 5782,
+      "outputTokens": 6607,
+      "cost": 0.006442
     }
   }
 }
