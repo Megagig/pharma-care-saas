@@ -121,6 +121,7 @@ import {
 
 // Additional lazy imports
 const LazyScheduleManagement = lazy(() => import('./pages/ScheduleManagement'));
+const LazyProfile = lazy(() => import('./pages/Profile'));
 
 import { LazyWrapper, useRoutePreloading } from './components/LazyWrapper';
 import { useRoutePrefetching, useBackgroundSync, useCacheWarming } from './hooks/useRoutePrefetching';
@@ -1544,6 +1545,19 @@ function App(): JSX.Element {
                                 <AppLayout>
                                   <SaasSettings />
                                 </AppLayout>
+                              }
+                            />
+                            {/* Profile Page */}
+                            <Route
+                              path="/profile"
+                              element={
+                                <ProtectedRoute>
+                                  <AppLayout>
+                                    <LazyWrapper fallback={PageSkeleton}>
+                                      <LazyProfile />
+                                    </LazyWrapper>
+                                  </AppLayout>
+                                </ProtectedRoute>
                               }
                             />
                             {/* Settings Page */}

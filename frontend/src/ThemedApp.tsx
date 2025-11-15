@@ -57,6 +57,7 @@ import Settings from './pages/Settings';
 import SettingsTheme from './pages/SettingsTheme';
 import Help from './pages/Help';
 import MTRHelp from './pages/MTRHelp';
+import Profile from './pages/Profile';
 
 // Pharmacy Module Components
 import MedicationTherapyReview from './pages/MedicationTherapyReview';
@@ -582,6 +583,17 @@ function ThemedApp(): JSX.Element {
                         <AppLayout>
                           <SaasSettings />
                         </AppLayout>
+                      }
+                    />
+                    {/* Profile Page */}
+                    <Route
+                      path="/profile"
+                      element={
+                        <ProtectedRoute>
+                          <AppLayout>
+                            <Profile />
+                          </AppLayout>
+                        </ProtectedRoute>
                       }
                     />
                     {/* Settings Page */}
