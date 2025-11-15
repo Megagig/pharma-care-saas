@@ -107,18 +107,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({
   };
   useEffect(() => {
     fetchSubscriptionStatus();
-  }, [user]);
-
-  // Refetch subscription status when user changes (e.g., after login)
-  useEffect(() => {
-    if (user) {
-      // Small delay to ensure backend has processed the login
-      const timer = setTimeout(() => {
-        fetchSubscriptionStatus();
-      }, 500);
-      return () => clearTimeout(timer);
-    }
-  }, [user?.id]); // Only trigger when user ID changes
+  }, [user?.id]); // Only trigger when user ID changes to avoid duplicate calls
 
   const isActive =
     subscriptionStatus?.accessLevel === 'full' ||

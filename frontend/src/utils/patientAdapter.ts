@@ -69,12 +69,50 @@ export const storeFormToApiCreateData = (
         .join(', ')
     : undefined;
 
+  // Convert dateOfBirth to ISO datetime string if it's a valid date
+  let dobIso: string | undefined;
+  if (formData.dateOfBirth) {
+    try {
+      const dateObj = new Date(formData.dateOfBirth);
+      // Check if date is valid
+      if (!isNaN(dateObj.getTime())) {
+        dobIso = dateObj.toISOString();
+      }
+    } catch (error) {
+      console.error('Invalid date format:', formData.dateOfBirth);
+    }
+  }
+
+  // Format phone number to Nigerian E.164 format if provided
+  let formattedPhone: string | undefined;
+  if (formData.phone) {
+    const phone = formData.phone.trim();
+    // If phone doesn't start with +234, try to format it
+    if (phone && !phone.startsWith('+234')) {
+      // Remove any non-digit characters
+      const digits = phone.replace(/\D/g, '');
+      // If starts with 0, replace with +234
+      if (digits.startsWith('0') && digits.length === 11) {
+        formattedPhone = '+234' + digits.substring(1);
+      } else if (digits.startsWith('234') && digits.length === 13) {
+        formattedPhone = '+' + digits;
+      } else if (digits.length === 10) {
+        formattedPhone = '+234' + digits;
+      } else {
+        // Keep original if we can't format it
+        formattedPhone = phone;
+      }
+    } else {
+      formattedPhone = phone;
+    }
+  }
+
   return {
     firstName: formData.firstName,
     lastName: formData.lastName,
-    email: formData.email,
-    phone: formData.phone,
-    dob: formData.dateOfBirth,
+    email: formData.email || undefined,
+    phone: formattedPhone,
+    dob: dobIso,
     address,
     // Map other fields as needed
   };

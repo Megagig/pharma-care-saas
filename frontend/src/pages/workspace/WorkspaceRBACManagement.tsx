@@ -86,8 +86,8 @@ const WorkspaceRBACManagement: React.FC = () => {
     });
     const [loading, setLoading] = useState(true);
 
-    // Check access - only workspace owners can access this page
-    const hasAccess = hasRole('pharmacy_outlet');
+    // Check access - pharmacists and workspace owners can access this page
+    const hasAccess = hasRole('pharmacist') || hasRole('pharmacy_outlet');
 
     useEffect(() => {
         if (hasAccess) {
@@ -152,8 +152,8 @@ const WorkspaceRBACManagement: React.FC = () => {
         return (
             <Container maxWidth="lg" sx={{ py: 4 }}>
                 <Alert severity="error">
-                    <AlertTitle>Access Denied</AlertTitle>
-                    You do not have permission to access Workspace RBAC Management. This page is restricted to Workspace Owners only.
+                    <AlertTitle>Insufficient Role Permissions</AlertTitle>
+                    This page requires pharmacy_outlet role(s). Your current role is {user?.role}.
                 </Alert>
             </Container>
         );

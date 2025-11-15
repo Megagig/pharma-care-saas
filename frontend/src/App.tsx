@@ -1044,12 +1044,12 @@ function App(): JSX.Element {
                               }
                             />
 
-                            {/* Workspace Team Management - Only for pharmacy_outlet users */}
+                            {/* Workspace Team Management - For pharmacy_outlet and pharmacist users */}
                             <Route
                               path="/workspace/team"
                               element={
                                 <ProtectedRoute
-                                  requiredRole="pharmacy_outlet"
+                                  requiredRole={['pharmacy_outlet', 'pharmacist']}
                                   requiresActiveSubscription
                                 >
                                   <AppLayout>
@@ -1061,12 +1061,12 @@ function App(): JSX.Element {
                               }
                             />
 
-                            {/* Workspace RBAC Management - Only for pharmacy_outlet users */}
+                            {/* Workspace RBAC Management - For pharmacy_outlet and pharmacist users */}
                             <Route
                               path="/workspace/rbac-management"
                               element={
                                 <ProtectedRoute
-                                  requiredRole="pharmacy_outlet"
+                                  requiredRole={['pharmacy_outlet', 'pharmacist']}
                                   requiresActiveSubscription
                                 >
                                   <AppLayout>
