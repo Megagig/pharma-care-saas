@@ -27,10 +27,12 @@ import { useNotifications } from '../common/NotificationSystem';
 import { engagementIntegrationApi } from '../../services/api/engagementIntegrationApi';
 
 interface DiagnosticCase {
-  _id: string;
-  caseId: string;
+  _id?: string;  // Optional for backward compatibility
+  id?: string;   // Primary ID field from service
+  caseId?: string;
   patientId: {
-    _id: string;
+    _id?: string;
+    id?: string;
     firstName: string;
     lastName: string;
     age: number;
@@ -76,22 +78,31 @@ const ScheduleDiagnosticFollowUp: React.FC<ScheduleDiagnosticFollowUpProps> = ({
   const { showSuccess, showError } = useNotifications();
 
   const createFollowUpMutation = useMutation({
-    mutationFn: (data: { assignedTo?: string; locationId?: string }) =>
-      engagementIntegrationApi.createFollowUpFromDiagnostic(diagnosticCase._id, data),
+    mutationFn: (data: { assignedTo?: string; locationId?: string }) => {
+      // Use id field first (from service), fallback to _id (from API), then caseId
+      const caseId = diagnosticCase.id || diagnosticCase._id || diagnosticCase.caseId;
+      if (!caseId) {
+        throw new Error('Diagnostic case ID is missing');
+      }
+      return engagementIntegrationApi.createFollowUpFromDiagnostic(caseId, data);
+    },
     onSuccess: (response) => {
       showSuccess({
         title: 'Follow-up Scheduled',
         message: 'Follow-up task created successfully from diagnostic case',
       });
-      
-      // Invalidate relevant queries
+
+      // Invalidate relevant queries - use the correct ID
+      const caseId = diagnosticCase.id || diagnosticCase._id || diagnosticCase.caseId;
       queryClient.invalidateQueries({ queryKey: ['followUpTasks'] });
-      queryClient.invalidateQueries({ queryKey: ['diagnosticEngagementData', diagnosticCase._id] });
-      
-      if (onFollowUpCreated) {
-        onFollowUpCreated(response.data.followUpTask);
+      if (caseId) {
+        queryClient.invalidateQueries({ queryKey: ['diagnosticEngagementData', caseId] });
       }
-      
+
+      if (onFollowUpCreated) {
+        onFollowUpCreated(response.followUpTask);
+      }
+
       setOpen(false);
       setAssignedTo('');
       setLocationId('');
@@ -168,10 +179,10 @@ const ScheduleDiagnosticFollowUp: React.FC<ScheduleDiagnosticFollowUpProps> = ({
               </Typography>
               <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
                 <Typography variant="body2" gutterBottom>
-                  <strong>Case ID:</strong> {diagnosticCase.caseId}
+                  <strong>Case ID:</strong> {diagnosticCase.id || diagnosticCase.caseId || diagnosticCase._id || 'N/A'}
                 </Typography>
                 <Typography variant="body2" gutterBottom>
-                  <strong>Patient:</strong> {diagnosticCase.patientId.firstName} {diagnosticCase.patientId.lastName} 
+                  <strong>Patient:</strong> {diagnosticCase.patientId.firstName} {diagnosticCase.patientId.lastName}
                   ({diagnosticCase.patientId.age}y, {diagnosticCase.patientId.gender})
                 </Typography>
                 <Typography variant="body2" gutterBottom>
@@ -192,15 +203,15 @@ const ScheduleDiagnosticFollowUp: React.FC<ScheduleDiagnosticFollowUpProps> = ({
                 <Box sx={{ p: 2, bgcolor: 'grey.50', borderRadius: 1 }}>
                   <Typography variant="body2" gutterBottom>
                     <strong>Confidence Score:</strong> {
-                      diagnosticCase.aiAnalysis?.confidenceScore 
+                      diagnosticCase.aiAnalysis?.confidenceScore
                         ? `${Math.round(diagnosticCase.aiAnalysis.confidenceScore * 100)}%`
                         : 'N/A'
                     }
                   </Typography>
-                  
+
                   {diagnosticCase.aiAnalysis.differentialDiagnoses && diagnosticCase.aiAnalysis.differentialDiagnoses.length > 0 && (
                     <Typography variant="body2" gutterBottom>
-                      <strong>Top Diagnosis:</strong> {diagnosticCase.aiAnalysis.differentialDiagnoses[0].condition} 
+                      <strong>Top Diagnosis:</strong> {diagnosticCase.aiAnalysis.differentialDiagnoses[0].condition}
                       ({Math.round(diagnosticCase.aiAnalysis.differentialDiagnoses[0].probability * 100)}%)
                     </Typography>
                   )}
@@ -251,10 +262,10 @@ const ScheduleDiagnosticFollowUp: React.FC<ScheduleDiagnosticFollowUpProps> = ({
               <Typography variant="subtitle1" gutterBottom sx={{ fontWeight: 600 }}>
                 Follow-up Configuration
               </Typography>
-              
+
               <Alert severity="info" sx={{ mb: 2 }}>
                 <Typography variant="body2">
-                  The follow-up priority and due date will be automatically determined based on the AI analysis, 
+                  The follow-up priority and due date will be automatically determined based on the AI analysis,
                   confidence score, and red flags identified in this diagnostic case.
                 </Typography>
               </Alert>

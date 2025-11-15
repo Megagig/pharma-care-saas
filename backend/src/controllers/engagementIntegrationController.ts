@@ -294,16 +294,20 @@ export const createFollowUpFromDiagnostic = async (req: AuthRequest, res: Respon
 
     if (!validateAndRespond(res, diagnosticCaseId, 'Diagnostic Case ID')) return;
 
-    // Get patient ID from diagnostic case
-    const DiagnosticCase = require('../models/DiagnosticCase').default;
-    const diagnosticCase = await DiagnosticCase.findById(diagnosticCaseId);
-    if (!diagnosticCase) {
+    // Get patient ID from diagnostic result (the ID passed is a DiagnosticResult ID)
+    const DiagnosticResult = require('../modules/diagnostics/models/DiagnosticResult').default;
+    const diagnosticResult = await DiagnosticResult.findById(diagnosticCaseId).populate('requestId', 'patientId');
+
+    if (!diagnosticResult) {
       return sendError(res, 'NOT_FOUND', 'Diagnostic case not found', 404);
     }
 
+    // Extract patient ID from the populated request
+    const patientId = diagnosticResult.requestId?.patientId || diagnosticResult.requestId;
+
     const result = await engagementIntegrationService.createFollowUpFromDiagnostic({
       diagnosticCaseId: new mongoose.Types.ObjectId(diagnosticCaseId),
-      patientId: diagnosticCase.patientId,
+      patientId: typeof patientId === 'string' ? new mongoose.Types.ObjectId(patientId) : patientId,
       assignedTo: assignedTo ? new mongoose.Types.ObjectId(assignedTo) : req.user.id,
       workplaceId: req.user.workplaceId,
       locationId,
