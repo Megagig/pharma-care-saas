@@ -20,11 +20,11 @@ export const apiToStorePatient = (apiPatient: ApiPatient): StorePatient => {
     dateOfBirth: apiPatient.dob || '',
     address: apiPatient.address
       ? {
-          street: apiPatient.address,
-          city: '',
-          state: apiPatient.state || '',
-          zipCode: '',
-        }
+        street: apiPatient.address,
+        city: '',
+        state: apiPatient.state || '',
+        zipCode: '',
+      }
       : undefined,
     medicalHistory: '',
     allergies: [],
@@ -60,13 +60,13 @@ export const storeFormToApiCreateData = (
   // Concatenate address fields into a single string
   const address = formData.address
     ? [
-        formData.address.street,
-        formData.address.city,
-        formData.address.state,
-        formData.address.zipCode,
-      ]
-        .filter(Boolean)
-        .join(', ')
+      formData.address.street,
+      formData.address.city,
+      formData.address.state,
+      formData.address.zipCode,
+    ]
+      .filter(Boolean)
+      .join(', ')
     : undefined;
 
   // Convert dateOfBirth to ISO datetime string if it's a valid date

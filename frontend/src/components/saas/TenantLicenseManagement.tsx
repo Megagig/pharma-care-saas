@@ -74,6 +74,7 @@ interface LicenseInfo {
 const TenantLicenseManagement: React.FC = () => {
   const [licenses, setLicenses] = useState<LicenseInfo[]>([]);
   const [loading, setLoading] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [selectedLicense, setSelectedLicense] = useState<LicenseInfo | null>(null);
@@ -104,7 +105,7 @@ const TenantLicenseManagement: React.FC = () => {
     if (!selectedLicense) return;
 
     try {
-      setLoading(true);
+      setActionLoading(true);
       const response = await apiClient.post(
         `/admin/licenses/${selectedLicense.userId}/approve`,
         {}
@@ -114,12 +115,16 @@ const TenantLicenseManagement: React.FC = () => {
         setSuccess('License approved successfully');
         setActionDialog(null);
         setSelectedLicense(null);
-        loadPendingLicenses();
+        
+        // Optimistically remove the approved license from the list
+        setLicenses((prevLicenses) => 
+          prevLicenses.filter((license) => license.userId !== selectedLicense.userId)
+        );
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to approve license');
     } finally {
-      setLoading(false);
+      setActionLoading(false);
     }
   };
 
@@ -130,7 +135,7 @@ const TenantLicenseManagement: React.FC = () => {
     }
 
     try {
-      setLoading(true);
+      setActionLoading(true);
       const response = await apiClient.post(
         `/admin/licenses/${selectedLicense.userId}/reject`,
         { reason: rejectionReason }
@@ -141,12 +146,16 @@ const TenantLicenseManagement: React.FC = () => {
         setActionDialog(null);
         setSelectedLicense(null);
         setRejectionReason('');
-        loadPendingLicenses();
+        
+        // Optimistically remove the rejected license from the list
+        setLicenses((prevLicenses) => 
+          prevLicenses.filter((license) => license.userId !== selectedLicense.userId)
+        );
       }
     } catch (err: any) {
       setError(err.response?.data?.message || 'Failed to reject license');
     } finally {
-      setLoading(false);
+      setActionLoading(false);
     }
   };
 
@@ -369,15 +378,15 @@ const TenantLicenseManagement: React.FC = () => {
           )}
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setActionDialog(null)} disabled={loading}>
+          <Button onClick={() => setActionDialog(null)} disabled={actionLoading}>
             Cancel
           </Button>
           <Button
             onClick={handleApprove}
             variant="contained"
             color="success"
-            disabled={loading}
-            startIcon={loading ? <CircularProgress size={16} /> : <ApproveIcon />}
+            disabled={actionLoading}
+            startIcon={actionLoading ? <CircularProgress size={16} /> : <ApproveIcon />}
           >
             Approve License
           </Button>
@@ -417,15 +426,15 @@ const TenantLicenseManagement: React.FC = () => {
           <Button onClick={() => {
             setActionDialog(null);
             setRejectionReason('');
-          }} disabled={loading}>
+          }} disabled={actionLoading}>
             Cancel
           </Button>
           <Button
             onClick={handleReject}
             variant="contained"
             color="error"
-            disabled={loading || !rejectionReason.trim()}
-            startIcon={loading ? <CircularProgress size={16} /> : <RejectIcon />}
+            disabled={actionLoading || !rejectionReason.trim()}
+            startIcon={actionLoading ? <CircularProgress size={16} /> : <RejectIcon />}
           >
             Reject License
           </Button>

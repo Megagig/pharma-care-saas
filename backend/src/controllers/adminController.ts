@@ -820,16 +820,14 @@ export class AdminController {
       user.status = 'active'; // Activate user account
       await user.save();
 
-      // Send approval email
-      try {
-        await emailService.sendLicenseApprovalNotification(user.email, {
-          firstName: user.firstName,
-          licenseNumber: user.licenseNumber || '',
-        });
-      } catch (emailError) {
+      // Send approval email asynchronously (non-blocking)
+      emailService.sendLicenseApprovalNotification(user.email, {
+        firstName: user.firstName,
+        licenseNumber: user.licenseNumber || '',
+      }).catch((emailError) => {
         logger.error('Failed to send approval email:', emailError);
-        // Don't fail the approval if email fails
-      }
+        // Email failure doesn't affect the approval
+      });
 
       logger.info('License approved', {
         userId,
@@ -900,16 +898,14 @@ export class AdminController {
       user.status = 'license_rejected'; // Update user status
       await user.save();
 
-      // Send rejection email
-      try {
-        await emailService.sendLicenseRejectionNotification(user.email, {
-          firstName: user.firstName,
-          reason: reason,
-        });
-      } catch (emailError) {
+      // Send rejection email asynchronously (non-blocking)
+      emailService.sendLicenseRejectionNotification(user.email, {
+        firstName: user.firstName,
+        reason: reason,
+      }).catch((emailError) => {
         logger.error('Failed to send rejection email:', emailError);
-        // Don't fail the rejection if email fails
-      }
+        // Email failure doesn't affect the rejection
+      });
 
       logger.info('License rejected', {
         userId,
